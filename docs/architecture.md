@@ -1,0 +1,149 @@
+# Architecture
+
+*Status: 2026-11-10. This is the design v0.1 is being built against. What actually
+runs today is the cloud-computer package at
+[RayrunOS/dsh-rayrun-computer](https://github.com/RayrunOS/dsh-rayrun-computer);
+the bot half described here is not built. Untested pieces are marked **TBD**.*
+
+## The picture
+
+```
+you ── chat / approve ──▶ DSH client (browser tab or desktop app)      [today: DSH]
+                            │  plugin client half:
+                            │  cloud-computer page · bot roster* · approval inbox*
+                            │  computer view* · cost bar*
+                            ▼
+                      local DSH host + plugin host half               [today / planned*]
+                      tools · same-origin RPC · tool guard
+                      bot registry* · bot↔session mapping* · scheduler*
+                            │  HTTPS; Rayrun token never leaves the host
+                            ▼
+                      Rayrun API · https://api.rayrunos.com/v1
+                      sandboxes · exec · files · agent prompts + SSE ·
+                      credentials · billing
+                            ▼
+        your Rayrun cloud computer (one per person, shared by your bots)
+          ├─ persistent DSH host (web profile)                        [planned; today the
+          ├─ one session + one profile dir per bot                    platform starts
+          ├─ /workspace · X11 desktop :99 · browser profile           `dsh --profile headless`
+          └─ model calls ──▶ DeepSeek API (your key, injected           per prompt]
+                             into the agent process only)
+```
+
+`*` = not built yet.
+
+## Layers
+
+**1. Thin client.** The user talks to bots, approves actions and changes
+settings in DeepSeek Harness itself — `dsh web` in a browser tab, or the DSH
+desktop app. The plugin's client half adds pages to that UI: today the
+cloud-computer page and the per-session cloud/local toggle; planned are the bot
+roster, approval inbox, computer view and cost bar. We reuse DSH's chat,
+sessions, approval UI, settings and plugin handling instead of writing a
+separate app. The tradeoff: we are bound by DSH's client APIs. A standalone
+desktop shell is deferred until there is evidence it is needed (see
+[roadmap.md](roadmap.md)).
+
+**2. Local DSH host + plugin host half.** The package's `index.js` registers the
+`rayrun_*` tools, a same-origin RPC route (`/plugins/rayrun/rpc`), and a tool
+guard that enforces the cloud/local choice. This is the authority for sessions,
+configuration and file merges: local-first. The bot layer adds the bot registry,
+the bot↔session mapping and the scheduler here. The tradeoff: anything the bot
+needs in the background depends on a host that is running somewhere — today
+only on the user's own machine.
+
+**3. Rayrun API.** A single HTTPS API at `https://api.rayrunos.com/v1` for
+machine lifecycle, commands, files, agent prompts (streamed over SSE),
+credentials and billing. The Rayrun token lives in the Harness vault on the
+host side and is used only here. One machine runs one agent task at a time; a
+second prompt while busy returns `409 sandbox_busy` rather than queueing.
+
+**4. The cloud computer.** One Linux machine per person, shared by that
+person's bots: own vCPU and memory, a persistent `/workspace`, an X11 desktop
+on `:99`, and a browser profile. The design wants a persistent DSH host inside
+the machine (web profile), with one session and one profile directory per bot
+so a bot can resume instead of restart. Today the platform starts
+`dsh --profile headless` for each prompt, so sessions do not yet survive a run
+and the persistent-host piece is **TBD**.
+
+**5. Bot↔session mapping.** A bot is meant to be a persistent object: name,
+instructions, skills, a memory directory and a session id, all on the machine.
+The mapping from bot to session must be stored outside host memory — the
+existing plugin keeps routing state, locks and idle timers in memory and loses
+them when the host restarts. How DSH resumes a specific session from the cloud
+path is **not verified**; this is one of the platform questions v0.1 has to
+answer.
+
+**6. Approval channel.** The intended flow: a gated action in DSH asks the
+approval seam, the host half routes the request to the client half, the user
+answers in a card, and the decision is written back to the waiting action.
+Local-first means the approval can come from the user's own browser; IM is a
+later channel. Fail-closed is the contract: timeout, unknown answer or closed
+panel means no.
+
+**7. Routines and triggers.** Scheduled or event-triggered prompts that wake a
+bot: cron-like schedules, webhooks, and messages from channels. DSH has
+scheduling in its core, and the web profile mounts it; a headless cloud profile
+does not, so routines need the persistent host above.
+
+**8. Model providers.** The bot thinks with the user's own DeepSeek API key,
+stored as a Rayrun credential and injected into the agent process. Other model
+providers are DSH's business, not this repo's; v0.1 is DeepSeek-first and a
+provider abstraction is not designed.
+
+## Design decisions and tradeoffs
+
+| Decision | Why | Tradeoff |
+| --- | --- | --- |
+| Thin client on DSH | no rewrite of chat/approvals/plugins; distribution is a plugin install, not a signed app | bound by DSH client APIs; multi-tenant and push support would be ours to build |
+| Local-first | the user's checkout and session log are authoritative; cloud work is reviewable | a bot cannot keep working while the laptop is closed until a persistent cloud host exists |
+| Bring your own accounts | no project-owned control plane, no keys or meters held by us; Rayrun gets the compute revenue, DeepSeek the model revenue | no protection layer from us: balance, spend and provider terms are the user's |
+| One computer per person | cheaper, and bots share files/browser/credentials like a person's tools | a bot is **not** a security boundary; two bots must not be used as sandboxes against each other |
+| Bot = persistent object | a bot is more than a chat session: instructions, skills, memory, schedule | the durable-object contract (session resume, per-bot dirs) is unverified |
+| Approvals fail-closed | external side effects need a human yes | more UX work; and today the cloud path has approvals **off** (`approval: never`) until the channel exists |
+| Cost guardrails | always-on machines have a real bill (about ¥57.6/month for 2 vCPU / 2 GiB at 24/7 at the time of writing) | the platform has no idle auto-stop or spend cap today; the plugin can stop idle machines but not enforce a budget |
+| Rayrun-only for now | one integration done well beats a provider abstraction done early | switching the backend later is a rewrite; the abstraction is an open decision |
+
+## What this repo builds vs what Rayrun must add
+
+This repo can build:
+
+- the bot registry, roster UI and bot↔session persistence;
+- approval routing from DSH's approval seam to a browser card (IM later);
+- routine/trigger wiring on top of DSH scheduling;
+- the cost bar and the honest status reporting;
+- packaging (monorepo), tests and docs.
+
+The Rayrun platform has to add, for a real product:
+
+- **safe inbound networking** — the token tier of the ingress API is unusable
+  today, so only `public` works; a product cannot expose its panel that way;
+- **idle auto-stop or wake-on-request** — today only `max_lifetime_seconds`
+  exists, and it stops without restarting;
+- **a spend cap or budget alerts** — today spending is unbounded by bot;
+- **the session-resume contract** — whether and how a session id can be passed
+  to the cloud agent is unverified;
+- **runtime egress updates** — a machine's allowlist is fixed at creation
+  (the documented runtime endpoint was not usable in the 2026-11-01 test);
+- smaller items: generic secret injection beyond model slots, full profile
+  projection (skills/MCP, not just the worker layer), and image/DSH version
+  alignment.
+
+## Concurrency, cost and failure
+
+The cost model bounds the design. A machine is billed by the second, keeps its
+disk while stopped, and loses everything (including its workspace) on destroy.
+Balance exhaustion can force-destroy a whole organization's machines. So the
+product must be honest about persistence: `/workspace` survives stop/pause, the
+machine's memory does not; a bot that must keep working needs the machine
+running and paid for. One machine runs one agent task at a time, so multiple
+bots on one machine serialize unless a queue is built.
+
+Availability is the user's Rayrun account plus the DSH host on their machine;
+there is no HA, no SLA and no cross-region story in this design.
+
+## Open questions
+
+The decisions that would change this picture are tracked in
+[FAQ](faq.md) and [roadmap](roadmap.md): backend abstraction, per-bot machines,
+where approvals live (browser only or IM too), and whether v0.1 ships routines.

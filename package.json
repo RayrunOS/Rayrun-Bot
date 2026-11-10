@@ -1,0 +1,28 @@
+{
+  "name": "rayrun-bot",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Rayrun cloud bots for DeepSeek Harness: named bots that live on your own Rayrun cloud computer, run on your DeepSeek key, and come back for approvals.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RayrunOS/Rayrun-Bot.git"
+  },
+  "homepage": "https://github.com/RayrunOS/Rayrun-Bot",
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "dsh-bundle",
+    "deepseek-harness",
+    "cloud-computer",
+    "ai-agents",
+    "rayrun",
+    "bot",
+    "computer-use",
+    "novnc",
+    "sandbox"
+  ],
+  "workspaces": [
+    "packages/*"
+  ]
+}

@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+
+# Build artifacts and packed plugin tarballs
+dist/
+*.tgz
+*.tsbuildinfo
+
+# Test and coverage output
+coverage/
+
+# Logs
+*.log
+pnpm-debug.log*
+
+# Local probes, temporary checks and logs
+.probe/
+.probe*
+.check/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Secrets and local environment
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Workspace sync artifacts (pulled cloud diffs, never committed)
+.dsh/
+
+# Agent/team scratch (local only)
+.team/
+.tmp/

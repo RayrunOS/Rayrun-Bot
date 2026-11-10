@@ -1,0 +1,59 @@
+name: Bug report
+description: Something is broken in a Rayrun bot, a DSH plugin, or the bootstrap docs.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. Do not paste tokens, API keys, or `.env` contents — redact
+        anything sensitive. For security vulnerabilities, follow `SECURITY.md` instead of
+        opening an issue.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What went wrong, and what did you expect instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true
+  - type: input
+    id: dsh-version
+    attributes:
+      label: DeepSeek Harness version
+      description: The DSH version or commit you are running.
+    validations:
+      required: true
+  - type: input
+    id: rayrun-image
+    attributes:
+      label: Rayrun cloud computer image / region
+      description: If known.
+    validations:
+      required: false
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs or errors
+      description: Redact tokens, API keys, and personal data.
+      render: shell
+    validations:
+      required: false
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I removed all secrets, tokens, and API keys from this report.
+          required: true
+        - label: I am not reporting a security vulnerability.
+        - label: I searched existing issues before opening this one.

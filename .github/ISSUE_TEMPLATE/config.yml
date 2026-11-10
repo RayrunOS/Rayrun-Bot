@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/RayrunOS/Rayrun-Bot/security
+    about: Please report vulnerabilities privately; do not open a public issue. See SECURITY.md for scope.
+  - name: Documentation
+    url: https://github.com/RayrunOS/Rayrun-Bot#readme
+    about: Start with the README; reference docs live under docs/.
+  - name: Quickstart
+    url: https://github.com/RayrunOS/Rayrun-Bot/blob/main/docs/quickstart.md
+    about: Install the cloud-computer package and see what works today.
