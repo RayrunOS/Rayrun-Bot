@@ -46,11 +46,13 @@ desktop shell is deferred until there is evidence it is needed (see
 
 **2. Local DSH host + plugin host half.** The package's `index.js` registers the
 `rayrun_*` tools, a same-origin RPC route (`/plugins/rayrun/rpc`), and a tool
-guard that enforces the cloud/local choice. This is the authority for sessions,
-configuration and file merges: local-first. The bot layer adds the bot registry,
-the bot↔session mapping and the scheduler here. The tradeoff: anything the bot
-needs in the background depends on a host that is running somewhere — today
-only on the user's own machine.
+guard that enforces the cloud/local choice. This is the authority for
+configuration, profile projection and file merges. Once the persistent host
+lands, bot sessions and memory are authoritative on the machine — see
+[Where the truth lives](#where-the-truth-lives). The bot layer adds the bot
+registry, the bot↔session mapping and the scheduler here. The tradeoff: anything
+the bot needs in the background depends on a host that is running somewhere —
+today only on the user's own machine.
 
 **3. Rayrun API.** A single HTTPS API at `https://api.rayrunos.com/v1` for
 machine lifecycle, commands, files, agent prompts (streamed over SSE),
@@ -96,13 +98,32 @@ provider abstraction is not designed.
 | Decision | Why | Tradeoff |
 | --- | --- | --- |
 | Thin client on DSH | no rewrite of chat/approvals/plugins; distribution is a plugin install, not a signed app | bound by DSH client APIs; multi-tenant and push support would be ours to build |
-| Local-first | the user's checkout and session log are authoritative; cloud work is reviewable | a bot cannot keep working while the laptop is closed until a persistent cloud host exists |
+| Local-first for ownership | the user's checkout is authoritative and cloud work is reviewable; bot sessions live on the machine and are pulled back for review | two writers must reconcile through the review/merge path, and a bot cannot keep working while the laptop is closed until a persistent cloud host exists |
 | Bring your own accounts | no project-owned control plane, no keys or meters held by us; Rayrun gets the compute revenue, DeepSeek the model revenue | no protection layer from us: balance, spend and provider terms are the user's |
 | One computer per person | cheaper, and bots share files/browser/credentials like a person's tools | a bot is **not** a security boundary; two bots must not be used as sandboxes against each other |
 | Bot = persistent object | a bot is more than a chat session: instructions, skills, memory, schedule | the durable-object contract (session resume, per-bot dirs) is unverified |
 | Approvals fail-closed | external side effects need a human yes | more UX work; and today the cloud path has approvals **off** (`approval: never`) until the channel exists |
 | Cost guardrails | always-on machines have a real bill (about ¥57.6/month for 2 vCPU / 2 GiB at 24/7 at the time of writing) | the platform has no idle auto-stop or spend cap today; the plugin can stop idle machines but not enforce a budget |
 | Rayrun-only for now | one integration done well beats a provider abstraction done early | switching the backend later is a rewrite; the abstraction is an open decision |
+
+## Where the truth lives
+
+Local-first does not mean execution has to happen on the user's laptop. It means
+the user owns the data and makes the decisions; the cloud computer is the user's
+own rented machine, not somebody else's server. Splitting the layers keeps the
+two ideas compatible:
+
+| Layer | Authority | On the machine | Conflict rule |
+| --- | --- | --- | --- |
+| Code and workspace | the user's checkout | a copy in `/workspace` | push verifies both hashes; pull lands in `.dsh/incoming/` and is never applied automatically; the user merges |
+| Bot state, sessions, memory | the cloud computer | the live session, profile dir and memory dirs | local copies are read-only mirrors; pull them back for review and as a recovery anchor |
+| Approvals | the human | only the channel that asks | fail-closed: an unreachable user, a timeout or an unknown answer means no; the machine never answers for the user |
+| Credentials | the user's side | the model key injected into the agent process, when the user supplied it | the Rayrun token stays in the local Harness vault and never enters the machine |
+| Profile and bot definitions | the local DSH profile | a hash-verified projection | drift is detected and the local side wins; re-project before restarting a bot |
+
+The one-line rule: **local-first for ownership and decisions, cloud for
+execution.** A thin client makes the client cheap to replace; it does not move
+trust away from the user.
 
 ## What this repo builds vs what Rayrun must add
 

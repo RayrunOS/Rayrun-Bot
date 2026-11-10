@@ -87,13 +87,14 @@ Read `README.md` and the relevant `docs/` page before changing anything; read th
 1. **Approval-first, fail closed.** No action with an external side effect (spending money, sending or publishing as the user, destroying a computer, touching another machine or credential) may execute before an approval is requested and granted. Timeout, error, or unknown state means deny, never proceed.
 2. **User secrets never leave the user's machine.** The Rayrun token lives in the Harness vault, host side, and must never reach a client module, an RPC response, or a log. The DeepSeek key goes through Rayrun credential injection only — never into the workspace, the repo, fixtures, prompts, or chat. Passwords live in memory only.
 3. **The user pays, the user owns.** Every bot runs on the user's own Rayrun account and key. No code path may route compute, data, or billing through a project-owned account, proxy, or relay.
-4. **No silent scope widening.** Do not add an approval bypass, a default-allow rule, a new permission, or new network egress unless the task explicitly asks for it.
-5. **Package identity stays consistent.** Package name, client module id, and bundle row `name` must stay identical for each package; `lib/*.js` must stay in the package's `files` list; client halves must stay self-contained and load only modules DSH itself provides.
-6. **Never auto-destroy.** Rayrun's `destroy` deletes the machine and its workspace irreversibly. Idle policy may stop or pause; destroying requires an explicit human request.
-7. **Same-origin RPC.** New page→host actions keep the same-origin, origin-checked RPC property. Do not hand the page a token to bypass it.
-8. **Honesty in docs.** Never describe a planned feature as implemented. The dated status statements in `README.md` and `docs/` are factual; if you build something, update them, and if you find a claim that is no longer true, fix it.
-9. **No telemetry by default.** Nothing is collected or uploaded. Any future telemetry must be opt-in, documented, and never include prompts, keys, or workspace contents.
-10. **The cloud is root without bubblewrap.** The worker profile intentionally runs `danger-full-access` as a workaround, not as isolation. Never present it as a sandbox guarantee or weaken the warning about it in `docs/security.md`.
+4. **Execution may leave the machine; authority and credentials do not.** Bots run on the user's own cloud computer and their sessions may live there, but approvals, the local profile and the Rayrun token stay on the user's side. Never move a decision or a secret to the cloud to make a feature simpler.
+5. **No silent scope widening.** Do not add an approval bypass, a default-allow rule, a new permission, or new network egress unless the task explicitly asks for it.
+6. **Package identity stays consistent.** Package name, client module id, and bundle row `name` must stay identical for each package; `lib/*.js` must stay in the package's `files` list; client halves must stay self-contained and load only modules DSH itself provides.
+7. **Never auto-destroy.** Rayrun's `destroy` deletes the machine and its workspace irreversibly. Idle policy may stop or pause; destroying requires an explicit human request.
+8. **Same-origin RPC.** New page→host actions keep the same-origin, origin-checked RPC property. Do not hand the page a token to bypass it.
+9. **Honesty in docs.** Never describe a planned feature as implemented. The dated status statements in `README.md` and `docs/` are factual; if you build something, update them, and if you find a claim that is no longer true, fix it.
+10. **No telemetry by default.** Nothing is collected or uploaded. Any future telemetry must be opt-in, documented, and never include prompts, keys, or workspace contents.
+11. **The cloud is root without bubblewrap.** The worker profile intentionally runs `danger-full-access` as a workaround, not as isolation. Never present it as a sandbox guarantee or weaken the warning about it in `docs/security.md`.
 
 ## 7. Change workflow
 
