@@ -14,17 +14,32 @@ background task and stops for an approval. The user approves it from the
 browser, the bot continues, and the machine-hours bill is visible. That is the
 whole MVP; everything else waits.
 
-## Exit criteria — all must pass
+## Acceptance tasks — v0.1 sign-off
 
-1. **Three-minute first bot.** From README to a running bot, with both plugins installed and without reading source code.
-2. **Laptop closed.** A bot completes one background task while the user's machine is closed.
-3. **Approval round trip.** A gated action stops; the card appears within 10 s; the decision resumes the bot within 10 s; a 30-minute timeout denies.
-4. **Resume.** The same bot's second conversation continues where the first stopped, including after a host restart.
-5. **Recovery.** If the cloud bot host dies or the machine restarts, the queued work survives and nothing is lost silently.
-6. **Cost.** Balance and machine hours are visible, idle stop works, and nothing is destroyed without an explicit human request.
-7. **Security.** No token or key in logs, workspace or repo; the approval path has negative tests (replay, wrong bot, expired request).
-8. **No public ingress.** The MVP needs no inbound networking and exposes no panel to the internet.
-9. **Alpha.** 10–20 seed users; first-bot success ≥ 80 %; week-2 retention ≥ 40 %; zero billing complaints.
+Every row must pass with the stated evidence; a row that cannot be demonstrated
+blocks the release. Automated rows run as plain-Node tests (`node test/*.mjs`);
+manual rows are recorded as a screen capture plus the log files.
+
+| ID | Task | Pass evidence |
+| --- | --- | --- |
+| A1 | Clean-machine install | fresh DSH profile: install both plugins per README, restart, both pages load; a missing dependency shows an actionable error; ≤ 3 minutes |
+| A2 | Sign-in and key | Rayrun login stores the token in the vault; the DeepSeek key is stored as a Rayrun credential; without a token the tools answer `token_required` |
+| A3 | Create a computer | ≤ 15 s, at least 2 GB, desktop optional; balance and machine hours visible |
+| A4 | Create a bot and talk to it | a named bot with instructions appears in the roster, streams a reply, and its directory exists on the machine (`rayrun_files` evidence) |
+| A5 | Laptop closed | with the local DSH closed, a bot finishes one background task; reopening shows the result, with timestamps on both sides |
+| A6 | Approve | a gated action stops; the card appears within 10 s; approval resumes the bot within 10 s; the side effect happens only after the decision |
+| A7 | Deny and timeout | a denial means no side effect; 30 minutes of silence denies; replayed, wrong-bot and expired requests are rejected and logged (negative tests) |
+| A8 | Resume | the same bot's second conversation continues the first, and still continues after the host process is killed and after machine stop/start |
+| A9 | Recovery | killing the bot host loses no queued work; the watchdog restarts it within 60 s and the queue drains |
+| A10 | Cost and lifecycle | balance and hours shown; idle stop stops, never destroys; `destroy` only from an explicit human action |
+| A11 | Security regression | repo, logs and workspace scan clean of tokens and keys; no public ingress; approval negative tests green; dependency version check enforced |
+| A12 | Release | README/quickstart three-minute path verified on a clean machine; npm tarball contains host half, client half, locale and bundle patch; CI green |
+
+Alpha gate after A1–A12: 10–20 seed users; first-bot success ≥ 80 %; week-2
+retention ≥ 40 %; zero billing complaints. These are signals, not ship gates.
+
+Platform dependencies for the rows above are tracked in
+[platform-asks.md](platform-asks.md).
 
 ## Scope — in
 
@@ -86,6 +101,11 @@ until the platform can run more than one agent task per machine.
   and version contract, and a clear error when the plugin is missing or too old.
 - **Never:** edit, fork or vendor that repository, or move its code into
   `packages/`. Changes it needs go to its own repo.
+- **Not a dependency: `dsh-superagent-prototype`.** It is DeepSeek's reference-only
+  research prototype for GitHub/Feishu ticket routing on one local machine — no
+  cloud computer, no persistent bot object, no remote approvals. We borrow ideas,
+  not code, and revisit it only when v0.2 adds event triggers or the project ships
+  a stable bundle with a published API.
 
 ## Week 0 — spikes and decisions (2–3 days)
 
@@ -178,7 +198,7 @@ support issues per user; Rayrun spend per user per week.
 
 ## Definition of done for v0.1.0
 
-- Every exit criterion above is demonstrated, not asserted, on a clean machine.
+- Every acceptance task above is demonstrated, not asserted, on a clean machine.
 - `README.md`, `README.zh-CN.md` and `docs/quickstart.md` describe the shipped
   behavior, including what is still missing.
 - CI is green, the version matrix is documented, and the npm tarball contains the

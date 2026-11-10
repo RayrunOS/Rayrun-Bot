@@ -146,18 +146,23 @@ modify it, and its own repository owns its roadmap.
 
 The Rayrun platform has to add, for a real product:
 
+- **the session and long-lived-runtime contract** — whether a session id can be
+  created or continued, and how a supervised process survives stop/start, is
+  unverified and is v0.1's biggest unknown;
+- **balance grace and guardrails** — exhaustion force-destroys machines and
+  disks today, and there is no spend cap or budget alert;
 - **safe inbound networking** — the token tier of the ingress API is unusable
-  today, so only `public` works; a product cannot expose its panel that way;
+  today, so only `public` works; v0.2 needs a product-safe entry;
 - **idle auto-stop or wake-on-request** — today only `max_lifetime_seconds`
   exists, and it stops without restarting;
-- **a spend cap or budget alerts** — today spending is unbounded by bot;
-- **the session-resume contract** — whether and how a session id can be passed
-  to the cloud agent is unverified;
 - **runtime egress updates** — a machine's allowlist is fixed at creation
   (the documented runtime endpoint was not usable in the 2026-11-01 test);
 - smaller items: generic secret injection beyond model slots, full profile
-  projection (skills/MCP, not just the worker layer), and image/DSH version
-  alignment.
+  projection (skills/MCP, not just the worker layer), per-sandbox usage, and
+  image/DSH version alignment.
+
+The full handoff list, with priority and the workaround we ship in the meantime,
+is [platform-asks.md](platform-asks.md).
 
 ## Concurrency, cost and failure
 

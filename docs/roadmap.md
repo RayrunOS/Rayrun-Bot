@@ -127,20 +127,24 @@ before they could ever enter a milestone:
 
 ## Blocked on the Rayrun platform
 
-Some v0.1 items depend on the platform, not on this repository:
+Some items depend on the platform, not on this repository. v0.1 needs the first
+two confirmed; the rest are v0.2/beta:
 
+- the session and long-lived-runtime contract (whether a session id can be
+  created or continued, and how a supervised process survives a restart);
+- balance grace and guardrails (today the only lifetime cap stops; exhaustion
+  force-destroys machines and disks);
 - safe inbound networking with auth (today the token ingress is unusable and
-  only `public` works);
-- idle auto-stop or wake-on-request (today only an absolute lifetime cap);
-- a spend cap or budget alerts;
-- the session-resume contract (whether a session id can be passed to the cloud
-  agent, unverified);
-- runtime egress updates and generic secret injection beyond model slots.
+  only `public` works) — v0.2;
+- idle auto-stop or wake-on-request, spend caps, runtime egress updates and
+  generic secret injection beyond model slots — beta.
 
-[architecture.md](architecture.md) explains each one; [faq.md](faq.md) has the
-user-facing version. One packaging risk is not the platform's: neither package is
-on npm yet, so both install from checkouts until `dsh-rayrun-computer` is
-published and the one-install bundle dependency is verified (W0 spike S6, **TBD**).
+The full handoff list, with the API shape we would want and our workarounds, is
+in [platform-asks.md](platform-asks.md). [architecture.md](architecture.md)
+explains each one; [faq.md](faq.md) has the user-facing version. One packaging
+risk is not the platform's: neither package is on npm yet, so both install from
+checkouts until `dsh-rayrun-computer` is published and the one-install bundle
+dependency is verified (W0 spike S6, **TBD**).
 
 ## How scope is decided
 
