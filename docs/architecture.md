@@ -1,9 +1,10 @@
 # Architecture
 
 *Status: 2026-11-10. This is the design v0.1 is being built against. What actually
-runs today is the cloud-computer package at
-[RayrunOS/dsh-rayrun-computer](https://github.com/RayrunOS/dsh-rayrun-computer);
-the bot half described here is not built. Untested pieces are marked **TBD**.*
+runs today is the cloud-computer plugin, a **separate project** at
+[RayrunOS/dsh-rayrun-computer](https://github.com/RayrunOS/dsh-rayrun-computer)
+that this project consumes as a dependency; the bot half described here is not
+built. Untested pieces are marked **TBD**.*
 
 ## The picture
 
@@ -44,15 +45,17 @@ separate app. The tradeoff: we are bound by DSH's client APIs. A standalone
 desktop shell is deferred until there is evidence it is needed (see
 [roadmap.md](roadmap.md)).
 
-**2. Local DSH host + plugin host half.** The package's `index.js` registers the
-`rayrun_*` tools, a same-origin RPC route (`/plugins/rayrun/rpc`), and a tool
-guard that enforces the cloud/local choice. This is the authority for
+**2. Local DSH host + two plugin halves.** Two bundles run in the same profile.
+The separate cloud-computer plugin registers the `rayrun_*` tools, the
+same-origin RPC route (`/plugins/rayrun/rpc`) and a tool guard that enforces the
+cloud/local choice. Rayrun Bot's host half consumes that surface — it does not
+fork or vendor it — and adds the bot registry, the bot↔session mapping, the
+scheduler and approval routing. Together they are the authority for
 configuration, profile projection and file merges. Once the persistent host
 lands, bot sessions and memory are authoritative on the machine — see
-[Where the truth lives](#where-the-truth-lives). The bot layer adds the bot
-registry, the bot↔session mapping and the scheduler here. The tradeoff: anything
-the bot needs in the background depends on a host that is running somewhere —
-today only on the user's own machine.
+[Where the truth lives](#where-the-truth-lives). The tradeoff: anything the bot
+needs in the background depends on a host that is running somewhere — today only
+on the user's own machine.
 
 **3. Rayrun API.** A single HTTPS API at `https://api.rayrunos.com/v1` for
 machine lifecycle, commands, files, agent prompts (streamed over SSE),
@@ -101,6 +104,7 @@ provider abstraction is not designed.
 | Local-first for ownership | the user's checkout is authoritative and cloud work is reviewable; bot sessions live on the machine and are pulled back for review | two writers must reconcile through the review/merge path, and a bot cannot keep working while the laptop is closed until a persistent cloud host exists |
 | Bring your own accounts | no project-owned control plane, no keys or meters held by us; Rayrun gets the compute revenue, DeepSeek the model revenue | no protection layer from us: balance, spend and provider terms are the user's |
 | One computer per person | cheaper, and bots share files/browser/credentials like a person's tools | a bot is **not** a security boundary; two bots must not be used as sandboxes against each other |
+| Separate cloud-computer project | reuse a proven cloud layer without forking or merging repositories; the other project keeps its own history and users | two packages and a version contract; install friction; feature requests cross repositories |
 | Bot = persistent object | a bot is more than a chat session: instructions, skills, memory, schedule | the durable-object contract (session resume, per-bot dirs) is unverified |
 | Approvals fail-closed | external side effects need a human yes | more UX work; and today the cloud path has approvals **off** (`approval: never`) until the channel exists |
 | Cost guardrails | always-on machines have a real bill (about ¥57.6/month for 2 vCPU / 2 GiB at 24/7 at the time of writing) | the platform has no idle auto-stop or spend cap today; the plugin can stop idle machines but not enforce a budget |
@@ -129,11 +133,16 @@ trust away from the user.
 
 This repo can build:
 
+- the adapter to the separate cloud-computer plugin: capability calls over its
+  tools/RPC, version checks, and a clear error when it is missing or too old;
 - the bot registry, roster UI and bot↔session persistence;
 - approval routing from DSH's approval seam to a browser card (IM later);
 - routine/trigger wiring on top of DSH scheduling;
 - the cost bar and the honest status reporting;
-- packaging (monorepo), tests and docs.
+- packaging, tests and docs.
+
+The cloud-computer plugin stays a separate project: we depend on it and never
+modify it, and its own repository owns its roadmap.
 
 The Rayrun platform has to add, for a real product:
 

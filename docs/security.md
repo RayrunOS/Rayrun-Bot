@@ -1,9 +1,10 @@
 # Security
 
-*Status: 2026-11-10. The cloud-computer package is real and its guarantees below
-are marked with evidence. The bot half is not built, so its security properties
-are design intent, not verified behavior. Items being checked are marked
-**TBD**.*
+*Status: 2026-11-11. Two separate projects. The cloud-computer plugin at
+[RayrunOS/dsh-rayrun-computer](https://github.com/RayrunOS/dsh-rayrun-computer)
+is real and its guarantees below are marked with evidence; this repository builds
+the bot half, which is not built, so its security properties are design intent,
+not verified behavior. Items being checked are marked **TBD**.*
 
 This product brings your own credentials: your Rayrun account token, your
 DeepSeek API key, and your cloud computer. This page says what the design
@@ -26,8 +27,14 @@ open a public issue.
    data.
 6. **No hidden egress.** A new cloud machine starts with outbound networking
    off; hosts are listed explicitly for a reason.
+7. **The bot layer adds no cloud credentials of its own.** Rayrun Bot reuses the
+   dependency's token path and introduces no new account, key or secret.
 
 ## What is protected today
+
+Every row below that says a guarantee is implemented or verified comes from the
+separate `dsh-rayrun-computer` package, not from this repository; this
+repository's own code does not exist yet.
 
 | Property | State |
 | --- | --- |
@@ -82,10 +89,15 @@ bot layer must route its own traffic through an authenticated gateway with
 short-lived tokens once that exists (TBD).
 
 **Supply chain.** A DSH bundle's host code runs inside the DSH process, with the
-user's privileges; install from sources you trust. The project's goals are no
-runtime dependencies and no build step; if a dependency or installer is ever
-added it gets reviewed like code, and lockfile/provenance practice for it is
-TBD.
+user's privileges; install from sources you trust. Two bundles from two separate
+repositories end up in the same profile: `dsh-rayrun-bots` from this repository
+and the `dsh-rayrun-computer` dependency from
+[RayrunOS/dsh-rayrun-computer](https://github.com/RayrunOS/dsh-rayrun-computer).
+A tampered copy of either is a risk, so install both from sources you trust.
+Version compatibility between the two packages is part of the dependency
+contract. The project's goals are no runtime dependencies and no build step; if a
+dependency or installer is ever added it gets reviewed like code, and
+lockfile/provenance practice for it is TBD.
 
 **Cloud and model vendor terms.** Rayrun operates the machine; DeepSeek serves
 the model. Their terms, data handling and availability apply to the data that

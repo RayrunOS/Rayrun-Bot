@@ -6,16 +6,17 @@ starting base. Weeks are relative, not calendar promises.*
 
 ## The MVP in one paragraph
 
-One person, on their own laptop, installs one DSH plugin, signs in to their own
-Rayrun account, stores their own DeepSeek key, creates a cloud computer, creates
-a named bot, talks to it, closes the laptop, and the bot finishes a background
-task and stops for an approval. The user approves it from the browser, the bot
-continues, and the machine-hours bill is visible. That is the whole MVP;
-everything else waits.
+One person, on their own laptop, installs the Rayrun Bot DSH plugin — which
+pulls in the separate cloud-computer plugin as a dependency — signs in to their
+own Rayrun account, stores their own DeepSeek key, creates a cloud computer,
+creates a named bot, talks to it, closes the laptop, and the bot finishes a
+background task and stops for an approval. The user approves it from the
+browser, the bot continues, and the machine-hours bill is visible. That is the
+whole MVP; everything else waits.
 
 ## Exit criteria — all must pass
 
-1. **Three-minute first bot.** From README to a running bot without reading source code.
+1. **Three-minute first bot.** From README to a running bot, with both plugins installed and without reading source code.
 2. **Laptop closed.** A bot completes one background task while the user's machine is closed.
 3. **Approval round trip.** A gated action stops; the card appears within 10 s; the decision resumes the bot within 10 s; a 30-minute timeout denies.
 4. **Resume.** The same bot's second conversation continues where the first stopped, including after a host restart.
@@ -35,6 +36,7 @@ everything else waits.
 | Cloud bot host: queue, inbox/outbox, watchdog | P0 | one agent task at a time |
 | Fail-closed approval gate | P0 | TTL 30 min, replay protection, audit line |
 | Approval inbox UI | P0 | the card the user actually answers |
+| Cloud-computer dependency integration | P0 | declare `dsh-rayrun-computer`, version check, clear missing-plugin error |
 | Cost bar: balance and machine hours | P0 | per-bot attribution is P1 |
 | Onboarding wizard | P0 | login → key → computer → first bot |
 | npm package, CI, DSH version matrix | P0 | required to ship v0.1.0 |
@@ -69,6 +71,21 @@ until the platform can run more than one agent task per machine.
    DSH process on the machine that keeps sessions in memory. Fallback: per-turn
    headless runs with a session id. Last resort: transcript replay, documented as
    slower and more expensive.
+7. **Separate projects, one dependency edge.** `dsh-rayrun-computer` stays in its
+   own repository and is consumed as an npm dependency (MIT). Rayrun Bot owns the
+   bot layer and the adapter only. The bundle is meant to declare the dependency
+   so one install brings both plugins; spike S6 decides whether that works, and
+   the documented two-install path is the fallback.
+
+### The dependency boundary
+
+- **From `dsh-rayrun-computer`:** the `rayrun_*` tools and their exact names and
+  semantics, the same-origin RPC route, the tool guard, workspace sync, worker
+  projection, and the bundle/client load in the same DSH profile.
+- **From us:** the bot layer, an adapter over that surface, a declared dependency
+  and version contract, and a clear error when the plugin is missing or too old.
+- **Never:** edit, fork or vendor that repository, or move its code into
+  `packages/`. Changes it needs go to its own repo.
 
 ## Week 0 — spikes and decisions (2–3 days)
 
@@ -79,6 +96,7 @@ until the platform can run more than one agent task per machine.
 | S3 | Approval mailbox | Round-trip latency and failure modes of file polling through the Rayrun files API | bridge accepted, poll interval chosen |
 | S4 | Profile projection | Minimal projection that gets bot definitions and skills onto the machine (today only the worker layer is projected) | projection format frozen |
 | S5 | Platform gaps | Files API polling limits, `exec` timeouts, machine restart behavior | workarounds recorded in the plan |
+| S6 | Cross-bundle dependency | Can the Rayrun Bot bundle declare `dsh-rayrun-computer` so both host and client halves load, and can our host half call its tools/RPC? | one-install or two-install path chosen; adapter interface frozen |
 
 Week 0 ends with the scope table: routines in or out, and whether the alpha can
 start after W5.
@@ -87,7 +105,7 @@ start after W5.
 
 | Week | Goal | Ships |
 | --- | --- | --- |
-| W1 | Packages land; bot model; local mirror; roster skeleton | monorepo migration, `bot.json` schema, persistence, roster page without chat |
+| W1 | Rayrun Bot package, dependency wiring, bot model, local mirror, roster skeleton | package scaffold, dependency declaration + version check, `bot.json` schema, persistence, roster page without chat |
 | W2 | Cloud bot host and the chat path | queue + inbox/outbox + supervisor + watchdog; an echo bot answers end to end |
 | W3 | Approvals and cost | gated action stops in the panel, decision resumes it; cost bar; timeout/replay tests |
 | W4 | Resume, recovery, onboarding | bot survives restart and a dead host; wizard; three-minute demo path works |
@@ -98,7 +116,8 @@ start after W5.
 
 | ID | Task | Definition of done |
 | --- | --- | --- |
-| A1 | Migrate `dsh-rayrun-computer` into `packages/` | package unchanged in behavior, README links fixed |
+| A1 | Dependency declaration and version contract | a fresh profile with the plugin missing or too old shows an actionable error; the compatible range is pinned |
+| A1b | Capability adapter over the dependency's tools/RPC | bot host can create/list a machine, run `exec`, and upload/download files through the dependency |
 | A2 | Scaffold `packages/dsh-rayrun-bots` bundle | loads in DSH, host and client halves resolve |
 | A3 | CI: `node --check` + plain-Node tests | runs on every push, red when a test fails |
 | B1 | Bot schema and validation | invalid bot definitions are rejected with a clear error |
@@ -136,7 +155,8 @@ start after W5.
 | Balance exhaustion deletes machines and disks | account hits zero | pull bot state locally, warn in the cost bar, recommend lifetime caps, never auto-destroy |
 | Scope creep (IM, desktop, routines) | W3 overruns | P1 items are cut at the W3 gate; MVP ships P0 only |
 | Public ingress temptation | someone asks for a panel URL | forbidden: no inbound, no `public` desktop as the panel |
-| Old repo migration stalls | rename blocked or history conflicts | copy code with package names unchanged; do not block W1 |
+| Dependency install is the new friction | the one-install path fails, or `dsh-rayrun-computer` stays off npm | document the two-install path, pin versions, show an actionable error, and ask the other project to publish (its release workflow already exists) |
+| Dependency behavior drifts | upstream changes tool names, RPC shape or client injection | version contract, adapter isolation, and contract tests against a pinned version |
 | DSH version drift between image and laptop | plugins load but tools fail | version matrix in W5, pinned image request to Rayrun |
 
 ## Metrics
@@ -150,8 +170,11 @@ support issues per user; Rayrun spend per user per week.
 1. **Bot concurrency**: serialized queue for v0.1 (recommended) or a machine per bot.
 2. **Routines**: one cron per bot as P1 (recommended) or cut entirely from v0.1.
 3. **Approval channel**: file mailbox for v0.1, IM in v0.2 (recommended).
-4. **Old repo**: rename with history (recommended) or fresh copy.
-5. **npm ownership**: which account owns `dsh-rayrun-computer` and `dsh-rayrun-bots`, and who configures trusted publishing.
+4. **Resolved (2026-11-11)**: `dsh-rayrun-computer` stays untouched in its own
+   repository; Rayrun Bot is a separate project that depends on it. Open
+   sub-decision: one-install dependency (spike S6) or documented two-install
+   fallback.
+5. **npm ownership**: which account owns `dsh-rayrun-computer` and `dsh-rayrun-bots`, who publishes the dependency, and who configures trusted publishing.
 
 ## Definition of done for v0.1.0
 
@@ -162,3 +185,5 @@ support issues per user; Rayrun spend per user per week.
   host half, client half, locale and bundle patch.
 - The approval path has passing negative tests, and no secret appears in any log,
   fixture or tarball.
+- The dependency install path is documented and tested (one install or two), and
+  a missing or mismatched `dsh-rayrun-computer` fails with an actionable error.

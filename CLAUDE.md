@@ -76,8 +76,8 @@ Repository: **Rayrun Bot** (`RayrunOS/Rayrun-Bot`). DSH plugin package names kee
 
 - `README.md` — product page (English, source of truth); `README.zh-CN.md` — mirror, updated in the same commit.
 - `docs/` — quick start, architecture, security, FAQ, roadmap, MVP plan. README stays short; detail goes here.
-- `packages/dsh-rayrun-computer/` — cloud computers: create/stop/pause/destroy, `exec`, files, noVNC desktop, workspace sync, worker projection. MIT, package name unchanged. Not in this repo yet; the working copy is at `RayrunOS/dsh-rayrun-computer` until it migrates.
-- `packages/dsh-rayrun-bots/` — the product layer: bot roster, bot↔session mapping, persistent host, approvals, routines, client panel. Does not exist yet; that is what this repo is building.
+- `packages/dsh-rayrun-bots/` — the whole product layer: bot roster, bot↔session mapping, persistent host, approvals, routines, client panel, and the adapter to the cloud-computer plugin. Does not exist yet; that is what this repo is building.
+- `dsh-rayrun-computer` — **a separate project** (`RayrunOS/dsh-rayrun-computer`, MIT), not a directory in this repo. It provides the cloud computers and the `rayrun_*` tools; Rayrun Bot consumes it as a dependency. Never modify, fork or vendor it here.
 - `package.json` — private workspace root. No dependencies, no build step.
 
 Read `README.md` and the relevant `docs/` page before changing anything; read the code you are editing, not your memory of it.
@@ -95,6 +95,7 @@ Read `README.md` and the relevant `docs/` page before changing anything; read th
 9. **Honesty in docs.** Never describe a planned feature as implemented. The dated status statements in `README.md` and `docs/` are factual; if you build something, update them, and if you find a claim that is no longer true, fix it.
 10. **No telemetry by default.** Nothing is collected or uploaded. Any future telemetry must be opt-in, documented, and never include prompts, keys, or workspace contents.
 11. **The cloud is root without bubblewrap.** The worker profile intentionally runs `danger-full-access` as a workaround, not as isolation. Never present it as a sandbox guarantee or weaken the warning about it in `docs/security.md`.
+12. **The cloud-computer plugin is a dependency, not our code.** `dsh-rayrun-computer` lives in its own repository and is never edited, forked or vendored from here. Integration goes through its published tools/RPC surface and a version contract; a change that needs its behavior is an issue/PR in that repository, or an adapter in ours.
 
 ## 7. Change workflow
 

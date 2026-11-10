@@ -1,10 +1,11 @@
 # Roadmap
 
-*Status: 2026-11-10. Pre-alpha bootstrap. The milestones below come from the
-product research that shaped this repository; they are direction, not promises.
-Nothing on the v0.1 list is built in this repository yet — the cloud-computer
-half is a separate package and the bot half does not exist. Dates are omitted on
-purpose.*
+*Status: 2026-11-11. Pre-alpha bootstrap. Two separate projects: the
+cloud-computer plugin `RayrunOS/dsh-rayrun-computer` stays its own project and is
+consumed as a dependency. The milestones below come from the product research
+that shaped this repository; they are direction, not promises. Nothing on the
+v0.1 list is built in this repository yet — the bot half does not exist. Dates
+are omitted on purpose.*
 
 ## Where we are (M0 — bootstrap)
 
@@ -17,7 +18,8 @@ Exit criteria:
 - README, docs, CLAUDE.md and the community files exist and every link resolves;
 - the honest status section says what works, what does not, and what is
   blocked on the Rayrun platform;
-- the existing cloud-computer package stays installable from its own repository.
+- the dependency boundary is explicit: `dsh-rayrun-computer` is a separate
+  project that stays untouched, not migrated, renamed or vendored.
 
 ## v0.1 — the closed loop
 
@@ -29,9 +31,9 @@ Task-level plan, spikes and weekly sequencing: [mvp-plan.md](mvp-plan.md).
 
 Scope:
 
-- **Packages land in this monorepo.** `packages/dsh-rayrun-computer` (the
-  existing cloud-computer layer, package name and API unchanged) and
-  `packages/dsh-rayrun-bots` (the new product layer).
+- **Rayrun Bot package lands here.** `dsh-rayrun-bots` is published from this
+  repository; `dsh-rayrun-computer` stays a separate project and is consumed as
+  a dependency (version contract + documented install path in v0.1).
 - **Bot roster and bot↔session mapping.** A bot has a name, instructions,
   skills, a memory directory and a persistent session; the mapping survives a
   DSH restart instead of living in host memory.
@@ -59,6 +61,8 @@ Exit criteria (all of the following):
 5. Balance and machine hours for the session are visible.
 6. Missing token or a failing cloud call produces a clear error, never a fake
    success.
+7. Both plugins install through the documented path — Rayrun Bot plus the
+   separate `dsh-rayrun-computer`.
 
 The earlier research target also mentioned 20 seed users, a first-bot success
 rate above 80% and weekly retention above 40%; treat that as internal
@@ -109,6 +113,7 @@ These are explicitly out of scope. Some are permanent, some need a new decision
 before they could ever enter a milestone:
 
 - multi-tenant SaaS, hosted accounts, or any project-run control plane;
+- forking, vendoring or merging `dsh-rayrun-computer`; it stays its own project, consumed as a dependency;
 - team roles/RBAC, audit export, SSO/SCIM, enterprise compliance packages;
 - a bot or skill marketplace;
 - a native mobile app (IM answers the "from my phone" need for now);
@@ -133,7 +138,9 @@ Some v0.1 items depend on the platform, not on this repository:
 - runtime egress updates and generic secret injection beyond model slots.
 
 [architecture.md](architecture.md) explains each one; [faq.md](faq.md) has the
-user-facing version.
+user-facing version. One packaging risk is not the platform's: neither package is
+on npm yet, so both install from checkouts until `dsh-rayrun-computer` is
+published and the one-install bundle dependency is verified (W0 spike S6, **TBD**).
 
 ## How scope is decided
 

@@ -1,18 +1,23 @@
 # Quickstart
 
-*Status: 2026-11-10. This repository is pre-alpha: it holds docs and repository
-scaffolding, no publishable code yet. The working cloud-computer package lives
-at [RayrunOS/dsh-rayrun-computer](https://github.com/RayrunOS/dsh-rayrun-computer).*
+*Status: 2026-11-11. Two separate projects. This repository is pre-alpha: it
+holds docs and repository scaffolding, no publishable code yet. The
+cloud-computer plugin at
+[RayrunOS/dsh-rayrun-computer](https://github.com/RayrunOS/dsh-rayrun-computer)
+is untouched and stays its own project; this repository builds the bot layer and
+reuses that plugin as an external dependency — two plugins in one DSH profile.*
 
-This page has two tracks. **What you can run today** covers the cloud-computer
-package that already works. **The target path** covers the bot product this
-repository is building — none of its steps exist yet.
+This page has two tracks. **What you can run today** installs the separate
+cloud-computer package, which is the required dependency. **The target path**
+covers the bot product this repository is building — none of its steps exist
+yet.
 
 ## Prerequisites
 
 | You need | Why | Status |
 | --- | --- | --- |
 | [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) | the agent runtime this plugs into — desktop app or `dsh web` | the computer package was verified on `0.2.1-rc.5`; the design baseline is `0.2.2-rc.1` and re-verification is in progress |
+| [dsh-rayrun-computer](https://github.com/RayrunOS/dsh-rayrun-computer) | the cloud-computer layer — a separate project, required by Rayrun Bot | not on npm yet — install from a checkout (below) |
 | A [Rayrun](https://rayrunos.com/) account | supplies your cloud computer; Rayrun bills it by the second | required — you pay Rayrun directly for compute |
 | A DeepSeek API key | the model calls made by the agent on the machine | required — the key and the model bill are yours |
 | Node / build tools | not needed: plain ESM, no build step | none |
@@ -21,8 +26,10 @@ Nothing is hosted by this project: no account, no relay, no control plane.
 
 ## What you can run today
 
-The cloud half is a separate package. It is not on npm yet, so install it from a
-checkout:
+Rayrun Bot does not vendor the cloud-computer layer: it is a separate project
+and a required dependency. Today two plugins must be installed in the same DSH
+profile; one install is planned once bundle-dependency support is verified. Start
+with the dependency — it is not on npm yet, so install it from a checkout:
 
 ```bash
 git clone https://github.com/RayrunOS/dsh-rayrun-computer.git
@@ -56,13 +63,17 @@ What that package does today:
 | Optional idle stop | `idle_stop_minutes`; stops the machine, never destroys it |
 | Login and vault | password/WeChat/API token; the token stays host-side |
 
-Verified on DeepSeek Harness `0.2.1-rc.5`.
+Everything above comes from the separate `dsh-rayrun-computer` project, not from
+this repository. It is verified on DeepSeek Harness `0.2.1-rc.5`.
 
 ## The target 3-minute path (v0.1, not built yet)
 
 When the bot half lands, the first-run path should be:
 
 1. Install `dsh-rayrun-bots` (npm is not published yet; a checkout will work).
+   The bundle is intended to declare `dsh-rayrun-computer` as a dependency so
+   one install brings both plugins — that path is the W0 spike S6 and is
+   **TBD**. Until then, install the separate plugin first (see above).
 2. Sign in to Rayrun once; the first-run wizard creates your cloud computer.
 3. Create a bot: a name, instructions, and the skills it can load. It gets its
    own session on your computer.
@@ -76,8 +87,9 @@ None of steps 1–5 exist yet in this repository. See
 
 | | |
 | --- | --- |
-| **Works today** (separate repo) | the seven tools, noVNC desktop, per-session cloud/local routing, hash-verified workspace sync, task delegation, worker projection, optional idle stop; verified on DSH `0.2.1-rc.5` |
+| **Works today** (separate project) | the seven tools, noVNC desktop, per-session cloud/local routing, hash-verified workspace sync, task delegation, worker projection, optional idle stop; verified on DSH `0.2.1-rc.5` |
 | **This repository** | README, docs, issue/PR templates, agent rules. No publishable code. |
+| **Planned, unverified** | two-plugin install: the Rayrun Bot bundle declares `dsh-rayrun-computer` as a dependency so one install loads both host and client halves (W0 spike S6) |
 | **Not built yet** | bot roster and bot↔session mapping, a persistent DSH host on the machine, remote approvals, routines and triggers, cost bar, IM channel, npm packages and CI |
 | **Blocked on the Rayrun platform** | safe inbound networking (the token ingress is unusable today and only `public` works), idle auto-stop, a spend cap, the session-resume contract |
 
@@ -102,7 +114,12 @@ None of steps 1–5 exist yet in this repository. See
   to stop idle machines (stop only, never destroy).
 - **A second task gets `409 sandbox_busy`.** One cloud computer runs one agent
   task at a time; it does not queue. Wait, or use another machine.
-- **`npm i dsh-rayrun-bots` fails.** Expected: the package is not published.
+- **`dsh-rayrun-computer` is not installed.** Two plugins are needed today: the
+  bot layer and its separate dependency. Install the cloud-computer plugin from
+  its checkout into the same DSH profile and restart DSH; without it, the cloud
+  tools the bot layer relies on are missing.
+- **`npm i dsh-rayrun-bots` fails.** Expected: neither package is published on
+  npm yet.
 
 ## Read next
 

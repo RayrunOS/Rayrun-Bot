@@ -1,8 +1,10 @@
 # FAQ
 
-*Status: 2026-11-10. Pre-alpha. The cloud-computer half works as a separate
-package; the bot half of this repository does not exist yet. Short answers here;
-details in [architecture](architecture.md), [security](security.md) and
+*Status: 2026-11-11. Pre-alpha. Two separate projects: the cloud-computer plugin
+at [RayrunOS/dsh-rayrun-computer](https://github.com/RayrunOS/dsh-rayrun-computer)
+works on its own; the bot half of this repository does not exist yet and will
+reuse that plugin as an external dependency. Short answers here; details in
+[architecture](architecture.md), [security](security.md) and
 [roadmap](roadmap.md).*
 
 ## Is this a SaaS?
@@ -53,21 +55,33 @@ note in the [README](../README.md) and [security.md](security.md). Whether the
 cloud provider itself could read a stored credential is **not verified**; do
 not assume it cannot.
 
+## Do I need to install two plugins?
+
+Yes, today: Rayrun Bot plus the separate
+[RayrunOS/dsh-rayrun-computer](https://github.com/RayrunOS/dsh-rayrun-computer)
+project. Rayrun Bot reuses that plugin as an external dependency and does not
+modify, fork or vendor it. The Rayrun Bot bundle is intended to declare it as a
+dependency so one install brings both, but whether a DSH bundle dependency loads
+both host and client halves is the W0 spike S6 and is **not verified**. Until
+then — and until both are on npm — install both plugins from their checkouts
+into the same DSH profile and restart DSH.
+
 ## Why is this repository mostly docs?
 
-Because it is the monorepo for the bot half, and the bot half is not written
-yet. The working cloud-computer package is still published separately at
+Because this repository is the project for the bot half, and the bot half is not
+written yet. It is not a monorepo for the cloud-computer plugin: that package is
+a separate project at
 [RayrunOS/dsh-rayrun-computer](https://github.com/RayrunOS/dsh-rayrun-computer)
-and is not even on npm. This repository's bootstrap commit is README, docs,
-templates and agent rules; code arrives with v0.1.
+and stays one. The bootstrap commit here is README, docs, templates and agent
+rules; code arrives with v0.1.
 
 ## What can I do today, then?
 
-Install the cloud-computer package from a checkout into DeepSeek Harness and
-use its seven tools: create/stop/pause/destroy a machine, run commands, move
+Install the separate cloud-computer plugin from a checkout into DeepSeek Harness
+and use its seven tools: create/stop/pause/destroy a machine, run commands, move
 files, drive the desktop, delegate tasks, sync a workspace, project a worker
-layer. The [quickstart](quickstart.md) has the exact commands and a "what is
-missing" table.
+layer. It is a dependency of Rayrun Bot, not part of this repository. The
+[quickstart](quickstart.md) has the exact commands and a "what is missing" table.
 
 ## How is this different from Grok Bot?
 
@@ -114,10 +128,11 @@ product, not this project's, and it is not verified for this use case (TBD).
 
 ## Is it on npm? Can I install it as a plugin?
 
-The bot package is not on npm and not installable yet. The cloud-computer
-package is also not on npm; install it from a checkout with
-`dsh plugin --profile web add <absolute path>` and restart DSH. When v0.1 lands,
-`dsh-rayrun-bots` is the intended install name.
+Neither package is on npm. The bot package — `dsh-rayrun-bots`, the intended
+install name — is not installable yet. The cloud-computer package from the
+separate `RayrunOS/dsh-rayrun-computer` project is not on npm either; install it
+from a checkout with `dsh plugin --profile web add <absolute path>` and restart
+DSH. Both stay checkout-based until they are published.
 
 ## Is my data uploaded anywhere?
 
@@ -128,7 +143,7 @@ telemetry.
 
 ## What is the roadmap?
 
-Short version: v0.1 is the plugin + `dsh web` with one computer, a bot roster,
-fail-closed approvals and a cost bar; v0.2 adds an IM channel with your own bot
-token; v1.0 may add a thin desktop shell. Exit criteria and the not-planned list
-are in [roadmap.md](roadmap.md).
+Short version: v0.1 is the bot plugin plus the cloud-computer dependency, on
+`dsh web`, with one computer, a bot roster, fail-closed approvals and a cost bar;
+v0.2 adds an IM channel with your own bot token; v1.0 may add a thin desktop
+shell. Exit criteria and the not-planned list are in [roadmap.md](roadmap.md).
