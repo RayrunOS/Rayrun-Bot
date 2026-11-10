@@ -121,7 +121,7 @@ Rayrun Bot/
     └── dsh-rayrun-bots/         # bots: roster, persistent host, approvals, routines
 ```
 
-The repository and product are called **Rayrun Bot**; the DSH plugin packages keep the `dsh-` prefix that the DSH ecosystem uses. The README is the product page; `docs/` holds the detail. Deeper reads: [quick start](docs/quickstart.md), [architecture](docs/architecture.md), [security](docs/security.md), [FAQ](docs/faq.md), [roadmap](docs/roadmap.md). Both READMEs are updated in the same commit — English is the source of truth.
+The repository and product are called **Rayrun Bot**; the DSH plugin packages keep the `dsh-` prefix that the DSH ecosystem uses. The README is the product page; `docs/` holds the detail. Deeper reads: [quick start](docs/quickstart.md), [architecture](docs/architecture.md), [security](docs/security.md), [FAQ](docs/faq.md), [roadmap](docs/roadmap.md), [MVP plan](docs/mvp-plan.md). Both READMEs are updated in the same commit — English is the source of truth.
 
 ## Development
 

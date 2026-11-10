@@ -25,6 +25,8 @@ Goal: one person, one cloud computer, one or more named bots, a fail-closed
 approval card, and a visible bill. Everything shipped on the DSH plugin +
 `dsh web` path; no desktop app.
 
+Task-level plan, spikes and weekly sequencing: [mvp-plan.md](mvp-plan.md).
+
 Scope:
 
 - **Packages land in this monorepo.** `packages/dsh-rayrun-computer` (the

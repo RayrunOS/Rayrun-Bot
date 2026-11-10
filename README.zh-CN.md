@@ -121,7 +121,7 @@ Rayrun Bot/
     └── dsh-rayrun-bots/         # Bot：名册、常驻 host、审批、routines
 ```
 
-仓库和产品都叫 **Rayrun Bot**；DSH 插件包保留 `dsh-` 前缀，这是 DSH 插件生态的命名习惯。README 是产品页，细节在 `docs/`。深入阅读：[快速开始](docs/quickstart.md)、[架构](docs/architecture.md)、[安全](docs/security.md)、[FAQ](docs/faq.md)、[路线图](docs/roadmap.md)。两份 README 必须在同一个 commit 里更新——英文版为准。
+仓库和产品都叫 **Rayrun Bot**；DSH 插件包保留 `dsh-` 前缀，这是 DSH 插件生态的命名习惯。README 是产品页，细节在 `docs/`。深入阅读：[快速开始](docs/quickstart.md)、[架构](docs/architecture.md)、[安全](docs/security.md)、[FAQ](docs/faq.md)、[路线图](docs/roadmap.md)、[MVP 计划](docs/mvp-plan.md)。两份 README 必须在同一个 commit 里更新——英文版为准。
 
 ## 开发
 
