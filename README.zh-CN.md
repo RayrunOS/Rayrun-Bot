@@ -116,12 +116,12 @@ Rayrun Bot/
 ├── CONTRIBUTING.md              # PR 规则（旁边还有 CODE_OF_CONDUCT.md）
 ├── .github/                     # issue 与 PR 模板
 ├── package.json                 # 私有 workspace 根
-├── docs/                        # 快速开始、架构、安全、FAQ、路线图、MVP 计划、客户端计划、平台需求
+├── docs/                        # 设计文档、计划、平台需求
 └── packages/                    # v0.1 时出现
     └── dsh-rayrun-bots/         # Bot：名册、常驻 host、审批、routines
 ```
 
-云电脑插件（`dsh-rayrun-computer`）不在这个树里：它是**独立项目**，作为依赖被复用——同一个 DSH profile 里两个插件，一个产品。仓库和产品都叫 **Rayrun Bot**；插件包保留 `dsh-` 前缀，这是 DSH 插件生态的命名习惯。README 是产品页，细节在 `docs/`。深入阅读：[快速开始](docs/quickstart.md)、[架构](docs/architecture.md)、[安全](docs/security.md)、[FAQ](docs/faq.md)、[路线图](docs/roadmap.md)、[MVP 计划](docs/mvp-plan.md)、[客户端计划](docs/client-plan.md)、[平台需求](docs/platform-asks.md)。两份 README 必须在同一个 commit 里更新——英文版为准。
+云电脑插件（`dsh-rayrun-computer`）不在这个树里：它是**独立项目**，作为依赖被复用——同一个 DSH profile 里两个插件，一个产品。仓库和产品都叫 **Rayrun Bot**；插件包保留 `dsh-` 前缀，这是 DSH 插件生态的命名习惯。README 是产品页，细节在 `docs/`。深入阅读：[快速开始](docs/quickstart.md)、[架构](docs/architecture.md)、[安全](docs/security.md)、[FAQ](docs/faq.md)、[路线图](docs/roadmap.md)、[MVP 计划](docs/mvp-plan.md)、[客户端计划](docs/client-plan.md)、[本地文件设计](docs/local-file-design.md)、[平台需求](docs/platform-asks.md)。两份 README 必须在同一个 commit 里更新——英文版为准。
 
 ## 开发
 

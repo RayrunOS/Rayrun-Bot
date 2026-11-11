@@ -87,6 +87,9 @@ feature until the platform can run more than one agent task per machine.
 
 ## 4. Architecture and interfaces
 
+The local (plugin-side) file layout is specified in
+[local-file-design.md](local-file-design.md).
+
 ### 4.1 Frozen decisions
 
 1. **No inbound networking.** Local → cloud control goes through the Rayrun API;
