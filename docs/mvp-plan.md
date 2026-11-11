@@ -165,6 +165,9 @@ start after W5.
 | G4 | npm publish | bootstrap token first, then OIDC trusted publishing |
 | H1 | Release notes and tag | `v0.1.0` tagged from `main`, checks green |
 
+Client-side work is planned separately in [client-plan.md](client-plan.md):
+surfaces, RPC contract, client spikes C-S1–C-S6, delivery waves C1–C6.
+
 ## Risks and mitigations
 
 | Risk | Trigger | Mitigation |

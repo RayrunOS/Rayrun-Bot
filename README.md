@@ -116,12 +116,12 @@ Rayrun Bot/
 ├── CONTRIBUTING.md              # pull-request rules (CODE_OF_CONDUCT.md alongside)
 ├── .github/                     # issue and PR templates
 ├── package.json                 # private workspace root
-├── docs/                        # quick start, architecture, security, FAQ, roadmap, MVP plan, platform asks
+├── docs/                        # quick start, architecture, security, FAQ, roadmap, MVP plan, client plan, platform asks
 └── packages/                    # arrives with v0.1
     └── dsh-rayrun-bots/         # bots: roster, persistent host, approvals, routines
 ```
 
-The cloud-computer plugin (`dsh-rayrun-computer`) is not in this tree: it is a **separate project**, consumed as a dependency. Two plugins in the same DSH profile, one product. The repository and product are called **Rayrun Bot**; the packages keep the `dsh-` prefix that the DSH ecosystem uses. The README is the product page; `docs/` holds the detail. Deeper reads: [quick start](docs/quickstart.md), [architecture](docs/architecture.md), [security](docs/security.md), [FAQ](docs/faq.md), [roadmap](docs/roadmap.md), [MVP plan](docs/mvp-plan.md), [platform asks](docs/platform-asks.md). Both READMEs are updated in the same commit — English is the source of truth.
+The cloud-computer plugin (`dsh-rayrun-computer`) is not in this tree: it is a **separate project**, consumed as a dependency. Two plugins in the same DSH profile, one product. The repository and product are called **Rayrun Bot**; the packages keep the `dsh-` prefix that the DSH ecosystem uses. The README is the product page; `docs/` holds the detail. Deeper reads: [quick start](docs/quickstart.md), [architecture](docs/architecture.md), [security](docs/security.md), [FAQ](docs/faq.md), [roadmap](docs/roadmap.md), [MVP plan](docs/mvp-plan.md), [client plan](docs/client-plan.md), [platform asks](docs/platform-asks.md). Both READMEs are updated in the same commit — English is the source of truth.
 
 ## Development
 
