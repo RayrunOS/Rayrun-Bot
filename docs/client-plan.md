@@ -25,7 +25,7 @@ voice: [bot-persona.md](bot-persona.md).*
 | --- | --- | --- | --- |
 | Chat list | left column | search, `+`, current bot, bot rows with latest snippet, time and attention dot | P0 |
 | Conversation | center column | markdown messages, day separators, inline approval/draft cards, composer | P0 |
-| Bot details panel | right column | profile, large computer preview, Activity/Library tabs, receipts, routines, usage | P0 |
+| Bot details panel | right column | profile, Activity/Library tabs, receipts, routines, compact computer row, usage | P0 |
 | Inline approval cards | conversation | action, warning, origin and TTL; Deny / Allow once; attention dot in the chat list | P0 |
 | Onboarding wizard | own page | dependency check → Rayrun sign-in → DeepSeek key → computer + first bot | P0 |
 | Usage block | details panel + list footer | balance, machine hours, week spend, idle-stop policy, low-balance notice | P0 |

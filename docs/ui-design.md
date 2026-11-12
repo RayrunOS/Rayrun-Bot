@@ -89,10 +89,7 @@ Column widths: 296 px / flexible / 328 px. The details column collapses below
 
 ### 2.3 Details panel
 
-Profile header (avatar, name, `job · computer`), then the large **computer
-preview** — the biggest element in the panel: a live 16:10 screen, a state line
-(`live` / `reconnecting…` / `sleeping`) with a centered status overlay, `X11 :99`,
-and `Open` / `Take over`. Below it, the `Activity | Library` tabs.
+Profile header (avatar, name, `job · computer`), then `Activity | Library` tabs.
 
 **Activity** sections:
 
@@ -100,6 +97,10 @@ and `Open` / `Take over`. Below it, the `Activity | Library` tabs.
   artifact count and today's spend. A receipt is the "report back" surface.
 - **Upcoming** — routines: one row per routine with title, schedule and a toggle.
   v0.1 ships at most one routine (P1); the other rows illustrate the shape.
+- **Computer** — a compact row near the bottom, like the reference: name and
+  state (`live` / `reconnecting…` / `sleeping`) on the left, a small 44×30 screen
+  thumbnail on the right, and `Open` / `Take over` right-aligned below. No large
+  preview in v0.1; the live view opens the dependency's desktop page.
 - **Usage** — balance, machine-hours, this week's spend, idle-stop policy.
 
 **Library** groups artifacts under Today / This week / Older; each row is a file,
@@ -139,7 +140,7 @@ and RPC still expose the same list for future views.
 | Inline approval card with Deny / allow | `approvals-security-and-privacy.md:30-57` | `Deny` / `Allow once`; `Always allow` deferred to Auto Review (v0.2) |
 | Chat cards wait, background cards expire 30 min | `approvals-security-and-privacy.md:72-83` | copied via `origin` field |
 | Editable draft marked Needs approval | `chat-and-collaboration.md:89-107` | copied |
-| Computer preview with open/take over | `computer-and-apps.md:31-63` | large preview at the top of the details panel, plus computer activity rows in the conversation |
+| Computer preview with open/take over | `computer-and-apps.md:31-63` | small computer row at the bottom of the details panel, like the reference, plus activity rows in the conversation |
 | Attention states in the list | `settings-and-notifications.md:205-214` | dots: needs attention / unread / working |
 | Bot name, picture, job label; light persona | `bots.md:5-6,77-103`; [bot-persona.md](bot-persona.md) | copied; monogram avatar in v0.1 |
 | Voice chat, group chats, mobile, shared bots, marketplace, Vault, Auto Review | Grok Bot product surface | out of v0.1 (§8) |
@@ -161,7 +162,7 @@ Two anchors: the reference screenshot decides the layout (three columns, chat-li
 | `DetailsPanel` | right | C3 | profile, tabs |
 | `ReceiptCard` | activity | C3 | task, state, time, artifacts, spend |
 | `RoutineRow` | upcoming | C4 | title, schedule, toggle |
-| `ComputerPreview` | details (top) | C4 | large live preview, state overlay, Open / Take over |
+| `ComputerRow` | details (bottom) | C4 | name, state, small thumbnail, Open / Take over |
 | `ComputerActivityRow` | conversation | C3 | mini screen, what the bot is doing, View |
 | `UsageBlock` | details | C4 | balance, hours, week, idle stop |
 | `NewBotForm` | newbot | C2 | name, job, instructions, monogram |
