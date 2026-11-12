@@ -1,13 +1,10 @@
 # UI design — v0.1
 
-*Status: 2026-11-12. The client follows the shape of Grok Bot's desktop app (as
-captured in the 2026-11-09 docs snapshot): bot roster in the sidebar, chat as the
-main surface, a computer preview in the right-hand panel, and approval cards
-inline in the chat. Visually it uses the RayrunOS design language (rayrunos.com
-home and docs, captured 2026-11-12): white canvas, navy primary buttons, blue
-active pills, hairline borders and dark navy terminal blocks. This is the design
-for the DSH plugin client; the clickable reference is
-[`docs/mockups/index.html`](mockups/index.html). Related:
+*Status: 2026-11-12 (rev 3). The client follows Grok Bot's desktop app as closely
+as a DSH plugin can: dark, near-monochrome, three panes, chat first, minimal
+chrome. Rayrun contributes only its name and logo mark. The clickable reference
+is [`docs/mockups/index.html`](mockups/index.html) — append `#approvals`,
+`#library`, `#setup` or `#settings` to the URL to see the other screens. Related:
 [client-plan.md](client-plan.md) (surfaces, RPC), [mvp-plan.md](mvp-plan.md)
 (approval semantics), [local-file-design.md](local-file-design.md) (state).*
 
@@ -15,202 +12,181 @@ Rendered previews: [conversation](mockups/conversation.png) · [approvals](mocku
 
 ## 0. Principles
 
-1. **Grok Bot structure, RayrunOS look.** The conversation is the product and
-   everything else (roster, approvals, library, settings) hangs off it. The shell
-   follows Grok Bot; colors, type and tone follow rayrunos.com. No separate app
-   shell inside DSH, no dashboard.
-2. **Three panes on desktop.** Bot roster (left) · conversation (center) ·
-   computer preview (right, collapsible). This is the Grok Bot desktop shape.
-3. **Attention is a tri-state in the roster**, exactly like Grok Bot: **needs
-   attention** (question, approval, handoff), **unread activity** (a new result),
-   **working or typing**. Opening the conversation marks it read.
-4. **Cards, not pages, where Grok uses cards.** Approvals, editable drafts and
-   tool/computer activity render as cards inside the conversation; a dedicated
-   inbox exists only as an attention filter, not as the primary surface.
-5. **The computer is visible.** A right-hand preview shows what the bot's
-   computer is doing; "open computer" and "take over" are one click away.
-6. **Honest states.** Reconnecting, could-not-reach, expired approval, low
-   balance, missing dependency: each is one sentence above the composer plus one
-   action. No fake success.
-7. **English source, zh mirror.** All strings in `locale/en.json` and
-   `locale/zh.json`; identifiers untranslated.
-8. **Keyboard-first.** Visible focus; Enter sends; Escape closes cards/dialogs;
-   approval state changes announced via `aria-live`.
+1. **Grok Bot, minimal.** Chat is the product; the shell is a roster, a
+   conversation and a computer preview. No dashboards, no badges, no filled
+   status pills, no second app frame inside DSH.
+2. **Near-monochrome.** Black and gray surfaces, white text, white primary
+   buttons. Color appears only as small status dots and warning lines.
+3. **Three panes on desktop.** Bot roster (left) · conversation (center) ·
+   computer preview (right, collapsible).
+4. **Attention is a dot.** Needs attention, unread, working and idle are 6 px
+   dots in the roster with an accessible label; words appear only in the
+   conversation header and inbox.
+5. **Cards only where Grok uses cards.** Approval, draft and activity rows are
+   thin bordered blocks inside the conversation; everything else is plain text
+   and hairline separators.
+6. **Honest states.** Reconnecting, couldn't reach, expired, missing dependency,
+   low balance: one short line and one action, never a fake success.
+7. **English source, zh mirror.** Strings in `locale/en.json` / `locale/zh.json`;
+   identifiers untranslated.
+8. **Keyboard-first.** Visible focus, Enter sends, Escape closes menus; approval
+   state changes announced via `aria-live`.
 
 ## 1. App shell
 
 ```
-┌──────────────┬───────────────────────────────────────┬──────────────────┐
-│ Rayrun Bot + │  ◉ weekly-watch      working          │  Computer        │
-│              │  dsh-workspace · ¥3.10 today          │  ● live          │
-│ ◉ weekly-    │ ─────────────────────────────────────  │ ┌──────────────┐ │
-│   watch   ●  │  … transcript, tool activity,          │ │  desktop     │ │
-│ ◔ inbox-     │    created files, approval cards,      │ │  preview     │ │
-│   triage  ◔  │    draft cards, questions…             │ └──────────────┘ │
-│ ○ docs-      │                                        │ [Open ↗] [Take  │
-│   refresh ◉  │  ⚠ Computer reconnecting… retrying     │  over]          │
-│              │ ┌────────────────────────────────────┐ │                  │
-│ ─────────    │ │ Ask weekly-watch…            [Send]│ │                  │
-│ Approvals ②  │ └────────────────────────────────────┘ │                  │
-│              │                                        │                  │
-│ ⚙ Settings   │                                        │                  │
-│ dsh-workspace│                                        │                  │
-│ ¥41.20       │                                        │                  │
-└──────────────┴───────────────────────────────────────┴──────────────────┘
+┌──────────────┬───────────────────────────────────┬────────────────┐
+│ ▣ Rayrun Bot │  ◉ weekly-watch ●                 │ Computer   ●   │
+│              │  dsh-workspace · ¥3.10 today      │ ┌────────────┐ │
+│ ◉ weekly- ●  │ ─────────────────────────────────  │ │  desktop   │ │
+│   watch      │  … messages, one activity line,    │ │  preview   │ │
+│ ◉ inbox-  ●  │    approval block, draft block …   │ └────────────┘ │
+│   triage     │                                    │ dsh-workspace  │
+│ ◉ docs-   ●  │  ● Computer reconnecting… 5s       │ [Open][Take over]
+│              │ ┌────────────────────────────────┐ │                │
+│ Approvals 2  │ │ Message weekly-watch…        ↑ │ │                │
+│ Bot details  │ └────────────────────────────────┘ │                │
+│ Settings     │                                    │                │
+│              │                                    │                │
+│ dsh-workspace · running                          │                │
+│ ¥41.20 · 38.4 h                                  │                │
+└──────────────┴───────────────────────────────────┴────────────────┘
 ```
 
-- **Left — roster.** Pinned/primary bot first, then the rest ordered by attention
-  (needs attention → unread → working → idle). Each row: avatar, name, optional
-  label, status dot + text. `+` creates a bot. Row menu (right-click or ⋯):
-  rename, pin, hide from sidebar, delete. "Approvals" row is an attention filter
-  with a count. Footer: computer status, balance, settings.
-- **Center — conversation.** Bot name at top opens the details panel (Details /
-  Library tabs). Transcript mixes messages, tool activity, computer use, created
-  files, questions, approval cards and draft cards — Grok Bot's transcript is an
-  activity log, ours is too. Composer at the bottom, notices above it.
-- **Right — computer preview.** Collapsible panel; a thumbnail of the desktop,
-  status (live / reconnecting / couldn't reach), "Open computer" and "Take over".
-  Leaving the preview does not stop work.
+Left: brand row, three bot rows (avatar, name, small label, status dot), then
+`Approvals` (count), `Bot details`, `Settings`, and two muted footer lines.
+Center: bot header (avatar, name, dot, `computer · today's spend`), transcript,
+notices above the composer. Right: computer preview with status dot, a dark
+desktop thumbnail, two buttons; leaving it does not stop work.
 
-## 2. Screens and components
+## 2. Screens
 
-### 2.1 Roster (left sidebar)
+### 2.1 Roster
 
-| State | Dot | Text |
+Rows are the whole roster UI. Status is a dot; the word lives in `title` and in
+the conversation header. The `+` action for a new bot sits in the sidebar header
+(next to the brand), matching Grok Bot's `+` in the sidebar.
+
+| State | Dot | Notes |
 | --- | --- | --- |
-| needs attention | amber | `needs attention` |
-| unread activity | blue | `unread` |
-| working / typing | green pulse | `working` |
-| idle | gray | `idle` |
-| recovering | amber outline | `recovering` |
+| needs attention | amber | question, approval or handoff waiting |
+| unread | blue | new result since last open |
+| working | green, slow pulse | task in progress |
+| idle | gray | nothing queued |
+| recovering | amber | bot host restarting |
 
-Behaviors: opening a bot marks activity read; pin keeps it on top; hide removes
-it from the sidebar without deleting work; delete is destructive and separate
-from hide (Grok Bot makes the same distinction, `bots.md:105-121,172-181`). A
-"primary bot" that proactively checks in is a Grok Bot concept — P1 for us; in
-v0.1 the top row is simply the pinned or most-recently-attended bot.
+Opening a bot clears unread. Pin / hide / delete stay in the row context menu
+(v0.1: hide and delete only).
 
 ### 2.2 Conversation
 
-- Header: avatar, name, label, attention state, computer name, today's spend.
-- Transcript cards: message, tool activity line (`ran shell in dsh-workspace`),
-  created file card, question card, approval card, draft card, error notice.
-- Composer: attach, message, send; disabled with a reason while the bot host is
-  recovering. "Stop now" sends a direct message that takes priority over
-  background work (`chat-and-collaboration.md:109-115`).
-- Notices above the composer: one line + one action (Grok Bot puts errors above
-  the composer under **Notifications**, `settings-and-notifications.md:239-247`).
+- Header: 24 px avatar, name, status dot, and one muted line
+  `dsh-workspace · ¥3.10 today`. A `⋯` menu holds hide/stop/delete.
+- Messages are plain text; only the user's own message sits in a dark bubble.
+- Tool and computer activity is one muted line: `● ran shell in dsh-workspace · 41s`.
+- Approval and draft blocks are thin bordered cards (see below).
+- Notices sit above the composer as one line with a dot, not a banner.
+- Composer: attach glyph, input, white circular send button. Disabled with a
+  reason while the host is recovering.
 
-### 2.3 Approval card
+### 2.3 Approval block
 
 ```
-┌──────────────────────────────────────────────────────────────┐
-│ ⚠ Needs approval · publish draft                             │
-│ Publish "Week 45 digest" to Feishu #weekly                   │
-│ This shares data outside your computer.                      │
-│ requested 09:13 · waits for you (started from this chat)     │
-│                         [Allow once] [Always allow¹] [Deny]  │
-└──────────────────────────────────────────────────────────────┘
-¹ Always allow saves an Auto Review rule — v0.2, disabled in v0.1.
+┌────────────────────────────────────────────────────────┐
+│ ⚠ Publish “Week 45 digest” to Feishu #weekly  waits    │
+│ This shares data outside your computer.                │
+│ inbox-triage · requested 09:13                         │
+│                                    [ Deny ] [ Allow ]  │
+└────────────────────────────────────────────────────────┘
 ```
 
-- Buttons follow Grok Bot's vocabulary: **Allow once**, **Always allow** (writes
-  a Custom Rule; not in v0.1), **Deny** (`approvals-security-and-privacy.md:45-57`).
-- Warning labels reuse Grok Bot's phrasing: "This can't be undone", "This shares
-  data outside your computer", "This changes sign-in or security settings"
-  (`approvals-security-and-privacy.md:39-43`).
+- **Two actions in v0.1: Deny and Allow once.** Grok Bot's third option,
+  **Always allow** (auto-review rule), is hidden until Auto Review exists in
+  v0.2 — the UI does not show disabled controls.
+- The warning line reuses Grok Bot's phrasing: "This can't be undone", "This
+  shares data outside your computer", "This changes sign-in or security settings".
 - **Unanswered:** a card raised by a chat message waits with no timer; a card
-  raised by background work (routine, webhook) expires after 30 minutes and shows
-  **Expired** (`approvals-security-and-privacy.md:72-83`). Our approval schema
-  carries `origin: "chat" | "background"` to model this.
+  raised by background work (routine, webhook) expires after 30 minutes and
+  shows `Expired` — the bot does not act. Our approval schema carries
+  `origin: "chat" | "background"` for this.
 - Deny means the bot does not retry that action until the user sends another
-  message; it never silently downgrades to approve.
+  message.
 
-### 2.4 Draft card
+### 2.4 Draft block
 
-Outgoing messages (email, chat, publish) are editable drafts marked **Needs
-approval** with **Send** and **Discard** before anything leaves the computer
-(`chat-and-collaboration.md:89-107`). v0.1 shows the card for the gated-send
-actions we support; the "disable drafts for this bot" switch is v0.2.
+Outgoing messages render as an editable draft with `Discard` and `Send` before
+anything leaves the computer. A muted `needs approval` label sits on the right.
 
 ### 2.5 Bot details and Library
 
-Clicking the bot name opens details: name, label, avatar (P1), the bot's job
-(instructions), computer assignment; tabs **Details** and **Library**. The
-Library lists artifacts the bot made, newest first under **Today**, **This
-week**, **Older**, with **Pinned** on top and **Show more** per group — the same
-grouping Grok Bot uses (`files-and-results.md:246-253`). Library is P1 in v0.1;
-the tab is designed now so the data model keeps artifacts attributable to a bot.
+Clicking the bot name opens details: name, label, computer, then two tabs,
+**Details** and **Library**. Library groups artifacts under **Today**, **This
+week**, **Older** — plain rows with type, name, one muted subline and a time.
+Library is P1 in v0.1; the tab is designed now so artifacts stay attributable to
+a bot.
 
 ### 2.6 Approvals inbox
 
-Our addition, because a pending approval must be answerable without hunting
-through chats. Two panes: attention list (needs attention first, then background
-cards with expiry) and detail with the same card actions. History keeps request
-id, bot, decision and time — no payloads. Grok Bot's sidebar tri-state already
-surfaces attention; our inbox is that state, filterable.
+Two panes, both quiet: left rows (title, subline, `waits` / `28 min` / `expired`),
+right a bordered panel with the request title, one red warning line, four
+key/value lines and `Deny` / `Allow once`. History is not shown in v0.1; the
+audit log exists in the bot log.
 
 ### 2.7 Setup
 
-Grok Bot's first run is sign-in → short intro → first bot created and chat
-opened (`get-started.md:48-57`). Ours keeps that feel but adds the BYO steps we
-need: ① dependency check → ② Rayrun sign-in → ③ DeepSeek key → ④ first bot
-(name, optional one-line job) → chat opens. Continue is disabled until the step
-passes; skip leaves an attention banner.
+Centered, no card: title, one-line subtitle, four thin progress bars with tiny
+labels (Dependency · Rayrun · DeepSeek key · First bot), then the current step's
+heading, one paragraph and its inputs. Continue is disabled until the step
+passes; Skip leaves the setup row in place.
 
 ### 2.8 Settings
 
-Left sub-nav mirrors Grok Bot's settings groups: **Account** (Rayrun connection,
-dependency health), **Usage & billing** (balance, machine hours, threshold),
-**Auto-review** (placeholder until v0.2; explains that all external actions are
-ask-first in v0.1), **Notifications** (per-bot on/off, attention tri-state note),
-**Appearance** (language, theme follows DSH). One page, no marketing.
+Left sub-nav: **Account**, **Usage & billing**, **Auto-review**, **Notifications**,
+**Appearance**. One muted usage line, at most one notice, then plain rows with
+hairline separators. No stat cards, no colored numbers.
 
-### 2.9 Computer preview states
+### 2.9 Computer preview
 
-live (thumbnail, open, take over) · reconnecting (spinner + "retrying in Ns") ·
-couldn't reach (sentence + "Open computer anyway") · stopped (start computer) ·
-takeover (banner "You have control — finish the step, then return control").
-Takeover is one step, then handed back, matching Grok Bot's sensitive-step
-handoff (`computer-and-apps.md:31-63`). In v0.1 the preview may be a link card to
-the dependency plugin's desktop page if embedding is not verified (spike C-S5).
+Live / reconnecting / couldn't reach / stopped. A dark thumbnail, one meta line,
+`Open` and `Take over`. Takeover is for one sensitive step, then handed back.
 
 ## 3. Alignment with Grok Bot
 
-| Grok Bot pattern | Source (docs snapshot) | Our v0.1 |
+| Grok Bot pattern | Source (2026-11-09 docs snapshot) | Our v0.1 |
 | --- | --- | --- |
-| Sidebar roster with attention tri-state | `settings-and-notifications.md:205-214` | copied: needs attention / unread / working (+ idle, recovering) |
-| Chat-first conversation with activity transcript | `chat-and-collaboration.md:14-25` | copied: messages + tool/computer/file/approval cards |
-| Approval card with Allow once / Always allow / Deny | `approvals-security-and-privacy.md:30-57` | Allow once + Deny now; Always allow reserved for Auto Review (v0.2) |
-| Unanswered semantics: chat waits, background expires 30 min | `approvals-security-and-privacy.md:72-83` | copied via `origin` field |
-| Editable draft marked Needs approval | `chat-and-collaboration.md:89-107` | copied for gated sends |
+| Sidebar roster, attention states | `settings-and-notifications.md:205-214` | dots only: needs attention / unread / working / idle / recovering |
+| Chat-first transcript with activity | `chat-and-collaboration.md:14-25` | messages, one-line activity, approval/draft blocks |
+| Approval card: Allow once / Always allow / Deny | `approvals-security-and-privacy.md:30-57` | Allow once + Deny; Always allow deferred to Auto Review (v0.2) |
+| Chat cards wait, background cards expire 30 min | `approvals-security-and-privacy.md:72-83` | copied via `origin` field |
+| Editable draft, Needs approval | `chat-and-collaboration.md:89-107` | copied |
 | Right-hand computer preview, open/take over | `computer-and-apps.md:31-63` | copied; preview may be a link card in v0.1 |
-| Bot name opens details; Library grouped Today/Week/Older | `bots.md:77-103`; `files-and-results.md:246-253` | details in v0.1; Library P1 |
-| Pin / hide / delete, primary bot | `bots.md:48-60,105-121` | pin/hide/delete v0.1; primary bot check-ins P1 |
-| Errors above composer as notices | `settings-and-notifications.md:239-247` | copied |
+| Bot name opens details; Library by date | `bots.md:77-103`; `files-and-results.md:246-253` | copied; Library P1 |
+| Errors above composer as notices | `settings-and-notifications.md:239-247` | copied as one-line notices |
 | Sign-in → intro → first bot → chat | `get-started.md:48-57` | adapted with dependency + key steps |
-| Settings: Account / Usage & billing / Auto-review / Notifications | `settings-and-notifications.md` | matched, Auto-review placeholder |
-| Voice, group chat, X Chat, mobile, shared bots, templates, marketplace, Vault/Secure Form, Bot email | Grok Bot product surface | **out of v0.1** — listed in §9 |
-| Auto Review rules engine | `approvals-security-and-privacy.md:99-104` | v0.2; v0.1 is ask-first for every external action |
+| Voice, group chats, X Chat, mobile, shared bots, templates, marketplace, Vault, bot email, Auto Review rules | Grok Bot product surface | out of v0.1 (§9) |
+
+Rayrun's contribution is deliberately small: the wordmark and the blue logo mark
+in the sidebar brand row. The earlier light "rayrunos.com" palette is dropped —
+it read busy next to Grok Bot's quiet shell.
 
 ## 4. Component inventory
 
 | Component | Used on | Wave | Notes |
 | --- | --- | --- | --- |
 | `AppShell` | all | C1 | three panes, collapsible preview |
-| `BotRoster` | shell | C2 | rows, attention dots, pin/hide/delete menu |
-| `AttentionDot` | shell, inbox | C2 | 5 states, dot + text |
-| `BotHeader` | conversation | C2 | avatar, name, label, computer, spend |
-| `Transcript` | conversation | C2 | message/activity/file/question cards |
-| `ApprovalCard` | conversation, inbox | C3 | Allow once / Always allow(disabled) / Deny, warnings, origin |
-| `DraftCard` | conversation | C3 | editable draft, Send/Discard |
-| `Composer` | conversation | C2 | attach, send, stop-now, disabled reasons |
-| `Notice` | conversation | C1 | above composer, one action |
-| `ComputerPreview` | shell | C4 | live/reconnecting/takeover states |
-| `BotDetails` + `Library` | details | C5 | tabs, grouped artifacts |
-| `SetupWizard` | setup | C4 | 4 steps, status per step |
-| `ApprovalsInbox` | approvals | C3 | attention list + detail + history |
-| `SettingsPage` | settings | C4 | Account/Usage/Auto-review/Notifications/Appearance |
+| `BotRoster` | shell | C2 | rows, dots, context menu |
+| `StatusDot` | shell, header, inbox | C2 | 5 states, `title` + `aria-label` |
+| `BotHeader` | conversation | C2 | avatar, name, dot, computer · spend |
+| `Transcript` | conversation | C2 | messages, activity line, blocks |
+| `ApprovalBlock` | conversation, inbox | C3 | Deny / Allow once, warnings, origin |
+| `DraftBlock` | conversation | C3 | editable, Discard / Send |
+| `Composer` | conversation | C2 | attach, send, disabled reason |
+| `Notice` | conversation | C1 | one line + one action |
+| `ComputerPreview` | shell | C4 | live / reconnecting / take over |
+| `BotDetails` + `Library` | details | C5 | tabs, date groups |
+| `SetupWizard` | setup | C4 | 4 thin steps |
+| `ApprovalsInbox` | approvals | C3 | list + panel |
+| `SettingsPage` | settings | C4 | sub-nav + rows |
 
 ## 5. Copy deck (source for `locale/en.json`)
 
@@ -223,16 +199,13 @@ the dependency plugin's desktop page if embedding is not verified (spike C-S5).
 | `attention.recovering` | recovering | 恢复中 |
 | `approval.title` | Needs approval | 需要审批 |
 | `approval.allowOnce` | Allow once | 仅批准这一次 |
-| `approval.alwaysAllow` | Always allow | 始终允许 |
-| `approval.alwaysAllowSoon` | Auto Review rules arrive in v0.2. | Auto Review 规则将在 v0.2 提供。 |
 | `approval.deny` | Deny | 拒绝 |
 | `approval.waits` | waits for you | 等你处理 |
 | `approval.expires` | expires in {n} min | {n} 分钟后过期 |
-| `approval.expired` | Expired — the bot did not do it | 已过期——Bot 没有执行 |
+| `approval.expired` | Expired — the bot did not act | 已过期——Bot 没有执行 |
 | `approval.irreversible` | This can't be undone. | 此操作无法撤销。 |
 | `approval.outside` | This shares data outside your computer. | 这会把数据发到你的电脑之外。 |
 | `approval.security` | This changes sign-in or security settings. | 这会改动登录或安全设置。 |
-| `draft.needs` | Needs approval | 待批准 |
 | `draft.send` | Send | 发送 |
 | `draft.discard` | Discard | 丢弃 |
 | `roster.hide` | Hide from sidebar | 从侧边栏隐藏 |
@@ -249,76 +222,66 @@ Approval and key copy never contains jokes; every error row has one next action.
 
 ## 6. Visual system
 
-Two references: Grok Bot decides *what* the client shows (§1–§3); RayrunOS
-decides *how* it looks. Captured from rayrunos.com home and docs pages on
-2026-11-12:
-
-- white canvas, very light gray panels, hairline gray borders;
-- dark navy primary buttons (`#0e2050`) with white text; blue links and active
-  pills on `#eaf1fd`;
-- 10–12 px radii, single-level shadows, dense but quiet enterprise typography;
-- dark navy terminal and code blocks (`#0b1b3a`) with traffic-light dots;
-- geometric blue logo mark plus the "Rayrun" wordmark; bold, CJK-friendly
-  headings;
-- amber reserved for warnings and in-progress states, never for primary actions.
-
-Token set (mockup fallback; prefer DSH theme tokens where they exist):
+Dark, near-monochrome, hairline borders, one accent: the Rayrun logo mark.
 
 | Token | Value | Use |
 | --- | --- | --- |
-| `bg` | `#ffffff` | app canvas |
-| `panel` | `#f7f8fa` | sidebar, preview |
-| `elevated` | `#ffffff` | cards, composer, menus |
-| `elevated-2` | `#f1f4f9` | hover surfaces, file icons |
-| `text` | `#0f172a` | primary text (slate/navy) |
-| `muted` | `#5b6472` | secondary text |
-| `faint` | `#8a93a3` | hints, timestamps |
-| `border` | `#e4e8f0` | hairline borders |
-| `border-soft` | `#edf0f5` | separators |
-| `primary` | `#0e2050` on `#ffffff` | primary buttons (navy), brand mark |
-| `accent` | `#1d4ed8` | links, active state |
-| `accent-soft` | `#eaf1fd` | active rows, selected filters |
-| `attention` | `#b45309` on `#fff7e6` | needs attention, warnings |
-| `unread` | `#1d4ed8` | unread dot |
-| `success` | `#15803d` | live / working |
-| `danger` | `#b42318` on `#fff5f4` | deny, irreversible warning |
+| `bg` | `#0a0a0b` | app canvas |
+| `side` | `#0c0c0d` | sidebar, preview |
+| `panel` | `#101012` | cards, composer |
+| `hover` | `#161618` | row hover |
+| `selected` | `#1a1a1d` | active row |
+| `text` | `#ececee` | primary text |
+| `muted` | `#8d8d93` | secondary text |
+| `faint` | `#5d5d64` | timestamps, hints |
+| `border` | `#1f1f22` | card and control borders |
+| `border-soft` | `#17171a` | separators |
+| `primary` | `#ececee` on `#0a0a0b` | primary buttons (white) |
+| `attention` | `#c8a45c` | needs attention, warning lines |
+| `unread` | `#7d9fd0` | unread dot |
+| `success` | `#63c68d` | working / live dot |
+| `danger` | `#e0736a` | deny, irreversible warning |
+| `brand` | `#4f7cf0` | Rayrun logo mark only |
 
-Brand: use the official Rayrun logo mark and wordmark when the asset is
-available; the mockup approximates the geometric blue mark as a placeholder. The
-product name renders as "Rayrun Bot" — the Rayrun wordmark plus the Bot suffix in
-the same weight; never restyle the wordmark.
+Rules:
 
-Type: system stack with CJK fallbacks (`PingFang SC`, `Microsoft YaHei`); body
-13–14 px; titles 17–20 px; mono for ids and commands. Radii 10–12 px cards, 8 px
-controls. Motion 120 ms; honor `prefers-reduced-motion`. Status is always dot +
-text, never color alone. The mockup is light-only; dark mode follows DSH when
-available.
+- No filled status pills, no colored card backgrounds, no gradients. Color only
+  in dots, one-word labels and warning lines.
+- One border weight (`1px`), one shadow level at most (menus/popovers).
+- White primary button, ghost secondary; danger is text-only.
+- Brand: official Rayrun mark + "Rayrun Bot" wordmark; the mark is the only place
+  `brand` blue appears. Use the official asset when available; the mockup
+  approximates the mark.
+- Type: system stack with `PingFang SC` / `Microsoft YaHei` fallbacks; body
+  12–13 px, headers 14–17 px, sparse bolding.
+- Radii 7–10 px; motion 120 ms, honor `prefers-reduced-motion`; status is always
+  dot + accessible label, never color alone.
+- Dark only in v0.1; light mode follows DSH when available.
 
 ## 7. Accessibility and responsive
 
-- Full keyboard path: roster → conversation → approval buttons; focus ring
-  visible; Escape closes menus/cards.
-- Approval state changes announced with `aria-live="polite"`; ticking countdowns
-  are not announced.
-- Contrast ≥ 4.5:1 for text; danger/attention colors paired with icons + words.
-- Desktop-first: three panes ≥1200 px; preview collapses <1200 px; roster
-  collapses to icons <900 px; single column below (read-only conversation).
-  No mobile-native layout in v0.1.
+- Full keyboard path: roster → conversation → approval buttons; visible focus;
+  Escape closes menus.
+- Approval changes announced with `aria-live="polite"`; countdowns are not
+  announced.
+- Contrast ≥ 4.5:1 for text; dots always paired with an accessible label.
+- Desktop-first: three panes ≥1120 px; preview collapses below; roster collapses
+  below 900 px. No mobile-native layout in v0.1.
 
 ## 8. Acceptance mapping
 
 | Screen | Acceptance tasks |
 | --- | --- |
-| Setup (sign-in, key, first bot) | A1, A2, A3 |
-| Roster attention states | A4, A9, A10 |
-| Conversation + computer preview | A4, A5, A8 |
-| Approval card + inbox | A6, A7, A11 |
+| Setup | A1, A2, A3 |
+| Roster + dots | A4, A9, A10 |
+| Conversation + preview | A4, A5, A8 |
+| Approval block + inbox | A6, A7, A11 |
 | Settings / usage | A10 |
-| Notices (recovering, low balance) | A1, A2, A9, A11 |
+| Notices | A1, A2, A9, A11 |
 
 ## 9. Out of scope for v0.1
 
-Voice input/chat, group chats, X Chat, mobile layouts, shared bots, Bot
-templates and marketplace, Vault/Secure Form, bot email addresses, Auto Review
-rules (v0.2), "disable drafts per bot", primary-bot check-ins, custom themes,
-artifact preview beyond links, and keyboard shortcuts beyond Enter/Escape.
+Voice input/chat, group chats, X Chat, mobile layouts, shared bots, bot templates
+and marketplace, Vault/Secure Form, bot email, Auto Review rules and
+"Always allow" (v0.2), primary-bot check-ins, custom themes, artifact preview
+beyond links, and keyboard shortcuts beyond Enter/Escape.
