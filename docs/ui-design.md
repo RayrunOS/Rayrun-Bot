@@ -226,14 +226,12 @@ mark, and bold CJK-friendly headings.
 | `success` | `#15803d` | done / working |
 | `attention` | `#b45309` on `#fff7e6` | needs attention, warnings |
 | `danger` | `#b42318` on `#fff5f4` | deny, irreversible warnings |
-| `brand` | `#2f6feb` | Rayrun logo mark only |
+| `brand` | `#003d9b` | official Rayrun logo mark only |
 
 Rules: white cards on light-gray panels; navy primary controls; blue reserved for
 links, selected rows and tabs; amber only for warnings; one border weight and one
 shadow level; radii 12 px cards / 9 px controls; no gradients or colored panels.
-Brand: the official Rayrun mark and the "Rayrun Bot" wordmark sit at the top of
-the chat list — the mark is the only brand blue, and the wordmark is never
-restyled. Type: system stack with `PingFang SC` / `Microsoft YaHei` fallbacks;
+Brand: use the official Rayrun logo — the lucide **Boxes** mark shown in the rayrunos.com header, in `#003d9b`, plus the "Rayrun Bot" wordmark. The mockup inlines that official mark; the favicon variant (blue rounded square, white mark) is saved at [`docs/mockups/rayrun-logo.svg`](mockups/rayrun-logo.svg) for packaging. Never redraw or restyle the mark; it is the only place the brand blue appears. Type: system stack with `PingFang SC` / `Microsoft YaHei` fallbacks;
 14 px body, 13 px UI labels, 18 px page titles. Motion 120 ms; honor
 `prefers-reduced-motion`. Light only in v0.1; dark follows DSH when available.
 
