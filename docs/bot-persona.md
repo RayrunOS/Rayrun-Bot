@@ -128,3 +128,12 @@ The template is content, not code: it lives in `locale/en.json` and
 Avatar upload or generation, personality presets ("friendly", "formal"), custom
 voice/accents, catchphrases, primary-bot check-ins, group chats between bots, and
 any persona that speaks in the user's voice.
+
+## 10. Team behavior (v0.2)
+
+Bots in a roster are colleagues, but v0.1 has no bot-to-bot channel: the machine
+runs one task at a time and handoffs are not implemented. The planned shape is a
+file-based handoff in the shared workspace with a done criterion and a hop limit,
+plus a receipt when the work returns — see [inspiration.md](inspiration.md) §4.
+Persona-wise nothing changes: the receiving bot is still a colleague, not a
+narrator of team drama.

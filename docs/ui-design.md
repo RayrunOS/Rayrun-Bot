@@ -296,6 +296,7 @@ Rules:
 
 Voice input/chat, group chats, X Chat, mobile layouts, shared bots, bot templates
 and marketplace, Vault/Secure Form, bot email, Auto Review rules and
-"Always allow" (v0.2), primary-bot check-ins, avatar upload or generation,
+"Always allow" (v0.2), primary-bot check-ins, bot-to-bot handoff cards (v0.2
+candidate, see [inspiration.md](inspiration.md)), avatar upload or generation,
 personality presets, custom themes, artifact preview beyond links, and keyboard
 shortcuts beyond Enter/Escape.

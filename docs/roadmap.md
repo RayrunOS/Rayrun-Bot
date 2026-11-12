@@ -78,7 +78,10 @@ Scope:
 - an optional IM channel using the user's own bot token (Telegram or Feishu) —
   no relay server run by this project;
 - approvals and "needs attention" messages delivered to that channel;
-- the same fail-closed semantics as the browser path.
+- the same fail-closed semantics as the browser path;
+- candidate, not committed: bot-to-bot handoff via the shared workspace, a
+  primary bot that checks in, and a memory review panel — see
+  [inspiration.md](inspiration.md).
 
 Exit criteria:
 
@@ -136,6 +139,8 @@ two confirmed; the rest are v0.2/beta:
   force-destroys machines and disks);
 - safe inbound networking with auth (today the token ingress is unusable and
   only `public` works) — v0.2;
+- persistent browser profile and sign-in state across sessions and restarts
+  (needed for the legacy-system use case) — v0.2;
 - idle auto-stop or wake-on-request, spend caps, runtime egress updates and
   generic secret injection beyond model slots — beta.
 

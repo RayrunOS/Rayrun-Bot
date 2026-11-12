@@ -81,9 +81,10 @@ In — P0 unless marked P1:
 
 Out — deliberately: multi-tenant SaaS, hosted accounts, team/RBAC, IM channel
 (v0.2), mobile app, marketplace, provider abstraction, standalone desktop shell,
-browser-login persistence, public ingress panel, and parallel execution of
-multiple bots on one computer. The MVP serializes bots through a queue; that is a
-feature until the platform can run more than one agent task per machine.
+browser-login persistence, public ingress panel, bot-to-bot handoffs and a
+coordinator bot (v0.2 candidate), and parallel execution of multiple bots on one
+computer. The MVP serializes bots through a queue; that is a feature until the
+platform can run more than one agent task per machine.
 
 ## 4. Architecture and interfaces
 
