@@ -6,20 +6,20 @@
 <title>Rayrun Bot — UI mockup</title>
 <style>
   :root {
-    --bg: #f7f7f4;
-    --list: #f2f2ee;
-    --main: #fbfbf9;
+    --bg: #ffffff;
+    --list: #f7f8fa;
+    --main: #ffffff;
     --card: #ffffff;
-    --text: #1d1d1b;
-    --muted: #6f6f69;
-    --faint: #a3a39c;
-    --border: #e6e6df;
-    --border-soft: #efefe9;
-    --primary: #1d1d1b;
-    --on-primary: #fbfbf9;
-    --attention: #a3721f;
-    --danger: #a83226;
-    --success: #2f6b4f;
+    --text: #0f172a;
+    --muted: #5b6472;
+    --faint: #8a93a3;
+    --border: #e4e8f0;
+    --border-soft: #eef1f6;
+    --primary: #0e2050;
+    --on-primary: #ffffff;
+    --attention: #b45309;
+    --danger: #b42318;
+    --success: #15803d;
     --radius: 12px;
     --radius-sm: 9px;
     --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -30,7 +30,7 @@
   body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 14px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
   button { font: inherit; color: inherit; cursor: pointer; }
   ::-webkit-scrollbar { width: 9px; }
-  ::-webkit-scrollbar-thumb { background: #dcdcd5; border-radius: 5px; }
+  ::-webkit-scrollbar-thumb { background: #d5dbe6; border-radius: 5px; }
 
   .app { display: grid; grid-template-columns: 296px 1fr 328px; height: 100vh; overflow: hidden; }
   .app.no-detail { grid-template-columns: 296px 1fr; }
@@ -39,9 +39,12 @@
   .list { background: var(--list); border-right: 1px solid var(--border-soft); display: flex; flex-direction: column; min-height: 0; }
   .list-top { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px 8px; }
   .icon { width: 28px; height: 28px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); font-size: 16px; display: grid; place-items: center; }
-  .icon:hover { background: #e9e9e3; color: var(--text); }
+  .icon:hover { background: #eef2f8; color: var(--text); }
+  .list-top .brand { display: flex; align-items: center; gap: 8px; color: #0e2050; font-weight: 650; font-size: 13px; }
+  .list-top .mark { flex: none; }
+  .list-top .tools { display: flex; gap: 4px; }
   .current { display: grid; justify-items: center; gap: 5px; padding: 6px 16px 16px; text-align: center; }
-  .avatar { border-radius: 50%; display: grid; place-items: center; font-weight: 600; color: #3d332a; background: #e6ddcf; flex: none; }
+  .avatar { border-radius: 50%; display: grid; place-items: center; font-weight: 600; color: #1d4ed8; background: #e3eafc; flex: none; }
   .avatar.big { width: 52px; height: 52px; font-size: 18px; }
   .avatar.mid { width: 34px; height: 34px; font-size: 12px; }
   .avatar.sm { width: 26px; height: 26px; font-size: 10px; }
@@ -49,8 +52,8 @@
   .current .label { color: var(--faint); font-size: 11.5px; }
   .chats { overflow: auto; padding: 2px 10px 10px; display: flex; flex-direction: column; gap: 1px; min-height: 0; }
   .chatrow { display: grid; grid-template-columns: 34px 1fr auto; gap: 10px; align-items: center; padding: 8px 9px; border: 0; border-radius: 10px; background: transparent; text-align: left; }
-  .chatrow:hover { background: #eaeae4; }
-  .chatrow.active { background: #e5e5de; }
+  .chatrow:hover { background: #eef2f8; }
+  .chatrow.active { background: #eaf1fd; }
   .chatrow .nm { font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 6px; }
   .chatrow .sn { color: var(--faint); font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 170px; }
   .chatrow .tm { color: var(--faint); font-size: 10.5px; }
@@ -75,9 +78,9 @@
   .msg p:last-child { margin-bottom: 0; }
   .msg ul { margin: 0 0 9px; padding-left: 18px; }
   .msg li { margin-bottom: 3px; }
-  .msg code { font-family: var(--mono); font-size: 12px; background: #efefe8; border-radius: 4px; padding: 1px 4px; }
+  .msg code { font-family: var(--mono); font-size: 12px; background: #eef2f8; border-radius: 4px; padding: 1px 4px; }
   .msg.user { grid-template-columns: 1fr; justify-items: end; }
-  .msg.user .bubble { background: #ecece5; border-radius: 12px; padding: 8px 13px; max-width: 560px; font-size: 13.5px; }
+  .msg.user .bubble { background: #f1f4f9; border-radius: 12px; padding: 8px 13px; max-width: 560px; font-size: 13.5px; }
 
   .card { border: 1px solid var(--border); background: var(--card); border-radius: var(--radius); padding: 13px 15px; display: grid; gap: 8px; margin: 2px 0; }
   .card .top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
@@ -88,14 +91,14 @@
   .card .warnline { color: var(--danger); font-size: 11.5px; }
   .card .meta { color: var(--faint); font-size: 10.5px; }
   .card .actions { display: flex; justify-content: flex-end; gap: 8px; padding-top: 2px; }
-  .draft { border: 1px solid var(--border-soft); background: #fafaf7; border-radius: var(--radius-sm); padding: 9px 11px; color: #4c4c47; font-size: 12px; white-space: pre-wrap; }
+  .draft { border: 1px solid var(--border-soft); background: #f7f9fc; border-radius: var(--radius-sm); padding: 9px 11px; color: #334155; font-size: 12px; white-space: pre-wrap; }
 
   .btn { border: 1px solid var(--border); background: var(--card); color: var(--text); border-radius: var(--radius-sm); padding: 5px 12px; font-size: 12.5px; font-weight: 500; }
-  .btn:hover { background: #f3f3ed; }
+  .btn:hover { background: #f5f7fb; }
   .btn.primary { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
-  .btn.primary:hover { background: #33332f; }
+  .btn.primary:hover { background: #16306e; }
   .btn.ghost { border-color: transparent; background: transparent; color: var(--muted); }
-  .btn.ghost:hover { color: var(--text); background: #f0f0ea; }
+  .btn.ghost:hover { color: var(--text); background: #eef2f8; }
   .btn:disabled { opacity: .45; cursor: not-allowed; }
 
   .notice { margin: 0 34px 8px; max-width: 760px; align-self: center; width: 100%; color: var(--attention); font-size: 11.5px; display: flex; gap: 7px; align-items: center; }
@@ -111,7 +114,7 @@
   .profile .sub { color: var(--faint); font-size: 11px; }
   .tabs { display: flex; justify-content: center; gap: 22px; border-bottom: 1px solid var(--border-soft); padding: 4px 16px 0; }
   .tab { border: 0; background: transparent; color: var(--faint); font-size: 12px; padding: 7px 0 9px; border-bottom: 1.5px solid transparent; }
-  .tab.active { color: var(--text); border-bottom-color: var(--text); }
+  .tab.active { color: #0e2050; border-bottom-color: var(--accent); }
   .sections { padding: 14px 16px 24px; display: grid; gap: 20px; }
   .sec h3 { margin: 0 0 8px; color: var(--faint); font-size: 10px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; }
   .act { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; display: grid; gap: 4px; margin-bottom: 7px; }
@@ -122,16 +125,16 @@
   .routine:last-child { border-bottom: 0; }
   .routine .t { font-size: 12px; }
   .routine .s { color: var(--faint); font-size: 10.5px; }
-  .toggle { width: 34px; height: 19px; border-radius: 10px; border: 0; background: #d8d8d1; position: relative; flex: none; }
+  .toggle { width: 34px; height: 19px; border-radius: 10px; border: 0; background: #cbd5e1; position: relative; flex: none; }
   .toggle::after { content: ""; position: absolute; top: 2px; left: 2px; width: 15px; height: 15px; border-radius: 50%; background: #fff; transition: left .12s; }
   .toggle.on { background: var(--primary); }
   .toggle.on::after { left: 17px; }
 
   .computer { display: grid; gap: 8px; }
   .computer .row { display: flex; align-items: center; gap: 9px; }
-  .thumb { width: 44px; height: 30px; border-radius: 5px; background: #1a1d24; border: 1px solid var(--border); position: relative; overflow: hidden; flex: none; }
-  .thumb::before { content: ""; position: absolute; inset: 18% 46% 18% 8%; background: #2a3347; border-radius: 2px; }
-  .thumb::after { content: ""; position: absolute; inset: 28% 8% 22% 58%; background: #33405c; border-radius: 2px; }
+  .thumb { width: 44px; height: 30px; border-radius: 5px; background: #0b1b3a; border: 1px solid var(--border); position: relative; overflow: hidden; flex: none; }
+  .thumb::before { content: ""; position: absolute; inset: 18% 46% 18% 8%; background: #14285a; border-radius: 2px; }
+  .thumb::after { content: ""; position: absolute; inset: 28% 8% 22% 58%; background: #22407f; border-radius: 2px; }
   .computer .nm { font-size: 12px; }
   .computer .st { color: var(--faint); font-size: 10.5px; }
   .computer .acts { display: flex; gap: 7px; }
@@ -152,7 +155,7 @@
   .srow select, .srow input { background: var(--card); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font: inherit; font-size: 12.5px; padding: 5px 8px; }
   .snav { display: flex; gap: 16px; border-bottom: 1px solid var(--border-soft); margin-bottom: 8px; }
   .snav button { border: 0; background: transparent; color: var(--faint); font-size: 12px; padding: 8px 0; border-bottom: 1.5px solid transparent; }
-  .snav button.active { color: var(--text); border-bottom-color: var(--text); }
+  .snav button.active { color: #0e2050; border-bottom-color: var(--accent); }
 
   .wizard-wrap { min-height: 100%; display: grid; place-items: center; padding: 40px 20px; }
   .wizard { width: 480px; max-width: 100%; }
@@ -160,8 +163,8 @@
   .wizard .sub { color: var(--faint); margin: 0 0 24px; font-size: 11.5px; }
   .steps { display: flex; gap: 6px; margin-bottom: 24px; }
   .step { flex: 1; display: grid; gap: 5px; }
-  .step .bar { height: 2px; border-radius: 1px; background: #e2e2db; }
-  .step.done .bar { background: #b9b9b0; }
+  .step .bar { height: 2px; border-radius: 1px; background: #e4e8f0; }
+  .step.done .bar { background: #b6c2d6; }
   .step.current .bar { background: var(--text); }
   .step .lbl { font-size: 10px; color: var(--faint); }
   .step.current .lbl { color: var(--text); }
@@ -182,8 +185,11 @@
   <!-- ============ chat list ============ -->
   <aside class="list">
     <div class="list-top">
-      <button class="icon" title="Search"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m16.5 16.5 4.5 4.5"></path></svg></button>
-      <button class="icon" data-go="newbot" title="New bot">+</button>
+      <div class="brand"><svg class="mark" width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M12 2.5 20.4 7.2v9.6L12 21.5 3.6 16.8V7.2Z" stroke="#2f6feb" stroke-width="1.7" stroke-linejoin="round"></path><path d="M12 2.5v19M3.6 7.2 12 12l8.4-4.8" stroke="#2f6feb" stroke-width="1.1" opacity=".6"></path></svg><span>Rayrun Bot</span></div>
+      <div class="tools">
+        <button class="icon" title="Search"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m16.5 16.5 4.5 4.5"></path></svg></button>
+        <button class="icon" data-go="newbot" title="New bot">+</button>
+      </div>
     </div>
 
     <div class="current">

@@ -3,7 +3,7 @@
 *Status: 2026-11-12 (rev 4). The client copies the layout of Grok Bot's desktop
 app as seen in the reference screenshot the user shared — one chat-list column, a
 markdown conversation in the middle, a per-bot details panel on the right — in a
-light, warm, low-contrast palette. Approvals are inline cards, not a separate
+the visual language of rayrunos.com: white canvas, navy primary buttons, blue accents, hairline borders. Approvals are inline cards, not a separate
 inbox. The clickable reference is [`docs/mockups/index.html`](mockups/index.html);
 append `#library`, `#newbot`, `#setup` or `#settings` to the URL for the other
 screens. Related: [client-plan.md](client-plan.md) (surfaces, RPC),
@@ -41,7 +41,7 @@ Rendered previews: [conversation](mockups/conversation.png) · [library](mockups
 
 ```
 ┌────────────────────┬───────────────────────────────────────┬──────────────────┐
-│ ⌕                + │                                       │      ◉ Nora      │
+│ ▣ Rayrun Bot  ⌕  + │                                       │      ◉ Nora      │
 │                    │                                       │   weekly digest  │
 │      ◉ Nora        │  … markdown conversation …            │  Activity Library│
 │   weekly digest    │  Today 20:07                          │                  │
@@ -68,7 +68,7 @@ Column widths: 296 px / flexible / 328 px. The details column collapses below
 
 ### 2.1 Chat list
 
-- Top row: search icon and `+` (new bot).
+- Top row: Rayrun mark and wordmark, search, `+` (new bot).
 - Current bot block: 52 px avatar, name, `job · state`.
 - Rows: 34 px avatar, name, one-line latest snippet, time; a 6 px dot marks
   needs attention (amber), unread (blue) or working (green). Opening a row marks
@@ -143,8 +143,7 @@ and RPC still expose the same list for future views.
 | Bot name, picture, job label; light persona | `bots.md:5-6,77-103`; [bot-persona.md](bot-persona.md) | copied; monogram avatar in v0.1 |
 | Voice chat, group chats, mobile, shared bots, marketplace, Vault, Auto Review | Grok Bot product surface | out of v0.1 (§8) |
 
-The reference screenshot is the primary style anchor: light warm neutrals, small
-monochrome icons, generous whitespace, no colored panels.
+Two anchors: the reference screenshot decides the layout (three columns, chat-list rows, details panel); rayrunos.com decides the look (white canvas, light gray panels, navy primary buttons, blue active pills, hairline borders, dark navy terminal surfaces, blue geometric mark).
 
 ## 4. Component inventory
 
@@ -201,31 +200,39 @@ Approval and key copy never contains jokes; every error row has one next action.
 
 ## 6. Visual system
 
-Warm light neutral, near-monochrome; Rayrun's mark is the only brand color.
+Two anchors: the reference screenshot decides the layout (§1–§3); rayrunos.com
+decides the look. Captured from the Rayrun site and docs on 2026-11-12: white
+canvas, very light gray panels, hairline gray borders, dark navy primary buttons,
+blue links and active pills, dark navy terminal surfaces, a blue geometric logo
+mark, and bold CJK-friendly headings.
 
 | Token | Value | Use |
 | --- | --- | --- |
-| `bg` | `#f7f7f4` | window / details background |
-| `list` | `#f2f2ee` | chat list, details panel |
-| `main` | `#fbfbf9` | conversation canvas |
+| `bg` | `#ffffff` | app canvas |
+| `list` | `#f7f8fa` | chat list, details panel |
+| `main` | `#ffffff` | conversation canvas |
 | `card` | `#ffffff` | approval, draft, receipt cards |
-| `text` | `#1d1d1b` | primary text |
-| `muted` | `#6f6f69` | secondary text |
-| `faint` | `#a3a39c` | timestamps, hints |
-| `border` | `#e6e6df` | card and control borders |
-| `border-soft` | `#efefe9` | list separators |
-| `primary` | `#1d1d1b` on `#fbfbf9` | primary buttons, send |
-| `success` | `#2f6b4f` | done / working |
-| `attention` | `#a3721f` | needs attention, warnings |
-| `danger` | `#a83226` | deny, irreversible warnings |
-| `brand` | `#4f7cf0` | Rayrun logo mark only |
+| `text` | `#0f172a` | primary text (slate/navy) |
+| `muted` | `#5b6472` | secondary text |
+| `faint` | `#8a93a3` | timestamps, hints |
+| `border` | `#e4e8f0` | card and control borders |
+| `border-soft` | `#eef1f6` | list separators |
+| `primary` | `#0e2050` on `#ffffff` | primary buttons, send, toggles |
+| `accent` | `#1d4ed8` | links, active rows, tabs |
+| `accent-soft` | `#eaf1fd` | selected chat row |
+| `success` | `#15803d` | done / working |
+| `attention` | `#b45309` on `#fff7e6` | needs attention, warnings |
+| `danger` | `#b42318` on `#fff5f4` | deny, irreversible warnings |
+| `brand` | `#2f6feb` | Rayrun logo mark only |
 
-Rules: one border weight, one shadow level at most, 12 px card radius / 9 px
-controls, no gradients, no colored panels. Avatars are monograms in muted warm
-tones in v0.1; the official Rayrun mark and wordmark sit in the app's brand spot.
-Type: system stack with `PingFang SC` / `Microsoft YaHei` fallbacks; 14 px body,
-13 px UI labels, 18 px page titles. Motion 120 ms; honor
-`prefers-reduced-motion`. Dark mode follows DSH when available.
+Rules: white cards on light-gray panels; navy primary controls; blue reserved for
+links, selected rows and tabs; amber only for warnings; one border weight and one
+shadow level; radii 12 px cards / 9 px controls; no gradients or colored panels.
+Brand: the official Rayrun mark and the "Rayrun Bot" wordmark sit at the top of
+the chat list — the mark is the only brand blue, and the wordmark is never
+restyled. Type: system stack with `PingFang SC` / `Microsoft YaHei` fallbacks;
+14 px body, 13 px UI labels, 18 px page titles. Motion 120 ms; honor
+`prefers-reduced-motion`. Light only in v0.1; dark follows DSH when available.
 
 ## 7. Accessibility and responsive
 
