@@ -106,7 +106,7 @@ Read `README.md` and the relevant `docs/` page before changing anything; read th
 5. Run the checks in §8; never declare done on "it should work".
 6. Commit in English with a conventional prefix: `feat:`, `fix:`, `chore:`, `docs:`. One logical change per commit.
 7. Never commit `.env`, tokens, keys, local profile paths, or pulled cloud artifacts (`.dsh/incoming/`).
-8. **Never push to the remote without an explicit instruction for that push.** Local commits are fine when asked; `git push` (or anything that writes to `origin`) requires the user to ask for it in that request. A past "sync to GitHub" instruction does not authorize later pushes.
+8. **Push only on explicit instruction.** Words like "commit" / "提交" mean a **local commit only**. `git push`, or anything that writes to `origin`, requires the user to explicitly ask for a push or a sync in that request. A past "sync to GitHub" instruction does not authorize later pushes. After a local commit, report that the branch is ahead of `origin` and wait for a push instruction.
 
 ## 8. Checks and definition of done
 
