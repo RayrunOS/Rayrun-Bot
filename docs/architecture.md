@@ -11,8 +11,8 @@ built. Untested pieces are marked **TBD**.*
 ```
 you ── chat / approve ──▶ DSH client (browser tab or desktop app)      [today: DSH]
                             │  plugin client half:
-                            │  cloud-computer page · bot roster* · approval inbox*
-                            │  computer view* · cost bar*
+                            │  chat list* · conversation · inline approvals*
+                            │  per-bot details* · computer view* · usage*
                             ▼
                       local DSH host + plugin host half               [today / planned*]
                       tools · same-origin RPC · tool guard
@@ -38,8 +38,9 @@ you ── chat / approve ──▶ DSH client (browser tab or desktop app)     
 **1. Thin client.** The user talks to bots, approves actions and changes
 settings in DeepSeek Harness itself — `dsh web` in a browser tab, or the DSH
 desktop app. The plugin's client half adds pages to that UI: today the
-cloud-computer page and the per-session cloud/local toggle; planned are the bot
-roster, approval inbox, computer view and cost bar. We reuse DSH's chat,
+cloud-computer page and the per-session cloud/local toggle; planned are the chat
+list, conversation with inline approvals, and the per-bot details panel
+(activity, routines, computer, usage). We reuse DSH's chat,
 sessions, approval UI, settings and plugin handling instead of writing a
 separate app. The tradeoff: we are bound by DSH's client APIs. A standalone
 desktop shell is deferred until there is evidence it is needed (see

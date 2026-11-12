@@ -3,7 +3,7 @@
 *Status: 2026-11-11. The client is the Rayrun Bot plugin's client half — the
 pages a user touches in the DSH web UI (`dsh web` or the DSH desktop shell). This
 plan covers the client only; the bot host, approval bridge and cloud calls are in
-[mvp-plan.md](mvp-plan.md). Assumption, per the research: v0.1 ships as a DSH
+Layout is the three-column shell in [ui-design.md](ui-design.md): chat list, conversation, per-bot details. [mvp-plan.md](mvp-plan.md). Assumption, per the research: v0.1 ships as a DSH
 plugin + `dsh web`, with no standalone desktop app. Visual spec, copy deck and
 clickable mockups: [ui-design.md](ui-design.md). Bot identity, names, avatars and
 voice: [bot-persona.md](bot-persona.md).*
@@ -23,15 +23,15 @@ voice: [bot-persona.md](bot-persona.md).*
 
 | Surface | Where | Purpose | v0.1 |
 | --- | --- | --- | --- |
-| Bots sidebar entry | DSH sidebar | entry point, badge with pending approvals | P0 |
-| Bot roster | own page | cards: name, status (idle / working / waiting / offline), machine, last seen; create, edit, delete | P0 |
-| Bot detail | own page | header (status, machine, cost), conversation, artifacts | P0 |
-| Approval inbox | own page | pending approvals with bot, action, risk, TTL countdown; approve / deny; history | P0 |
+| Chat list | left column | search, `+`, current bot, bot rows with latest snippet, time and attention dot | P0 |
+| Conversation | center column | markdown messages, day separators, inline approval/draft cards, composer | P0 |
+| Bot details panel | right column | profile, Activity/Library tabs, receipts, routines, computer, usage | P0 |
+| Inline approval cards | conversation | action, warning, origin and TTL; Deny / Allow once; attention dot in the chat list | P0 |
 | Onboarding wizard | own page | dependency check → Rayrun sign-in → DeepSeek key → computer + first bot | P0 |
-| Cost bar | sidebar / page header | balance, machine hours, idle state, low-balance warning | P0 |
+| Usage block | details panel + list footer | balance, machine hours, week spend, idle-stop policy, low-balance notice | P0 |
 | Settings | own page | default model, budget warning threshold, notifications, language | P1 |
 | Computer view | deep link | opens the separate cloud-computer plugin's desktop page; we do not rebuild noVNC | P0 |
-| Files / artifacts | bot detail | links to workspace files pulled by the host; no editor in v0.1 | P1 |
+| Library tab | details panel | artifacts grouped by date, pulled by the host; no editor in v0.1 | P1 |
 
 Everything the dependency already renders — Rayrun sign-in, token handling,
 machine creation, the noVNC desktop — is **linked to, not rebuilt**. The client
@@ -89,9 +89,9 @@ research's "client API cannot express the product" gate.
 
 | Wave | Goal | Ships |
 | --- | --- | --- |
-| C1 (W1) | Shell and read-only roster | sidebar entry, page skeleton, locale, empty/error states, stub RPC |
-| C2 (W2) | Roster and bot detail | create/edit/delete, status, conversation history view |
-| C3 (W3) | Approvals | inbox, card with TTL, approve/deny, badge, history, stale/expired states |
+| C1 (W1) | Three-column shell | chat list, conversation and details skeleton, locale, empty/error states, stub RPC |
+| C2 (W2) | Chat list and conversation | rows with attention dots, new-bot form, markdown conversation, history |
+| C3 (W3) | Approvals and receipts | inline cards with TTL, attention dots, receipt cards, stale/expired states |
 | C4 (W3–4) | Onboarding and cost | wizard with dependency health and deep links, cost bar, low-balance warning |
 | C5 (W4) | Computer and resilience | desktop deep link, recovery banners (host restarting), resume UX, artifacts list |
 | C6 (W5) | Polish and gates | complete i18n, keyboard/focus pass, first-paint check, manual acceptance run |
@@ -101,7 +101,7 @@ research's "client API cannot express the product" gate.
 1. **First run.** Wizard shows four steps, each with an inline status and a link
    to the page that fixes it (sign-in, key, computer). It can be skipped when
    everything is already set up.
-2. **Daily.** Open → roster → bot status → open bot → chat → approval badge →
+2. **Daily.** Open → chat list → the bot with an attention dot → answer the inline card →
    approve or deny. Everything reachable in two clicks from the sidebar.
 3. **Laptop closed.** On reopen, a working bot shows "working", finished work
    shows as unread, and approvals still in the inbox stay visible.

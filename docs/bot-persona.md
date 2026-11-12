@@ -24,16 +24,13 @@ writes — not from quirks, catchphrases, role-play or a simulated inner life.
 
 | Field | Rule | Example |
 | --- | --- | --- |
-| Display name | Title Case, 1–3 words, a role rather than a human first name; max 40 characters | `Weekly Watch`, `Inbox Triage`, `Docs Refresh` |
+| Display name | Title Case, 1–3 words: a short person name or a role title, chosen by the user; max 40 characters | `Nora`, `Weekly Watch`, `June` |
 | Id | kebab-case, derived from the name, unique per user, never shown in the main UI | `weekly-watch` |
 | Job label | one short line, lowercase, max 40 characters; shown under the name | `weekly digest` |
 | Avatar | v0.1: deterministic monogram, first letter, muted palette picked from the id; no emoji, no cartoon, no faces | `W` on a muted blue |
 | Description / bio | none for personal bots; the job and instructions carry the context | — |
 
-Names are role titles because that is what makes a colleague feel like a
-colleague: you hire a "Weekly Watch", not a "Sparkle". Users may rename a bot at
-any time. Ids never change once created so that sessions, approvals and artifacts
-keep their owner.
+A name can be a short person name ("Nora") or a role title ("Weekly Watch"); a person name makes the roster feel like a team, a role title keeps the job legible. Both are colleagues, not characters — no mascot names, no puns. Users may rename a bot at any time, and the default suggestion is a role title derived from the job. Ids never change once created so that sessions, approvals and artifacts keep their owner.
 
 ## 3. Voice rules
 

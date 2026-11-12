@@ -1,215 +1,181 @@
 # UI design — v0.1
 
-*Status: 2026-11-12 (rev 3). The client follows Grok Bot's desktop app as closely
-as a DSH plugin can: dark, near-monochrome, three panes, chat first, minimal
-chrome. Rayrun contributes only its name and logo mark. The clickable reference
-is [`docs/mockups/index.html`](mockups/index.html) — append `#approvals`,
-`#library`, `#setup` or `#settings` to the URL to see the other screens. Related:
-[client-plan.md](client-plan.md) (surfaces, RPC), [mvp-plan.md](mvp-plan.md)
-(approval semantics), [local-file-design.md](local-file-design.md) (state).*
+*Status: 2026-11-12 (rev 4). The client copies the layout of Grok Bot's desktop
+app as seen in the reference screenshot the user shared — one chat-list column, a
+markdown conversation in the middle, a per-bot details panel on the right — in a
+light, warm, low-contrast palette. Approvals are inline cards, not a separate
+inbox. The clickable reference is [`docs/mockups/index.html`](mockups/index.html);
+append `#library`, `#newbot`, `#setup` or `#settings` to the URL for the other
+screens. Related: [client-plan.md](client-plan.md) (surfaces, RPC),
+[mvp-plan.md](mvp-plan.md) (approval semantics), [bot-persona.md](bot-persona.md)
+(names, voice), [local-file-design.md](local-file-design.md) (state).*
 
-Rendered previews: [conversation](mockups/conversation.png) · [approvals](mockups/approvals.png) · [new bot](mockups/newbot.png) · [library](mockups/library.png) · [setup](mockups/setup.png) · [settings](mockups/cost-settings.png).
+Rendered previews: [conversation](mockups/conversation.png) · [library](mockups/library.png) · [new bot](mockups/newbot.png) · [setup](mockups/setup.png) · [settings](mockups/cost-settings.png).
 
 ## 0. Principles
 
-1. **Grok Bot, minimal.** Chat is the product; the shell is a roster, a
-   conversation and a computer preview. No dashboards, no badges, no filled
-   status pills, no second app frame inside DSH.
-2. **Near-monochrome.** Black and gray surfaces, white text, white primary
-   buttons. Color appears only as small status dots and warning lines.
-3. **Three panes on desktop.** Bot roster (left) · conversation (center) ·
-   computer preview (right, collapsible).
-4. **Attention is a dot.** Needs attention, unread, working and idle are 6 px
-   dots in the roster with an accessible label; words appear only in the
-   conversation header and inbox.
-5. **Cards only where Grok uses cards.** Approval, draft and activity rows are
-   thin bordered blocks inside the conversation; everything else is plain text
-   and hairline separators.
-6. **Honest states.** Reconnecting, couldn't reach, expired, missing dependency,
-   low balance: one short line and one action, never a fake success.
-7. **English source, zh mirror.** Strings in `locale/en.json` / `locale/zh.json`;
-   identifiers untranslated.
-8. **Keyboard-first.** Visible focus, Enter sends, Escape closes menus; approval
-   state changes announced via `aria-live`.
-9. **Bots are colleagues, not characters.** A Name in Title Case, a one-line job
-   label and a monogram avatar; no mascots, catchphrases or role-play. The voice
-   is a restrained professional teammate — see [bot-persona.md](bot-persona.md).
+1. **Three columns, like the reference.** Chat list (left) · conversation
+   (center) · per-bot details (right). Everything else is a form inside this
+   shell; no separate dashboard.
+2. **Chat list is the roster.** Search and `+` at the top, the current bot's
+   avatar and name, then the other bots as rows with their latest snippet and
+   time. Attention is a small dot, not a badge wall.
+3. **Conversation is markdown.** Bot replies read like a colleague's written
+   update — short paragraphs, lists, code spans — not a card dashboard. Timestamp
+   separators appear when the day changes.
+4. **The right panel belongs to the bot.** Activity (recent receipts), Upcoming
+   (routines), Computer (state, preview, open/take over) and Usage. Tabs switch
+   between Activity and Library.
+5. **Approvals are inline cards.** An external action stops inside the
+   conversation with its warning line and `Deny` / `Allow once`; the chat list
+   shows a dot for the bot that needs attention. No dedicated inbox in v0.1.
+6. **Warm, low-contrast light.** Off-white canvas, white cards, hairline
+   borders, near-black text; color only for warnings, success and the status
+   dots. Rayrun's mark is the only brand color.
+7. **Honest states.** Reconnecting, couldn't reach, expired, missing dependency,
+   low balance: one short line and one action. No fake success.
+8. **English source, zh mirror; keyboard-first.** Strings in `locale/en.json` /
+   `locale/zh.json`; Enter sends, Escape closes, focus always visible.
 
 ## 1. App shell
 
 ```
-┌──────────────┬───────────────────────────────────┬────────────────┐
-│ ▣ Rayrun Bot │  ◉ weekly-watch ●                 │ Computer   ●   │
-│              │  dsh-workspace · ¥3.10 today      │ ┌────────────┐ │
-│ ◉ weekly- ●  │ ─────────────────────────────────  │ │  desktop   │ │
-│   watch      │  … messages, one activity line,    │ │  preview   │ │
-│ ◉ inbox-  ●  │    approval block, draft block …   │ └────────────┘ │
-│   triage     │                                    │ dsh-workspace  │
-│ ◉ docs-   ●  │  ● Computer reconnecting… 5s       │ [Open][Take over]
-│              │ ┌────────────────────────────────┐ │                │
-│ Approvals 2  │ │ Message weekly-watch…        ↑ │ │                │
-│ Bot details  │ └────────────────────────────────┘ │                │
-│ Settings     │                                    │                │
-│              │                                    │                │
-│ dsh-workspace · running                          │                │
-│ ¥41.20 · 38.4 h                                  │                │
-└──────────────┴───────────────────────────────────┴────────────────┘
+┌────────────────────┬───────────────────────────────────────┬──────────────────┐
+│ ⌕                + │                                       │      ◉ Nora      │
+│                    │                                       │   weekly digest  │
+│      ◉ Nora        │  … markdown conversation …            │  Activity Library│
+│   weekly digest    │  Today 20:07                          │                  │
+│   · working        │                                       │  RECENT          │
+│                    │  Nora  weekly digest                  │  ┌────────────┐  │
+│ ◉ Eli       09:13  │  The draft is ready. I kept it to…    │  │draft ready │  │
+│   needs approval   │  · Scope…  · Draft…  · Next…          │  └────────────┘  │
+│ ◉ June      08:40  │                                       │  UPCOMING        │
+│   docs finished    │  ┌─────────────────────────────────┐  │  Weekly digest ⏻ │
+│                    │  │ ⚠ Publish “Week 45 digest” …    │  │  COMPUTER        │
+│                    │  │ This shares data outside…       │  │  dsh-workspace   │
+│                    │  │          Deny   Allow once      │  │  [Open][Take over]│
+│ HY Haoyi           │  └─────────────────────────────────┘  │  USAGE           │
+│ Rayrun connected   │  ● Computer reconnecting… 5s          │  ¥41.20 · 38.4 h │
+│                    │  ┌─────────────────────────────────┐  │                  │
+│                    │  │ Message Nora…                 ↑ │  │                  │
+└────────────────────┴───────────────────────────────────────┴──────────────────┘
 ```
 
-Left: brand row, three bot rows (avatar, name, small label, status dot), then
-`Approvals` (count), `Bot details`, `Settings`, and two muted footer lines.
-Center: bot header (avatar, name, dot, `computer · today's spend`), transcript,
-notices above the composer. Right: computer preview with status dot, a dark
-desktop thumbnail, two buttons; leaving it does not stop work.
+Column widths: 296 px / flexible / 328 px. The details column collapses below
+1120 px; the chat list collapses below 900 px.
 
 ## 2. Screens
 
-### 2.1 Roster
+### 2.1 Chat list
 
-Rows are the whole roster UI. Status is a dot; the word lives in `title` and in
-the conversation header. The `+` action for a new bot sits in the sidebar header
-(next to the brand), matching Grok Bot's `+` in the sidebar.
-
-| State | Dot | Notes |
-| --- | --- | --- |
-| needs attention | amber | question, approval or handoff waiting |
-| unread | blue | new result since last open |
-| working | green, slow pulse | task in progress |
-| idle | gray | nothing queued |
-| recovering | amber | bot host restarting |
-
-Opening a bot clears unread. Pin / hide / delete stay in the row context menu
-(v0.1: hide and delete only).
+- Top row: search icon and `+` (new bot).
+- Current bot block: 52 px avatar, name, `job · state`.
+- Rows: 34 px avatar, name, one-line latest snippet, time; a 6 px dot marks
+  needs attention (amber), unread (blue) or working (green). Opening a row marks
+  it read.
+- Footer: the user's avatar, name, `Rayrun connected · balance`, settings gear.
 
 ### 2.2 Conversation
 
-- Header: 24 px avatar, name, status dot, and one muted line
-  `dsh-workspace · ¥3.10 today`. A `⋯` menu holds hide/stop/delete.
-- Messages are plain text; only the user's own message sits in a dark bubble.
-- Tool and computer activity is one muted line: `● ran shell in dsh-workspace · 41s`.
-- Approval and draft blocks are thin bordered cards (see below).
-- Notices sit above the composer as one line with a dot, not a banner.
-- Composer: attach glyph, input, white circular send button. Disabled with a
-  reason while the host is recovering.
+- Rich text messages with a 26 px avatar, name and job label; user messages are
+  short right-aligned bubbles.
+- A day separator (`Today 20:07`) opens each session.
+- Approval and draft blocks are the only cards: thin border, white surface, one
+  warning line, `Deny` / `Allow once`, and a metadata line (`requested 20:07 ·
+  from this chat`).
+- Notices sit above the composer as one line with a dot.
+- Composer: `+` attach, input, dark circular send.
 
-### 2.3 Approval block
+### 2.3 Details panel
 
-```
-┌────────────────────────────────────────────────────────┐
-│ ⚠ Publish “Week 45 digest” to Feishu #weekly  waits    │
-│ This shares data outside your computer.                │
-│ inbox-triage · requested 09:13                         │
-│                                    [ Deny ] [ Allow ]  │
-└────────────────────────────────────────────────────────┘
-```
+Profile header (avatar, name, `job · computer`), then `Activity | Library` tabs.
 
-- **Two actions in v0.1: Deny and Allow once.** Grok Bot's third option,
-  **Always allow** (auto-review rule), is hidden until Auto Review exists in
-  v0.2 — the UI does not show disabled controls.
-- The warning line reuses Grok Bot's phrasing: "This can't be undone", "This
-  shares data outside your computer", "This changes sign-in or security settings".
-- **Unanswered:** a card raised by a chat message waits with no timer; a card
-  raised by background work (routine, webhook) expires after 30 minutes and
-  shows `Expired` — the bot does not act. Our approval schema carries
-  `origin: "chat" | "background"` for this.
-- Deny means the bot does not retry that action until the user sends another
-  message.
+**Activity** sections:
 
-### 2.4 Draft block
+- **Recent** — receipts: task title, state (`ready` / `waiting` / `done`), time,
+  artifact count and today's spend. A receipt is the "report back" surface.
+- **Upcoming** — routines: one row per routine with title, schedule and a toggle.
+  v0.1 ships at most one routine (P1); the other rows illustrate the shape.
+- **Computer** — thumbnail, name, state (`live` / `reconnecting…` / `sleeping`),
+  `Open` and `Take over`.
+- **Usage** — balance, machine-hours, this week's spend, idle-stop policy.
 
-Outgoing messages render as an editable draft with `Discard` and `Send` before
-anything leaves the computer. A muted `needs approval` label sits on the right.
+**Library** groups artifacts under Today / This week / Older; each row is a file,
+image or link with one muted subline. P1 in v0.1.
 
-### 2.5 Bot details and Library
+### 2.4 New bot
 
-Clicking the bot name opens details: name, label, computer, then two tabs,
-**Details** and **Library**. Library groups artifacts under **Today**, **This
-week**, **Older** — plain rows with type, name, one muted subline and a time.
-Library is P1 in v0.1; the tab is designed now so artifacts stay attributable to
-a bot.
+The `+` opens a small form, not a wizard: monogram preview, **Name**, **Job, one
+line**, **Instructions, optional**, then `Cancel` / `Create bot`. Defaults come
+from [bot-persona.md](bot-persona.md); no personality picker.
 
-### 2.6 Approvals inbox
+### 2.5 Setup
 
-Two panes, both quiet: left rows (title, subline, `waits` / `28 min` / `expired`),
-right a bordered panel with the request title, one red warning line, four
-key/value lines and `Deny` / `Allow once`. History is not shown in v0.1; the
-audit log exists in the bot log.
+Four thin steps on the same light canvas: Dependency · Rayrun · DeepSeek key ·
+First bot. Current step shows one paragraph and its inputs; `Continue` is
+disabled until the step passes; `Skip for now` leaves the setup row in place.
 
-### 2.7 Setup
+### 2.6 Settings
 
-Centered, no card: title, one-line subtitle, four thin progress bars with tiny
-labels (Dependency · Rayrun · DeepSeek key · First bot), then the current step's
-heading, one paragraph and its inputs. Continue is disabled until the step
-passes; Skip leaves the setup row in place.
+Reached from the footer gear: Account (Rayrun connection, dependency health),
+Usage, Notifications, Appearance/language. Plain rows with hairline separators;
+no stat cards.
 
-### 2.8 Settings
+### 2.7 Approvals (inline only)
 
-Left sub-nav: **Account**, **Usage & billing**, **Auto-review**, **Notifications**,
-**Appearance**. One muted usage line, at most one notice, then plain rows with
-hairline separators. No stat cards, no colored numbers.
-
-### 2.9 Computer preview
-
-Live / reconnecting / couldn't reach / stopped. A dark thumbnail, one meta line,
-`Open` and `Take over`. Takeover is for one sensitive step, then handed back.
-
-### 2.10 Bot identity and creation
-
-Bots are colleagues: a Title Case display name (id stays kebab-case inside the
-product), a one-line job label, a monogram avatar and a short instruction brief.
-No description, bio or personality picker in v0.1. The `+` in the sidebar opens a
-small creation form — Name, Job (one line), Instructions (optional), monogram
-preview — with `Cancel` / `Create bot`. Full rules and the default instruction
-template: [bot-persona.md](bot-persona.md).
+Cards render in the conversation where the action stopped. The chat list shows a
+dot and the latest snippet says what waits. There is **no separate approvals
+page in v0.1** — the earlier inbox is dropped to match the reference; the store
+and RPC still expose the same list for future views.
 
 ## 3. Alignment with Grok Bot
 
-| Grok Bot pattern | Source (2026-11-09 docs snapshot) | Our v0.1 |
+| Grok Bot pattern | Source | Our v0.1 |
 | --- | --- | --- |
-| Sidebar roster, attention states | `settings-and-notifications.md:205-214` | dots only: needs attention / unread / working / idle / recovering |
-| Chat-first transcript with activity | `chat-and-collaboration.md:14-25` | messages, one-line activity, approval/draft blocks |
-| Approval card: Allow once / Always allow / Deny | `approvals-security-and-privacy.md:30-57` | Allow once + Deny; Always allow deferred to Auto Review (v0.2) |
+| Chat list column: search, `+`, current bot, rows with snippet/time | reference screenshot, 2026-11-12 | copied |
+| Center conversation as rich markdown with timestamp separators | reference screenshot | copied: paragraphs, lists, code spans |
+| Right details panel per bot: profile, Activity/Library tabs, routines, computer | reference screenshot; `skills-routines-and-automations.md` | copied; usage section added, voice omitted |
+| Inline approval card with Deny / allow | `approvals-security-and-privacy.md:30-57` | `Deny` / `Allow once`; `Always allow` deferred to Auto Review (v0.2) |
 | Chat cards wait, background cards expire 30 min | `approvals-security-and-privacy.md:72-83` | copied via `origin` field |
-| Editable draft, Needs approval | `chat-and-collaboration.md:89-107` | copied |
-| Right-hand computer preview, open/take over | `computer-and-apps.md:31-63` | copied; preview may be a link card in v0.1 |
-| Bot name opens details; Library by date | `bots.md:77-103`; `files-and-results.md:246-253` | copied; Library P1 |
-| Name, picture, label; personal Bots stay light | `bots.md:5-6,77-103` | Title Case display name + job label + monogram avatar; no bio; creation form takes name/job/instructions ([bot-persona.md](bot-persona.md)) |
-| Errors above composer as notices | `settings-and-notifications.md:239-247` | copied as one-line notices |
-| Sign-in → intro → first bot → chat | `get-started.md:48-57` | adapted with dependency + key steps |
-| Voice, group chats, X Chat, mobile, shared bots, templates, marketplace, Vault, bot email, Auto Review rules | Grok Bot product surface | out of v0.1 (§9) |
+| Editable draft marked Needs approval | `chat-and-collaboration.md:89-107` | copied |
+| Computer preview with open/take over | `computer-and-apps.md:31-63` | copied into the details panel |
+| Attention states in the list | `settings-and-notifications.md:205-214` | dots: needs attention / unread / working |
+| Bot name, picture, job label; light persona | `bots.md:5-6,77-103`; [bot-persona.md](bot-persona.md) | copied; monogram avatar in v0.1 |
+| Voice chat, group chats, mobile, shared bots, marketplace, Vault, Auto Review | Grok Bot product surface | out of v0.1 (§8) |
 
-Rayrun's contribution is deliberately small: the wordmark and the blue logo mark
-in the sidebar brand row. The earlier light "rayrunos.com" palette is dropped —
-it read busy next to Grok Bot's quiet shell.
+The reference screenshot is the primary style anchor: light warm neutrals, small
+monochrome icons, generous whitespace, no colored panels.
 
 ## 4. Component inventory
 
 | Component | Used on | Wave | Notes |
 | --- | --- | --- | --- |
-| `AppShell` | all | C1 | three panes, collapsible preview |
-| `BotRoster` | shell | C2 | rows, dots, context menu |
-| `StatusDot` | shell, header, inbox | C2 | 5 states, `title` + `aria-label` |
-| `BotHeader` | conversation | C2 | avatar, name, dot, computer · spend |
-| `Transcript` | conversation | C2 | messages, activity line, blocks |
-| `ApprovalBlock` | conversation, inbox | C3 | Deny / Allow once, warnings, origin |
-| `DraftBlock` | conversation | C3 | editable, Discard / Send |
-| `Composer` | conversation | C2 | attach, send, disabled reason |
-| `Notice` | conversation | C1 | one line + one action |
-| `ComputerPreview` | shell | C4 | live / reconnecting / take over |
-| `BotDetails` + `Library` | details | C5 | tabs, date groups |
-| `SetupWizard` | setup | C4 | 4 thin steps |
-| `ApprovalsInbox` | approvals | C3 | list + panel |
-| `SettingsPage` | settings | C4 | sub-nav + rows |
+| `AppShell` | all | C1 | three columns, collapsible details |
+| `ChatList` | shell | C2 | search, `+`, current bot, rows, dots, footer |
+| `ChatRow` | shell | C2 | avatar, name, snippet, time, attention dot |
+| `Conversation` | center | C2 | markdown messages, day separators |
+| `ApprovalCard` | conversation | C3 | Deny / Allow once, warning, origin, meta |
+| `DraftCard` | conversation | C3 | editable, Discard / Send |
+| `Composer` | center | C2 | attach, send, disabled reason |
+| `Notice` | center | C1 | one line above the composer |
+| `DetailsPanel` | right | C3 | profile, tabs |
+| `ReceiptCard` | activity | C3 | task, state, time, artifacts, spend |
+| `RoutineRow` | upcoming | C4 | title, schedule, toggle |
+| `ComputerCard` | details | C4 | state, thumbnail, open/take over |
+| `UsageBlock` | details | C4 | balance, hours, week, idle stop |
+| `NewBotForm` | newbot | C2 | name, job, instructions, monogram |
+| `SetupWizard` | setup | C4 | four thin steps |
+| `SettingsPage` | settings | C4 | account/usage/notifications/appearance |
 
 ## 5. Copy deck (source for `locale/en.json`)
 
 | Key | English | 中文 |
 | --- | --- | --- |
+| `list.search` | Search | 搜索 |
+| `list.newBot` | New bot | 新建 Bot |
 | `attention.needs` | needs attention | 待你处理 |
 | `attention.unread` | unread | 未读 |
 | `attention.working` | working | 工作中 |
-| `attention.idle` | idle | 空闲 |
-| `attention.recovering` | recovering | 恢复中 |
 | `approval.title` | Needs approval | 需要审批 |
 | `approval.allowOnce` | Allow once | 仅批准这一次 |
 | `approval.deny` | Deny | 拒绝 |
@@ -218,16 +184,16 @@ it read busy next to Grok Bot's quiet shell.
 | `approval.expired` | Expired — the bot did not act | 已过期——Bot 没有执行 |
 | `approval.irreversible` | This can't be undone. | 此操作无法撤销。 |
 | `approval.outside` | This shares data outside your computer. | 这会把数据发到你的电脑之外。 |
-| `approval.security` | This changes sign-in or security settings. | 这会改动登录或安全设置。 |
 | `draft.send` | Send | 发送 |
 | `draft.discard` | Discard | 丢弃 |
-| `roster.hide` | Hide from sidebar | 从侧边栏隐藏 |
-| `roster.delete` | Delete bot… | 删除 Bot… |
+| `details.recent` | Recent | 最近 |
+| `details.upcoming` | Upcoming | 即将进行 |
+| `details.computer` | Computer | 电脑 |
+| `details.usage` | Usage | 用量 |
 | `computer.live` | live | 在线 |
 | `computer.reconnecting` | reconnecting… | 正在重连… |
 | `computer.unreachable` | Couldn't reach the computer. | 连不上电脑。 |
 | `computer.takeOver` | Take over | 接管 |
-| `computer.done` | Return control | 交还控制 |
 | `notice.recovering` | The bot host is restarting. This conversation resumes on its own. | Bot host 正在重启，这个会话会自动恢复。 |
 | `cost.low` | Balance is low — top up in the Rayrun console. Stop is safe; destroy is not. | 余额偏低——去 Rayrun 控制台充值。停机会保留磁盘，销毁不会。 |
 
@@ -235,64 +201,42 @@ Approval and key copy never contains jokes; every error row has one next action.
 
 ## 6. Visual system
 
-Dark, near-monochrome, hairline borders, one accent: the Rayrun logo mark.
+Warm light neutral, near-monochrome; Rayrun's mark is the only brand color.
 
 | Token | Value | Use |
 | --- | --- | --- |
-| `bg` | `#0a0a0b` | app canvas |
-| `side` | `#0c0c0d` | sidebar, preview |
-| `panel` | `#101012` | cards, composer |
-| `hover` | `#161618` | row hover |
-| `selected` | `#1a1a1d` | active row |
-| `text` | `#ececee` | primary text |
-| `muted` | `#8d8d93` | secondary text |
-| `faint` | `#5d5d64` | timestamps, hints |
-| `border` | `#1f1f22` | card and control borders |
-| `border-soft` | `#17171a` | separators |
-| `primary` | `#ececee` on `#0a0a0b` | primary buttons (white) |
-| `attention` | `#c8a45c` | needs attention, warning lines |
-| `unread` | `#7d9fd0` | unread dot |
-| `success` | `#63c68d` | working / live dot |
-| `danger` | `#e0736a` | deny, irreversible warning |
+| `bg` | `#f7f7f4` | window / details background |
+| `list` | `#f2f2ee` | chat list, details panel |
+| `main` | `#fbfbf9` | conversation canvas |
+| `card` | `#ffffff` | approval, draft, receipt cards |
+| `text` | `#1d1d1b` | primary text |
+| `muted` | `#6f6f69` | secondary text |
+| `faint` | `#a3a39c` | timestamps, hints |
+| `border` | `#e6e6df` | card and control borders |
+| `border-soft` | `#efefe9` | list separators |
+| `primary` | `#1d1d1b` on `#fbfbf9` | primary buttons, send |
+| `success` | `#2f6b4f` | done / working |
+| `attention` | `#a3721f` | needs attention, warnings |
+| `danger` | `#a83226` | deny, irreversible warnings |
 | `brand` | `#4f7cf0` | Rayrun logo mark only |
 
-Rules:
-
-- No filled status pills, no colored card backgrounds, no gradients. Color only
-  in dots, one-word labels and warning lines.
-- One border weight (`1px`), one shadow level at most (menus/popovers).
-- White primary button, ghost secondary; danger is text-only.
-- Brand: official Rayrun mark + "Rayrun Bot" wordmark; the mark is the only place
-  `brand` blue appears. Use the official asset when available; the mockup
-  approximates the mark.
-- Type: system stack with `PingFang SC` / `Microsoft YaHei` fallbacks; body
-  12–13 px, headers 14–17 px, sparse bolding.
-- Radii 7–10 px; motion 120 ms, honor `prefers-reduced-motion`; status is always
-  dot + accessible label, never color alone.
-- Dark only in v0.1; light mode follows DSH when available.
+Rules: one border weight, one shadow level at most, 12 px card radius / 9 px
+controls, no gradients, no colored panels. Avatars are monograms in muted warm
+tones in v0.1; the official Rayrun mark and wordmark sit in the app's brand spot.
+Type: system stack with `PingFang SC` / `Microsoft YaHei` fallbacks; 14 px body,
+13 px UI labels, 18 px page titles. Motion 120 ms; honor
+`prefers-reduced-motion`. Dark mode follows DSH when available.
 
 ## 7. Accessibility and responsive
 
-- Full keyboard path: roster → conversation → approval buttons; visible focus;
-  Escape closes menus.
-- Approval changes announced with `aria-live="polite"`; countdowns are not
-  announced.
-- Contrast ≥ 4.5:1 for text; dots always paired with an accessible label.
-- Desktop-first: three panes ≥1120 px; preview collapses below; roster collapses
-  below 900 px. No mobile-native layout in v0.1.
+- Keyboard: search → rows → conversation → approval buttons; visible focus;
+  Escape closes forms.
+- Approval changes announced with `aria-live="polite"`; countdowns are silent.
+- Contrast ≥ 4.5:1; dots always paired with an accessible label.
+- Three columns ≥1120 px; details collapses below; list collapses below 900 px.
+  No mobile-native layout in v0.1.
 
-## 8. Acceptance mapping
-
-| Screen | Acceptance tasks |
-| --- | --- |
-| Setup | A1, A2, A3 |
-| Roster + dots | A4, A9, A10 |
-| Conversation + preview | A4, A5, A8 |
-| Approval block + inbox | A6, A7, A11 |
-| Settings / usage | A10 |
-| Notices | A1, A2, A9, A11 |
-
-## 9. Out of scope for v0.1
+## 8. Out of scope for v0.1
 
 Voice input/chat, group chats, X Chat, mobile layouts, shared bots, bot templates
 and marketplace, Vault/Secure Form, bot email, Auto Review rules and

@@ -48,7 +48,7 @@ manual rows are recorded as a screen capture plus the log files.
 | A1 | Clean-machine install | fresh DSH profile: install both plugins per README, restart, both pages load; a missing dependency shows an actionable error; ≤ 3 minutes |
 | A2 | Sign-in and key | Rayrun login stores the token in the vault; the DeepSeek key is stored as a Rayrun credential; without a token the tools answer `token_required` |
 | A3 | Create a computer | ≤ 15 s, at least 2 GB, desktop optional; balance and machine hours visible |
-| A4 | Create a bot and talk to it | a named bot with instructions appears in the roster, streams a reply, and its directory exists on the machine (`rayrun_files` evidence) |
+| A4 | Create a bot and talk to it | a named bot with instructions appears in the chat list, streams a reply, and its directory exists on the machine (`rayrun_files` evidence) |
 | A5 | Laptop closed | with the local DSH closed, a bot finishes one background task; reopening shows the result, with timestamps on both sides |
 | A6 | Approve | a gated action stops; the card appears within 10 s; approval resumes the bot within 10 s; the side effect happens only after the decision |
 | A7 | Deny and expiry | a denial means no side effect; a background card expires after 30 minutes and is denied; a chat-started card waits; replayed, wrong-bot and expired requests are rejected and logged (negative tests) |
@@ -68,11 +68,11 @@ In — P0 unless marked P1:
 | Item | Note |
 | --- | --- |
 | Bot registry: name, label, avatar, instructions, skills, memory dir | bots are profile directories on the machine, not code |
-| Roster page and per-bot chat | reuse DSH chat where the API allows; see client plan |
+| Chat list, conversation and per-bot details panel | Grok Bot three-column shell; reuse DSH chat where the API allows |
 | Bot↔session mapping | persisted on the machine, mirrored locally |
 | Cloud bot host: queue, inbox/outbox, watchdog | one agent task at a time |
 | Fail-closed approval gate | TTL 30 min, replay protection, audit line |
-| Approval inbox UI | the card the user actually answers |
+| Inline approval cards | cards in the conversation; a dot in the chat list marks attention |
 | Cloud-computer dependency integration | dependency declaration, version check, missing-plugin error |
 | Cost bar: balance and machine hours | per-bot attribution is P1 |
 | Onboarding wizard | login → key → computer → first bot |
@@ -224,7 +224,7 @@ Estimates include tests; "Done when" is the evidence, not a code-complete claim.
 | C4 | DSH invocation | per S1 strategy: prompt in, stream out | C3 | 2 | task → reply in a session |
 | C5 | Inbox/outbox polling | 3 s poll, cursor, dedupe | C3 | 1.5 | message round trip < 5 s |
 | C6 | Watchdog | local `exec` restart on missing heartbeat | C2 | 1 | killed host is back within 60 s |
-| C7 | Health and status | heartbeat → `host/state.json` → roster status | C2 | 1 | roster shows idle/working/recovering |
+| C7 | Health and status | heartbeat → `host/state.json` → roster status | C2 | 1 | chat list shows needs-attention / working / idle |
 | C8 | Recovery | queue and approval state re-read after restart | C3 | 1.5 | killing the host loses no work |
 | C9 | Busy handling | 409 mapping, retry budget, never drop | C4 | 1 | busy test: all items eventually run |
 
@@ -253,7 +253,7 @@ Estimates include tests; "Done when" is the evidence, not a code-complete claim.
 ### F. Client
 
 Detailed in [client-plan.md](client-plan.md); estimates live there too. Work
-streams C1–C6 (shell, roster, approvals, onboarding/cost, computer view, polish)
+streams C1–C6 (shell, chat list, inline approvals, onboarding/usage, computer view, polish)
 are built against stub RPC from M1, so client and host progress in parallel.
 
 ### G. Cost and operations
@@ -265,7 +265,7 @@ are built against stub RPC from M1, so client and host progress in parallel.
 | G3 | Idle stop integration | stop only, skipped when a task runs | C7 | 1 | idle machine stops, never destroys |
 | G4 | Destroy guard | destroy only from an explicit human action | C7 | 0.5 | code path audit |
 | G5 | Recovery runbook | machine loss, balance exhaustion, dependency loss | B5 | 1 | runbook in `docs/` |
-| G6 | Error copy audit | one sentence + one action everywhere | F1 | 1 | all codes have copy |
+| G6 | Error copy audit | one sentence + one action everywhere | F-stream | 1 | all codes have copy |
 
 ### H. Acceptance, alpha, release
 
@@ -288,7 +288,7 @@ calendar effort; one engineer should plan for 10–12 weeks.
 | Milestone | Week | Work delivered | Exit criterion | Demo |
 | --- | --- | --- | --- | --- |
 | M0 | W0 (3 d) | spikes S1–S6, platform questions sent | decisions recorded, go/no-go | written decision log |
-| M1 | W1 | A1–A3, B1–B3, F1, G1 | roster read-only from stub data | empty→stub roster in the panel |
+| M1 | W1 | A1–A3, B1–B3, F1, G1 | roster read-only from stub data | empty→stub chat list in the panel |
 | M2 | W2 | C1–C5, B4, D1–D2, F2 | a bot replies end to end | create bot, send task, get reply |
 | M3 | W3 | E1–E4, D3, F3, G2–G3 | approval loop works | gated action → card → approve → continue |
 | M4 | W4 | E5–E7, D4–D5, C6–C8, F4–F5 | resume and recovery pass | close laptop, reopen, still working |
