@@ -51,7 +51,7 @@ manual rows are recorded as a screen capture plus the log files.
 | A4 | Create a bot and talk to it | a named bot with instructions appears in the roster, streams a reply, and its directory exists on the machine (`rayrun_files` evidence) |
 | A5 | Laptop closed | with the local DSH closed, a bot finishes one background task; reopening shows the result, with timestamps on both sides |
 | A6 | Approve | a gated action stops; the card appears within 10 s; approval resumes the bot within 10 s; the side effect happens only after the decision |
-| A7 | Deny and timeout | a denial means no side effect; 30 minutes of silence denies; replayed, wrong-bot and expired requests are rejected and logged (negative tests) |
+| A7 | Deny and expiry | a denial means no side effect; a background card expires after 30 minutes and is denied; a chat-started card waits; replayed, wrong-bot and expired requests are rejected and logged (negative tests) |
 | A8 | Resume | the same bot's second conversation continues the first, and still continues after the host process is killed and after machine stop/start |
 | A9 | Recovery | killing the bot host loses no queued work; the watchdog restarts it within 60 s and the queue drains |
 | A10 | Cost and lifecycle | balance and hours shown; idle stop stops, never destroys; `destroy` only from an explicit human action |
@@ -144,11 +144,12 @@ with states `queued → running → waiting_approval → done | failed | cancell
 One in-flight item per machine; the rest stay `queued`.
 
 **Approval request** — `{ schema: 1, id, botId, nonce, actionHash, action, risk,
-createdAt, expiresAt }`; **decision** — `{ schema: 1, id, nonce, decision:
+origin: "chat" | "background", createdAt, expiresAt }`; **decision** — `{ schema: 1, id, nonce, decision:
 "approve" | "deny", decidedAt }`. Both written to a temp name and renamed into
-place; the decision must match id, nonce and bot id, and expires after 30 minutes
-by default. The action hash covers the normalized action payload, so a stale card
-cannot approve a different action.
+place; the decision must match id, nonce and bot id. A card raised from a chat
+message waits with no timer; a card raised by background work expires after 30
+minutes and is denied. The action hash covers the normalized action payload, so a
+stale card cannot approve a different action.
 
 **Outbox event** — `{ seq, at, botId?, type: "status" | "message" | "approval" |
 "error", payload }`; the client reads by `seq` cursor and ignores gaps older than
