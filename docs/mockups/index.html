@@ -115,6 +115,23 @@
   .tabs { display: flex; justify-content: center; gap: 22px; border-bottom: 1px solid var(--border-soft); padding: 4px 16px 0; }
   .tab { border: 0; background: transparent; color: var(--faint); font-size: 12px; padding: 7px 0 9px; border-bottom: 1.5px solid transparent; }
   .tab.active { color: #0e2050; border-bottom-color: var(--accent); }
+  .computer-big { margin: 0 16px 14px; border: 1px solid var(--border); background: var(--card); border-radius: var(--radius); padding: 10px; display: grid; gap: 8px; }
+  .computer-big .cb-head { display: flex; align-items: center; justify-content: space-between; font-size: 11px; color: var(--muted); }
+  .computer-big .cb-head .l { display: flex; align-items: center; gap: 6px; font-weight: 550; }
+  .computer-big .screen { position: relative; aspect-ratio: 16 / 10; background: #0b1b3a; border-radius: 8px; overflow: hidden; border: 1px solid #12234d; }
+  .computer-big .screen .bar { height: 16px; display: flex; align-items: center; gap: 4px; padding: 0 7px; background: #12234d; }
+  .computer-big .screen .bar i { width: 4px; height: 4px; border-radius: 50%; background: #2c4a86; }
+  .computer-big .screen .w1 { position: absolute; left: 8%; top: 26%; width: 38%; height: 40%; border-radius: 4px; background: #1b3572; }
+  .computer-big .screen .w2 { position: absolute; right: 8%; top: 32%; width: 30%; height: 33%; border-radius: 4px; background: #22407f; }
+  .computer-big .screen .term { position: absolute; left: 8%; bottom: 9%; width: 52%; height: 13%; border-radius: 3px; background: #081229; border: 1px solid #233f7a; }
+  .computer-big .screen .overlay { position: absolute; inset: 0; display: grid; place-items: center; color: #dbe4fb; font-size: 10.5px; background: rgba(11, 27, 58, .45); }
+  .computer-big .cb-foot { display: grid; gap: 8px; }
+  .computer-big .cb-foot .meta { color: var(--faint); font-size: 10px; }
+  .computer-big .acts { display: flex; gap: 6px; justify-content: flex-end; }
+  .computer-big .acts .btn { padding: 5px 10px; white-space: nowrap; }
+  .computer-act { display: grid; grid-template-columns: 44px 1fr auto; gap: 10px; align-items: center; border: 1px solid var(--border); background: var(--card); border-radius: 10px; padding: 8px 10px; max-width: 760px; width: 100%; align-self: center; }
+  .computer-act .t { font-size: 12px; }
+  .computer-act .s { color: var(--faint); font-size: 10.5px; }
   .sections { padding: 14px 16px 24px; display: grid; gap: 20px; }
   .sec h3 { margin: 0 0 8px; color: var(--faint); font-size: 10px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; }
   .act { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; display: grid; gap: 4px; margin-bottom: 7px; }
@@ -239,6 +256,12 @@
         </div>
       </div>
 
+      <div class="computer-act">
+        <div class="thumb"></div>
+        <div><div class="t">On the computer · Feishu #weekly</div><div class="s">pasted the digest, waiting for your approval</div></div>
+        <button class="btn ghost">View</button>
+      </div>
+
       <div class="card">
         <div class="top">
           <span class="title"><span class="warn">⚠</span>Publish “Week 45 digest” to Feishu #weekly</span>
@@ -277,6 +300,22 @@
       <div class="name">Nora</div>
       <div class="sub">weekly digest · dsh-workspace</div>
     </div>
+
+    <div class="computer-big">
+      <div class="cb-head"><span class="l"><span class="dot needs"></span>Computer · dsh-workspace</span><span>reconnecting…</span></div>
+      <div class="screen">
+        <div class="bar"><i></i><i></i><i></i></div>
+        <div class="w1"></div>
+        <div class="w2"></div>
+        <div class="term"></div>
+        <div class="overlay">retrying in 5s</div>
+      </div>
+      <div class="cb-foot">
+        <span class="meta">X11 :99 · leaving does not stop work</span>
+        <div class="acts"><button class="btn">Open</button><button class="btn">Take over</button></div>
+      </div>
+    </div>
+
     <div class="tabs">
       <button class="tab active" data-tab="activity">Activity</button>
       <button class="tab" data-tab="library">Library</button>
@@ -315,19 +354,6 @@
         </div>
       </div>
 
-      <div class="sec">
-        <h3>Computer</h3>
-        <div class="computer">
-          <div class="row">
-            <div class="thumb"></div>
-            <div><div class="nm">dsh-workspace</div><div class="st">reconnecting…</div></div>
-          </div>
-          <div class="acts">
-            <button class="btn">Open</button>
-            <button class="btn">Take over</button>
-          </div>
-        </div>
-      </div>
 
       <div class="sec">
         <h3>Usage</h3>
