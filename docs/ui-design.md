@@ -6,7 +6,7 @@ markdown conversation in the middle, a per-bot details panel on the right — in
 the visual language of rayrunos.com: white canvas, navy primary buttons, blue accents, hairline borders. Approvals are inline cards, not a separate
 inbox. The clickable reference is [`docs/mockups/index.html`](mockups/index.html);
 append `#library`, `#newbot`, `#setup` or `#settings` to the URL for the other
-screens. Related: [client-plan.md](client-plan.md) (surfaces, RPC),
+screens. The mockups render the **zh-CN** locale; English copy in §5 is the source and ships alongside (`locale/en.json`, `locale/zh.json`); the default language follows DSH. Related: [client-plan.md](client-plan.md) (surfaces, RPC),
 [mvp-plan.md](mvp-plan.md) (approval semantics), [bot-persona.md](bot-persona.md)
 (names, voice), [local-file-design.md](local-file-design.md) (state).*
 
