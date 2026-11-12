@@ -4,7 +4,8 @@
 pages a user touches in the DSH web UI (`dsh web` or the DSH desktop shell). This
 plan covers the client only; the bot host, approval bridge and cloud calls are in
 [mvp-plan.md](mvp-plan.md). Assumption, per the research: v0.1 ships as a DSH
-plugin + `dsh web`, with no standalone desktop app.*
+plugin + `dsh web`, with no standalone desktop app. Visual spec, copy deck and
+clickable mockups: [ui-design.md](ui-design.md).*
 
 ## What the client owns
 

@@ -1,0 +1,533 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rayrun Bot — UI mockup (v0.1)</title>
+<style>
+  :root {
+    --bg: #f6f7f9;
+    --surface: #ffffff;
+    --text: #16181d;
+    --muted: #5b6270;
+    --border: #e3e6eb;
+    --accent: #2f6feb;
+    --accent-soft: #eaf0fe;
+    --success: #1a7f45;
+    --warning: #9a5b00;
+    --warning-soft: #fff6e5;
+    --danger: #b42318;
+    --radius: 8px;
+    --radius-sm: 6px;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: var(--sans); font-size: 14px; line-height: 1.45;
+  }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  .app { display: grid; grid-template-columns: 232px 1fr; height: 100vh; overflow: hidden; }
+
+  /* ---------- sidebar ---------- */
+  .side {
+    background: #0f1115; color: #c9cedb; display: flex; flex-direction: column;
+    padding: 14px 10px; gap: 4px;
+  }
+  .brand { display: flex; align-items: center; gap: 9px; padding: 6px 10px 14px; }
+  .brand-mark {
+    width: 26px; height: 26px; border-radius: 7px; background: var(--accent);
+    display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 13px;
+  }
+  .brand-name { color: #fff; font-weight: 600; letter-spacing: .2px; }
+  .brand-sub { font-size: 11px; color: #7d8494; }
+  .nav-label { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: #7d8494; padding: 12px 10px 6px; }
+  .nav-item {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    width: 100%; text-align: left; background: transparent; border: 0;
+    color: #c9cedb; padding: 8px 10px; border-radius: 7px;
+  }
+  .nav-item:hover { background: #191c22; color: #fff; }
+  .nav-item.active { background: #1d2330; color: #fff; }
+  .nav-item .left { display: flex; align-items: center; gap: 9px; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: #5b6270; }
+  .dot.accent { background: #6f9bff; }
+  .dot.amber { background: #e0a53a; }
+  .badge {
+    min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px;
+    background: #e0a53a; color: #241a02; font-size: 11px; font-weight: 700;
+    display: grid; place-items: center;
+  }
+  .side-foot { margin-top: auto; display: grid; gap: 8px; padding: 10px; }
+  .machine {
+    border: 1px solid #262b35; border-radius: 7px; padding: 8px 9px; font-size: 12px; color: #9aa2b1;
+  }
+  .machine strong { color: #e7eaf1; display: block; font-size: 12px; font-weight: 600; }
+  .machine .row { display: flex; justify-content: space-between; margin-top: 4px; }
+  .ok { color: #68c08b; }
+
+  /* ---------- main ---------- */
+  .main { overflow: auto; }
+  .page { max-width: 1080px; margin: 0 auto; padding: 26px 34px 60px; }
+  .page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+  .page-title { font-size: 20px; font-weight: 650; margin: 0; }
+  .page-sub { color: var(--muted); margin: 3px 0 0; font-size: 13px; }
+  .crumb { color: var(--muted); font-size: 13px; text-decoration: none; }
+  .crumb:hover { color: var(--text); }
+
+  .btn {
+    border: 1px solid var(--border); background: var(--surface);
+    padding: 7px 12px; border-radius: var(--radius-sm); font-weight: 550; font-size: 13px;
+  }
+  .btn:hover { border-color: #c9ced8; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.primary:hover { background: #2a63d6; }
+  .btn.danger { color: var(--danger); border-color: #efc9c5; background: #fff; }
+  .btn.ghost { background: transparent; border-color: transparent; color: var(--muted); }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+
+  .banner {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    background: var(--warning-soft); border: 1px solid #f0dba8; color: #6b4a05;
+    padding: 10px 14px; border-radius: var(--radius); margin-bottom: 18px; font-size: 13px;
+  }
+  .banner a { color: #6b4a05; font-weight: 600; }
+
+  /* ---------- roster ---------- */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 14px 16px; display: grid; gap: 10px; text-align: left;
+  }
+  .card:hover { border-color: #cfd5df; }
+  .card h3 { margin: 0; font-size: 15px; font-weight: 650; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .card .meta { font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; }
+  .card .need { font-size: 12px; color: var(--warning); font-weight: 600; }
+  .new-card {
+    border: 1px dashed #c9d0da; background: transparent; border-radius: var(--radius);
+    min-height: 128px; display: grid; place-items: center; color: var(--muted); font-weight: 550;
+  }
+  .new-card:hover { border-color: var(--accent); color: var(--accent); }
+
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600;
+    padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted);
+    background: #fafbfc; white-space: nowrap;
+  }
+  .chip .dot { width: 6px; height: 6px; }
+  .chip.working { color: #1f4fbf; border-color: #c9d9fb; background: var(--accent-soft); }
+  .chip.working .dot { background: var(--accent); animation: pulse 1.6s infinite ease-in-out; }
+  .chip.waiting { color: var(--warning); border-color: #f0dba8; background: var(--warning-soft); }
+  .chip.waiting .dot { background: var(--warning); }
+  .chip.recovering { color: var(--warning); border-color: #f0dba8; background: #fffdf7; }
+  .chip.recovering .dot { background: var(--warning); animation: pulse 1.2s infinite ease-in-out; }
+  .chip.offline .dot { background: #b6bcc7; }
+  @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: .35 } }
+
+  .costline { display: flex; gap: 18px; color: var(--muted); font-size: 12px; margin-top: 18px; }
+  .costline b { color: var(--text); font-weight: 600; }
+
+  /* ---------- bot detail ---------- */
+  .detail-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+  .detail-title { display: flex; align-items: center; gap: 10px; font-size: 17px; font-weight: 650; }
+  .detail-meta { color: var(--muted); font-size: 12px; margin-top: 4px; display: flex; gap: 14px; }
+  .chat { display: grid; gap: 14px; padding: 6px 2px 20px; }
+  .msg { max-width: 78%; }
+  .msg .who { font-size: 11px; color: var(--muted); margin-bottom: 4px; display: flex; gap: 8px; align-items: baseline; }
+  .bubble { border: 1px solid var(--border); background: var(--surface); border-radius: 10px; padding: 10px 13px; font-size: 13.5px; }
+  .msg.user { justify-self: end; }
+  .msg.user .bubble { background: #eef2f8; border-color: #dde4ee; }
+  .msg.user .who { justify-content: flex-end; }
+  .approval-inline {
+    justify-self: start; max-width: 86%; width: 100%;
+    border: 1px solid #ecd29b; background: var(--warning-soft); border-radius: 10px; padding: 13px 15px;
+    display: grid; gap: 8px;
+  }
+  .approval-inline .top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .approval-inline .title { font-weight: 650; color: #6b4a05; }
+  .approval-inline .what { font-size: 13px; color: #4d3a10; }
+  .approval-inline .meta { display: flex; justify-content: space-between; color: #7a5a17; font-size: 12px; }
+  .approval-inline .actions { display: flex; gap: 8px; justify-content: flex-end; }
+  .composer {
+    display: flex; gap: 10px; align-items: center; border: 1px solid var(--border);
+    background: var(--surface); border-radius: 10px; padding: 9px 10px 9px 14px; margin-top: 8px;
+  }
+  .composer input {
+    flex: 1; border: 0; outline: 0; background: transparent; font: inherit; color: var(--text); font-size: 13.5px;
+  }
+  .composer .hint { color: #9aa2b1; font-size: 11px; }
+
+  /* ---------- approvals ---------- */
+  .split { display: grid; grid-template-columns: 300px 1fr; gap: 18px; align-items: start; }
+  .list { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .list-item { display: grid; gap: 3px; padding: 11px 13px; border-bottom: 1px solid var(--border); background: transparent; border-left: 3px solid transparent; width: 100%; text-align: left; }
+  .list-item:last-child { border-bottom: 0; }
+  .list-item:hover { background: #fafbfd; }
+  .list-item.active { background: var(--accent-soft); border-left-color: var(--accent); }
+  .list-item .t { font-weight: 600; font-size: 13px; display: flex; justify-content: space-between; gap: 8px; }
+  .list-item .s { color: var(--muted); font-size: 12px; }
+  .ttl { color: var(--warning); font-weight: 600; font-size: 11px; }
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; display: grid; gap: 14px; }
+  .panel h2 { margin: 0; font-size: 16px; font-weight: 650; }
+  .kv { display: grid; grid-template-columns: 130px 1fr; gap: 6px 16px; font-size: 13px; }
+  .kv .k { color: var(--muted); }
+  .section-label { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+  .actions-row { display: flex; gap: 8px; justify-content: flex-end; border-top: 1px solid var(--border); padding-top: 14px; }
+  .risk { background: #fff6f5; border: 1px solid #f3cdc8; color: #7a2018; border-radius: 7px; padding: 9px 11px; font-size: 12.5px; }
+  .history { margin-top: 6px; border-top: 1px solid var(--border); padding-top: 12px; display: grid; gap: 7px; }
+  .history .row { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); }
+  .history .row b { color: var(--text); font-weight: 600; }
+
+  /* ---------- settings ---------- */
+  .cards-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+  .stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; display: grid; gap: 4px; }
+  .stat .num { font-size: 24px; font-weight: 650; letter-spacing: -.01em; }
+  .stat .lbl { color: var(--muted); font-size: 12px; }
+  .stat.warn .num { color: var(--warning); }
+  .settings { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 6px 18px; }
+  .setrow { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .setrow:last-child { border-bottom: 0; }
+  .setrow .label { display: grid; gap: 2px; }
+  .setrow .label small { color: var(--muted); font-size: 12px; }
+  .setrow select, .setrow input[type="number"] {
+    border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 6px 8px; font: inherit; font-size: 13px; background: #fff;
+  }
+  .toggle { width: 36px; height: 20px; border-radius: 10px; background: #cfd5df; border: 0; position: relative; }
+  .toggle::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: left .12s; }
+  .toggle.on { background: var(--accent); }
+  .toggle.on::after { left: 18px; }
+
+  /* ---------- setup wizard ---------- */
+  .wizard-wrap { min-height: 100%; display: grid; place-items: center; padding: 40px 20px; }
+  .wizard { width: 620px; max-width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px 26px 22px; }
+  .wizard h1 { margin: 0 0 4px; font-size: 19px; font-weight: 650; }
+  .wizard .sub { color: var(--muted); font-size: 13px; margin: 0 0 20px; }
+  .steps { display: flex; gap: 8px; margin-bottom: 24px; }
+  .step { flex: 1; display: grid; gap: 6px; }
+  .step .bar { height: 4px; border-radius: 2px; background: #e6e9ef; }
+  .step.done .bar { background: var(--success); }
+  .step.current .bar { background: var(--accent); }
+  .step .lbl { font-size: 11px; color: var(--muted); }
+  .step.current .lbl { color: var(--text); font-weight: 600; }
+  .wizard h2 { margin: 0 0 6px; font-size: 15px; font-weight: 650; }
+  .wizard .say { margin: 0 0 16px; color: var(--muted); font-size: 13px; }
+  .inline-status { display: flex; align-items: center; gap: 10px; margin-top: 12px; font-size: 12.5px; color: var(--muted); }
+  .wizard-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 26px; padding-top: 16px; border-top: 1px solid var(--border); }
+  .kbd { font-family: var(--mono); font-size: 11px; border: 1px solid var(--border); border-bottom-width: 2px; padding: 1px 5px; border-radius: 4px; color: var(--muted); }
+
+  /* ---------- mockup ribbon ---------- */
+  .ribbon {
+    position: fixed; right: 16px; bottom: 14px; z-index: 10;
+    background: #0f1115; color: #c9cedb; border-radius: 999px; padding: 6px 8px;
+    display: flex; gap: 4px; box-shadow: 0 6px 24px rgba(15,17,21,.25); font-size: 12px;
+  }
+  .ribbon button { background: transparent; border: 0; color: #9aa2b1; padding: 4px 9px; border-radius: 999px; }
+  .ribbon button:hover { color: #fff; }
+  .ribbon button.active { background: #2a3040; color: #fff; }
+  .ribbon .tag { color: #6b7280; padding: 4px 6px; }
+
+  .hidden { display: none !important; }
+  @media (max-width: 980px) {
+    .app { grid-template-columns: 188px 1fr; }
+    .split, .cards-2 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- ============ sidebar ============ -->
+  <aside class="side">
+    <div class="brand">
+      <div class="brand-mark">R</div>
+      <div>
+        <div class="brand-name">Rayrun Bot</div>
+        <div class="brand-sub">DeepSeek Harness</div>
+      </div>
+    </div>
+    <div class="nav-label">Workspace</div>
+    <button class="nav-item"><span class="left"><span class="dot"></span>Chat</span></button>
+    <button class="nav-item active" data-go="roster"><span class="left"><span class="dot accent"></span>Bots</span><span class="badge">2</span></button>
+    <button class="nav-item" data-go="approvals"><span class="left"><span class="dot amber"></span>Approvals</span><span class="badge">2</span></button>
+    <button class="nav-item" data-go="settings"><span class="left"><span class="dot"></span>Cost &amp; settings</span></button>
+    <div class="nav-label">Cloud computer</div>
+    <button class="nav-item"><span class="left"><span class="dot"></span>dsh-workspace ↗</span></button>
+    <div class="side-foot">
+      <div class="machine">
+        <strong>dsh-workspace</strong>
+        <div class="row"><span>running</span><span class="ok">● 38.4 h</span></div>
+        <div class="row"><span>balance</span><span class="ok">¥41.20</span></div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <!-- ============ setup ============ -->
+    <section class="page hidden" data-screen="setup">
+      <div class="wizard-wrap">
+        <div class="wizard">
+          <h1>Set up Rayrun Bot</h1>
+          <p class="sub">Four steps. Each one shows where it happens and what is missing.</p>
+          <div class="steps">
+            <div class="step done"><div class="bar"></div><div class="lbl">1 · Dependency</div></div>
+            <div class="step current"><div class="bar"></div><div class="lbl">2 · Rayrun</div></div>
+            <div class="step"><div class="bar"></div><div class="lbl">3 · DeepSeek key</div></div>
+            <div class="step"><div class="bar"></div><div class="lbl">4 · First bot</div></div>
+          </div>
+          <h2>Step 2 of 4 — Connect Rayrun</h2>
+          <p class="say">Rayrun supplies the cloud computers. Sign in with your own account; the token stays in the DSH vault, never in a file here.</p>
+          <div style="display:flex; gap:8px; align-items:center">
+            <button class="btn primary">Sign in with Rayrun</button>
+            <span class="chip offline"><span class="dot"></span>not connected</span>
+          </div>
+          <div style="display:flex; gap:8px; margin-top:12px">
+            <input class="composer" style="flex:1" placeholder="…or paste a Rayrun API token">
+            <button class="btn">Connect</button>
+          </div>
+          <div class="inline-status">
+            <span>account: —</span><span>·</span><span>balance: —</span>
+          </div>
+          <div class="wizard-actions">
+            <button class="btn ghost">Back</button>
+            <div style="display:flex; gap:8px">
+              <button class="btn ghost">Skip for now</button>
+              <button class="btn primary" disabled>Continue</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ roster ============ -->
+    <section class="page" data-screen="roster">
+      <div class="page-head">
+        <div>
+          <h1 class="page-title">Bots</h1>
+          <p class="page-sub">Named workers on your Rayrun computer. One runs at a time.</p>
+        </div>
+        <button class="btn primary">+ New bot</button>
+      </div>
+
+      <div class="banner">
+        <span>⚠ weekly-watch needs a decision — publish “Week 45 digest” waits for you.</span>
+        <a href="#" data-go="approvals">Review approvals →</a>
+      </div>
+
+      <div class="grid">
+        <button class="card" data-go="bot">
+          <h3>weekly-watch <span class="chip working"><span class="dot"></span>working</span></h3>
+          <div class="meta"><span>dsh-workspace</span><span>2 min ago</span></div>
+          <div class="meta"><span>2 approvals today</span><span>¥3.10 today</span></div>
+        </button>
+        <button class="card" data-go="bot">
+          <h3>inbox-triage <span class="chip waiting"><span class="dot"></span>needs you</span></h3>
+          <div class="meta"><span>dsh-workspace</span><span>12 min ago</span></div>
+          <div class="meta"><span class="need">1 approval waiting</span><span>¥1.40 today</span></div>
+        </button>
+        <button class="card" data-go="bot">
+          <h3>docs-refresh <span class="chip idle"><span class="dot"></span>idle</span></h3>
+          <div class="meta"><span>dsh-workspace</span><span>yesterday</span></div>
+          <div class="meta"><span>0 approvals</span><span>¥0.60 today</span></div>
+        </button>
+        <div class="new-card">+ New bot</div>
+      </div>
+
+      <div class="costline">
+        <span>balance <b>¥41.20</b></span>
+        <span>total hours <b>38.4 h</b></span>
+        <span>idle stop <b>15 min</b></span>
+        <span>warning below <b>¥10</b></span>
+      </div>
+    </section>
+
+    <!-- ============ bot detail ============ -->
+    <section class="page hidden" data-screen="bot">
+      <a class="crumb" href="#" data-go="roster">← Bots</a>
+      <div class="detail-head" style="margin-top:10px">
+        <div>
+          <div class="detail-title">weekly-watch <span class="chip working"><span class="dot"></span>working</span></div>
+          <div class="detail-meta"><span>dsh-workspace</span><span>¥3.10 today</span><span>session · 12 turns</span></div>
+        </div>
+        <div style="display:flex; gap:8px">
+          <button class="btn">Edit</button>
+          <button class="btn">Stop</button>
+        </div>
+      </div>
+
+      <div class="chat">
+        <div class="msg user">
+          <div class="who"><span>you</span><span>09:12</span></div>
+          <div class="bubble">Summarise last week's PRs and draft the digest.</div>
+        </div>
+        <div class="msg">
+          <div class="who"><span>weekly-watch</span><span>09:13</span></div>
+          <div class="bubble">Draft is ready. Two things need your approval before I leave the computer.</div>
+        </div>
+        <div class="approval-inline">
+          <div class="top">
+            <span class="title">⚠ Approval needed · publish draft</span>
+            <span class="ttl">expires in 27 min</span>
+          </div>
+          <div class="what">Publish “Week 45 digest” to the Feishu channel #weekly.</div>
+          <div class="meta"><span>risk: writes outside the computer</span><span>requested 09:13</span></div>
+          <div class="actions">
+            <button class="btn danger">Deny</button>
+            <button class="btn primary">Approve</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="composer">
+        <input placeholder="Message weekly-watch…">
+        <span class="hint">Enter to send</span>
+        <button class="btn primary">Send</button>
+      </div>
+    </section>
+
+    <!-- ============ approvals ============ -->
+    <section class="page hidden" data-screen="approvals">
+      <div class="page-head">
+        <div>
+          <h1 class="page-title">Approvals</h1>
+          <p class="page-sub">Nothing with an outside effect runs until you decide. Silence equals deny.</p>
+        </div>
+        <div style="display:flex; gap:6px">
+          <button class="btn">Pending 2</button>
+          <button class="btn ghost">History</button>
+        </div>
+      </div>
+
+      <div class="split">
+        <div class="list">
+          <button class="list-item active">
+            <div class="t"><span>publish draft</span><span class="ttl">27 min</span></div>
+            <div class="s">inbox-triage · writes outside</div>
+          </button>
+          <button class="list-item">
+            <div class="t"><span>send reply</span><span class="ttl">28 min</span></div>
+            <div class="s">weekly-watch · sends a message</div>
+          </button>
+          <button class="list-item">
+            <div class="t"><span>destroy computer</span><span class="ttl">expired</span></div>
+            <div class="s">docs-refresh · denied</div>
+          </button>
+        </div>
+
+        <div class="panel">
+          <div>
+            <div class="section-label">Request</div>
+            <h2>Publish “Week 45 digest” to Feishu #weekly</h2>
+          </div>
+          <div class="risk">Risk — this writes outside the computer and cannot be undone from here.</div>
+          <div class="kv">
+            <span class="k">Bot</span><span>inbox-triage</span>
+            <span class="k">Computer</span><span>dsh-workspace</span>
+            <span class="k">Requested</span><span>09:13 (2 min ago)</span>
+            <span class="k">Expires</span><span>09:43 · 27 min left</span>
+            <span class="k">Action hash</span><span style="font-family:var(--mono); font-size:12px">a41f…9c2e</span>
+          </div>
+          <div class="actions-row">
+            <button class="btn danger">Deny</button>
+            <button class="btn primary">Approve</button>
+          </div>
+          <div class="history">
+            <div class="section-label">Recent decisions</div>
+            <div class="row"><span><b>send reply</b> · weekly-watch</span><span>approved 08:40</span></div>
+            <div class="row"><span><b>destroy computer</b> · docs-refresh</span><span>denied 08:12</span></div>
+            <div class="row"><span><b>publish draft</b> · inbox-triage</span><span>approved yesterday</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ settings ============ -->
+    <section class="page hidden" data-screen="settings">
+      <div class="page-head">
+        <div>
+          <h1 class="page-title">Cost &amp; settings</h1>
+          <p class="page-sub">What the platform already reports, plus the few knobs this plugin owns.</p>
+        </div>
+      </div>
+
+      <div class="cards-2" style="margin-bottom:16px">
+        <div class="stat">
+          <div class="lbl">Rayrun balance</div>
+          <div class="num">¥41.20</div>
+          <div class="lbl">paid to Rayrun directly, by the second</div>
+        </div>
+        <div class="stat warn">
+          <div class="lbl">This week</div>
+          <div class="num">¥6.80</div>
+          <div class="lbl">38.4 machine-hours · warning below ¥10</div>
+        </div>
+      </div>
+      <div class="banner" style="margin-bottom:16px">
+        <span>Balance is low — top up in the Rayrun console. Stop is safe; destroy is not.</span>
+        <a href="#">Open Rayrun console ↗</a>
+      </div>
+
+      <div class="settings">
+        <div class="setrow">
+          <div class="label"><span>Idle stop</span><small>Stop an idle computer. Never destroys it.</small></div>
+          <select><option>15 minutes</option><option>30 minutes</option><option>Off</option></select>
+        </div>
+        <div class="setrow">
+          <div class="label"><span>Low-balance warning</span><small>Show a banner under this balance.</small></div>
+          <input type="number" value="10" style="width:88px">
+        </div>
+        <div class="setrow">
+          <div class="label"><span>Notifications</span><small>An approval is waiting.</small></div>
+          <button class="toggle on" aria-label="Notifications on"></button>
+        </div>
+        <div class="setrow">
+          <div class="label"><span>Language</span><small>English or 简体中文.</small></div>
+          <select><option>English</option><option>简体中文</option></select>
+        </div>
+        <div class="setrow">
+          <div class="label"><span>Cloud-computer plugin</span><small>dsh-rayrun-computer v1.0.0 · compatible</small></div>
+          <span class="chip working"><span class="dot"></span>ok</span>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="ribbon" role="navigation" aria-label="Mockup screens">
+  <span class="tag">Mockup</span>
+  <button data-go="setup">Setup</button>
+  <button data-go="roster" class="active">Roster</button>
+  <button data-go="bot">Bot</button>
+  <button data-go="approvals">Approvals</button>
+  <button data-go="settings">Cost</button>
+</div>
+
+<script>
+  const screens = ["setup", "roster", "bot", "approvals", "settings"];
+  const navItems = document.querySelectorAll(".nav-item");
+  function show(name) {
+    if (!screens.includes(name)) name = "roster";
+    document.querySelectorAll("[data-screen]").forEach(s => {
+      s.classList.toggle("hidden", s.dataset.screen !== name);
+    });
+    document.querySelectorAll(".ribbon button").forEach(b => {
+      b.classList.toggle("active", b.dataset.go === name);
+    });
+    navItems.forEach(n => {
+      const activeNav = name === "bot" || name === "setup" ? "roster" : name;
+      n.classList.toggle("active", n.dataset.go === activeNav);
+    });
+    const main = document.querySelector(".main");
+    if (main) main.scrollTop = 0;
+  }
+  document.querySelectorAll("[data-go]").forEach(el => {
+    el.addEventListener("click", (e) => {
+      e.preventDefault();
+      show(el.dataset.go);
+    });
+  });
+  window.addEventListener("hashchange", () => show(location.hash.slice(1)));
+  show(location.hash ? location.hash.slice(1) : "roster");
+</script>
+</body>
+</html>
