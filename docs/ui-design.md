@@ -3,8 +3,11 @@
 *Status: 2026-11-12. The client follows the shape of Grok Bot's desktop app (as
 captured in the 2026-11-09 docs snapshot): bot roster in the sidebar, chat as the
 main surface, a computer preview in the right-hand panel, and approval cards
-inline in the chat. This is the design for the DSH plugin client; the clickable
-reference is [`docs/mockups/index.html`](mockups/index.html). Related:
+inline in the chat. Visually it uses the RayrunOS design language (rayrunos.com
+home and docs, captured 2026-11-12): white canvas, navy primary buttons, blue
+active pills, hairline borders and dark navy terminal blocks. This is the design
+for the DSH plugin client; the clickable reference is
+[`docs/mockups/index.html`](mockups/index.html). Related:
 [client-plan.md](client-plan.md) (surfaces, RPC), [mvp-plan.md](mvp-plan.md)
 (approval semantics), [local-file-design.md](local-file-design.md) (state).*
 
@@ -12,9 +15,10 @@ Rendered previews: [conversation](mockups/conversation.png) · [approvals](mocku
 
 ## 0. Principles
 
-1. **Chat-first, Grok-shaped.** The conversation is the product; everything else
-   (roster, approvals, library, settings) hangs off it. No dashboard, no separate
-   app shell inside DSH.
+1. **Grok Bot structure, RayrunOS look.** The conversation is the product and
+   everything else (roster, approvals, library, settings) hangs off it. The shell
+   follows Grok Bot; colors, type and tone follow rayrunos.com. No separate app
+   shell inside DSH, no dashboard.
 2. **Three panes on desktop.** Bot roster (left) · conversation (center) ·
    computer preview (right, collapsible). This is the Grok Bot desktop shape.
 3. **Attention is a tri-state in the roster**, exactly like Grok Bot: **needs
@@ -245,26 +249,50 @@ Approval and key copy never contains jokes; every error row has one next action.
 
 ## 6. Visual system
 
-Grok Bot's desktop app is dark and near-monochrome, with color reserved for
-attention states. We follow that, using DSH theme tokens where they exist.
+Two references: Grok Bot decides *what* the client shows (§1–§3); RayrunOS
+decides *how* it looks. Captured from rayrunos.com home and docs pages on
+2026-11-12:
 
-| Token | Value (mockup fallback) | Use |
+- white canvas, very light gray panels, hairline gray borders;
+- dark navy primary buttons (`#0e2050`) with white text; blue links and active
+  pills on `#eaf1fd`;
+- 10–12 px radii, single-level shadows, dense but quiet enterprise typography;
+- dark navy terminal and code blocks (`#0b1b3a`) with traffic-light dots;
+- geometric blue logo mark plus the "Rayrun" wordmark; bold, CJK-friendly
+  headings;
+- amber reserved for warnings and in-progress states, never for primary actions.
+
+Token set (mockup fallback; prefer DSH theme tokens where they exist):
+
+| Token | Value | Use |
 | --- | --- | --- |
-| `bg` | `#0b0c0e` | app background |
-| `panel` | `#121316` | sidebar, preview |
-| `elevated` | `#191b1f` | cards, composer, menus |
-| `text` | `#f4f5f7` | primary text |
-| `muted` | `#9aa0aa` | secondary text |
-| `border` | `#262a30` | separators, card edges |
-| `primary` | `#f4f5f7` on `#0b0c0e` | primary buttons (white, Grok-style) |
-| `attention` | `#e3a53a` | needs attention, warnings |
-| `unread` | `#5b91f5` | unread dot |
-| `success` | `#4ade80` | live / working |
-| `danger` | `#f87171` | deny, irreversible warning |
+| `bg` | `#ffffff` | app canvas |
+| `panel` | `#f7f8fa` | sidebar, preview |
+| `elevated` | `#ffffff` | cards, composer, menus |
+| `elevated-2` | `#f1f4f9` | hover surfaces, file icons |
+| `text` | `#0f172a` | primary text (slate/navy) |
+| `muted` | `#5b6472` | secondary text |
+| `faint` | `#8a93a3` | hints, timestamps |
+| `border` | `#e4e8f0` | hairline borders |
+| `border-soft` | `#edf0f5` | separators |
+| `primary` | `#0e2050` on `#ffffff` | primary buttons (navy), brand mark |
+| `accent` | `#1d4ed8` | links, active state |
+| `accent-soft` | `#eaf1fd` | active rows, selected filters |
+| `attention` | `#b45309` on `#fff7e6` | needs attention, warnings |
+| `unread` | `#1d4ed8` | unread dot |
+| `success` | `#15803d` | live / working |
+| `danger` | `#b42318` on `#fff5f4` | deny, irreversible warning |
 
-Type: system stack; body 13–14 px; titles 17–20 px; mono for ids and commands.
-Radii 10–12 px cards, 8 px controls. Motion 120 ms; honor
-`prefers-reduced-motion`. Status is always dot + text, never color alone.
+Brand: use the official Rayrun logo mark and wordmark when the asset is
+available; the mockup approximates the geometric blue mark as a placeholder. The
+product name renders as "Rayrun Bot" — the Rayrun wordmark plus the Bot suffix in
+the same weight; never restyle the wordmark.
+
+Type: system stack with CJK fallbacks (`PingFang SC`, `Microsoft YaHei`); body
+13–14 px; titles 17–20 px; mono for ids and commands. Radii 10–12 px cards, 8 px
+controls. Motion 120 ms; honor `prefers-reduced-motion`. Status is always dot +
+text, never color alone. The mockup is light-only; dark mode follows DSH when
+available.
 
 ## 7. Accessibility and responsive
 
