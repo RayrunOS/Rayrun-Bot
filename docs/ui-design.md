@@ -8,7 +8,7 @@ is [`docs/mockups/index.html`](mockups/index.html) — append `#approvals`,
 [client-plan.md](client-plan.md) (surfaces, RPC), [mvp-plan.md](mvp-plan.md)
 (approval semantics), [local-file-design.md](local-file-design.md) (state).*
 
-Rendered previews: [conversation](mockups/conversation.png) · [approvals](mockups/approvals.png) · [library](mockups/library.png) · [setup](mockups/setup.png) · [settings](mockups/cost-settings.png).
+Rendered previews: [conversation](mockups/conversation.png) · [approvals](mockups/approvals.png) · [new bot](mockups/newbot.png) · [library](mockups/library.png) · [setup](mockups/setup.png) · [settings](mockups/cost-settings.png).
 
 ## 0. Principles
 
@@ -31,6 +31,9 @@ Rendered previews: [conversation](mockups/conversation.png) · [approvals](mocku
    identifiers untranslated.
 8. **Keyboard-first.** Visible focus, Enter sends, Escape closes menus; approval
    state changes announced via `aria-live`.
+9. **Bots are colleagues, not characters.** A Name in Title Case, a one-line job
+   label and a monogram avatar; no mascots, catchphrases or role-play. The voice
+   is a restrained professional teammate — see [bot-persona.md](bot-persona.md).
 
 ## 1. App shell
 
@@ -150,6 +153,15 @@ hairline separators. No stat cards, no colored numbers.
 Live / reconnecting / couldn't reach / stopped. A dark thumbnail, one meta line,
 `Open` and `Take over`. Takeover is for one sensitive step, then handed back.
 
+### 2.10 Bot identity and creation
+
+Bots are colleagues: a Title Case display name (id stays kebab-case inside the
+product), a one-line job label, a monogram avatar and a short instruction brief.
+No description, bio or personality picker in v0.1. The `+` in the sidebar opens a
+small creation form — Name, Job (one line), Instructions (optional), monogram
+preview — with `Cancel` / `Create bot`. Full rules and the default instruction
+template: [bot-persona.md](bot-persona.md).
+
 ## 3. Alignment with Grok Bot
 
 | Grok Bot pattern | Source (2026-11-09 docs snapshot) | Our v0.1 |
@@ -161,6 +173,7 @@ Live / reconnecting / couldn't reach / stopped. A dark thumbnail, one meta line,
 | Editable draft, Needs approval | `chat-and-collaboration.md:89-107` | copied |
 | Right-hand computer preview, open/take over | `computer-and-apps.md:31-63` | copied; preview may be a link card in v0.1 |
 | Bot name opens details; Library by date | `bots.md:77-103`; `files-and-results.md:246-253` | copied; Library P1 |
+| Name, picture, label; personal Bots stay light | `bots.md:5-6,77-103` | Title Case display name + job label + monogram avatar; no bio; creation form takes name/job/instructions ([bot-persona.md](bot-persona.md)) |
 | Errors above composer as notices | `settings-and-notifications.md:239-247` | copied as one-line notices |
 | Sign-in → intro → first bot → chat | `get-started.md:48-57` | adapted with dependency + key steps |
 | Voice, group chats, X Chat, mobile, shared bots, templates, marketplace, Vault, bot email, Auto Review rules | Grok Bot product surface | out of v0.1 (§9) |
@@ -283,5 +296,6 @@ Rules:
 
 Voice input/chat, group chats, X Chat, mobile layouts, shared bots, bot templates
 and marketplace, Vault/Secure Form, bot email, Auto Review rules and
-"Always allow" (v0.2), primary-bot check-ins, custom themes, artifact preview
-beyond links, and keyboard shortcuts beyond Enter/Escape.
+"Always allow" (v0.2), primary-bot check-ins, avatar upload or generation,
+personality presets, custom themes, artifact preview beyond links, and keyboard
+shortcuts beyond Enter/Escape.

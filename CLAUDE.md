@@ -75,7 +75,7 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 Repository: **Rayrun Bot** (`RayrunOS/Rayrun-Bot`). DSH plugin package names keep the `dsh-` prefix for DSH discovery.
 
 - `README.md` — product page (English, source of truth); `README.zh-CN.md` — mirror, updated in the same commit.
-- `docs/` — quick start, architecture, security, FAQ, roadmap, MVP plan, client plan, UI design, local file design, platform asks. README stays short; detail goes here.
+- `docs/` — quick start, architecture, security, FAQ, roadmap, MVP plan, client plan, UI design, bot persona, local file design, platform asks. README stays short; detail goes here.
 - `packages/dsh-rayrun-bots/` — the whole product layer: bot roster, bot↔session mapping, persistent host, approvals, routines, client panel, and the adapter to the cloud-computer plugin. Does not exist yet; that is what this repo is building.
 - `dsh-rayrun-computer` — **a separate project** (`RayrunOS/dsh-rayrun-computer`, MIT), not a directory in this repo. It provides the cloud computers and the `rayrun_*` tools; Rayrun Bot consumes it as a dependency. Never modify, fork or vendor it here.
 - `package.json` — private workspace root. No dependencies, no build step.

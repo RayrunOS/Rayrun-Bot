@@ -67,7 +67,7 @@ In — P0 unless marked P1:
 
 | Item | Note |
 | --- | --- |
-| Bot registry: name, instructions, skills, memory dir | bots are profile directories on the machine, not code |
+| Bot registry: name, label, avatar, instructions, skills, memory dir | bots are profile directories on the machine, not code |
 | Roster page and per-bot chat | reuse DSH chat where the API allows; see client plan |
 | Bot↔session mapping | persisted on the machine, mirrored locally |
 | Cloud bot host: queue, inbox/outbox, watchdog | one agent task at a time |
@@ -135,9 +135,12 @@ The local (plugin-side) file layout is specified in
 
 ### 4.3 Schemas
 
-**`bot.json`** — `{ schema: 1, id, name, instructions, skills: [], model?: "deepseek", createdAt, updatedAt }`.
-Ids are kebab-case, unique per user; instructions are plain markdown, capped at
-8 KB.
+**`bot.json`** — `{ schema: 1, id, name, label, avatar, instructions, skills: [], model?: "deepseek", createdAt, updatedAt }`.
+`id` is kebab-case and unique per user; `name` is the Title Case display name;
+`label` is the one-line job shown under the name; `avatar` is a monogram spec
+(`{ kind: "monogram", letter, hue }`) in v0.1; instructions are plain markdown,
+capped at 8 KB. New bots start from the default instruction template in
+[bot-persona.md](bot-persona.md) §6.
 
 **Queue item** — `{ id, botId, kind: "message" | "task" | "wake", text, createdAt, state, attempts }`
 with states `queued → running → waiting_approval → done | failed | cancelled`.
@@ -203,7 +206,7 @@ Estimates include tests; "Done when" is the evidence, not a code-complete claim.
 
 | ID | Task | Deliverable | Depends | Est | Done when |
 | --- | --- | --- | --- | --- | --- |
-| B1 | `bot.json` schema + validation | validator, `schema` version field | A1 | 1 | invalid definitions rejected with a code |
+| B1 | `bot.json` schema + validation | validator for id/name/label/avatar/instructions + default persona template; `schema` version | A1 | 1 | invalid definitions rejected with a code; a new bot gets the default template |
 | B2 | Machine layout init | idempotent directory creation | B1 | 0.5 | re-running never loses files |
 | B3 | Registry + local mirror | host cache, rotation on refresh | B1 | 1 | mirror survives a host restart |
 | B4 | Bot CRUD RPC | list/get/create/update/delete | A3, B1 | 1.5 | contract tests, delete removes machine dir |

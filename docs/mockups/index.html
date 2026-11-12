@@ -198,6 +198,9 @@
   .usage { color: var(--muted); font-size: 12px; }
   .usage b { color: var(--text); font-weight: 600; }
 
+  .flabel { display: grid; gap: 5px; font-size: 11px; color: var(--muted); }
+  .field.area { min-height: 64px; resize: vertical; font-family: inherit; }
+  .brand .icon-btn { margin-left: auto; flex: none; }
   .hidden { display: none !important; }
   @media (max-width: 1120px) { .app.with-preview { grid-template-columns: 230px 1fr; } .preview { display: none; } }
 </style>
@@ -209,22 +212,23 @@
     <div class="brand">
       <div class="mark" aria-hidden="true"><svg width="11" height="11" viewBox="0 0 12 12"><path d="M6 .8 11.2 6 6 11.2.8 6Z" fill="#fff"></path></svg></div>
       <div><div class="brand-name">Rayrun Bot</div><div class="brand-sub">DeepSeek Harness</div></div>
+      <button class="icon-btn" data-go="newbot" title="New bot" style="margin-left:auto">+</button>
     </div>
 
     <div class="roster">
       <button class="bot active" data-go="chat">
         <div class="avatar a1">W</div>
-        <div><div class="name">weekly-watch</div><div class="label">weekly digest</div></div>
+        <div><div class="name">Weekly Watch</div><div class="label">weekly digest</div></div>
         <span class="dot working" title="working"></span>
       </button>
       <button class="bot" data-go="chat">
         <div class="avatar a2">I</div>
-        <div><div class="name">inbox-triage</div><div class="label">inbox</div></div>
+        <div><div class="name">Inbox Triage</div><div class="label">inbox</div></div>
         <span class="dot needs" title="needs attention"></span>
       </button>
       <button class="bot" data-go="chat">
         <div class="avatar a3">D</div>
-        <div><div class="name">docs-refresh</div><div class="label">docs</div></div>
+        <div><div class="name">Docs Refresh</div><div class="label">docs</div></div>
         <span class="dot unread" title="unread"></span>
       </button>
     </div>
@@ -247,7 +251,7 @@
       <div class="left">
         <div class="avatar a1">W</div>
         <div>
-          <div class="title">weekly-watch <span class="dot working"></span></div>
+          <div class="title">Weekly Watch <span class="dot working"></span></div>
           <div class="meta">dsh-workspace · ¥3.10 today</div>
         </div>
       </div>
@@ -264,7 +268,7 @@
       <div class="msg">
         <div class="avatar a1">W</div>
         <div>
-          <div class="who">weekly-watch</div>
+          <div class="who">Weekly Watch</div>
           <div class="text">Draft is ready. Two things need your approval before I leave the computer.</div>
         </div>
       </div>
@@ -275,7 +279,7 @@
           <span class="m">waits for you</span>
         </div>
         <div class="warn">This shares data outside your computer.</div>
-        <div class="meta">weekly-watch · requested 09:13</div>
+        <div class="meta">Weekly Watch · requested 09:13</div>
         <div class="actions">
           <button class="btn ghost">Deny</button>
           <button class="btn primary">Allow once</button>
@@ -292,7 +296,7 @@ Subject: Week 45 digest
 
 Hi all — here is this week's digest…
 Thanks,
-weekly-watch</div>
+Weekly Watch</div>
         <div class="actions">
           <button class="btn ghost">Discard</button>
           <button class="btn primary">Send</button>
@@ -302,7 +306,7 @@ weekly-watch</div>
       <div class="msg">
         <div class="avatar a1">W</div>
         <div>
-          <div class="who">weekly-watch</div>
+          <div class="who">Weekly Watch</div>
           <div class="text">I'll keep watching the channel and report back at 18:00.</div>
         </div>
       </div>
@@ -312,7 +316,7 @@ weekly-watch</div>
 
     <div class="composer">
       <button class="clip" title="Attach a file">⌕</button>
-      <input placeholder="Message weekly-watch…">
+      <input placeholder="Message Weekly Watch…">
       <button class="send" title="Send">↑</button>
     </div>
   </main>
@@ -346,22 +350,22 @@ weekly-watch</div>
         <div class="list">
           <button class="item active">
             <div class="t"><span>publish draft</span><span class="ttl">waits</span></div>
-            <div class="s">inbox-triage · from a chat message</div>
+            <div class="s">Inbox Triage · from a chat message</div>
           </button>
           <button class="item">
             <div class="t"><span>send reply</span><span class="ttl">28 min</span></div>
-            <div class="s">weekly-watch · from a routine</div>
+            <div class="s">Weekly Watch · from a routine</div>
           </button>
           <button class="item">
             <div class="t"><span>destroy computer</span><span class="ttl">expired</span></div>
-            <div class="s">docs-refresh · denied</div>
+            <div class="s">Docs Refresh · denied</div>
           </button>
         </div>
         <div class="panel">
           <h2>Publish “Week 45 digest” to Feishu #weekly</h2>
           <div class="risk">This shares data outside your computer. This can't be undone.</div>
           <div class="kv">
-            <span class="k">Bot</span><span>inbox-triage</span>
+            <span class="k">Bot</span><span>Inbox Triage</span>
             <span class="k">Computer</span><span>dsh-workspace</span>
             <span class="k">Requested</span><span>09:13 · from a chat message</span>
             <span class="k">Answer</span><span>waits for you</span>
@@ -382,7 +386,7 @@ weekly-watch</div>
         <div style="display:flex;align-items:center;gap:11px">
           <div class="avatar a1" style="width:34px;height:34px;font-size:12px">W</div>
           <div>
-            <h1 class="page-title">weekly-watch</h1>
+            <h1 class="page-title">Weekly Watch</h1>
             <p class="page-sub">weekly digest · dsh-workspace</p>
           </div>
         </div>
@@ -394,12 +398,12 @@ weekly-watch</div>
       </div>
       <div class="group">
         <h3>Today</h3>
-        <div class="file"><div class="ic">PDF</div><div><div class="nm">Week 45 digest.pdf</div><div class="sb">created by weekly-watch · 09:13</div></div><div class="tm">09:13</div></div>
+        <div class="file"><div class="ic">PDF</div><div><div class="nm">Week 45 digest.pdf</div><div class="sb">created by Weekly Watch · 09:13</div></div><div class="tm">09:13</div></div>
         <div class="file"><div class="ic">PNG</div><div><div class="nm">channel-preview.png</div><div class="sb">sent in the conversation · 09:12</div></div><div class="tm">09:12</div></div>
       </div>
       <div class="group">
         <h3>This week</h3>
-        <div class="file"><div class="ic">MD</div><div><div class="nm">week-44-digest.md</div><div class="sb">created by weekly-watch · Mon</div></div><div class="tm">Mon</div></div>
+        <div class="file"><div class="ic">MD</div><div><div class="nm">week-44-digest.md</div><div class="sb">created by Weekly Watch · Mon</div></div><div class="tm">Mon</div></div>
       </div>
       <div class="group">
         <h3>Older</h3>
@@ -442,6 +446,29 @@ weekly-watch</div>
     </div>
   </main>
 
+  <!-- ============ new bot ============ -->
+  <main class="main hidden" data-screen="newbot">
+    <div class="wizard-wrap">
+      <div class="wizard" style="width: 440px">
+        <h1>New bot</h1>
+        <p class="sub">A name and one job. You can refine the instructions later.</p>
+        <div class="line" style="margin-bottom: 16px">
+          <div class="avatar a1" style="width: 38px; height: 38px; font-size: 13px">W</div>
+          <div class="meta" style="color: var(--faint)">Monogram avatar · colour assigned from the name</div>
+        </div>
+        <div style="display: grid; gap: 10px">
+          <label class="flabel">Name<input class="field" value="Weekly Watch"></label>
+          <label class="flabel">Job, one line<input class="field" value="Summarises weekly PRs and drafts the digest"></label>
+          <label class="flabel">Instructions, optional<textarea class="field area" rows="4" placeholder="You are Weekly Watch, a teammate on the user's team. Your job: …"></textarea></label>
+        </div>
+        <div class="foot">
+          <button class="btn ghost" data-go="chat">Cancel</button>
+          <button class="btn primary" data-go="chat">Create bot</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
   <!-- ============ settings ============ -->
   <main class="main hidden" data-screen="settings">
     <div class="page">
@@ -477,7 +504,7 @@ weekly-watch</div>
 </div>
 
 <script>
-  const screens = ["chat", "approvals", "library", "setup", "settings"];
+  const screens = ["chat", "approvals", "library", "setup", "settings", "newbot"];
   const app = document.getElementById("app");
   const preview = document.getElementById("preview");
   function show(name) {
