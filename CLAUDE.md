@@ -76,7 +76,7 @@ Repository: **Rayrun Bot** (`RayrunOS/Rayrun-Bot`). DSH plugin package names kee
 
 - `README.md` — product page (English, source of truth); `README.zh-CN.md` — mirror, updated in the same commit.
 - `docs/` — quick start, architecture, security, FAQ, roadmap, Grok Bot inspiration, MVP plan, client plan, UI design, bot persona, local file design, platform asks. README stays short; detail goes here.
-- `packages/dsh-rayrun-bots/` — the whole product layer: bot roster, bot↔session mapping, persistent host, approvals, routines, client panel, and the adapter to the cloud-computer plugin. Does not exist yet; that is what this repo is building.
+- `packages/dsh-rayrun-bots/` — the whole product layer: bot roster, bot↔session mapping, persistent host, approvals, routines, client panel, and the adapter to the cloud-computer plugin. A1 skeleton exists (`package.json`, `index.js`, `client.js`, `lib/`, `locale/`, `test/`); the bot layer itself is not built yet.
 - `dsh-rayrun-computer` — **a separate project** (`RayrunOS/dsh-rayrun-computer`, MIT), not a directory in this repo. It provides the cloud computers and the `rayrun_*` tools; Rayrun Bot consumes it as a dependency. Never modify, fork or vendor it here.
 - `package.json` — private workspace root. No dependencies, no build step.
 
@@ -110,14 +110,20 @@ Read `README.md` and the relevant `docs/` page before changing anything; read th
 
 ## 8. Checks and definition of done
 
-There is no build step and no test suite in this repo yet — packages have not landed. Do not invent commands. Until they do:
+No build step and no runtime dependencies. Real commands today:
 
 ```bash
-git diff --check                       # whitespace errors
-node --check path/to/changed-file.js   # syntax, once packages exist
+git diff --check
+node --check packages/dsh-rayrun-bots/index.js
+node --check packages/dsh-rayrun-bots/client.js
+node packages/dsh-rayrun-bots/test/manifest-check.mjs
+node packages/dsh-rayrun-bots/test/locale-audit.mjs
 ```
 
-When the packages land, each carries its own `node test/*.mjs` scripts (the plain-Node pattern from `dsh-rayrun-computer`), and new behavior comes with a test. Live integration tests need real Rayrun credentials and are never run in CI.
+There is no CI workflow yet. Each package carries its own `node test/*.mjs`
+scripts (the plain-Node pattern from `dsh-rayrun-computer`); new behavior comes
+with a test. Live integration tests need real Rayrun credentials and are never
+run in CI.
 
 "Done" means all of the following:
 

@@ -1,0 +1,11 @@
+# Rayrun Bot bundle.
+#
+# Mounts the host half. The client half is declared in package.json under
+# `dsh.client` and loaded by DSH when the page starts.
+#
+# The row id must equal the host plugin's `name` (`rayrun-bots`), and the
+# `name` must equal this package's name, or DSH loads a different module.
+- insert:
+    - id: rayrun-bots
+      name: 'dsh-rayrun-bots'
+      config: {}

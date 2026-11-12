@@ -1,0 +1,13 @@
+{
+  "panel": {
+    "label": "Bots",
+    "title": "Bots"
+  },
+  "placeholder": {
+    "heading": "No bots yet",
+    "body": "The bot layer is being built. This page is the A1 skeleton."
+  },
+  "error": {
+    "hostDown": "The bot host is not responding."
+  }
+}

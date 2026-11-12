@@ -1,0 +1,13 @@
+{
+  "panel": {
+    "label": "Bots",
+    "title": "Bots"
+  },
+  "placeholder": {
+    "heading": "还没有 Bot",
+    "body": "Bot 层正在建设中。这个页面是 A1 骨架。"
+  },
+  "error": {
+    "hostDown": "Bot host 没有响应。"
+  }
+}

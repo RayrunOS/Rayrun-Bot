@@ -1,0 +1,41 @@
+{
+  "name": "dsh-rayrun-bots",
+  "version": "0.1.0-alpha.0",
+  "description": "Rayrun cloud bots for DeepSeek Harness: named bots that live on your own Rayrun cloud computer, run on your DeepSeek key, and come back for approvals.",
+  "license": "MIT",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RayrunOS/Rayrun-Bot.git",
+    "directory": "packages/dsh-rayrun-bots"
+  },
+  "homepage": "https://github.com/RayrunOS/Rayrun-Bot",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./locale/*.json": "./locale/*.json"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "cordis.patch.yml",
+    "lib/*.js",
+    "locale/*.json",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=24"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-sidebar"
+      ]
+    }
+  }
+}
