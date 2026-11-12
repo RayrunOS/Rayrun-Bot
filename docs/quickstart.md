@@ -1,8 +1,8 @@
 # Quickstart
 
-*Status: 2026-11-11. Two separate projects. This repository is pre-alpha: it
-holds docs and repository scaffolding, no publishable code yet. The
-cloud-computer plugin at
+*Status: 2026-11-13. Two separate projects. This repository is pre-alpha: it
+holds docs, repository scaffolding and the `dsh-rayrun-bots` A1 skeleton, no
+publishable code yet. The cloud-computer plugin at
 [RayrunOS/dsh-rayrun-computer](https://github.com/RayrunOS/dsh-rayrun-computer)
 is untouched and stays its own project; this repository builds the bot layer and
 reuses that plugin as an external dependency — two plugins in one DSH profile.*
@@ -88,9 +88,9 @@ None of steps 1–5 exist yet in this repository. See
 | | |
 | --- | --- |
 | **Works today** (separate project) | the seven tools, noVNC desktop, per-session cloud/local routing, hash-verified workspace sync, task delegation, worker projection, optional idle stop; verified on DSH `0.2.1-rc.5` |
-| **This repository** | README, docs, issue/PR templates, agent rules. No publishable code. |
+| **This repository** | README, docs, issue/PR templates, agent rules, and the `dsh-rayrun-bots` A1 skeleton with plain-Node checks and a checks-only CI workflow. No publishable code. |
 | **Planned, unverified** | two-plugin install: the Rayrun Bot bundle declares `dsh-rayrun-computer` as a dependency so one install loads both host and client halves (W0 spike S6) |
-| **Not built yet** | bot roster and bot↔session mapping, a persistent DSH host on the machine, remote approvals, routines and triggers, cost bar, IM channel, npm packages and CI |
+| **Not built yet** | bot roster and bot↔session mapping, a persistent DSH host on the machine, remote approvals, routines and triggers, cost bar, IM channel, npm packages and the release/publish CI path |
 | **Blocked on the Rayrun platform** | safe inbound networking (the token ingress is unusable today and only `public` works), idle auto-stop, a spend cap, the session-resume contract |
 
 ## Troubleshooting

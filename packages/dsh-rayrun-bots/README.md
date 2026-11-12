@@ -7,8 +7,9 @@ one health action. There is no bot layer yet.
 ## What it does today
 
 - Host half: `GET /plugins/rayrun-bots?action=health` returns
-  `{ ok: true, plugin: "rayrun-bots", version, ready: false }`. No credentials are
-  touched.
+  `{ ok: true, plugin: "rayrun-bots", version, ready: false }`. `POST` is
+  same-origin gated: a browser `Origin` that does not match the request `Host`
+  is refused with 403. No credentials are touched.
 - Client half: a `Bots` sidebar entry and a placeholder page. It does not call
   the host yet.
 
@@ -37,7 +38,12 @@ node --check index.js
 node --check client.js
 node test/manifest-check.mjs
 node test/locale-audit.mjs
+node test/rpc-contract.mjs
 ```
+
+The same commands run in the repository's checks-only CI workflow on push and
+pull requests: [`.github/workflows/checks.yml`](../../.github/workflows/checks.yml).
+Live integration tests need real Rayrun credentials and never run in CI.
 
 ## Layout
 

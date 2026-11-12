@@ -114,7 +114,7 @@ Rayrun Bot/
 ├── LICENSE                      # MIT
 ├── SECURITY.md                  # 如何私下报告漏洞
 ├── CONTRIBUTING.md              # PR 规则（旁边还有 CODE_OF_CONDUCT.md）
-├── .github/                     # issue 与 PR 模板
+├── .github/                     # issue/PR 模板与检查用 CI workflow
 ├── package.json                 # 私有 workspace 根
 ├── docs/                        # 设计文档、计划、平台需求
 └── packages/
@@ -133,19 +133,19 @@ dsh plugin --profile web add /absolute/path/to/package
 # 之后重启 DSH；页面启动时会加载新的 Client 半区
 ```
 
-- 检查：`node --check packages/dsh-rayrun-bots/index.js`、`node packages/dsh-rayrun-bots/test/manifest-check.mjs`、`node packages/dsh-rayrun-bots/test/locale-audit.mjs`。
+- 检查：`node --check packages/dsh-rayrun-bots/index.js`、`node packages/dsh-rayrun-bots/test/manifest-check.mjs`、`node packages/dsh-rayrun-bots/test/locale-audit.mjs`、`node packages/dsh-rayrun-bots/test/rpc-contract.mjs`；同一组检查在 CI 里对 push 和 pull request 运行（`.github/workflows/checks.yml`）。
 - 实时集成测试需要真实 Rayrun 凭据，永远不在 CI 里跑。
 - 改任何东西之前先读 [`CLAUDE.md`](CLAUDE.md) 和 [`CONTRIBUTING.md`](CONTRIBUTING.md)。提交信息用英文，前缀 `feat:`、`fix:`、`chore:`、`docs:`。
 
 ## 状态
 
-*截至 2026-11-10。*
+*截至 2026-11-13。*
 
 | | |
 | --- | --- |
 | **今天可用**（独立项目，我们的依赖） | 7 个 `rayrun_*` 工具、noVNC 桌面、按会话的云/本地路由、双端哈希校验的 workspace 同步、任务委托、worker 投影、可选空闲停机。已在 DeepSeek Harness `0.2.1-rc.5` 上验证。 |
-| **本仓库** | 仓库本身：README、docs、issue/PR 模板、agent 规则、依赖边界，以及 `dsh-rayrun-bots` 的 A1 骨架（占位页 + health 路由）。还没有 Bot 功能，也没有可发布版本。 |
-| **尚未构建** | Bot 名册与 Bot↔session 映射、机器上的常驻 DSH host、远程审批、routines 与触发器、成本条、IM 通道、两插件安装路径（依赖声明与版本检查）、npm 包与 CI。 |
+| **本仓库** | 仓库本身：README、docs、issue/PR 模板、agent 规则、依赖边界，以及 `dsh-rayrun-bots` 的 A1 骨架（占位页 + health 路由），带普通 Node 检查与只跑检查的 CI workflow。还没有 Bot 功能，也没有可发布版本。 |
+| **尚未构建** | Bot 名册与 Bot↔session 映射、机器上的常驻 DSH host、远程审批、routines 与触发器、成本条、IM 通道、两插件安装路径（依赖声明与版本检查）、npm 包以及发布用的 CI 路径。 |
 | **平台缺口** | 安全入向网络（今天 token ingress 不可用，只有 `public` 能用）、空闲自动停、spend cap、session 续跑契约。完整清单在 [docs/architecture.md](docs/architecture.md)。 |
 
 **v0.1 路径**——从 npm 安装 → 登录 → 创建一个 Bot → 批准它的第一个受限动作。验收标准在 [docs/roadmap.md](docs/roadmap.md)。

@@ -118,9 +118,12 @@ node --check packages/dsh-rayrun-bots/index.js
 node --check packages/dsh-rayrun-bots/client.js
 node packages/dsh-rayrun-bots/test/manifest-check.mjs
 node packages/dsh-rayrun-bots/test/locale-audit.mjs
+node packages/dsh-rayrun-bots/test/rpc-contract.mjs
 ```
 
-There is no CI workflow yet. Each package carries its own `node test/*.mjs`
+A checks-only CI workflow (`.github/workflows/checks.yml`) runs the syntax
+checks and every `test/*.mjs` on push and pull requests; release and publish
+automation does not exist yet. Each package carries its own `node test/*.mjs`
 scripts (the plain-Node pattern from `dsh-rayrun-computer`); new behavior comes
 with a test. Live integration tests need real Rayrun credentials and are never
 run in CI.

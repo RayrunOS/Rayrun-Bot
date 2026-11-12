@@ -114,7 +114,7 @@ Rayrun Bot/
 ├── LICENSE                      # MIT
 ├── SECURITY.md                  # how to report a vulnerability, privately
 ├── CONTRIBUTING.md              # pull-request rules (CODE_OF_CONDUCT.md alongside)
-├── .github/                     # issue and PR templates
+├── .github/                     # issue/PR templates and the checks CI workflow
 ├── package.json                 # private workspace root
 ├── docs/                        # design docs, plans, platform asks
 └── packages/
@@ -133,19 +133,19 @@ dsh plugin --profile web add /absolute/path/to/package
 # restart DSH afterwards; the page loads the new client half on start
 ```
 
-- Checks: `node --check packages/dsh-rayrun-bots/index.js`, `node packages/dsh-rayrun-bots/test/manifest-check.mjs`, `node packages/dsh-rayrun-bots/test/locale-audit.mjs`.
+- Checks: `node --check packages/dsh-rayrun-bots/index.js`, `node packages/dsh-rayrun-bots/test/manifest-check.mjs`, `node packages/dsh-rayrun-bots/test/locale-audit.mjs`, `node packages/dsh-rayrun-bots/test/rpc-contract.mjs`; the same checks run in CI on push and pull requests (`.github/workflows/checks.yml`).
 - Live integration tests need real Rayrun credentials and never run in CI.
 - Read [`CLAUDE.md`](CLAUDE.md) and [`CONTRIBUTING.md`](CONTRIBUTING.md) before changing anything. Commit messages are in English with `feat:`, `fix:`, `chore:` or `docs:` prefixes.
 
 ## Status
 
-*As of 2026-11-10.*
+*As of 2026-11-13.*
 
 | | |
 | --- | --- |
 | **Works today** (separate project, our dependency) | Seven `rayrun_*` tools, noVNC desktop, per-session cloud/local routing, hash-verified workspace sync, task delegation, worker projection, optional idle stop. Verified on DeepSeek Harness `0.2.1-rc.5`. |
-| **This repository** | The repo itself: README, docs, issue and PR templates, agent rules, the dependency boundary, and the `dsh-rayrun-bots` A1 skeleton (placeholder page + health route). No bot features and no publishable release yet. |
-| **Not built yet** | Bot roster and bot↔session mapping, a persistent DSH host on the machine, remote approvals, routines and triggers, cost bar, IM channel, the two-plugin install path (dependency declaration and version check), npm packages and CI. |
+| **This repository** | The repo itself: README, docs, issue and PR templates, agent rules, the dependency boundary, and the `dsh-rayrun-bots` A1 skeleton (placeholder page + health route) with plain-Node checks and a checks-only CI workflow. No bot features and no publishable release yet. |
+| **Not built yet** | Bot roster and bot↔session mapping, a persistent DSH host on the machine, remote approvals, routines and triggers, cost bar, IM channel, the two-plugin install path (dependency declaration and version check), npm packages and the release/publish CI path. |
 | **Platform gaps** | Safe inbound networking (today the token ingress is unusable and only `public` works), idle auto-stop, a spend cap, the session-resume contract. The full list is in [docs/architecture.md](docs/architecture.md). |
 
 **v0.1 path** — install from npm → sign in → create a bot → approve its first gated action. Exit criteria are in [docs/roadmap.md](docs/roadmap.md).

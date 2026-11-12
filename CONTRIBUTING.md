@@ -28,15 +28,18 @@ land than a large speculative one.
 
 ## Local checks
 
-There is no build step and no test suite yet, because the packages have not
-landed in this bootstrap. Until they do:
+There is no build step. Each package carries plain-Node checks under its own
+`test/` directory; run the repository checks from the root:
 
 - `git diff --check` for whitespace errors.
-- `node --check <file>` for plain ESM syntax on any JavaScript you add.
+- `node --check` on every JavaScript file you change.
+- `node packages/dsh-rayrun-bots/test/manifest-check.mjs`
+- `node packages/dsh-rayrun-bots/test/locale-audit.mjs`
+- `node packages/dsh-rayrun-bots/test/rpc-contract.mjs`
 
-When packages land, each brings its own plain-Node `node test/*.mjs` checks;
-this section will list the exact commands. Until then, do not assume a check
-that is not documented here.
+The same checks run in CI (`.github/workflows/checks.yml`) on push and pull
+requests. Live integration tests need real Rayrun credentials and never run in
+CI. Do not assume a check that is not documented here.
 
 ## Code of conduct
 

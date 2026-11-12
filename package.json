@@ -23,7 +23,7 @@
     "sandbox"
   ],
   "scripts": {
-    "test": "node packages/dsh-rayrun-bots/test/manifest-check.mjs && node packages/dsh-rayrun-bots/test/locale-audit.mjs"
+    "test": "node packages/dsh-rayrun-bots/test/manifest-check.mjs && node packages/dsh-rayrun-bots/test/locale-audit.mjs && node packages/dsh-rayrun-bots/test/rpc-contract.mjs"
   },
   "workspaces": [
     "packages/*"
