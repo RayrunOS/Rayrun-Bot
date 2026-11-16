@@ -1,11 +1,245 @@
 {
   "panel": {
-    "label": "Bots",
-    "title": "Bots"
+    "label": "Bots"
   },
-  "placeholder": {
+  "brand": "Rayrun Bot",
+  "list": {
+    "search": "Search",
+    "searchPlaceholder": "Search bots",
+    "newBot": "New bot",
+    "settings": "Settings",
+    "empty": "No matching bots"
+  },
+  "attention": {
+    "needs": "needs attention",
+    "unread": "unread",
+    "working": "working"
+  },
+  "approval": {
+    "title": "Needs approval",
+    "allowOnce": "Allow once",
+    "deny": "Deny",
+    "waits": "waits for you",
+    "expires": "expires in {n} min",
+    "expired": "Expired — the bot did not act",
+    "irreversible": "This can't be undone.",
+    "outside": "This shares data outside your computer.",
+    "warning": "This shares data outside your computer, and it can't be undone.",
+    "allowedLocal": "Allowed once, on this page only. Nothing was sent.",
+    "deniedLocal": "Denied, on this page only. Nothing was sent.",
+    "snippetAllowed": "Allowed once — not sent",
+    "snippetDenied": "Denied — not sent"
+  },
+  "draft": {
+    "send": "Send",
+    "discard": "Discard"
+  },
+  "details": {
+    "activity": "Activity",
+    "library": "Library",
+    "recent": "Recent",
+    "recentEmpty": "Nothing recent.",
+    "upcoming": "Upcoming",
+    "computer": "Computer",
+    "usage": "Usage",
+    "jobComputer": "{job} · {computer}"
+  },
+  "receipt": {
+    "ready": "Ready",
+    "waiting": "Waiting",
+    "done": "Done"
+  },
+  "library": {
+    "today": "Today",
+    "week": "This week",
+    "older": "Older",
+    "empty": "No artifacts yet."
+  },
+  "routine": {
+    "empty": "No routines yet.",
+    "on": "on",
+    "off": "off"
+  },
+  "computer": {
+    "live": "live",
+    "reconnecting": "reconnecting…",
+    "unreachable": "Couldn't reach the computer.",
+    "sleeping": "sleeping",
+    "takeOver": "Take over",
+    "open": "Open",
+    "view": "View",
+    "onComputer": "On the computer · {where}",
+    "desktopLater": "The desktop opens in the cloud-computer plugin. This page can't open it yet."
+  },
+  "notice": {
+    "recovering": "The bot host is restarting. This conversation resumes on its own.",
+    "reconnecting": "Computer reconnecting… retrying in 5s",
+    "attach": "Attachments aren't available in this preview.",
+    "preview": "In-memory preview. Nothing on this page is saved, and approvals are not sent to a worker."
+  },
+  "composer": {
+    "placeholder": "Message {name}…",
+    "attach": "Add attachment",
+    "send": "Send"
+  },
+  "usage": {
+    "balanceLine": "Balance {balance} · {hours} machine-hours",
+    "weekLine": "This week {spend} · idle stop {idle}",
+    "sampleBalance": "¥41.20",
+    "sampleHours": "38.4",
+    "sampleSpend": "¥6.80"
+  },
+  "cost": {
+    "low": "Balance is low — top up in the Rayrun console. Stop is safe; destroy is not."
+  },
+  "empty": {
     "heading": "No bots yet",
-    "body": "The bot layer is being built. This page is the A1 skeleton."
+    "body": "Create one with the plus button. It stays on this page until a bot host exists.",
+    "thread": "No messages yet. What you type stays on this page.",
+    "snippet": "No messages yet"
+  },
+  "newBot": {
+    "title": "New bot",
+    "sub": "Give it a name and one job. Instructions can be changed later.",
+    "monogramHint": "Letter avatar · color is assigned from the name",
+    "name": "Name",
+    "job": "Job, one line",
+    "instructions": "Instructions, optional",
+    "placeholder": "You are {name}, a teammate on the user's team. Your job: …",
+    "defaultName": "Weekly Watch",
+    "defaultJob": "Summarises weekly PRs and drafts the digest",
+    "cancel": "Cancel",
+    "create": "Create bot"
+  },
+  "persona": {
+    "template": "You are {name}, a teammate on the user's team.\nYour job: {job}.\nWork in short, factual updates. Say what you did, what you did not do, and what you need next. Ask before any action that leaves this computer (messages, publishing, spending, another machine). Never claim work you have not verified.\nIf something is unclear, ask one question instead of guessing."
+  },
+  "setup": {
+    "title": "Set up Rayrun Bot",
+    "sub": "Four steps. Each one says what is missing and where to fix it.",
+    "back": "Back",
+    "skip": "Skip for now",
+    "continue": "Continue",
+    "steps": {
+      "dependency": "Dependency",
+      "rayrun": "Rayrun",
+      "key": "DeepSeek key",
+      "bot": "First bot"
+    },
+    "dependencyTitle": "Cloud-computer plugin",
+    "dependencyBody": "Cloud computers come from the separate dsh-rayrun-computer plugin. This page cannot see whether it is installed.",
+    "dependencyStatus": "Not checked",
+    "rayrunTitle": "Connect Rayrun",
+    "rayrunBody": "The cloud computer is provided by Rayrun. Sign in with your own account. The token stays in the DSH vault.",
+    "signIn": "Sign in with Rayrun",
+    "notConnected": "Not connected",
+    "tokenPlaceholder": "…or paste a Rayrun API token",
+    "connect": "Connect",
+    "accountLine": "Account: — · Balance: —",
+    "signInLater": "Sign-in lives in the cloud-computer plugin. This page can't start it, and it does not store a token.",
+    "tokenIgnored": "That token was not saved. This page never keeps it, and the bot host cannot store one yet.",
+    "keyTitle": "DeepSeek key",
+    "keyBody": "Rayrun injects the key into the agent process. It does not go into the workspace, and this page never stores it.",
+    "keyPlaceholder": "…or paste a DeepSeek API key",
+    "keySave": "Save",
+    "keyIgnored": "That key was not saved. This page never keeps a DeepSeek key.",
+    "botTitle": "First bot",
+    "botBody": "Give it a name and one job. It is added to this page only, not to a cloud computer."
+  },
+  "settings": {
+    "title": "Settings",
+    "sub": "Account, usage, and the few settings this plugin owns.",
+    "account": "Account",
+    "usage": "Usage",
+    "notifications": "Notifications",
+    "appearance": "Appearance",
+    "rayrunAccount": "Rayrun account",
+    "rayrunHint": "Token stays in the DSH vault · host side only",
+    "connected": "Connected",
+    "plugin": "Cloud-computer plugin",
+    "pluginHint": "dsh-rayrun-computer v1.0.0",
+    "pluginOk": "OK",
+    "idle": "Idle stop",
+    "idleHint": "Stop the computer when idle. Never destroy it.",
+    "idle15": "15 minutes",
+    "idle30": "30 minutes",
+    "idleOff": "Off",
+    "lowBalance": "Low-balance reminder",
+    "lowBalanceHint": "Show a notice when the balance drops below this.",
+    "notify": "Notifications",
+    "notifyHint": "Notify when a bot finishes or needs you.",
+    "language": "Language",
+    "languageHint": "English or 简体中文",
+    "langEn": "English",
+    "langZh": "简体中文"
+  },
+  "sample": {
+    "user": {
+      "name": "Haoyi",
+      "initials": "HY",
+      "foot": "Rayrun connected · {balance}"
+    },
+    "nora": {
+      "name": "Nora",
+      "job": "weekly digest",
+      "snippet": "Draft is in the library, waiting for you",
+      "time": "20:07",
+      "user": "Summarize last week's PRs and draft the weekly digest. Wait for me before publishing.",
+      "day": "Today 20:07",
+      "reply1": "The draft is ready. I kept it to five sections, and each item links back to its PR.\n\n- **Scope.** 14 merged PRs, 2 still open, 1 reverted.\n- **Draft.** `week-45-digest.md` in the workspace, 420 words.\n- **Next.** Publishing to `#weekly` needs your approval.",
+      "reply2": "The draft is in the Library tab if you want to read it first. I'll wait for your answer.",
+      "computerTitle": "On the computer · Feishu #weekly",
+      "computerSub": "Pasted the digest, waiting for your approval",
+      "approvalTitle": "Publish “Week 45 digest” to Feishu #weekly",
+      "approvalMeta": "Requested 20:07 · from this chat",
+      "r1": "Draft the weekly digest",
+      "r1meta": "09:13 · 3 artifacts · today ¥3.10",
+      "r2": "Publish to #weekly",
+      "r2meta": "Needs your approval · waits for you",
+      "r3": "Docs refresh",
+      "r3meta": "08:40 · 3 pages · today ¥0.60",
+      "f1": "week-45-digest.md",
+      "f1badge": "420 words",
+      "f1meta": "Created by Nora · 09:13",
+      "f2": "channel-preview.png",
+      "f2badge": "Image",
+      "f2meta": "Sent in this chat · 09:12",
+      "f3": "week-44-digest.md",
+      "f3badge": "Done",
+      "f3meta": "Created by Nora · Monday",
+      "f4": "Feishu channel",
+      "f4badge": "Link",
+      "f4meta": "Last week"
+    },
+    "eli": {
+      "name": "Eli",
+      "job": "channel publish",
+      "snippet": "Needs approval: publish the digest",
+      "time": "09:13",
+      "day": "Today 09:13",
+      "reply": "Publishing would send the digest to the channel. I'm stopped here until you approve.",
+      "approvalTitle": "Publish “Week 45 digest” to Feishu #weekly",
+      "approvalMeta": "Requested 09:13 · from this chat"
+    },
+    "june": {
+      "name": "June",
+      "job": "docs",
+      "snippet": "Docs refresh finished — 3 pages",
+      "time": "08:40",
+      "day": "Today 08:40",
+      "reply": "Docs refresh is finished, 3 pages. Nothing needs your approval.",
+      "r1": "Docs refresh",
+      "r1meta": "08:40 · 3 pages · today ¥0.60"
+    },
+    "routine": {
+      "weekly": "Weekly digest",
+      "weeklyWhen": "Friday · 09:00",
+      "inbox": "Inbox sweep",
+      "inboxWhen": "Weekdays · 08:00",
+      "standup": "Standup notes",
+      "standupWhen": "Weekdays · 18:00"
+    },
+    "computerName": "dsh-workspace"
   },
   "error": {
     "hostDown": "The bot host is not responding."
