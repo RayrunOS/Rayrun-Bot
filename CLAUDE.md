@@ -2,9 +2,9 @@
 
 > 本文件是 Claude Code 在本仓库中的项目级**指令**，不承载项目状态、交付进度或文档索引。
 > 状态入口：`README.md` 的 **Status** 段（中文镜像 `README.zh-CN.md` 的「状态」段）。
-> 文档索引：`README.md` 的 Repository layout；设计细节：`docs/`。
+> 文档索引：`docs/README.md`；产品页与状态：`README.md`；设计细节：`docs/`。
 >
-> 本文件用中文。产品文档、代码、注释、接口命名和提交信息仍以英文为准（见 §5）。
+> 本文件用中文。产品 README 英文为准并维护中文镜像；`docs/` 新文档用中文；代码、注释、接口命名和提交信息用英文（见 §5）。
 
 **取舍：** 这些规则偏向谨慎而非速度；琐碎任务自行判断。
 
@@ -38,7 +38,8 @@
 
 - `README.md` / `README.zh-CN.md` — 产品页；英文为真相源，中文同 commit 镜像。
 - `CLAUDE.md` — 本文件，只放指令。
-- `docs/` — 设计、计划与平台诉求：quickstart、architecture、security、FAQ、roadmap、mvp-plan、client-plan、ui-design、bot-persona、local-file-design、platform-asks、inspiration，以及 `docs/mockups/`。
+- `docs/README.md` — 文档索引、分类与 ADR 登记册。
+- `docs/` — 设计、计划与平台诉求：quickstart、architecture、security、FAQ、roadmap、mvp-plan、client-plan、ui-design、bot-persona、local-file-design、platform-asks、inspiration、architecture-decisions，以及 `docs/mockups/`。
 - `packages/dsh-rayrun-bots/` — 目前唯一的包：host half（`index.js`）、client half（`client.js`）、`lib/`、`locale/en.json` + `zh.json`、`test/`、`cordis.patch.yml`、包 `README.md`、`package.json`。
 - 根 `package.json` — 私有 workspace 根；无依赖、无构建步骤。
 - `.github/workflows/checks.yml` — push/PR 的 checks-only CI。
@@ -81,7 +82,7 @@
 
 - Plain ESM JavaScript，Node 24+（DSH 运行时自带 Node）。无构建步骤、无运行时依赖、无 bundler。
 - Client half 只能加载 DSH 提供的模块（`react` 等）；浏览器全局对象可用，Node 内置模块不可用。
-- 代码、注释、接口命名和提交信息用英文；产品文档英文为准，README 有中文镜像。**本文件是刻意使用中文的 agent 指令**，其余文档仍以英文为准。
+- 代码、注释、接口命名和提交信息用英文；产品 README 英文为准并维护中文镜像；`docs/` 新文档用中文，历史英文文档在重写时翻译。**本文件是刻意使用中文的 agent 指令**。
 - 错误：审批、凭据、云生命周期相关的错误绝不吞掉；给出可执行的信息，让调用方失败（fail closed）。
 - 不实现用户没要求的功能；不为单次使用造不必要的抽象；不加未要求的“灵活性”“可配置性”或未来扩展点；不为不可能发生的场景堆错误处理——信任边界（RPC、审批、凭据、文件/网络入口）除外。
 - 200 行能 50 行解决就重写；提交前自问资深工程师会不会认为过度复杂，会就简化。
@@ -108,7 +109,7 @@
 
 - `README.md` 是产品页和英文真相源；`README.zh-CN.md` 是中文镜像，**同一 commit 更新**。README 保持简短，细节进 `docs/`。
 - 状态陈述带日期、与代码一致；构建了某功能就更新状态；“状态”以 README 的 Status 段为准，不在本文件复述。
-- 新增文档要能从 README 或相关 `docs/` 页链接到；Markdown 链接必须可解析。
+- 新增文档先登记到 `docs/README.md` 的文档地图；新增决策在 ADR 登记册加一行。Markdown 链接必须可解析。
 - 本文件只承载指令，不承载项目状态、交付进度或文档索引。
 - 架构性决策同步到 `docs/architecture.md`、`docs/security.md` 或对应计划页；平台相关缺口进 `docs/platform-asks.md`。
 - 不描述不存在的功能；不夸大安全保证。代码与文档冲突时，先核实当前行为，再修正错误的一方。

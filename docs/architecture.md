@@ -183,3 +183,6 @@ there is no HA, no SLA and no cross-region story in this design.
 The decisions that would change this picture are tracked in
 [FAQ](faq.md) and [roadmap](roadmap.md): backend abstraction, per-bot machines,
 where approvals live (browser only or IM too), and whether v0.1 ships routines.
+The consolidated review and decision log for v0.1 is
+[architecture-decisions.md](architecture-decisions.md); an item there is a
+decision only when its status says **Decided**.

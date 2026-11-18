@@ -350,6 +350,10 @@ support issues per user; Rayrun spend per user per week.
 5. **npm ownership** — which account owns both packages, who publishes the
    dependency, and who configures trusted publishing. Due W1.
 
+The consolidated review and decision log, including the trust-boundary,
+ownership and control-channel questions, is
+[architecture-decisions.md](architecture-decisions.md).
+
 ## 12. Release checklist for v0.1.0
 
 - [ ] A1–A12 pass with evidence on a clean machine.
