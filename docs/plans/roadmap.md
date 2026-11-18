@@ -92,18 +92,22 @@ Exit criteria:
 
 ## v1.0 — optional desktop shell and stability
 
-Goal: only if evidence says a standalone app is needed, wrap `dsh web` in a thin
-desktop shell; never rewrite the chat UI. The research view is that the plugin
+Goal: only if evidence says a standalone app is needed, reuse the official DSH
+desktop, or wrap `dsh web` in a thin shell as a fallback; never rewrite the chat
+UI. The research view is that the plugin
 plus `dsh web` is the v0.1/v0.2 form and a desktop app is a later bet, worth
-1–2 weeks of wrapping rather than a new client.
+1–2 weeks of wrapping rather than a new client. The official DSH desktop already
+ships a signed update unit for the shell and its bundled dsh runtime; external
+plugins are installed and updated separately.
 
 Also in scope for a stable v1.0, as capacity allows:
 
 - a documented version compatibility matrix (DSH × cloud image × packages);
 - release and install polish (package manager installs, provenance, an update
-  story); the v1.0 desktop distribution design, including a bundled DSH and
-  signed whole-bundle updates, is in
-  [desktop distribution](../design/desktop-distribution.md) (ADR-014);
+  story); the v1.0 desktop distribution decision is in
+  [desktop distribution](../design/desktop-distribution.md) (ADR-014): reuse
+  the official DSH desktop and install the plugins once by default, or build a
+  custom DSH desktop distribution when one signed update unit is required;
 - public, dated status docs that match the shipped code.
 
 Exit criteria:

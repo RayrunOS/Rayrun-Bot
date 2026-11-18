@@ -27,7 +27,7 @@
 | [ADR-011](#adr-011) | 审批 schema 与 canonical action hash | Proposed | canonical JSON、完整 decision 字段、本地重算 hash | E2–E6, C-S6 |
 | [ADR-012](#adr-012) | 恢复与运行语义 | Proposed | 补字段、时钟规则、限流与审计语义 | C8, D4, E5–E7, A8, A9 |
 | [ADR-013](#adr-013) | 文档清理 | Proposed | 与相关决策同批修正下文列出的矛盾 | docs |
-| [ADR-014](#adr-014) | 桌面发行版与更新单元 | Proposed（v1.0） | 整包签名更新，DSH 作为固定 sidecar | v1.0, 09-deployment |
+| [ADR-014](#adr-014) | 桌面发行版与更新单元 | Proposed（v1.0） | 默认官方 DSH 桌面 + 首启装插件；单一更新单元才做自定义发行版；薄壳 fallback | v1.0, 09-deployment |
 
 ## P0 — 云 host 与审批动工前必须定
 
@@ -450,34 +450,55 @@ untrusted”；[客户端计划](../plans/client-plan.md) C-S6。
 **问题。** 是否把 DSH、两个插件和首启向导打包成一个桌面 App？如果打包，更新单元
 是什么？
 
-**当前设计。** v0.1 是插件 + 用户自己的 DSH，没有独立桌面 App，也没有发布/更新管线
-（[部署](../09-deployment.md) §3、§7）。[路线图](../plans/roadmap.md) v1.0 只写了
-“an update story”，没有设计。
+**已确认（2026-11-19，DSH `master`）。** DSH 已经有 Electron 桌面：
+
+- `electron-updater`；壳 + 匹配的 dsh runtime + pnpm 是**一个签名更新单元**；
+- 外部插件装在 `$DSH_HOME/profiles/desktop`，通过 plugin manager / plugin market /
+  `dsh plugin --profile desktop add` 安装；
+- 官方安装器**不预装**第三方插件；official bundle lists 编译进 DSH 安装，profile
+  不能扩展 optional/on-demand 列表；
+- `ctx.approval`、`ctx.permissionPresets`、`ctx.sessions` /
+  `ctx.sessionPersistence` / `ctx.sessionController`、`ctx.clientModules` 已存在；
+- DSH desktop 自带 product analytics；官方更新 feed 是 DeepSeek 的
+  （`download.deepseek.com`），第三方不能发布。
 
 **问题。** 如果壳、DSH、两个插件各自更新，会出现版本错配；本地 DSH 与云端镜像的
-DSH 版本也可能不一致。静默替换代码会扩大信任面；签名、回滚或迁移缺失会损坏用户
-数据或凭据。用户要的是“打开即用”，因此更新必须覆盖 DSH 本身。
+DSH 版本也可能不一致。用户要的是“打开即用”，但 DSH 官方签名的更新单元**不包含**
+external plugins。要预装插件或把它们放进同一个更新单元，必须定制 DSH 桌面发行版，
+或接受首启安装/单独更新。
 
 **选项。**
 
-1. **薄启动器 + 用户自己安装 DSH**：保持现状；没有“打开即用”，更新由用户/DSH
-   负责。
-2. **整包发行**：壳 + 固定 DSH + 两个插件 + 首启向导，签名 manifest，原子更新、
-   回滚、版本矩阵（推荐）。
-3. **组件独立自动更新**：壳/DSH/插件各自升级；版本错配风险高（不推荐）。
+1. **A. 官方 DSH 桌面 + 首启安装两个插件（默认）**：DSH 用官方 updater；插件用
+   plugin manager/market 单独更新；首启装一次插件。成本最低，不是单一更新单元。
+2. **B. 自定义 DSH 桌面发行版**：从 MIT 源码构建，定制品牌/签名/更新 feed，把两个
+   插件加入 official bundle list 或预置 profile；DSH + 插件整包更新。真正“打开即
+   用”，但维护成本最高。
+3. **C. 自建薄壳**：重复 DSH desktop 已有的 host/updater；只在 DSH 桌面无法满足硬
+   需求时作 fallback。
 
-**建议。** 选项 2。v1.0 做 Electron 薄壳 + DSH sidecar（spike D-S1 验证进程/端口/
-签名更新）；更新默认“提示 + 用户确认”，自动安装 opt-in；manifest 与安装包签名，
-公钥固定在 App；失败即停并回滚；版本矩阵包含本地 DSH 与云端镜像 DSH。设计细节见
-[桌面发行版设计](../design/desktop-distribution.md)。
+**建议。** 默认 **A**。只有“必须一个签名更新单元、且用户不能做插件安装步骤”是硬
+需求时才做 **B**。**C** 作为 fallback，不和 B 同时做。
+
+- A：写清首启安装（plugin index / CLI）、插件更新、DSH 升级后的兼容检查，以及
+  DSH analytics 的声明。
+- B：先做 spike D-S1：用 DSH 桌面源码构建自定义品牌、签名和更新 feed，预置 bundle，
+  关闭/声明 analytics，验证 DSH + 插件整包更新与回滚。
+- 两者都必须：更新默认“提示 + 用户确认”，签名 manifest，失败即停并回滚，版本矩阵
+  包含本地 DSH 与云端镜像 DSH。
+
+设计细节见 [桌面发行版设计](../design/desktop-distribution.md)。
 
 **影响。** v1.0 范围、[部署](../09-deployment.md)、[产品方向](../00-product-direction.md)
-§8、[集成](../08-integration.md) 的镜像版本；不阻塞 v0.1。需要 spike D-S1 和发布
-签名密钥管理。
+§8、[集成](../08-integration.md) 的镜像版本；不阻塞 v0.1。B 还需要 DSH 桌面构建/
+签名/更新源与 analytics 配置的确认。
 
-**证据。** [产品方向](../00-product-direction.md) §8；[架构](../01-system-architecture.md)
-“薄客户端”；[路线图](../plans/roadmap.md) v1.0；[部署](../09-deployment.md) §7；
-[安全](../07-security.md) §4.6；[集成](../08-integration.md) §5。
+**证据。** DSH `apps/desktop/README.md`、`packages/util/official-bundles/README.md`、
+`docs/capability-seams.md`、`docs/user/guide/plugin-market.md`；
+[桌面发行版设计](../design/desktop-distribution.md)；[产品方向](../00-product-direction.md)
+§8；[架构](../01-system-architecture.md) “薄客户端”；[路线图](../plans/roadmap.md)
+v1.0；[部署](../09-deployment.md) §7；[安全](../07-security.md) §4.6；
+[集成](../08-integration.md) §5。
 
 ## 建议顺序
 
@@ -488,8 +509,8 @@ DSH 版本也可能不一致。静默替换代码会扩大信任面；签名、�
 4. **ADR-007 spike。** M2 前必须拿到 session、常驻 host 和凭据注入的证据。
 5. **ADR-006、ADR-008、ADR-009 并行。** 它们是范围/产品决策，不是代码阻塞。
 6. **ADR-010 与 ADR-013 作为清理。** 在客户端接 host 之前对齐 RPC 契约和文档。
-7. **ADR-014 是 v1.0 的前置。** 先跑 spike D-S1（Electron/Tauri + sidecar + 签名
-   更新），不在 v0.1 做桌面发行版。
+7. **ADR-014 是 v1.0 的前置。** 先确认 A/B：默认 A（官方 DSH 桌面 + 首启装插件）；
+   只有必须单一签名更新单元时才做 B，并先跑 spike D-S1。不在 v0.1 做桌面发行版。
 
 B1（`bot.json` schema）可以在 ADR-002 与 ADR-011 定下字段和所有权后开始；不要先
 finalize 一个会被所有权模型推翻的 schema。

@@ -156,8 +156,8 @@ node packages/dsh-rayrun-bots/test/client-contract.mjs
 
 CI（`.github/workflows/checks.yml`）在 push/PR 上跑语法检查和所有 `test/*.mjs`。实时
 集成测试需要真实 Rayrun 凭据，绝不在 CI 运行。发布与发布自动化尚不存在；release
-checklist 见 [`plans/mvp-plan.md`](plans/mvp-plan.md) §12。v1.0 桌面发行版的整包
-更新设计见 [`design/desktop-distribution.md`](design/desktop-distribution.md)。
+checklist 见 [`plans/mvp-plan.md`](plans/mvp-plan.md) §12。v1.0 桌面发行版的 A/B/C
+方案见 [`design/desktop-distribution.md`](design/desktop-distribution.md)。
 
 ---
 

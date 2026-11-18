@@ -1,7 +1,9 @@
 # 桌面发行版设计（v1.0）
 
-> 状态：2026-11-18。**设计提案，不是已实现功能。** 本文描述一个把 DSH、两个插件和
-> 首启向导打包在一起的桌面发行版，以及它的更新单元、签名、回滚和版本矩阵。
+> 状态：2026-11-19。**设计提案，不是已实现功能。** 本文基于对 DeepSeek Harness
+> `master` 的实际确认（`apps/desktop`、`packages/util/official-bundles`、
+> `docs/capability-seams.md`），描述“打开即用”的三种分发方案、更新单元、签名与
+> 版本矩阵。
 > 产品方向见 [`../00-product-direction.md`](../00-product-direction.md)；技术基线见
 > [`../01-system-architecture.md`](../01-system-architecture.md)；部署现状见
 > [`../09-deployment.md`](../09-deployment.md)；决策登记见
@@ -12,7 +14,7 @@
 
 | 文档 | 负责什么 |
 | --- | --- |
-| [`../00-product-direction.md`](../00-product-direction.md) | v1.0 可选桌面壳的产品范围 |
+| [`../00-product-direction.md`](../00-product-direction.md) | v1.0 桌面发行版的产品范围 |
 | [`../01-system-architecture.md`](../01-system-architecture.md) | 薄客户端、插件半区、信任模型 |
 | [`../09-deployment.md`](../09-deployment.md) | 今天的安装/运行方式与发布缺口 |
 | [`../07-security.md`](../07-security.md) | 供应链、遥测与凭据边界 |
@@ -22,214 +24,249 @@
 
 ---
 
-## 1. 目标与非目标
+## 1. 结论摘要
 
-### 1.1 目标
+先给结论，细节在后：
 
-- 用户**只装一次**：安装包内含 DSH、`dsh-rayrun-bots`、`dsh-rayrun-computer` 和首启
-  向导；打开 App 就能进入登录/建 bot 流程，不需要单独装 DSH、npm 或插件。
-- 更新**以整包为单位**：壳、DSH、两个插件、locale 一次发布、一次验证、一次回滚，
-  不让组件各自漂移。
-- 更新**可验证、可回滚、失败即停**：签名/哈希/版本矩阵任一不通过，保留旧版本。
-- 用户数据（profile、bot 状态、vault）与安装目录分离；更新不碰凭据和会话。
-
-### 1.2 非目标
-
-- 不 fork、不改 DSH；DSH 作为固定依赖原样打包，按它的许可证与通知要求分发。
-- 不做项目方控制面；更新源用 GitHub Releases / npm 的静态清单或用户包管理器。
-- 不做无账号的“零配置”：用户仍需要自己的 Rayrun 账号和 DeepSeek key。
-- v0.1 不包含本文；v0.1 是插件 + 用户自己的 DSH。
-
----
-
-## 2. 发行包结构
-
-```
-Rayrun Bot Desktop
-├── shell/                     # 窗口壳（Electron 或 Tauri，见 §9）
-├── runtime/dsh/               # 固定版本的 DSH（sidecar）
-├── plugins/
-│   ├── dsh-rayrun-bots/       # 本仓库
-│   └── dsh-rayrun-computer/   # 独立依赖，原样打包
-├── update/
-│   ├── manifest.json          # 版本矩阵、资产、哈希、签名
-│   └── public-key.pem         # 固定在 App 内
-└── resources/                 # 图标、locale、许可证与 notices
-
-用户数据（不在安装目录）：
-$DSH_HOME/ 或 app.getPath('userData')/
-├── profile/                   # DSH profile、bot 定义、session
-├── state/rayrun-bot/          # 本地镜像、日志（见 06-local-state）
-└── vault / keychain           # Rayrun token、DeepSeek key
-```
-
-**安装目录不可变，用户数据外置。** 更新只替换安装目录；profile、vault、日志和 bot
-状态不随安装包覆盖。
+1. **DSH 官方桌面已经存在**：Electron 壳，内置 dsh runtime，外部插件通过 profile /
+   插件管理器加载；使用 `electron-updater`，壳 + 匹配的 dsh runtime + pnpm 是一个
+   签名更新单元。
+2. **官方更新单元不含我们的插件**：`dsh-rayrun-bots` 和 `dsh-rayrun-computer` 是
+   external plugins，装在 `$DSH_HOME/profiles/desktop`，通过插件管理器/市场安装、
+   更新；它们不在 DSH 的签名更新包里。
+3. **官方安装器不预装第三方插件**：official bundle lists 编译在 DSH 安装里，profile
+   不能扩展 optional/on-demand 列表。要预装或把插件纳入同一个更新单元，必须做
+   **自定义 DSH 桌面发行版**（构建/打包层的定制），或首启安装插件。
+4. **不需要改 DSH core**：`ctx.approval`、`ctx.permissionPresets`、
+   `ctx.sessions`/`ctx.sessionPersistence`/`ctx.sessionController`、
+   `ctx.clientModules` 等 seam 已存在，bot 层可以作为插件接入。
+5. 因此 v1.0 是 **A/B/C 三选一**：
+   - **A（默认）**：官方 DSH 桌面 + 首启安装两个插件；DSH 自动更新，插件单独更新。
+   - **B（单一更新单元）**：自定义 DSH 桌面发行版，把 DSH + 两个插件作为整包签名更新。
+   - **C（fallback）**：自建薄壳；重复 DSH 桌面已有的 host/updater，除非有硬需求，
+     否则不推荐。
 
 ---
 
-## 3. 更新单元：整包发布
+## 2. 已确认的 DSH 事实（2026-11-19）
 
-一次 release 固定一个经过测试的组合：
-
-```json
-{
-  "app": "1.4.0",
-  "dsh": "0.2.2-rc.1",
-  "plugins": {
-    "dsh-rayrun-bots": "0.1.0",
-    "dsh-rayrun-computer": "0.2.1"
-  },
-  "cloudImageDsh": "0.2.0-rc.2",
-  "minApp": "1.0.0",
-  "channel": "stable",
-  "assets": [
-    {
-      "platform": "linux-x64",
-      "url": "https://.../rayrun-bot-1.4.0-linux-x64.AppImage",
-      "sha256": "...",
-      "signature": "..."
-    }
-  ]
-}
-```
-
-- 版本矩阵至少包含：**壳 × 本地 DSH × `dsh-rayrun-computer` × `dsh-rayrun-bots` ×
-  云端镜像里的 DSH**。
-- 本地 DSH 与云端镜像 DSH 不一致时，必须明确行为：阻止更新、阻止“合上笔记本继续
-  工作”，或选择兼容镜像。示例：本地基线 `0.2.2-rc.1`，云端镜像 `0.2.0-rc.2`
-  （写入时的状态，见 [`../08-integration.md`](../08-integration.md) §5）。
-- DSH 的 profile/session 格式变更要有迁移与备份；迁移失败回滚。
-- **不要**让壳、DSH、插件各自更新；这会产生“壳是新的、插件是旧的”的版本错配。
-
----
-
-## 4. 更新流程
-
-1. **检查**：启动后或每天一次，HTTPS 拉 manifest；只带版本、平台和 channel，不带
-   prompt、key 或 workspace 数据。
-2. **验证**：用固定在 App 内的公钥验签；校验 SHA-256、平台、DSH/镜像兼容性、
-   `minApp`。任一项失败 → 不更新，保留旧版本（fail closed）。
-3. **下载**：后台下载到临时目录；支持差分包可选，v1 先用完整安装包。
-4. **安装**：解压到 `versions/<version>/`，再次校验；切换指针/symlink，保留上一版本。
-5. **重启**：默认提示“更新已就绪，重启生效”；用户可稍后。自动安装是 opt-in，不静默
-   杀进程。
-6. **迁移**：更新前备份 profile；迁移失败 → 回滚到上一版本，保留用户数据。
-7. **健康检查**：启动后检查 DSH、两个插件、版本矩阵；失败自动回滚并提示。
-8. **回滚**：保留上一版本与数据备份；签名/哈希/迁移/健康检查任一失败都回滚。
-
----
-
-## 5. 数据布局与迁移
-
-- **安装目录不可变**：壳、DSH、插件只读；不把用户状态写进安装目录。
-- **用户数据外置**：DSH profile、bot 定义、session、local state、日志、vault。
-- **更新前备份**：profile 与 `state/rayrun-bot/` 的 schema 版本；迁移失败可回滚。
-- **vault 不动**：Rayrun token、DeepSeek key 的存储路径和权限不随更新改变；更新器
-  不读取、不迁移、不记录它们。
-- **云端状态不动**：更新只影响本地 App；云电脑与 `/workspace/.rayrun/` 由 bot host
-  和用户数据管理，不由安装器触碰。
-
----
-
-## 6. 版本兼容
-
-| 组合 | 行为 |
-| --- | --- |
-| 本地 DSH = 云端镜像 DSH | 正常 |
-| 本地 DSH 较新、云端镜像较旧 | 检查兼容性；不兼容时阻止“合上笔记本”或提示切镜像 |
-| 插件与 DSH 不兼容 | 阻止更新；保留旧包；给一句可执行提示 |
-| `dsh-rayrun-computer` 版本不匹配 | `E_DEP_VERSION`；阻止 bot 层启动 |
-| 壳版本低于 `minApp` | 强制提示更新；不静默运行不兼容组合 |
-
-版本矩阵写进 manifest 与 release notes；兼容性检查在启动和更新时都跑一次。
-
----
-
-## 7. 安全与合规
-
-- **代码签名**：Windows Authenticode，macOS notarization；Linux 提供签名包/校验和。
-- **Manifest 签名**：更新包与 manifest 都签名，公钥固定在 App；不从可变分支直接拉。
-- **更新源**：GitHub Releases / npm 的静态清单或用户包管理器；不新增项目方控制面。
-- **不静默更新**：这个 App 持有 Rayrun token 和云电脑访问权；默认“提示 + 用户
-  确认”，自动安装 opt-in。
-- **更新检查不是遥测**：只发版本/平台/channel；在 [`../07-security.md`](../07-security.md)
-  的 outbound 清单里写明。
-- **回滚**：保留上一版本和用户数据备份；失败即停，不给假成功。
-- **许可证**：DSH 与两个插件按各自许可证分发；打包 notices，不改版权与许可文本。
-
----
-
-## 8. 首启体验
-
-1. 安装 App，打开。
-2. 内置 DSH 启动，加载两个插件，打开 `dsh web` 窗口。
-3. 向导：Rayrun 登录 → DeepSeek key → 选择/创建云电脑 → 创建第一个 bot。
-4. 用户不需要单独安装 DSH、npm 或插件；仍需要自己的 Rayrun 账号和 DeepSeek key。
-
-失败状态（依赖缺失、token/key 缺失、机器停止、host down、审批过期、余额低、网络
-离线）沿用 [`../03-client-design.md`](../03-client-design.md) §6 的“一句提示 + 一个
-下一步”。
-
----
-
-## 9. 实现选择
-
-| 方案 | 更新器 | 代价 |
+| 事实 | 内容 | 来源 |
 | --- | --- | --- |
-| Electron 壳 + sidecar DSH | `electron-updater` / Squirrel / NSIS | 包大；但更新器成熟，DSH 进程管理直接 |
-| Tauri 壳 + sidecar Node/DSH | Tauri updater + minisign | 包小；需要自己管理 sidecar 进程、端口和跨平台二进制 |
-| 薄启动器（不开窗） | 安装器 + 浏览器打开 `dsh web` | 最简单；不再是“桌面 App”体验 |
+| 桌面壳 | `apps/desktop` 是 Electron 壳；内置 dsh runtime，外部插件通过 profile 加载 | `apps/desktop/README.md` |
+| 更新 | `electron-updater`；壳 + 匹配的 dsh runtime + pnpm 是一个签名更新单元；stable/nightly、强制更新策略、回滚/恢复 | 同上 “Key technical decisions / Updates” |
+| 插件位置 | 外部插件装在 `$DSH_HOME/profiles/desktop`；`dsh plugin --profile desktop add <package>`；Plugins 页/plugin manager/market | 同上 “Bundled command runtime / Installation ownership” |
+| 预装限制 | 官方安装器不预装第三方插件；official bundle lists 编译进 DSH 安装，profile 不能扩展 optional/on-demand | `packages/util/official-bundles/README.md` |
+| 插件市场 | 索引 JSON；npm/Git 源；安装需确认；未见 external plugin 自动更新 | `docs/user/guide/plugin-market.md` |
+| 审批 | `ctx.approval`、`ctx.permissionPresets` | `docs/capability-seams.md` |
+| Session | `ctx.sessions`、`ctx.sessionPersistence`、`ctx.sessionController`；session format 有版本与迁移 | 同上；`docs/session-format-status.md` |
+| Client | `ctx.clientModules`（client plugin graph host）；插件 client half 可加载 | 同上 |
+| 遥测 | DSH desktop 自带 product analytics（DeepSeek 策略）；Web usage 排除 | `apps/desktop/README.md` |
+| 更新源 | 官方更新 feed 是 DeepSeek 的（`download.deepseek.com`），第三方不能发布 | `apps/desktop/publishing/README.md` |
+| 版本 | DSH 仓库的 Desktop 包为 `0.2.2-rc.5`；DSH 是 developer preview，会有 breaking changes | `apps/desktop/package.json`、README |
 
-**建议**：Electron 薄壳 + DSH sidecar，先用 spike D-S1 验证：
-
-- DSH 进程生命周期、端口、退出清理；
-- sidecar 在 Windows/macOS/Linux 的启动与路径；
-- `electron-updater` 的签名、差分包、回滚；
-- 本地 DSH 与云端镜像 DSH 的兼容检查。
-
-如果包体积成为主要问题，再评估 Tauri；不要在 v1 同时做两套。
-
----
-
-## 10. 发布流程
-
-1. 固定 DSH 版本 + 插件版本，跑版本矩阵与 A1–A12 的桌面变体。
-2. 构建各平台安装包，签名、notarize、生成 SHA-256。
-3. 生成并签名 manifest，发布到 GitHub Releases（stable/beta channel）。
-4. 从 N-1 升级到 N 的验收：启动、登录、建 bot、审批、重启、回滚。
-5. 分阶段放量；保留 kill switch / 最低版本；安全更新可以要求重启后继续。
-6. 发布说明列出：壳/DSH/插件版本、兼容的云端镜像、已知问题。
+**注意**：以上是 DSH `master` 的事实，不是本仓库已实现的功能。DSH 版本与云端镜像的
+DSH 版本可能不同（本文档写入时：本地基线 `0.2.2-rc.1`，云端镜像 `0.2.0-rc.2`），
+版本矩阵见 §7。
 
 ---
 
-## 11. 验收标准
+## 3. 三种分发方案
 
-- 干净机器：安装 → 打开 → 登录 → 建电脑 → 建 bot → 第一条回复，无需额外安装。
-- 从 N-1 更新到 N：用户数据、bot、session、vault 全部保留。
-- 签名/哈希/manifest 任一失败：不更新，旧版本仍可用。
-- 本地 DSH 与云端镜像不兼容：阻止“合上笔记本”或提示切镜像，不静默继续。
-- 更新中断/磁盘满：旧版本可回滚，用户数据不损坏。
-- 卸载：删除 App 与本地状态；Rayrun token 由用户在 vault 吊销。
-- 无遥测：更新检查只发版本/平台/channel；不带 prompt、key、workspace。
-- 代码签名与 notarization 在 Windows/macOS 上通过。
+| | A. 官方 DSH 桌面 + 首启安装插件 | B. 自定义 DSH 桌面发行版 | C. 自建薄壳 |
+| --- | --- | --- | --- |
+| DSH 更新 | DSH 官方 updater | 我们自己的签名整包更新 | 我们自己的签名整包更新 |
+| 插件更新 | 插件管理器/市场，单独确认 | 跟 DSH 一起整包更新 | 跟 DSH 一起整包更新 |
+| 打开即用 | 首启装一次插件 | 预装，打开即用 | 预装，打开即用 |
+| 维护成本 | 低 | 高：跟随 DSH 0.2.x、签名、更新源 | 高：重复 DSH desktop 的 host/updater |
+| 品牌/体验 | DSH 品牌 | 可做 Rayrun Bot 品牌 | 可做 Rayrun Bot 品牌 |
+| 风险 | 插件与 DSH 版本可能错配 | DSH 构建/签名/更新源全归我们 | 与 B 类似，且多一层壳 |
+| 推荐 | **默认** | 只有“必须单一签名更新单元”时才做 | fallback |
 
 ---
 
-## 12. 未决项
+## 4. 方案 A：官方 DSH 桌面 + 首启安装插件（默认）
+
+### 4.1 组成
+
+- 用户安装 DSH 官方桌面（或未来官方提供的企业/自定义分发入口）。
+- 首次启动后，通过以下任一方式安装两个插件：
+  - DSH 的 plugin manager / Plugins 页；
+  - `dsh plugin --profile desktop add <package>`（应用退出后执行，再打开）；
+  - 我们提供的 plugin index（`docs/user/guide/plugin-market.md` 的格式），让用户在
+    Discover 里一次安装两个插件。
+- 插件来源优先 npm（发布后）或 Git 仓库；本地路径安装需再验证。
+
+### 4.2 更新
+
+- DSH 自身：用官方 updater；壳 + dsh runtime + pnpm 一起更新。
+- 我们的插件：由 plugin manager/market 显示“Update available”，用户确认后安装；
+  **没有看到 external plugin 自动更新的机制**。
+- 因此“打开即用 + DSH 自动更新”成立；“插件也自动更新”不成立，除非我们另做更新器。
+
+### 4.3 版本兼容
+
+- 我们的 `package.json` 需要声明 `engines.dsh` / peer 依赖；plugin manager 会检查。
+- DSH 升级后可能破坏插件；首启/每次 DSH 更新后跑一次兼容检查，失败时提示回退或
+  pin 插件版本。
+- 本地 DSH 与云端镜像 DSH 的版本矩阵仍然存在（§7）。
+
+### 4.4 遥测与信任
+
+- 用户用的是 DSH 官方 App，DSH 的 product analytics 适用；我们的插件不增加遥测。
+- 插件市场索引是第三方内容；我们应发布签名/provenance 清楚的包，并在文档里给出
+  校验方式。
+- 不需要我们维护 DSH 签名和更新源；但插件安装仍需要用户确认。
+
+### 4.5 适用条件
+
+- 能接受“首启装一次插件”和“插件单独更新”；
+- 不需要 Rayrun Bot 品牌桌面；
+- 希望最低维护成本。
+
+---
+
+## 5. 方案 B：自定义 DSH 桌面发行版（单一更新单元）
+
+### 5.1 组成
+
+- 从 DSH 的 MIT 源码构建桌面发行版，保留 Electron + dsh runtime + 插件模型；
+- 定制 product identity、品牌、安装器、签名/notarization、更新 feed；
+- 把 `dsh-rayrun-bots` 和 `dsh-rayrun-computer` 加入 official bundle list，或在
+  桌面 profile 模板中预置；
+- 更新单元 = 壳 + 固定 DSH + 两个插件 + locale；整包签名、原子更新、回滚。
+
+### 5.2 需要自己承担的
+
+- 跟随 DSH `0.2.x` 的 breaking changes，定期 rebase/重建；
+- Windows Authenticode、macOS notarization、Linux 签名；
+- 更新 feed、manifest、公钥、回滚槽、灰度/强制更新策略；
+- DSH 的 product analytics：必须关闭/替换或明确声明，否则违反本项目的“默认无遥测”；
+- DSH 的许可证/notices；MIT 允许分发，但要保留版权与第三方声明；
+- 本地 DSH 与云端镜像 DSH 的版本矩阵。
+
+### 5.3 更新流程
+
+1. 检查 manifest（HTTPS，只带版本/平台/channel）。
+2. 验签 + SHA-256 + 版本矩阵；失败即停。
+3. 下载到临时目录；解压到 `versions/<version>/`；再次校验。
+4. 切换指针；保留上一版本；更新前备份 profile。
+5. 提示重启；用户确认后安装；迁移失败回滚。
+6. 健康检查 DSH、两个插件、云端镜像兼容性；失败回滚。
+
+### 5.4 适用条件
+
+- 产品要求“打开即用、无插件安装步骤”；
+- 产品要求 DSH + 插件在一个签名更新单元里；
+- 团队愿意承担 DSH 桌面构建、签名、更新源和 breaking changes 的维护。
+
+---
+
+## 6. 方案 C：自建薄壳（fallback）
+
+- 自己写 Electron/Tauri 壳，内置 DSH sidecar + 两个插件，自己做 updater。
+- 现在看是重复 DSH desktop 已有的 host/updater/签名/恢复能力。
+- 只在 DSH 桌面无法满足硬需求（窗口/进程模型/品牌/OS 集成）时考虑。
+- 若选 C，更新设计沿用 §5.3，但 DSH 仍是未修改的 sidecar；不要把 C 和 B 同时做。
+
+---
+
+## 7. 数据与版本矩阵
+
+### 7.1 数据位置
+
+- DSH profile：`$DSH_HOME/profiles/desktop`（DSH desktop 独占）。
+- 我们的本地状态：`$DSH_HOME/state/rayrun-bot/`（见 [`../06-local-state.md`](../06-local-state.md)）。
+- vault：Harness vault / OS keychain；更新不触碰。
+- 云端：`/workspace/.rayrun/` 与 bot session；更新不触碰。
+- 安装目录不可变；用户数据外置；更新前备份 profile。
+
+### 7.2 版本矩阵
+
+至少包含：
+
+- DSH desktop 版本；
+- 本地 dsh runtime 版本（DSH desktop 要求与壳完全一致）；
+- `dsh-rayrun-computer` 版本；
+- `dsh-rayrun-bots` 版本；
+- 云端镜像里的 DSH 版本。
+
+不兼容时：
+
+- 阻止更新，保留旧包；
+- 或阻止“合上笔记本继续工作”，提示切换兼容镜像；
+- 给一句可执行提示，不给假成功。
+
+---
+
+## 8. 安全与合规
+
+- **签名**：Windows Authenticode、macOS notarization、Linux 校验和；manifest 与
+  安装包都签名，公钥固定在 App。
+- **更新源**：A 用 DSH 官方 feed；B/C 用我们自己的静态清单/GitHub Releases，不新增
+  项目方控制面。
+- **不静默更新**：默认“提示 + 用户确认”，自动安装 opt-in；这个 App 持有 Rayrun
+  token 与云电脑访问权。
+- **遥测**：A 使用 DSH 官方 App，其 analytics 适用；B/C 必须关闭/替换或明确声明，
+  本项目的插件不增加遥测。
+- **供应链**：DSH、`dsh-rayrun-computer`、本仓库的版本与哈希都要可追溯；插件市场
+  索引是第三方内容，只加可信源。
+- **许可证**：DSH 与两个插件按各自许可证分发；保留 notices。
+
+---
+
+## 9. 首启体验
+
+**A（默认）**
+
+1. 安装 DSH 官方桌面，打开。
+2. 通过 plugin index 或 CLI 安装 `dsh-rayrun-bots` + `dsh-rayrun-computer`（一次确认）。
+3. 打开 Bots 页 → Rayrun 登录 → DeepSeek key → 创建/选择云电脑 → 第一个 bot。
+
+**B（自定义发行版）**
+
+1. 安装 Rayrun Bot Desktop，打开。
+2. 插件已预置；直接 Rayrun 登录 → DeepSeek key → 云电脑 → 第一个 bot。
+
+两种都需要用户自己的 Rayrun 账号和 DeepSeek key；“打开即用”指没有手动安装 DSH/插件
+的步骤，不是没有账号。
+
+---
+
+## 10. 验收标准
+
+### A
+
+- 干净机器安装 DSH 官方桌面；按首启引导一次装好两个插件；创建第一个 bot。
+- DSH 自动更新后，插件兼容检查通过或给出明确回退提示。
+- 插件更新经 plugin manager 确认；无自动插件更新时不伪装成已更新。
+- 卸载 DSH 后，用户数据与 Rayrun token 的处置符合 DSH 的卸载规则。
+
+### B
+
+- 干净机器安装 Rayrun Bot Desktop；打开即进入登录/建 bot，无需装插件。
+- 从 N-1 更新到 N：DSH、两个插件、用户数据、vault 全部保留。
+- 签名/哈希/版本矩阵任一失败：不更新，旧版本可用。
+- 本地 DSH 与云端镜像不兼容：阻止“合上笔记本”或提示切镜像。
+- 更新中断/磁盘满：回滚，用户数据不损坏。
+- 遥测关闭/声明符合本项目不变量。
+- 卸载干净；Rayrun token 由用户在 vault 吊销。
+
+---
+
+## 11. 未决项
 
 | 问题 | 影响 | 决策 |
 | --- | --- | --- |
-| Electron 还是 Tauri | 包体积、进程管理、构建工具 | ADR-014 / spike D-S1 |
-| 整包更新是否唯一路径 | 版本错配 | 建议是（ADR-014） |
-| 静默 vs 提示更新 | 信任与安全 | 建议提示 + opt-in 自动安装 |
+| A 还是 B | 维护成本、品牌、更新单元 | ADR-014 |
+| A 的首启安装方式（plugin index / CLI / 安装器） | 用户第一步 | 需验证本地路径与 plugin index |
+| B 的产品身份、签名、更新源 | 能否发行 | 需 DSH 桌面配置/构建确认 |
+| B 的 analytics 关闭方式 | 无遥测承诺 | 需确认 DSH 配置 |
 | 本地 DSH 与云端镜像不一致时阻断什么 | 产品承诺 | 版本矩阵与 feature gate |
-| 发布源与签名密钥管理 | 供应链 | GitHub Releases + 固定公钥 |
-| DSH 上游安全更新的跟进节奏 | 维护成本 | 固定版本 + 定期整包发布 |
+| external plugin 是否能自动更新 | “打开即用”的完整度 | 目前未见机制，需 DSH 确认 |
 
 ---
 
-## 13. 相关文档
+## 12. 相关文档
 
 - [`../00-product-direction.md`](../00-product-direction.md) v1.0
 - [`../01-system-architecture.md`](../01-system-architecture.md)

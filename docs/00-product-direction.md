@@ -191,12 +191,13 @@ v0.1 的完成标准是 [`plans/mvp-plan.md`](plans/mvp-plan.md) §2 的 A1–A1
 | --- | --- | --- |
 | v0.1 | 闭环保通 | 双插件、一台电脑、bot 注册表、续接、审批、成本栏、打包与 A1–A12 |
 | v0.2 | 手机上也能批 | 用户自己的 IM bot token（Telegram / Feishu）；无项目方中继；浏览器路径保持可用 |
-| v1.0 | 可选桌面壳 / 发行版 | 包一层 `dsh web`；可把 DSH + 两个插件整包分发并签名更新；不重写聊天 UI。设计见 [桌面发行版](design/desktop-distribution.md)（ADR-014） |
+| v1.0 | 桌面发行版 | 默认复用 DSH 官方桌面 + 首启安装两个插件；只有“必须单一签名更新单元”时才做自定义 DSH 桌面发行版；自建薄壳为 fallback。设计见 [桌面发行版](design/desktop-distribution.md)（ADR-014） |
 | 不计划 | 见 [`plans/roadmap.md`](plans/roadmap.md) “Not planned” | 多租户 SaaS、托管账号、团队/RBAC、市场、移动 App、provider 抽象、转售计费、多区域/SLA |
 
 v0.1 的估算与排序见 [`plans/mvp-plan.md`](plans/mvp-plan.md)；里程碑摘要见
 [`plans/roadmap.md`](plans/roadmap.md)。估时是工程判断，不是承诺。v1.0 的桌面
-发行版与更新单元见 [桌面发行版](design/desktop-distribution.md) 和
+发行版是 A/B/C 三选一（A 默认：官方 DSH 桌面 + 首启装插件；B：自定义 DSH 桌面
+发行版；C：自建薄壳 fallback），见 [桌面发行版](design/desktop-distribution.md) 和
 [ADR-014](adr/architecture-decisions.md#adr-014)；它是 Proposed，不是 v0.1 承诺。
 
 ---
