@@ -1,116 +1,119 @@
-# CLAUDE.md
+# Rayrun Bot 顶层工程指令
 
-Behavioral guidelines for coding agents working in this repo. The four universal principles come first, adapted from Andrej Karpathy's January 2026 observations on LLM coding pitfalls (via the MIT-licensed `multica-ai/andrej-karpathy-skills` artifact). Project-specific rules follow and always win where they are more specific.
+> 本文件是 Claude Code 在本仓库中的项目级**指令**，不承载项目状态、交付进度或文档索引。
+> 状态入口：`README.md` 的 **Status** 段（中文镜像 `README.zh-CN.md` 的「状态」段）。
+> 文档索引：`README.md` 的 Repository layout；设计细节：`docs/`。
+>
+> 本文件用中文。产品文档、代码、注释、接口命名和提交信息仍以英文为准（见 §5）。
 
-**Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
+**取舍：** 这些规则偏向谨慎而非速度；琐碎任务自行判断。
 
-## 1. Think Before Coding
+## 0. 项目身份
 
-**Don't assume. Don't hide confusion. Surface tradeoffs.**
+- 项目：**Rayrun Bot**（`RayrunOS/Rayrun-Bot`）。给 DeepSeek Harness 里的 bot 一个名字、一副身体和一个家：bot 有名字、指令、记忆和日程，运行在用户自己的 Rayrun 云电脑上，用用户自己的 DeepSeek key 思考。
+- 不是托管的聊天服务：没有项目方账号、控制面、代理或中继。计算在用户的 Rayrun 账号上，模型账单是用户的，审批提示就是契约。
+- 本仓库构建的是 **bot 层**。云电脑能力来自独立项目 `RayrunOS/dsh-rayrun-computer`（MIT），本项目只通过它已发布的 tools/RPC 表面和版本契约消费它。两个插件，一个产品。
+- 真相源：`README.md`（产品与状态，英文为准）、`README.zh-CN.md`（同 commit 中文镜像）、`docs/`（设计细节）、代码本身。不要凭记忆描述现状；先读文件。
+- 不要把本项目描述成完整的托管平台或已经可用的产品；状态陈述以 README 的 Status 段为准。
 
-Before implementing:
+## 1. 设计原则
 
-- State your assumptions explicitly. If uncertain, ask.
-- If multiple interpretations exist, present them — don't pick silently.
-- If a simpler approach exists, say so. Push back when warranted.
-- If something is unclear, stop. Name what's confusing. Ask.
+### 1.1 四条通用原则
 
-## 2. Simplicity First
+以下四条改编自 Andrej Karpathy 2026 年 1 月关于 LLM 编码陷阱的观察（经 MIT 许可的 `multica-ai/andrej-karpathy-skills` artifact）。项目特定规则更具体时优先。
 
-**Minimum code that solves the problem. Nothing speculative.**
+1. **先想后写。** 不假设、不隐藏困惑、摆出取舍。实现前说明假设；有多种解释就列出，不要静默选择；有更简单的方案就说；不清楚时停下，点名困惑并提问。
+2. **简单优先。** 用能解决问题的最少代码，不做投机设计。不实现没要求的功能；不为单次使用造抽象；不加未要求的“灵活性”“可配置性”或未来扩展点；不为不可能发生的场景堆错误处理——信任边界除外（见 §6）。200 行能 50 行解决就重写。
+3. **外科手术式修改。** 只碰必须碰的。不顺手“改进”相邻代码、注释或格式；不重构没坏的代码；匹配现有风格。本次变更造成的 orphan（未使用的 import/变量/函数/文件）必须清理；变更前就存在的死代码只指出，不擅自删除。判据：每一行变更都能直接追溯到用户请求。
+4. **目标驱动执行。** 把任务转化为可验证目标，例如“加校验”= 先为非法输入写测试再让它通过；“修 bug”= 先写复现测试；“重构 X”= 重构前后测试都通过。多步骤任务先给简短计划，每步写验证方式：`步骤 → 验证: [检查]`。用证据宣告完成，不用“应该能跑”。
 
-- No features beyond what was asked.
-- No abstractions for single-use code.
-- No "flexibility" or "configurability" that wasn't requested.
-- No error handling for impossible scenarios — except at trust boundaries (see §6).
-- If you write 200 lines and it could be 50, rewrite it.
+### 1.2 本项目原则
 
-Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
+- **Local-first where it protects the user.** 审批、本地 profile 和 Rayrun token 留在用户一侧；执行可以离开本机，决策和凭据不行。
+- **Approval-first, fail closed.** 有外部副作用的行为先请求、后执行；超时、错误或未知状态一律拒绝。
+- **用户付费，用户所有.** 所有计算走用户自己的 Rayrun 账号和 DeepSeek key，不经项目方账号、代理或中转。
+- **Boring on purpose.** 纯 ESM、零运行时依赖、无构建步骤；桌面端和云端跑同一套 DSH。
 
-## 3. Surgical Changes
+## 2. 仓库分层
 
-**Touch only what you must. Clean up only your own mess.**
+- `README.md` / `README.zh-CN.md` — 产品页；英文为真相源，中文同 commit 镜像。
+- `CLAUDE.md` — 本文件，只放指令。
+- `docs/` — 设计、计划与平台诉求：quickstart、architecture、security、FAQ、roadmap、mvp-plan、client-plan、ui-design、bot-persona、local-file-design、platform-asks、inspiration，以及 `docs/mockups/`。
+- `packages/dsh-rayrun-bots/` — 目前唯一的包：host half（`index.js`）、client half（`client.js`）、`lib/`、`locale/en.json` + `zh.json`、`test/`、`cordis.patch.yml`、包 `README.md`、`package.json`。
+- 根 `package.json` — 私有 workspace 根；无依赖、无构建步骤。
+- `.github/workflows/checks.yml` — push/PR 的 checks-only CI。
+- `LICENSE`、`SECURITY.md`、`CONTRIBUTING.md`、`CODE_OF_CONDUCT.md` — 许可证、漏洞上报、PR 规则与行为准则。
+- 非本仓库：`dsh-rayrun-computer`（独立项目，绝不修改、fork 或 vendor）、Rayrun 平台、DeepSeek Harness 运行时。
 
-When editing existing code:
+## 3. 模块边界与依赖
 
-- Don't "improve" adjacent code, comments, or formatting.
-- Don't refactor things that aren't broken.
-- Match existing style, even if you'd do it differently.
-- If you notice unrelated dead code, mention it — don't delete it.
+- **bot 层 ↔ 云电脑插件。** 只通过已发布的 tools/RPC 表面和版本契约集成。需要它改行为 → 去它自己的仓库提 issue/PR，或在本仓库写 adapter；不修改、不 fork、不 vendor、不复制它的代码。
+- **包身份。** 每个包的包名、client module id、bundle row `name` 必须一致；`lib/*.js` 必须留在 `files` 列表；client half 必须自包含，只能加载 DSH 自身提供的模块。
+- **本机 ↔ 云端。** 执行可以在云端，审批、本地 profile 和 Rayrun token 留在本机。云端 → 本机状态通过 `/workspace/.rayrun/` 下的文件，本机 → 云端通过 Rayrun API；不使用入站网络，不把 public desktop 当产品面板。
+- **页面 ↔ host。** 同源、origin 校验的 RPC；不要把 token 交给页面来绕过它。
+- **依赖方向。** 根 `package.json` 是私有 workspace 根，无运行时依赖。`dsh-rayrun-computer` 的版本契约与安装路径以 `README.md` 和 `docs/mvp-plan.md` §4.5 为准。
 
-When your changes create orphans:
+## 4. Claude Code 工作方式
 
-- Remove imports/variables/functions that YOUR changes made unused.
-- Don't remove pre-existing dead code unless asked.
+当用户要求实现或修改代码时，Claude **严格**按以下方式工作：
 
-The test: every changed line should trace directly to the user's request.
+1. 明确任务目标、成功标准和可能影响的包、文档与模块。
+2. 需求不完整时显式说明假设，不假设需求已完整。
+3. 有多种解释时列出主要解释；不阻塞时选最合理路径继续，影响长期架构时停下询问。
+4. 有更简单方案主动说明；过度复杂、维护成本高或偏离 MVP 时反向提醒。
+5. 读本文件、`README.md`、目标包的 `README.md` 和相关 `docs/` 页；读要改的代码，不凭记忆。
+6. 跨包、跨项目变更先说明影响面，再改代码。
+7. 先 grep 找最接近的现有模式并扩展它；不为仓库已有的东西造平行 helper。
+8. 最小 diff；不顺手优化相邻代码、注释或格式；不重构没坏且不属于当前任务的代码；匹配现有风格。
+9. 本次变更引入的未使用 import、变量、函数或文件必须清理；变更前已存在的死代码只指出，不擅自删除。
+10. 用户可见变更 → 同一次变更更新 `README.md`、`README.zh-CN.md` 和相关 `docs/` 页。
+11. 非平凡任务先给简短计划，每步写验证方式（`步骤 → 验证: [检查]`）。
+12. 运行 §8 的检查；不用“应该能跑”宣告完成。
+13. 完成后说明改了哪些文件、如何验证、剩余风险与未覆盖的缺口。
+14. 不一次性重写大量文件，除非用户明确要求。
+15. 临时实验代码不入核心包；放临时目录或明确标记。
+16. 每行变更可追溯到用户请求、已声明假设或验证目标。
+17. 提交用英文 conventional prefix：`feat:`、`fix:`、`chore:`、`docs:`；一个逻辑变更一个提交。
+18. 不提交 `.env`、token、key、本地 profile 路径或云端拉取产物（`.dsh/incoming/`）。
+19. **push 只在用户当次明确要求时执行。** “commit”/“提交”只授权本地提交；`git push` 或任何写 `origin` 的操作，需要用户当次明确要求 push 或 sync。过去的“同步到 GitHub”不授权之后的 push。本地提交后报告分支领先 `origin`，等待 push 指令。
 
-## 4. Goal-Driven Execution
+## 5. 代码风格与工程纪律
 
-**Define success criteria. Loop until verified.**
+- Plain ESM JavaScript，Node 24+（DSH 运行时自带 Node）。无构建步骤、无运行时依赖、无 bundler。
+- Client half 只能加载 DSH 提供的模块（`react` 等）；浏览器全局对象可用，Node 内置模块不可用。
+- 代码、注释、接口命名和提交信息用英文；产品文档英文为准，README 有中文镜像。**本文件是刻意使用中文的 agent 指令**，其余文档仍以英文为准。
+- 错误：审批、凭据、云生命周期相关的错误绝不吞掉；给出可执行的信息，让调用方失败（fail closed）。
+- 不实现用户没要求的功能；不为单次使用造不必要的抽象；不加未要求的“灵活性”“可配置性”或未来扩展点；不为不可能发生的场景堆错误处理——信任边界（RPC、审批、凭据、文件/网络入口）除外。
+- 200 行能 50 行解决就重写；提交前自问资深工程师会不会认为过度复杂，会就简化。
+- 不引入遥测；默认不收集、不上传任何数据。
+- 不写死不可复现的本机路径。
+- 测试沿用现有 `node test/<name>.mjs` 模式，不引入测试框架。
 
-Transform tasks into verifiable goals:
+## 6. 安全与权限默认值（不变量，永不破坏）
 
-- "Add validation" → "Write tests for invalid inputs, then make them pass"
-- "Fix the bug" → "Write a test that reproduces it, then make it pass"
-- "Refactor X" → "Ensure tests pass before and after"
+1. **审批优先，失败即拒绝。** 任何有外部副作用的动作（花钱、以用户身份发送或发布、销毁电脑、触碰另一台机器或凭据）必须在请求并获批后才执行。超时、错误或未知状态 = 拒绝，绝不继续。
+2. **用户密钥永不离开用户机器。** Rayrun token 只存在于 Harness vault、host 侧，绝不进入 client module、RPC 响应或日志。DeepSeek key 只经 Rayrun credential injection 注入，绝不进入 workspace、仓库、fixture、prompt 或聊天。密码只留在内存。
+3. **用户付费，用户所有。** 每个 bot 都跑在用户自己的 Rayrun 账号和 key 上。任何代码路径都不得把计算、数据或计费转到项目方账号、代理或中继。
+4. **执行可以离开本机；权限与凭据不行。** bot 跑在用户自己的云电脑上，session 可以放在那里；但审批、本地 profile 和 Rayrun token 留在用户侧。不要为了简化功能把决策或密钥移到云端。
+5. **不静默扩大范围。** 除非任务明确要求，不新增审批绕过、默认放行规则、新权限或新网络出口。
+6. **包身份保持一致。** 每个包的包名、client module id、bundle row `name` 必须相同；`lib/*.js` 必须留在 `files` 列表；client half 必须自包含，只加载 DSH 自身提供的模块。
+7. **永不自动销毁。** Rayrun 的 `destroy` 会不可逆地删除机器及其 workspace。idle 策略只能 stop 或 pause；销毁必须由人类明确请求。
+8. **同源 RPC。** 新的 page→host 动作保持同源、origin 校验的 RPC 属性；不要把 token 交给页面来绕过它。
+9. **文档诚实。** 绝不把计划中的功能写成已实现。`README.md` 和 `docs/` 中带日期的状态陈述是事实；做了就更新，发现失效的说法就修。
+10. **默认无遥测。** 不收集、不上传任何东西。未来的遥测必须 opt-in、有文档，且绝不包含 prompt、key 或 workspace 内容。
+11. **没有 bubblewrap 的云端就是 root。** worker profile 故意跑 `danger-full-access`，这是 workaround，不是隔离。绝不把它说成沙箱保证，也不削弱 `docs/security.md` 中的警告。
+12. **云电脑插件是依赖，不是我们的代码。** `dsh-rayrun-computer` 在自己的仓库里，绝不从这里编辑、fork 或 vendor。集成只通过其已发布 tools/RPC 表面和版本契约；需要它改行为 → 去那个仓库开 issue/PR，或在本仓库写 adapter。
 
-For multi-step tasks, state a brief plan:
+## 7. 文档约定
 
-```
-1. [Step] → verify: [check]
-2. [Step] → verify: [check]
-3. [Step] → verify: [check]
-```
+- `README.md` 是产品页和英文真相源；`README.zh-CN.md` 是中文镜像，**同一 commit 更新**。README 保持简短，细节进 `docs/`。
+- 状态陈述带日期、与代码一致；构建了某功能就更新状态；“状态”以 README 的 Status 段为准，不在本文件复述。
+- 新增文档要能从 README 或相关 `docs/` 页链接到；Markdown 链接必须可解析。
+- 本文件只承载指令，不承载项目状态、交付进度或文档索引。
+- 架构性决策同步到 `docs/architecture.md`、`docs/security.md` 或对应计划页；平台相关缺口进 `docs/platform-asks.md`。
+- 不描述不存在的功能；不夸大安全保证。代码与文档冲突时，先核实当前行为，再修正错误的一方。
 
-Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
-
----
-
-<!-- Project-specific rules. Where these are more specific than the universal
-     principles above, these win. -->
-
-## 5. Project map
-
-Repository: **Rayrun Bot** (`RayrunOS/Rayrun-Bot`). DSH plugin package names keep the `dsh-` prefix for DSH discovery.
-
-- `README.md` — product page (English, source of truth); `README.zh-CN.md` — mirror, updated in the same commit.
-- `docs/` — quick start, architecture, security, FAQ, roadmap, Grok Bot inspiration, MVP plan, client plan, UI design, bot persona, local file design, platform asks. README stays short; detail goes here.
-- `packages/dsh-rayrun-bots/` — the whole product layer: bot roster, bot↔session mapping, persistent host, approvals, routines, client panel, and the adapter to the cloud-computer plugin. The package loads (health route + v0.1 client shell). The bot layer itself — roster, sessions, remote approvals, persistence — is not built yet.
-- `dsh-rayrun-computer` — **a separate project** (`RayrunOS/dsh-rayrun-computer`, MIT), not a directory in this repo. It provides the cloud computers and the `rayrun_*` tools; Rayrun Bot consumes it as a dependency. Never modify, fork or vendor it here.
-- `package.json` — private workspace root. No dependencies, no build step.
-
-Read `README.md` and the relevant `docs/` page before changing anything; read the code you are editing, not your memory of it.
-
-## 6. Invariants — never break these
-
-1. **Approval-first, fail closed.** No action with an external side effect (spending money, sending or publishing as the user, destroying a computer, touching another machine or credential) may execute before an approval is requested and granted. Timeout, error, or unknown state means deny, never proceed.
-2. **User secrets never leave the user's machine.** The Rayrun token lives in the Harness vault, host side, and must never reach a client module, an RPC response, or a log. The DeepSeek key goes through Rayrun credential injection only — never into the workspace, the repo, fixtures, prompts, or chat. Passwords live in memory only.
-3. **The user pays, the user owns.** Every bot runs on the user's own Rayrun account and key. No code path may route compute, data, or billing through a project-owned account, proxy, or relay.
-4. **Execution may leave the machine; authority and credentials do not.** Bots run on the user's own cloud computer and their sessions may live there, but approvals, the local profile and the Rayrun token stay on the user's side. Never move a decision or a secret to the cloud to make a feature simpler.
-5. **No silent scope widening.** Do not add an approval bypass, a default-allow rule, a new permission, or new network egress unless the task explicitly asks for it.
-6. **Package identity stays consistent.** Package name, client module id, and bundle row `name` must stay identical for each package; `lib/*.js` must stay in the package's `files` list; client halves must stay self-contained and load only modules DSH itself provides.
-7. **Never auto-destroy.** Rayrun's `destroy` deletes the machine and its workspace irreversibly. Idle policy may stop or pause; destroying requires an explicit human request.
-8. **Same-origin RPC.** New page→host actions keep the same-origin, origin-checked RPC property. Do not hand the page a token to bypass it.
-9. **Honesty in docs.** Never describe a planned feature as implemented. The dated status statements in `README.md` and `docs/` are factual; if you build something, update them, and if you find a claim that is no longer true, fix it.
-10. **No telemetry by default.** Nothing is collected or uploaded. Any future telemetry must be opt-in, documented, and never include prompts, keys, or workspace contents.
-11. **The cloud is root without bubblewrap.** The worker profile intentionally runs `danger-full-access` as a workaround, not as isolation. Never present it as a sandbox guarantee or weaken the warning about it in `docs/security.md`.
-12. **The cloud-computer plugin is a dependency, not our code.** `dsh-rayrun-computer` lives in its own repository and is never edited, forked or vendored from here. Integration goes through its published tools/RPC surface and a version contract; a change that needs its behavior is an issue/PR in that repository, or an adapter in ours.
-
-## 7. Change workflow
-
-1. Read this file, `README.md`, and the package's own README before editing.
-2. Find the closest existing pattern (grep first) and extend it; don't create a parallel helper for something the repo already has.
-3. Make the smallest possible diff; no unrelated formatting.
-4. User-visible change → update `README.md` AND `README.zh-CN.md` in the same change, and the relevant `docs/` page.
-5. Run the checks in §8; never declare done on "it should work".
-6. Commit in English with a conventional prefix: `feat:`, `fix:`, `chore:`, `docs:`. One logical change per commit.
-7. Never commit `.env`, tokens, keys, local profile paths, or pulled cloud artifacts (`.dsh/incoming/`).
-8. **Push only on explicit instruction.** Words like "commit" / "提交" mean a **local commit only**. `git push`, or anything that writes to `origin`, requires the user to explicitly ask for a push or a sync in that request. A past "sync to GitHub" instruction does not authorize later pushes. After a local commit, report that the branch is ahead of `origin` and wait for a push instruction.
-
-## 8. Checks and definition of done
-
-No build step and no runtime dependencies. Real commands today:
+## 8. 测试与验证
 
 ```bash
 git diff --check
@@ -119,35 +122,84 @@ node --check packages/dsh-rayrun-bots/client.js
 node packages/dsh-rayrun-bots/test/manifest-check.mjs
 node packages/dsh-rayrun-bots/test/locale-audit.mjs
 node packages/dsh-rayrun-bots/test/rpc-contract.mjs
+node packages/dsh-rayrun-bots/test/client-contract.mjs
 ```
 
-A checks-only CI workflow (`.github/workflows/checks.yml`) runs the syntax
-checks and every `test/*.mjs` on push and pull requests; release and publish
-automation does not exist yet. Each package carries its own `node test/*.mjs`
-scripts (the plain-Node pattern from `dsh-rayrun-computer`); new behavior comes
-with a test. Live integration tests need real Rayrun credentials and are never
-run in CI.
+- 新行为必须带测试；测试是纯 Node、无框架，沿用 `node test/*.mjs`。
+- 审批拒绝、超时、密钥泄漏的负向测试在该代码出现后是强制项。
+- 绝不为了让改动通过而削弱或删除安全测试；修行为，或说明为什么测试本身错了。
+- 实时集成测试需要真实 Rayrun 凭据，绝不在 CI 运行。
+- 页面变更只做语法/契约检查不算打通；v0.1 没有浏览器测试框架，手工 golden path 见 `docs/client-plan.md`。
+- CI（`.github/workflows/checks.yml`）在 push/PR 上跑语法检查和所有 `test/*.mjs`。
 
-"Done" means all of the following:
+**“完成”的标准：**
 
-- The success criteria from the request are met, with evidence (command output, screenshot, test result), not "should work".
-- Checks above pass for every changed file.
-- Markdown links resolve, and no doc claims a feature that does not exist.
-- No secret, credential, or token material appears in code, logs, fixtures, or the diff.
-- No new dependency, no unrelated diff, no unrelated refactor.
-- `README.md` / `README.zh-CN.md` / `CLAUDE.md` are still accurate.
+- 用户请求的成功标准以证据满足（命令输出、截图、测试结果），不是“应该能跑”。
+- 所有改动文件通过上述检查。
+- Markdown 链接可解析；没有文档声称不存在的功能。
+- 代码、日志、fixture、diff 中没有密钥、凭据或 token。
+- 没有新依赖、无关 diff、无关重构。
+- `README.md` / `README.zh-CN.md` / `CLAUDE.md` 仍然准确。
 
-For approval-layer or secret-handling changes, the manual smoke test is: load the plugin into a local DSH profile, start one bot, trigger one gated action, and watch it stop for approval. While that path does not exist yet, the change must keep the rule true on paper and call out the gap.
+审批层或密钥处理的变更，手工冒烟测试是：把插件载入本地 DSH profile，启动一个 bot，触发一个受控动作，确认它停在审批上。在该路径存在之前，变更必须在纸面上保持这条规则为真，并明确说明缺口。
 
-## 9. Conventions
+## 9. 当前可用命令
 
-- Plain ESM JavaScript, Node 24+ (the DSH runtime bundles Node). No build step, no runtime dependencies, no bundler.
-- Client code may import only modules DSH provides (`react`, etc.). Browser globals are fine; Node built-ins are not.
-- Errors: never swallow errors around approvals, credentials, or cloud lifecycle; surface an actionable message and let the caller fail.
-- Runtime language: the product is English-first. Code, comments, docs, and commits are English; the README has a Chinese mirror.
-- Tests follow the existing `node test/<name>.mjs` style — no test framework. Negative tests for approval refusal, timeouts, and secret leakage are mandatory once that code exists.
-- Never weaken or delete a safety test to make a change pass; fix the behavior or explain why the test was wrong.
+| 命令 | 说明 |
+| --- | --- |
+| `git diff --check` | 检查尾随空白与冲突标记 |
+| `node --check packages/dsh-rayrun-bots/index.js` | host half 语法检查 |
+| `node --check packages/dsh-rayrun-bots/client.js` | client half 语法检查 |
+| `node packages/dsh-rayrun-bots/test/manifest-check.mjs` | 包清单、bundle 与身份一致性 |
+| `node packages/dsh-rayrun-bots/test/locale-audit.mjs` | en/zh key 对齐、内嵌 locale 一致 |
+| `node packages/dsh-rayrun-bots/test/rpc-contract.mjs` | RPC 信封、同源门、体积上限 |
+| `node packages/dsh-rayrun-bots/test/client-contract.mjs` | 客户端文案、无外部请求、无占位符 |
+| `dsh plugin --profile web add <绝对路径>` | 从 checkout 载入 DSH profile；改 client half 后需重启 DSH |
+| `git log --oneline` | 查看提交历史 |
+
+不要编造命令、路径或状态。
+
+## 10. 禁止事项
+
+- 不提交密钥、token、cookie、私有证书、生产配置、客户数据、`.env`、本地 profile 路径或云端拉取产物。
+- 不绕过审批层或同源 RPC；不新增默认放行、权限或网络出口。
+- 不把“计划中”写成“已实现”；不把 `danger-full-access` 描述成隔离或沙箱。
+- 不修改、fork 或 vendor `dsh-rayrun-computer`；不把它的代码复制进本仓库。
+- 不自动 destroy；idle 只能 stop 或 pause。
+- 不静默扩大任务范围；新增功能、重构、依赖和目录调整都必须能解释必要性。
+- 不掩盖困惑、失败或测试结果；不清楚就直说。
+- 不在没有当次明确指令时 push 或部署到公网。
+- 不引入遥测。
+- 不编造命令、路径或状态。
+
+## 11. 沟通偏好
+
+- 默认中文解释架构与取舍；代码、目录、接口、协议命名用英文；产品文档和提交信息用英文。
+- 回答直接，优先给可执行步骤、文件路径和具体修改点。
+- 需求不完整但不阻塞时，先做合理假设并继续推进；会影响长期架构时，明确提出需要用户决策。
+- 说明权衡，不要只给结论；架构、依赖、模块边界和长期维护成本尤其要讲清利弊。
+- 简单任务直接完成；复杂任务先给简短计划与验证方式。
+- 状态类问题先读 README 和代码再回答，不凭记忆。
+
+## 12. 依赖决策
+
+- 零运行时依赖、无构建步骤是有意的产品选择（boring on purpose），不是临时状态。
+- 唯一的外部运行时依赖是独立项目 `dsh-rayrun-computer`；集成走其发布表面和版本契约，依赖声明与版本检查的状态以 README 为准。
+- 新增依赖前说明：现有能力为何不够、替代方案、影响范围、是否破坏零依赖/无构建；需要用户明确同意。
+- 不 vendor、不 fork、不复制它的代码；需要它改行为去它自己的仓库。
+- 不为测试引入框架；沿用 `node test/*.mjs`。
+
+## 13. 常见陷阱
+
+- **包身份三处一致。** `package.json` 的 `name`、`client.js` 中 `window.__ModuleLoader__.load({ id })` 的 `id`、`cordis.patch.yml` 的 `name` 必须一致；bundle row 的 `id` 必须等于 host 的 `name`（`rayrun-bots`）。`manifest-check` 会抓，但改之前先看这三处。
+- **客户端是自包含的。** `client.js` 通过 `window.__ModuleLoader__` 注册，`factory(require)` 只应拿到 DSH 提供的模块（如 `react`）；不要 import Node 内置模块，也不要把运行时文件加进包却忘了写进 `files`。
+- **locale 有三份。** `locale/en.json`、`locale/zh.json` 和 `client.js` 内嵌的 `EN`/`ZH` 必须同步；`client-contract` 检查内嵌副本与 JSON 一致，新增文案要三处一起改。
+- **改 client half 要重启 DSH。** 客户端只在页面启动时加载；`dsh plugin add` 后也要重启才能看到。
+- **同源门的细节。** POST 没有 `Origin` 视为 host 侧调用（工具、测试），不是浏览器；有 `Origin` 时必须与请求到达的 `Host` 一致。不要“修”成强制要求 `Origin`，否则会打断 host 侧调用。
+- **CI 自动跑新测试。** workflow 用 `for test in packages/dsh-rayrun-bots/test/*.mjs`；新增测试文件会被自动执行，无需改 workflow。
+- **无 `node_modules`。** 不要跑 `npm install` 或引入包；根 workspace 是私有的、无依赖。
+- **状态不在本文件。** 问进度看 README 的 Status 段；本文件不维护状态。
 
 ---
 
-**These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, clarifying questions come before implementation rather than after mistakes, and no approval or secret invariant is ever weakened to make a test pass.
+**这些规则有效的标志：** 不必要的修改更少，因过度复杂而返工更少，澄清发生在实现之前，且没有为了通过测试而削弱任何审批或密钥不变量。
