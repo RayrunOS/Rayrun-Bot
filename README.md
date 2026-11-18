@@ -4,7 +4,7 @@ English | [简体中文](README.zh-CN.md)
 
 Rayrun Bot gives the bots in [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) a name, a body and a home. A bot is not a chat session: it has a name, instructions, memory and a schedule, and it lives on your own [Rayrun](https://rayrunos.com/) cloud computer — a Linux machine you can watch and take over — while thinking with your own DeepSeek API key. Nothing is hosted by us: the compute is on your Rayrun account, the model bill is yours, and the approval prompt is the contract. This repository is where that product is built.
 
-> **Status (November 2026).** Pre-alpha. The cloud-computer plugin this project builds on is a separate project at [RayrunOS/dsh-rayrun-computer](https://github.com/RayrunOS/dsh-rayrun-computer); Rayrun Bot adds the bot layer on top of it, and that layer is what this repository is building. The first package skeleton (`packages/dsh-rayrun-bots`) now loads as a bundle, but there is no bot layer or release yet.
+> **Status (November 2026).** Pre-alpha. The cloud-computer plugin this project builds on is a separate project at [RayrunOS/dsh-rayrun-computer](https://github.com/RayrunOS/dsh-rayrun-computer); Rayrun Bot adds the bot layer on top of it, and that layer is what this repository is building. `packages/dsh-rayrun-bots` loads as a bundle. Its client half renders the v0.1 shell (chat list, conversation, details, new bot, setup, settings) as an in-memory preview. The host half still only answers a health check. There is no persisted roster, no remote approvals, and no release yet.
 
 ## How it works
 
@@ -118,7 +118,7 @@ Rayrun Bot/
 ├── package.json                 # private workspace root
 ├── docs/                        # design docs, plans, platform asks
 └── packages/
-    └── dsh-rayrun-bots/         # A1 skeleton: host/client halves, locale, tests
+    └── dsh-rayrun-bots/         # health route + v0.1 client shell, locale, tests
 ```
 
 The cloud-computer plugin (`dsh-rayrun-computer`) is not in this tree: it is a **separate project**, consumed as a dependency. Two plugins in the same DSH profile, one product. The repository and product are called **Rayrun Bot**; the packages keep the `dsh-` prefix that the DSH ecosystem uses. The README is the product page; `docs/` holds the detail. Deeper reads: [quick start](docs/quickstart.md), [architecture](docs/architecture.md), [security](docs/security.md), [FAQ](docs/faq.md), [roadmap](docs/roadmap.md), [Grok Bot inspiration](docs/inspiration.md), [MVP plan](docs/mvp-plan.md), [client plan](docs/client-plan.md), [UI design](docs/ui-design.md), [bot persona](docs/bot-persona.md), [local file design](docs/local-file-design.md), [platform asks](docs/platform-asks.md). Both READMEs are updated in the same commit — English is the source of truth.
@@ -133,7 +133,7 @@ dsh plugin --profile web add /absolute/path/to/package
 # restart DSH afterwards; the page loads the new client half on start
 ```
 
-- Checks: `node --check packages/dsh-rayrun-bots/index.js`, `node packages/dsh-rayrun-bots/test/manifest-check.mjs`, `node packages/dsh-rayrun-bots/test/locale-audit.mjs`, `node packages/dsh-rayrun-bots/test/rpc-contract.mjs`; the same checks run in CI on push and pull requests (`.github/workflows/checks.yml`).
+- Checks: `node --check` on `packages/dsh-rayrun-bots/index.js` and `client.js`, then `node packages/dsh-rayrun-bots/test/manifest-check.mjs`, `locale-audit.mjs`, `rpc-contract.mjs`, and `client-contract.mjs`; the same checks run in CI on push and pull requests (`.github/workflows/checks.yml`).
 - Live integration tests need real Rayrun credentials and never run in CI.
 - Read [`CLAUDE.md`](CLAUDE.md) and [`CONTRIBUTING.md`](CONTRIBUTING.md) before changing anything. Commit messages are in English with `feat:`, `fix:`, `chore:` or `docs:` prefixes.
 
@@ -144,8 +144,8 @@ dsh plugin --profile web add /absolute/path/to/package
 | | |
 | --- | --- |
 | **Works today** (separate project, our dependency) | Seven `rayrun_*` tools, noVNC desktop, per-session cloud/local routing, hash-verified workspace sync, task delegation, worker projection, optional idle stop. Verified on DeepSeek Harness `0.2.1-rc.5`. |
-| **This repository** | The repo itself: README, docs, issue and PR templates, agent rules, the dependency boundary, and the `dsh-rayrun-bots` A1 skeleton (placeholder page + health route) with plain-Node checks and a checks-only CI workflow. No bot features and no publishable release yet. |
-| **Not built yet** | Bot roster and bot↔session mapping, a persistent DSH host on the machine, remote approvals, routines and triggers, cost bar, IM channel, the two-plugin install path (dependency declaration and version check), npm packages and the release/publish CI path. |
+| **This repository** | README, docs, issue and PR templates, agent rules, the dependency boundary, and `dsh-rayrun-bots`: a health route plus the v0.1 client shell (five screens, in-memory preview), with plain-Node checks and a checks-only CI workflow. No persisted bot layer and no publishable release yet. |
+| **Not built yet** | Bot roster and bot↔session mapping, a persistent DSH host on the machine, remote approvals that gate a worker, routines that actually run, live usage from the account, IM channel, the two-plugin install path (dependency declaration and version check), npm packages and the release/publish CI path. |
 | **Platform gaps** | Safe inbound networking (today the token ingress is unusable and only `public` works), idle auto-stop, a spend cap, the session-resume contract. The full list is in [docs/architecture.md](docs/architecture.md). |
 
 **v0.1 path** — install from npm → sign in → create a bot → approve its first gated action. Exit criteria are in [docs/roadmap.md](docs/roadmap.md).

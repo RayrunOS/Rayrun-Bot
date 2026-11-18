@@ -36,6 +36,7 @@ There is no build step. Each package carries plain-Node checks under its own
 - `node packages/dsh-rayrun-bots/test/manifest-check.mjs`
 - `node packages/dsh-rayrun-bots/test/locale-audit.mjs`
 - `node packages/dsh-rayrun-bots/test/rpc-contract.mjs`
+- `node packages/dsh-rayrun-bots/test/client-contract.mjs`
 
 The same checks run in CI (`.github/workflows/checks.yml`) on push and pull
 requests. Live integration tests need real Rayrun credentials and never run in

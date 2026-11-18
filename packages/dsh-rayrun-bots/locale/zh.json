@@ -1,11 +1,245 @@
 {
   "panel": {
-    "label": "Bots",
-    "title": "Bots"
+    "label": "Bots"
   },
-  "placeholder": {
+  "brand": "Rayrun Bot",
+  "list": {
+    "search": "搜索",
+    "searchPlaceholder": "搜索 Bot",
+    "newBot": "新建 Bot",
+    "settings": "设置",
+    "empty": "没有匹配的 Bot"
+  },
+  "attention": {
+    "needs": "待你处理",
+    "unread": "未读",
+    "working": "工作中"
+  },
+  "approval": {
+    "title": "需要审批",
+    "allowOnce": "仅批准这一次",
+    "deny": "拒绝",
+    "waits": "等你处理",
+    "expires": "{n} 分钟后过期",
+    "expired": "已过期——Bot 没有执行",
+    "irreversible": "此操作无法撤销。",
+    "outside": "这会把数据发到你的电脑之外。",
+    "warning": "这会把数据发到你的电脑之外，且无法撤销。",
+    "allowedLocal": "只记在这一页：已批准一次。没有发送到任何地方。",
+    "deniedLocal": "只记在这一页：已拒绝。没有发送到任何地方。",
+    "snippetAllowed": "已批准一次 · 未发送",
+    "snippetDenied": "已拒绝 · 未发送"
+  },
+  "draft": {
+    "send": "发送",
+    "discard": "丢弃"
+  },
+  "details": {
+    "activity": "动态",
+    "library": "资料库",
+    "recent": "最近",
+    "recentEmpty": "最近没有动态。",
+    "upcoming": "即将进行",
+    "computer": "电脑",
+    "usage": "用量",
+    "jobComputer": "{job} · {computer}"
+  },
+  "receipt": {
+    "ready": "已就绪",
+    "waiting": "等待中",
+    "done": "已完成"
+  },
+  "library": {
+    "today": "今天",
+    "week": "本周",
+    "older": "更早",
+    "empty": "还没有产物。"
+  },
+  "routine": {
+    "empty": "还没有日程。",
+    "on": "开",
+    "off": "关"
+  },
+  "computer": {
+    "live": "在线",
+    "reconnecting": "正在重连…",
+    "unreachable": "连不上电脑。",
+    "sleeping": "休眠",
+    "takeOver": "接管",
+    "open": "打开",
+    "view": "查看",
+    "onComputer": "电脑上 · {where}",
+    "desktopLater": "桌面在云电脑插件里。这一页还打不开它。"
+  },
+  "notice": {
+    "recovering": "Bot host 正在重启，这个会话会自动恢复。",
+    "reconnecting": "电脑正在重连… 5 秒后重试",
+    "attach": "这个预览里还不能添加附件。",
+    "preview": "这是页内预览。内容不会保存，审批也不会发给 worker。"
+  },
+  "composer": {
+    "placeholder": "给 {name} 发消息…",
+    "attach": "添加附件",
+    "send": "发送"
+  },
+  "usage": {
+    "balanceLine": "余额 {balance} · {hours} 机时",
+    "weekLine": "本周 {spend} · 空闲停机 {idle}",
+    "sampleBalance": "¥41.20",
+    "sampleHours": "38.4",
+    "sampleSpend": "¥6.80"
+  },
+  "cost": {
+    "low": "余额偏低——去 Rayrun 控制台充值。停机会保留磁盘，销毁不会。"
+  },
+  "empty": {
     "heading": "还没有 Bot",
-    "body": "Bot 层正在建设中。这个页面是 A1 骨架。"
+    "body": "用加号新建一个。在 Bot host 出现之前，它只留在这一页。",
+    "thread": "还没有消息。你输入的内容只留在这一页。",
+    "snippet": "还没有消息"
+  },
+  "newBot": {
+    "title": "新建 Bot",
+    "sub": "给它一个名字和一项职责，指令之后可以再改。",
+    "monogramHint": "字母头像 · 颜色由名字自动分配",
+    "name": "名字",
+    "job": "职责（一行）",
+    "instructions": "指令（可选）",
+    "placeholder": "你是 {name}，用户团队里的一名同事。你的职责： …",
+    "defaultName": "Weekly Watch",
+    "defaultJob": "Summarises weekly PRs and drafts the digest",
+    "cancel": "取消",
+    "create": "创建 Bot"
+  },
+  "persona": {
+    "template": "你是 {name}，用户团队里的一名同事。\n你的职责：{job}。\n用简短、事实性的更新汇报：做了什么、没做什么、下一步需要什么。任何离开这台电脑的动作（发消息、发布、花钱、动另一台机器）先征求同意。不要声称未经验证的结果。不清楚时只问一个关键问题，不要猜。"
+  },
+  "setup": {
+    "title": "设置 Rayrun Bot",
+    "sub": "四步。每一步都会显示还缺什么、去哪里补。",
+    "back": "返回",
+    "skip": "暂时跳过",
+    "continue": "继续",
+    "steps": {
+      "dependency": "依赖",
+      "rayrun": "Rayrun",
+      "key": "DeepSeek key",
+      "bot": "第一个 Bot"
+    },
+    "dependencyTitle": "检查云电脑插件",
+    "dependencyBody": "云电脑由单独的 dsh-rayrun-computer 插件提供。这一页还不能检查它是否已安装。",
+    "dependencyStatus": "未检查",
+    "rayrunTitle": "连接 Rayrun",
+    "rayrunBody": "云电脑由 Rayrun 提供。用你自己的账号登录，token 只存在 DSH 凭证库里。",
+    "signIn": "用 Rayrun 登录",
+    "notConnected": "未连接",
+    "tokenPlaceholder": "…或粘贴 Rayrun API token",
+    "connect": "连接",
+    "accountLine": "账号：— · 余额：—",
+    "signInLater": "登录在云电脑插件里完成。这一页不能替你开始，也不会保存 token。",
+    "tokenIgnored": "没有保存这个 token。这一页不留存它，Bot host 也还不能代存。",
+    "keyTitle": "DeepSeek key",
+    "keyBody": "key 由 Rayrun 注入到 agent 进程，不会进入工作区。这一页不保存 key。",
+    "keyPlaceholder": "…或粘贴 DeepSeek API key",
+    "keySave": "保存",
+    "keyIgnored": "没有保存这个 key。这一页不留存 DeepSeek key。",
+    "botTitle": "第一个 Bot",
+    "botBody": "给它一个名字和一项职责。它只加到这一页，不会出现在云电脑上。"
+  },
+  "settings": {
+    "title": "设置",
+    "sub": "账号、用量，以及这个插件自己的少量设置。",
+    "account": "账号",
+    "usage": "用量",
+    "notifications": "通知",
+    "appearance": "外观",
+    "rayrunAccount": "Rayrun 账号",
+    "rayrunHint": "token 存在 DSH 凭证库 · 只在 Host 侧",
+    "connected": "已连接",
+    "plugin": "云电脑插件",
+    "pluginHint": "dsh-rayrun-computer v1.0.0",
+    "pluginOk": "正常",
+    "idle": "空闲停机",
+    "idleHint": "空闲时停止电脑，绝不销毁。",
+    "idle15": "15 分钟",
+    "idle30": "30 分钟",
+    "idleOff": "关闭",
+    "lowBalance": "低余额提醒",
+    "lowBalanceHint": "余额低于该值时显示提示。",
+    "notify": "通知",
+    "notifyHint": "Bot 完成或等你处理时通知。",
+    "language": "语言",
+    "languageHint": "English 或 简体中文",
+    "langEn": "English",
+    "langZh": "简体中文"
+  },
+  "sample": {
+    "user": {
+      "name": "Haoyi",
+      "initials": "HY",
+      "foot": "Rayrun 已连接 · {balance}"
+    },
+    "nora": {
+      "name": "Nora",
+      "job": "每周摘要",
+      "snippet": "草稿在资料库里，等你答复",
+      "time": "20:07",
+      "user": "总结上周的 PR，并起草每周摘要。发布前等我确认。",
+      "day": "今天 20:07",
+      "reply1": "草稿好了。我控制在五个小节，每一项都链回了对应 PR。\n\n- **范围。**14 个已合并 PR，2 个仍开着，1 个已回滚。\n- **草稿。**工作区里的 `week-45-digest.md`，420 字。\n- **下一步。**发布到 `#weekly` 需要你批准。",
+      "reply2": "如果你想先看草稿，它在「资料库」标签里。我会等你答复。",
+      "computerTitle": "电脑上 · Feishu #weekly",
+      "computerSub": "已粘贴摘要，等待你的审批",
+      "approvalTitle": "发布《Week 45 摘要》到 Feishu #weekly",
+      "approvalMeta": "请求于 20:07 · 来自本对话",
+      "r1": "起草每周摘要",
+      "r1meta": "09:13 · 3 个产物 · 今日 ¥3.10",
+      "r2": "发布到 #weekly",
+      "r2meta": "需要你的审批 · 等你处理",
+      "r3": "文档刷新",
+      "r3meta": "08:40 · 3 页 · 今日 ¥0.60",
+      "f1": "week-45-digest.md",
+      "f1badge": "420 字",
+      "f1meta": "由 Nora 创建 · 09:13",
+      "f2": "channel-preview.png",
+      "f2badge": "图片",
+      "f2meta": "本对话中发送 · 09:12",
+      "f3": "week-44-digest.md",
+      "f3badge": "已完成",
+      "f3meta": "由 Nora 创建 · 周一",
+      "f4": "Feishu 频道",
+      "f4badge": "链接",
+      "f4meta": "上周"
+    },
+    "eli": {
+      "name": "Eli",
+      "job": "频道发布",
+      "snippet": "待审批：发布摘要",
+      "time": "09:13",
+      "day": "今天 09:13",
+      "reply": "发布会把摘要发到频道里，我停在这里等你批准。",
+      "approvalTitle": "发布《Week 45 摘要》到 Feishu #weekly",
+      "approvalMeta": "请求于 09:13 · 来自本对话"
+    },
+    "june": {
+      "name": "June",
+      "job": "文档",
+      "snippet": "文档刷新完成 — 3 页",
+      "time": "08:40",
+      "day": "今天 08:40",
+      "reply": "文档刷新完成，一共 3 页。没有需要你批准的动作。",
+      "r1": "文档刷新",
+      "r1meta": "08:40 · 3 页 · 今日 ¥0.60"
+    },
+    "routine": {
+      "weekly": "每周摘要",
+      "weeklyWhen": "周五 · 09:00",
+      "inbox": "收件箱清扫",
+      "inboxWhen": "工作日 · 08:00",
+      "standup": "站会纪要",
+      "standupWhen": "工作日 · 18:00"
+    },
+    "computerName": "dsh-workspace"
   },
   "error": {
     "hostDown": "Bot host 没有响应。"

@@ -4,7 +4,7 @@
 
 Rayrun Bot 给 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 里的 Bot 一个名字、一副身体和一个家。Bot 不是聊天会话：它有名字、指令、记忆和日程，住在你自己的 [Rayrun](https://rayrunos.com/) 云电脑上——一台你能看见、也能接管的 Linux 机器——并用你自己的 DeepSeek API key 思考。没有我们托管的东西：算力记在你自己 Rayrun 账号上，模型账单是你的，审批提示就是约定。本仓库就是把这个产品造出来的地方。
 
-> **状态（2026 年 11 月）。** Pre-alpha。本项目赖以构建的云电脑插件是一个独立项目，在 [RayrunOS/dsh-rayrun-computer](https://github.com/RayrunOS/dsh-rayrun-computer) 单独维护；Rayrun Bot 在它之上加 Bot 层，本仓库造的就是这一层。第一个包骨架（`packages/dsh-rayrun-bots`）已经能作为 bundle 加载，但还没有 Bot 层，也没有可发布的版本。
+> **状态（2026 年 11 月）。** Pre-alpha。本项目赖以构建的云电脑插件是一个独立项目，在 [RayrunOS/dsh-rayrun-computer](https://github.com/RayrunOS/dsh-rayrun-computer) 单独维护；Rayrun Bot 在它之上加 Bot 层，本仓库造的就是这一层。`packages/dsh-rayrun-bots` 已经能作为 bundle 加载。它的 Client 半区画出了 v0.1 界面（聊天列表、对话、详情、新建 Bot、设置向导、设置页），数据只存在这一页的内存里。Host 半区仍然只回答一次 health 检查。没有持久化的名册，没有远程审批，也没有可发布的版本。
 
 ## 工作原理
 
@@ -118,7 +118,7 @@ Rayrun Bot/
 ├── package.json                 # 私有 workspace 根
 ├── docs/                        # 设计文档、计划、平台需求
 └── packages/
-    └── dsh-rayrun-bots/         # A1 骨架：host/client 两半、locale、测试
+    └── dsh-rayrun-bots/         # health 路由 + v0.1 客户端界面、locale、测试
 ```
 
 云电脑插件（`dsh-rayrun-computer`）不在这个树里：它是**独立项目**，作为依赖被复用——同一个 DSH profile 里两个插件，一个产品。仓库和产品都叫 **Rayrun Bot**；插件包保留 `dsh-` 前缀，这是 DSH 插件生态的命名习惯。README 是产品页，细节在 `docs/`。深入阅读：[快速开始](docs/quickstart.md)、[架构](docs/architecture.md)、[安全](docs/security.md)、[FAQ](docs/faq.md)、[路线图](docs/roadmap.md)、[Grok Bot 灵感](docs/inspiration.md)、[MVP 计划](docs/mvp-plan.md)、[客户端计划](docs/client-plan.md)、[界面设计](docs/ui-design.md)、[Bot 人格](docs/bot-persona.md)、[本地文件设计](docs/local-file-design.md)、[平台需求](docs/platform-asks.md)。两份 README 必须在同一个 commit 里更新——英文版为准。
@@ -133,7 +133,7 @@ dsh plugin --profile web add /absolute/path/to/package
 # 之后重启 DSH；页面启动时会加载新的 Client 半区
 ```
 
-- 检查：`node --check packages/dsh-rayrun-bots/index.js`、`node packages/dsh-rayrun-bots/test/manifest-check.mjs`、`node packages/dsh-rayrun-bots/test/locale-audit.mjs`、`node packages/dsh-rayrun-bots/test/rpc-contract.mjs`；同一组检查在 CI 里对 push 和 pull request 运行（`.github/workflows/checks.yml`）。
+- 检查：对 `packages/dsh-rayrun-bots/index.js` 和 `client.js` 做 `node --check`，然后跑 `node packages/dsh-rayrun-bots/test/manifest-check.mjs`、`locale-audit.mjs`、`rpc-contract.mjs` 和 `client-contract.mjs`；同一组检查在 CI 里对 push 和 pull request 运行（`.github/workflows/checks.yml`）。
 - 实时集成测试需要真实 Rayrun 凭据，永远不在 CI 里跑。
 - 改任何东西之前先读 [`CLAUDE.md`](CLAUDE.md) 和 [`CONTRIBUTING.md`](CONTRIBUTING.md)。提交信息用英文，前缀 `feat:`、`fix:`、`chore:`、`docs:`。
 
@@ -144,8 +144,8 @@ dsh plugin --profile web add /absolute/path/to/package
 | | |
 | --- | --- |
 | **今天可用**（独立项目，我们的依赖） | 7 个 `rayrun_*` 工具、noVNC 桌面、按会话的云/本地路由、双端哈希校验的 workspace 同步、任务委托、worker 投影、可选空闲停机。已在 DeepSeek Harness `0.2.1-rc.5` 上验证。 |
-| **本仓库** | 仓库本身：README、docs、issue/PR 模板、agent 规则、依赖边界，以及 `dsh-rayrun-bots` 的 A1 骨架（占位页 + health 路由），带普通 Node 检查与只跑检查的 CI workflow。还没有 Bot 功能，也没有可发布版本。 |
-| **尚未构建** | Bot 名册与 Bot↔session 映射、机器上的常驻 DSH host、远程审批、routines 与触发器、成本条、IM 通道、两插件安装路径（依赖声明与版本检查）、npm 包以及发布用的 CI 路径。 |
+| **本仓库** | README、docs、issue/PR 模板、agent 规则、依赖边界，以及 `dsh-rayrun-bots`：一条 health 路由加上 v0.1 客户端界面（五个画面，内存里的预览），带普通 Node 检查与只跑检查的 CI workflow。还没有持久化的 Bot 层，也没有可发布版本。 |
+| **尚未构建** | Bot 名册与 Bot↔session 映射、机器上的常驻 DSH host、能拦住 worker 的远程审批、真正会跑的 routines 与触发器、来自账号的实时用量、IM 通道、两插件安装路径（依赖声明与版本检查）、npm 包以及发布用的 CI 路径。 |
 | **平台缺口** | 安全入向网络（今天 token ingress 不可用，只有 `public` 能用）、空闲自动停、spend cap、session 续跑契约。完整清单在 [docs/architecture.md](docs/architecture.md)。 |
 
 **v0.1 路径**——从 npm 安装 → 登录 → 创建一个 Bot → 批准它的第一个受限动作。验收标准在 [docs/roadmap.md](docs/roadmap.md)。

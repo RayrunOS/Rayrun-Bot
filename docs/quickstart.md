@@ -1,8 +1,9 @@
 # Quickstart
 
-*Status: 2026-11-13. Two separate projects. This repository is pre-alpha: it
-holds docs, repository scaffolding and the `dsh-rayrun-bots` A1 skeleton, no
-publishable code yet. The cloud-computer plugin at
+*Status: 2026-11-16. Two separate projects. This repository is pre-alpha: it
+holds docs, repository scaffolding, and `dsh-rayrun-bots` — a health route and
+the v0.1 client shell. The shell is an in-memory preview. There is no
+publishable release yet. The cloud-computer plugin at
 [RayrunOS/dsh-rayrun-computer](https://github.com/RayrunOS/dsh-rayrun-computer)
 is untouched and stays its own project; this repository builds the bot layer and
 reuses that plugin as an external dependency — two plugins in one DSH profile.*
@@ -80,7 +81,10 @@ When the bot half lands, the first-run path should be:
 4. Talk to it, or let a routine wake it up while you are away.
 5. Approve its first gated action from the panel.
 
-None of steps 1–5 exist yet in this repository. See
+Installing this package and opening **Bots** shows the v0.1 shell. The roster,
+the approval card, and the setup wizard on that page are in-memory preview
+state: creating a bot does not put it on a cloud computer, and Allow once does
+not send anything. Steps 2–5 do not reach Rayrun yet. See
 [roadmap.md](roadmap.md) for what each milestone needs.
 
 ## What works today vs what is still missing
@@ -88,7 +92,7 @@ None of steps 1–5 exist yet in this repository. See
 | | |
 | --- | --- |
 | **Works today** (separate project) | the seven tools, noVNC desktop, per-session cloud/local routing, hash-verified workspace sync, task delegation, worker projection, optional idle stop; verified on DSH `0.2.1-rc.5` |
-| **This repository** | README, docs, issue/PR templates, agent rules, and the `dsh-rayrun-bots` A1 skeleton with plain-Node checks and a checks-only CI workflow. No publishable code. |
+| **This repository** | README, docs, issue/PR templates, agent rules, and `dsh-rayrun-bots`: a health route plus the v0.1 client shell (in-memory preview), with plain-Node checks and a checks-only CI workflow. No publishable release. |
 | **Planned, unverified** | two-plugin install: the Rayrun Bot bundle declares `dsh-rayrun-computer` as a dependency so one install loads both host and client halves (W0 spike S6) |
 | **Not built yet** | bot roster and bot↔session mapping, a persistent DSH host on the machine, remote approvals, routines and triggers, cost bar, IM channel, npm packages and the release/publish CI path |
 | **Blocked on the Rayrun platform** | safe inbound networking (the token ingress is unusable today and only `public` works), idle auto-stop, a spend cap, the session-resume contract |
