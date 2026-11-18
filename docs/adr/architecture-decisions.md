@@ -2,7 +2,7 @@
 
 *状态：2026-11-18。本文是对 v0.1 架构的评审，以及在云 host 与审批层动工前必须定下来的决策。它记录设计在哪里不完整、互相矛盾或存在安全问题，并为每一项给出建议。本文不描述已实现的行为。只有状态为 **Decided** 的条目才算最终决定；其余都是未决。*
 
-相关：[产品方向](00-product-direction.md) 是范围；[系统架构](01-system-architecture.md) 是设计；[MVP 计划](mvp-plan.md) 是工作分解；[安全](security.md) 是威胁模型；[本地文件设计](local-file-design.md) 是状态布局；[平台需求](platform-asks.md) 是交给 Rayrun 平台的清单。
+相关：[产品方向](../00-product-direction.md) 是范围；[系统架构](../01-system-architecture.md) 是设计；[MVP 计划](../plans/mvp-plan.md) 是工作分解；[安全](../07-security.md) 是威胁模型；[本地文件设计](../06-local-state.md) 是状态布局；[平台需求](../08-integration.md) 是交给 Rayrun 平台的清单。
 
 ## 如何阅读
 
@@ -40,23 +40,23 @@
 **当前设计。** 云端 gate 把请求 JSON 写到
 `/workspace/.rayrun/.../approvals/`；本地 host 轮询该文件、显示卡片，再把决定
 JSON 写回。请求带 nonce、bot id、action hash 和 TTL；云 host 读到决定后执行动作
-（[MVP 计划](mvp-plan.md) §4.1(5)、§4.3）。
+（[MVP 计划](../plans/mvp-plan.md) §4.1(5)、§4.3）。
 
 **问题。** 审批目录位于 agent 可读可写的工作区内。agent 可以读取请求（包括 nonce
 和 id），写一个匹配的 `res-<id>.json`，或者修改 host、队列和审批状态。唯一文件名、
 临时文件 rename 和 checksum 只能防半写，不能防伪造。`超时 / 未知 = 拒绝` 只处理
 崩溃和无人回答的卡片；它不处理被 prompt injection 或被攻陷的 bot。安全页目前说
-“对不可信模型的缓解是审批层”（[安全](security.md) “The model is untrusted”），
+“对不可信模型的缓解是审批层”（[安全](../07-security.md) “The model is untrusted”），
 但只有当执行点位于 agent 写不到的地方时，这句话才成立。
 
 **选项。**
 
 1. **在用户侧执行。** 云端只提交提案；本地 host（或平台）校验后用该侧持有的凭据
-   执行。云端永远拿不到一个它可以伪造的授权。这符合 [CLAUDE.md](../CLAUDE.md)
+   执行。云端永远拿不到一个它可以伪造的授权。这符合 [CLAUDE.md](../../CLAUDE.md)
    不变量 4（“权限与凭据不离开用户侧”）。
 2. **平台提供权限隔离。** host 与 agent 使用不同用户或不同挂载命名空间，host 持有
    agent 读不到的密钥；平台提供审批端点。当前云镜像以 root 运行且没有 bubblewrap，
-   所以这是平台改动，应写进[平台需求](platform-asks.md)。
+   所以这是平台改动，应写进[平台需求](../08-integration.md)。
 3. **承认它只是同意，不是隔离。** 保留文件邮箱，改写安全声明，并警告被攻陷的 bot
    可以自批。这是有文档的回退方案，不是安全边界。
 
@@ -67,9 +67,9 @@ JSON 写回。请求带 nonce、bot id、action hash 和 TTL；云 host 读到�
 
 **影响。** 改变审批桥、E1–E7、安全页和平台需求。任何审批代码动工前应先定这一项。
 
-**证据。** [MVP 计划](mvp-plan.md) §4.1(5)、§4.3；[安全](security.md) “The model
-is untrusted” 与 “What is not protected”；[系统架构](01-system-architecture.md) “Approval
-channel”；[平台需求](platform-asks.md) §3–4。
+**证据。** [MVP 计划](../plans/mvp-plan.md) §4.1(5)、§4.3；[安全](../07-security.md) “The model
+is untrusted” 与 “What is not protected”；[系统架构](../01-system-architecture.md) “Approval
+channel”；[平台需求](../08-integration.md) §3–4。
 
 <a id="adr-002"></a>
 ### ADR-002 — 所有权矩阵与单写者规则
@@ -80,12 +80,12 @@ channel”；[平台需求](platform-asks.md) §3–4。
 
 **当前设计。** 文档之间的措辞不一致：
 
-- [系统架构](01-system-architecture.md) “Layers” 说本地 host 增加 bot registry，并且是
+- [系统架构](../01-system-architecture.md) “Layers” 说本地 host 增加 bot registry，并且是
   configuration 与 profile projection 的一部分权威；“Where the truth lives” 表说
   bot state、sessions、memory 以云电脑为权威，而 profile 与 bot definitions 以本地
   DSH profile 为权威。
-- [MVP 计划](mvp-plan.md) §4.1(3) 说 bot state 在机器上，本地只保留只读镜像。
-- [本地文件设计](local-file-design.md) §3 说机器赢 runtime state，本地赢 user
+- [MVP 计划](../plans/mvp-plan.md) §4.1(3) 说 bot state 在机器上，本地只保留只读镜像。
+- [本地文件设计](../06-local-state.md) §3 说机器赢 runtime state，本地赢 user
   intent。
 
 这些可以用“定义在本地、运行态在云端”来解释，但当前文本没有说哪个文件属于哪一侧。
@@ -111,9 +111,9 @@ channel”；[平台需求](platform-asks.md) §3–4。
 **影响。** B1–B4、C3、C8、E2–E4。B1 可以定义字段，但在这一项定下来前不能最终确定
 谁写这些字段。
 
-**证据。** [系统架构](01-system-architecture.md) “Layers” 与 “Where the truth lives”；
-[MVP 计划](mvp-plan.md) §4.1；[本地文件设计](local-file-design.md) §3；
-[CLAUDE.md](../CLAUDE.md) 不变量 3–4。
+**证据。** [系统架构](../01-system-architecture.md) “Layers” 与 “Where the truth lives”；
+[MVP 计划](../plans/mvp-plan.md) §4.1；[本地文件设计](../06-local-state.md) §3；
+[CLAUDE.md](../../CLAUDE.md) 不变量 3–4。
 
 <a id="adr-003"></a>
 ### ADR-003 — 基于 Rayrun 文件 API 的控制通道协议
@@ -124,12 +124,12 @@ channel”；[平台需求](platform-asks.md) §3–4。
 Rayrun 文件 API 上交换队列项和状态？
 
 **当前设计。** `queue.jsonl` 是 append-only FIFO；云 host 拥有队列，本地侧又有一个
-“local queue view”，可以 enqueue、dispatch、retry（[MVP 计划](mvp-plan.md) §4.2；
-[本地文件设计](local-file-design.md) §1）。锁只是提示，不跨机器共享。
+“local queue view”，可以 enqueue、dispatch、retry（[MVP 计划](../plans/mvp-plan.md) §4.2；
+[本地文件设计](../06-local-state.md) §1）。锁只是提示，不跨机器共享。
 
 **问题。** 如果本地追加新项、云端向同一个文件追加状态变化，就是两个写者操作一个没有
 CAS 的 API。丢更新或交错追加会丢工作或破坏状态。平台需求里的原子写与 ETag 说明 API
-目前不保证这一点（[平台需求](platform-asks.md) §3）。
+目前不保证这一点（[平台需求](../08-integration.md) §3）。
 
 **建议。** 每个文件一个写者，每项一个文件，不做共享追加：
 
@@ -144,8 +144,8 @@ CAS 的 API。丢更新或交错追加会丢工作或破坏状态。平台需求
 
 **影响。** C3、C5、C8、E2–E4。当前的单一 `queue.jsonl` 不应该实现。
 
-**证据。** [MVP 计划](mvp-plan.md) §4.2、§4.3；[本地文件设计](local-file-design.md)
-§1、§4；[平台需求](platform-asks.md) §3。
+**证据。** [MVP 计划](../plans/mvp-plan.md) §4.2、§4.3；[本地文件设计](../06-local-state.md)
+§1、§4；[平台需求](../08-integration.md) §3。
 
 <a id="adr-004"></a>
 ### ADR-004 — 与 `dsh-rayrun-computer` 的契约
@@ -155,9 +155,9 @@ CAS 的 API。丢更新或交错追加会丢工作或破坏状态。平台需求
 **问题。** bot host 具体调用依赖的哪些能力，通过哪个表面，版本与错误语义是什么？
 
 **当前设计。** bot host 消费其已发布的 tools/RPC 表面；本地文件设计把
-`lib/dependency.js` 写成“detect … tool check, tool calls”（[系统架构](01-system-architecture.md)
-“Layers”；[本地文件设计](local-file-design.md) §1）。MVP 计划说 bot host 通过依赖的
-`rayrun_*` tools 或其 RPC 路由驱动，由 spike S6 决定（[MVP 计划](mvp-plan.md) §4.4）。
+`lib/dependency.js` 写成“detect … tool check, tool calls”（[系统架构](../01-system-architecture.md)
+“Layers”；[本地文件设计](../06-local-state.md) §1）。MVP 计划说 bot host 通过依赖的
+`rayrun_*` tools 或其 RPC 路由驱动，由 spike S6 决定（[MVP 计划](../plans/mvp-plan.md) §4.4）。
 
 **问题。** `rayrun_*` 是注册给 DSH agent 的 tools，不一定是 host 可 import 的 API。
 bot host 需要程序化调用：machine ensure/start/stop、`exec`、file read/write/list、
@@ -172,8 +172,8 @@ ship 一个 bot host；但没有任何扩展点文档。
 
 **影响。** A2、C1–C5、D1、G1。这是 ADR-001/002 之后的第一个实现阻塞。
 
-**证据。** [系统架构](01-system-architecture.md) “Layers”“What this repo builds”；[MVP 计划](mvp-plan.md)
-§4.4、§4.5；[本地文件设计](local-file-design.md) §1。
+**证据。** [系统架构](../01-system-architecture.md) “Layers”“What this repo builds”；[MVP 计划](../plans/mvp-plan.md)
+§4.4、§4.5；[本地文件设计](../06-local-state.md) §1。
 
 <a id="adr-005"></a>
 ### ADR-005 — 副作用执行语义
@@ -184,7 +184,7 @@ ship 一个 bot host；但没有任何扩展点文档。
 
 **当前设计。** 队列项有 `attempts` 和 `queued`、`running`、`waiting_approval`、
 `done`、`failed`、`cancelled` 状态；审批决定是 `{ id, nonce, decision, decidedAt }`
-（[MVP 计划](mvp-plan.md) §4.3）。单个文件规定了原子写。
+（[MVP 计划](../plans/mvp-plan.md) §4.3）。单个文件规定了原子写。
 
 **问题。** 原子写文件不能把外部副作用和状态变更变成一个事务。发完消息但未写 `done`
 时崩溃，重试可能重复发送；批准后、发送前崩溃，可能丢批准或需要重新批准。decision
@@ -203,8 +203,8 @@ schema 还缺 `botId` 和 `actionHash`，而正文要求匹配 bot 并绑定动�
 
 **影响。** C8、E1–E7、A7。审批代码不应在没有这一项的情况下上线。
 
-**证据。** [MVP 计划](mvp-plan.md) §4.3；[本地文件设计](local-file-design.md) §4；
-[安全](security.md) “What is not protected”。
+**证据。** [MVP 计划](../plans/mvp-plan.md) §4.3；[本地文件设计](../06-local-state.md) §4；
+[安全](../07-security.md) “What is not protected”。
 
 ## P1 — 重复 v0.1 承诺前必须定
 
@@ -217,9 +217,9 @@ schema 还缺 `botId` 和 `actionHash`，而正文要求匹配 bot 并绑定动�
 
 **当前设计。** README 说合上笔记本不会让 bot 停止。本地 host 运行审批轮询、
 idle-stop 策略和 watchdog。平台没有 idle auto-stop；`max_lifetime_seconds` 只停不
-重启；后台审批卡 30 分钟后过期（[README](../README.md) “How it works”；
-[FAQ](faq.md) “What happens if I forget to stop the computer?”；[MVP 计划](mvp-plan.md)
-G3；[客户端计划](client-plan.md) “UX flows and failure states”）。
+重启；后台审批卡 30 分钟后过期（[README](../../README.md) “How it works”；
+[FAQ](../faq.md) “What happens if I forget to stop the computer?”；[MVP 计划](../plans/mvp-plan.md)
+G3；[客户端计划](../plans/client-plan.md) “UX flows and failure states”）。
 
 **问题。** “继续工作”只对已经排队、且不需要审批的动作成立。后台受控动作会停在卡片
 处并过期；新工作无法提交；本地 idle stop 不在运行，机器继续计费。产品页没有说明
@@ -241,8 +241,8 @@ G3；[客户端计划](client-plan.md) “UX flows and failure states”）。
 
 **影响。** A5、A6、G3；README 与 FAQ 措辞。
 
-**证据。** [README](../README.md) “How it works”；[FAQ](faq.md)；
-[系统架构](01-system-architecture.md) “Concurrency, cost and failure”；[MVP 计划](mvp-plan.md)
+**证据。** [README](../../README.md) “How it works”；[FAQ](../faq.md)；
+[系统架构](../01-system-architecture.md) “Concurrency, cost and failure”；[MVP 计划](../plans/mvp-plan.md)
 C6、G3。
 
 <a id="adr-007"></a>
@@ -254,7 +254,7 @@ C6、G3。
 
 **当前设计。** Rayrun 把 DeepSeek key 注入 agent 进程。设计想要一个常驻 DSH host，
 每个 bot 一个 session 和一个 profile 目录；今天平台按每次 prompt 启动
-`dsh --profile headless`（[系统架构](01-system-architecture.md) “Layers”；[平台需求](platform-asks.md)
+`dsh --profile headless`（[系统架构](../01-system-architecture.md) “Layers”；[平台需求](../08-integration.md)
 §1）。
 
 **问题。** 平台文档只保证 agent 进程的凭据注入，不保证 supervisor 再 spawn DSH
@@ -263,13 +263,13 @@ session 时也能拿到。也没有验证一个 DSH 进程能否承载多个 bot
 
 **建议。** 在 M2 前跑 spike S1/S2 并留下证据：session create/continue、受监督进程
 重启、监督进程的凭据注入、一个进程 vs 每 bot 一进程、CPU/内存、端口分配。把监督进程
-的凭据注入与重启语义加进[平台需求](platform-asks.md)。保留逐次 headless + transcript
+的凭据注入与重启语义加进[平台需求](../08-integration.md)。保留逐次 headless + transcript
 replay 作为有文档的回退，并写清它的 UX 与成本。
 
 **影响。** C1–C4、D1–D5、A5、A8。这是最大的未验证平台赌注。
 
-**证据。** [系统架构](01-system-architecture.md) “Layers”；[平台需求](platform-asks.md) §1；
-[安全](security.md) “Design goals” 3。
+**证据。** [系统架构](../01-system-architecture.md) “Layers”；[平台需求](../08-integration.md) §1；
+[安全](../07-security.md) “Design goals” 3。
 
 <a id="adr-008"></a>
 ### ADR-008 — Desktop 访问路径
@@ -292,8 +292,8 @@ replay 作为有文档的回退，并写清它的 UX 与成本。
 
 **影响。** F5、安全与客户端计划措辞。
 
-**证据。** [安全](security.md) “Public inbound”；[客户端计划](client-plan.md)
-“Surfaces”；[平台需求](platform-asks.md) “Safe inbound networking”；[MVP 计划](mvp-plan.md)
+**证据。** [安全](../07-security.md) “Public inbound”；[客户端计划](../plans/client-plan.md)
+“Surfaces”；[平台需求](../08-integration.md) “Safe inbound networking”；[MVP 计划](../plans/mvp-plan.md)
 §4.1(1)。
 
 <a id="adr-009"></a>
@@ -303,8 +303,8 @@ replay 作为有文档的回退，并写清它的 UX 与成本。
 
 **问题。** v0.1 里 scheduler 是 P0 还是 P1？
 
-**当前设计。** [系统架构](01-system-architecture.md) “Layers” 把 scheduler 放进本地 host 核心；
-[路线图](roadmap.md) “v0.1” 包含最小 routines；[MVP 计划](mvp-plan.md) §3 把 routines
+**当前设计。** [系统架构](../01-system-architecture.md) “Layers” 把 scheduler 放进本地 host 核心；
+[路线图](../plans/roadmap.md) “v0.1” 包含最小 routines；[MVP 计划](../plans/mvp-plan.md) §3 把 routines
 标为 P1，§11 又把决定列为 W0 到期。
 
 **问题。** 范围与估时不一致。P1 scheduler 会改变 M1 和 M4，而且本地 scheduler 与
@@ -316,8 +316,8 @@ replay 作为有文档的回退，并写清它的 UX 与成本。
 
 **影响。** M1、M4、范围与估时。
 
-**证据。** [系统架构](01-system-architecture.md) “Layers”；[路线图](roadmap.md) “v0.1”；
-[MVP 计划](mvp-plan.md) §3、§11 决策 2。
+**证据。** [系统架构](../01-system-architecture.md) “Layers”；[路线图](../plans/roadmap.md) “v0.1”；
+[MVP 计划](../plans/mvp-plan.md) §3、§11 决策 2。
 
 ## P2 — 契约与文档对齐
 
@@ -331,10 +331,10 @@ replay 作为有文档的回退，并写清它的 UX 与成本。
 **当前设计。** 已实现的 host 路由是 `/plugins/rayrun-bots`，`GET ?action=health`
 或 POST body 包含 `action`；错误是
 `{ ok: false, error: { code, message, status } }`
-（[index.js](../packages/dsh-rayrun-bots/index.js)；[rpc.js](../packages/dsh-rayrun-bots/lib/rpc.js)）。
+（[index.js](../../packages/dsh-rayrun-bots/index.js)；[rpc.js](../../packages/dsh-rayrun-bots/lib/rpc.js)）。
 客户端计划与 MVP 计划却写 `/plugins/<bundle-id>/rpc`、`{ action, payload }` 和扁平的
-`{ ok: false, code, message }`（[客户端计划](client-plan.md) “RPC contract with the
-host”；[MVP 计划](mvp-plan.md) §4.4）。
+`{ ok: false, code, message }`（[客户端计划](../plans/client-plan.md) “RPC contract with the
+host”；[MVP 计划](../plans/mvp-plan.md) §4.4）。
 
 **问题。** 按文档实现的客户端会调用不存在的路由，或发送 host 不读的 body。这是接线
 失败，不是文案问题。
@@ -346,9 +346,9 @@ host”；[MVP 计划](mvp-plan.md) §4.4）。
 
 **影响。** F2、F4；客户端接线。
 
-**证据。** [index.js](../packages/dsh-rayrun-bots/index.js)；
-[rpc.js](../packages/dsh-rayrun-bots/lib/rpc.js)；[客户端计划](client-plan.md)
-“RPC contract”；[MVP 计划](mvp-plan.md) §4.4。
+**证据。** [index.js](../../packages/dsh-rayrun-bots/index.js)；
+[rpc.js](../../packages/dsh-rayrun-bots/lib/rpc.js)；[客户端计划](../plans/client-plan.md)
+“RPC contract”；[MVP 计划](../plans/mvp-plan.md) §4.4。
 
 <a id="adr-011"></a>
 ### ADR-011 — 审批 schema 与 canonical action hash
@@ -360,7 +360,7 @@ host”；[MVP 计划](mvp-plan.md) §4.4）。
 **当前设计。** 请求是 `{ schema, id, botId, nonce, actionHash, action, risk, origin,
 createdAt, expiresAt }`；决定是 `{ schema, id, nonce, decision, decidedAt }`。正文说
 决定必须匹配 bot id，action hash 覆盖“normalized action payload”，但决定 schema
-两者都没有，normalization 也没有定义（[MVP 计划](mvp-plan.md) §4.3）。
+两者都没有，normalization 也没有定义（[MVP 计划](../plans/mvp-plan.md) §4.3）。
 
 **建议形状。**
 
@@ -391,8 +391,8 @@ target、amount、recipient 和 URL。
 
 **影响。** E2–E6、C-S6、审批卡。
 
-**证据。** [MVP 计划](mvp-plan.md) §4.3；[安全](security.md) “The model is
-untrusted”；[客户端计划](client-plan.md) C-S6。
+**证据。** [MVP 计划](../plans/mvp-plan.md) §4.3；[安全](../07-security.md) “The model is
+untrusted”；[客户端计划](../plans/client-plan.md) C-S6。
 
 <a id="adr-012"></a>
 ### ADR-012 — 恢复与运行语义
@@ -403,7 +403,7 @@ untrusted”；[客户端计划](client-plan.md) C-S6。
 
 **当前设计。** 队列项是 `{ id, botId, kind, text, createdAt, state, attempts }`；
 `bot.json` 没有 tombstone；outbox 没有 schema 版本；TTL、时钟、文件大小与限流没有
-规定（[MVP 计划](mvp-plan.md) §4.3）。
+规定（[MVP 计划](../plans/mvp-plan.md) §4.3）。
 
 **建议。**
 
@@ -418,8 +418,8 @@ untrusted”；[客户端计划](client-plan.md) C-S6。
 
 **影响。** C8、D4、E5–E7、A8、A9。
 
-**证据。** [MVP 计划](mvp-plan.md) §4.3；[本地文件设计](local-file-design.md) §4；
-[平台需求](platform-asks.md) §3。
+**证据。** [MVP 计划](../plans/mvp-plan.md) §4.3；[本地文件设计](../06-local-state.md) §4；
+[平台需求](../08-integration.md) §3。
 
 <a id="adr-013"></a>
 ### ADR-013 — 文档清理
@@ -428,15 +428,15 @@ untrusted”；[客户端计划](client-plan.md) C-S6。
 
 以下是决策定下后要直接修掉的矛盾：
 
-- [客户端计划](client-plan.md) 开头：“…cloud calls are in Layout is the
+- [客户端计划](../plans/client-plan.md) 开头：“…cloud calls are in Layout is the
   three-column shell…” 是断句，`mvp-plan` 链接掉进了句子里。
-- [系统架构](01-system-architecture.md) “Concurrency, cost and failure”：“the DSH host on their
+- [系统架构](../01-system-architecture.md) “Concurrency, cost and failure”：“the DSH host on their
   machine” 没有说明是本地还是云端。
-- [安全](security.md) “The model is untrusted”：“the mitigation is the approval
+- [安全](../07-security.md) “The model is untrusted”：“the mitigation is the approval
   layer” 必须与 ADR-001 的决定一致；如果 gate 不是边界，就直说。
 - “no runtime dependencies”（README、CLAUDE.md）与声明 `dsh-rayrun-computer`：
   区分库依赖与 peer bundle。
-- [errors.js](../packages/dsh-rayrun-bots/lib/errors.js) 和 MVP 错误码表缺
+- [errors.js](../../packages/dsh-rayrun-bots/lib/errors.js) 和 MVP 错误码表缺
   `E_BOT_INVALID`，但 B1 要求非法定义返回一个 code。
 - ADR-010 里的 RPC 路由/信封不一致。
 - 带日期的状态陈述与“今天能做什么”必须与代码一致；本文不改变它们。

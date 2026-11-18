@@ -1,0 +1,202 @@
+# 08 — 集成与平台需求
+
+> 状态：2026-11-18。本文定义与 `dsh-rayrun-computer` 的依赖边界，以及 Rayrun 平台
+> 需要补的能力和优先级。技术基线见 [`01-system-architecture.md`](01-system-architecture.md)；
+> 云 host 见 [`04-cloud-host.md`](04-cloud-host.md)；未决决策见
+> [`adr/architecture-decisions.md`](adr/architecture-decisions.md)。
+> 本文是 handoff 清单；状态以 [`../README.md`](../README.md) 与各平台文档为准。
+
+## 0. 与现有文档的关系
+
+| 文档 | 负责什么 |
+| --- | --- |
+| [`01-system-architecture.md`](01-system-architecture.md) | 分层、依赖边界、信任模型 |
+| [`04-cloud-host.md`](04-cloud-host.md) | 云 host 如何使用这些能力 |
+| [`05-approvals.md`](05-approvals.md) | 文件控制通道的审批部分 |
+| [`06-local-state.md`](06-local-state.md) | 本地/机器文件布局 |
+| [`adr/architecture-decisions.md`](adr/architecture-decisions.md) | ADR-003（控制通道）、ADR-004（依赖契约）、ADR-007（常驻 host） |
+
+---
+
+## 1. 依赖边界
+
+`dsh-rayrun-computer` 是**独立项目**（`RayrunOS/dsh-rayrun-computer`，MIT），不是本仓库
+的代码：
+
+- 本仓库通过它已发布的 tools/RPC 表面和版本契约消费它；
+- **不修改、不 fork、不 vendor、不复制**它的代码；
+- 需要它改行为 → 去它的仓库提 issue/PR，或在本仓库写 adapter；
+- 安装：npm 发布前双方都从 checkout 安装；S6 只决定“bundle 能否声明依赖、一次安装
+  是否带两个插件”，不是 host API 问题；
+- host API 的具体调用方式（service injection / host RPC / adapter）是 **ADR-004**，
+  未定前 C1/D1 不应动工。
+
+**版本检查**：host 启动时记录依赖版本；缺失/过旧返回 `E_DEP_MISSING` /
+`E_DEP_VERSION`，并给一句可执行的安装提示。不要静默降级。
+
+---
+
+## 2. bot host 需要依赖提供的能力
+
+| 能力 | 用途 | 关键问题 |
+| --- | --- | --- |
+| 机器 ensure/start/stop | 创建/停止用户的云电脑 | 是否复用 `sandboxName`；幂等 |
+| `exec` | 启动 host、watchdog、健康检查 | 超时/退出码/输出上限 |
+| 文件 read/write/list | 队列、审批、outbox、镜像 | 原子写/ETag/分页/大小上限 |
+| agent prompt + SSE | 发任务、流式回复 | session id、取消、`409 sandbox_busy` |
+| session create/continue | bot 续接 | 平台契约（P0 #1） |
+| credential 注入状态 | 确认模型 key 已注入 | 监督进程是否也能拿到（ADR-007） |
+| balance/usage | 成本栏 | 余额、机器小时；per-sandbox 是 beta |
+
+契约要写清：名称、输入、输出、错误码、是否使用 Rayrun token、启动顺序、版本协商。
+如果依赖没有 host 表面，adapter 放在我们的包里，不改依赖。
+
+---
+
+## 3. 阻塞 v0.1 的平台能力
+
+### 3.1 Session 与常驻 runtime 契约（P0）
+
+今天：一台机器一次只跑一个 agent 任务（`409 sandbox_busy`，不排队）；文档没有说
+session id 能否跨 prompt 创建/续接；机器进程是否跨 stop/start 存活、是否有 startup
+hook，都没有文档。
+
+需要：
+
+1. 按 id 创建/续接 session 的契约；
+2. 在机器内运行受监督的常驻进程：启动命令、重启策略、stop/start/reboot 行为；
+3. startup hook 或平台 supervisor，让 bot host 在机器重启后回来。
+
+为什么：bot↔session 映射和“合上笔记本继续工作”是产品核心。
+
+没有它时的回退：逐次 headless + transcript replay（更慢、更贵），以及本地 watchdog
+通过 `exec` 重启 host。
+
+期望形状：prompt API 接受/返回 `session_id`；services/entrypoint API（`command`、
+`restart: on-failure`、开机启动）或文档化的 systemd 支持；机器启动事件。
+
+### 3.2 余额宽限与 spend 护栏（P0）
+
+今天：余额耗尽会 force-destroy 组织内所有沙箱，包括磁盘；只有 `max_lifetime_seconds`，
+且只停不重启；没有 spend cap。
+
+需要：零余额时 suspend 而不是 destroy、低余额事件/通知、按沙箱或账号的预算上限。
+
+为什么：24/7 bot 丢 workspace 是数据丢失和支持灾难，不只是账单事件。
+
+回退：本地余额轮询、警告、idle stop；无法阻止 force-destroy。
+
+期望形状：`balance.low` / `sandbox.suspended` 事件、destroy 前宽限期、每机器 budget
+字段。
+
+---
+
+## 4. v0.1 质量项
+
+### 4.1 文件控制通道语义（P1）
+
+今天：用 workspace 文件做审批/控制邮箱，每 3 秒轮询。
+
+需要：原子写/rename 语义、下载 revision/ETag、list 分页、文档化限流；或下面的消息
+通道。
+
+为什么：读到半写的审批文件是正确性 bug；轮询有请求预算。
+
+回退：唯一文件名、write-then-rename、payload 内 checksum。**注意 checksum 只防损坏，
+不防伪造**；见 [`05-approvals.md`](05-approvals.md) ADR-001。
+
+### 4.2 出站控制通道（P1，推荐）
+
+需要：本地认证的订阅通道（SSE/WebSocket），云端可发布，无入站网络，按序投递、
+at-least-once、有限流。
+
+为什么：替代文件轮询，降低审批/状态延迟，同时保持“无公网入站”。
+
+回退：上面的文件邮箱。
+
+---
+
+## 5. v0.2 / beta
+
+- **安全入站**：每实例主机名与证书、token/gateway 认证、WebSocket/SSE 透传。今天
+  ingress 的 token 层不可用（403），只有 `public`；不作为产品面板。阻塞远程 UI、
+  手机审批和跨设备 takeover。
+- **Scoped credentials**：只限 sandbox CRUD + prompt 的 API token/device flow，可命名、
+  可过期、可吊销，不带 billing/org 权限。今天持有账号 token。
+- **通用 secret injection**：模型槽位之外的 GitHub/IM/SaaS token，注入机器且 `exec`
+  不可读。
+- **机器生命周期事件**：started/stopped/failed、低余额；webhook 或 SSE。
+- **Per-sandbox usage**：按沙箱的 `vm_hours`/egress 时间序列，支持 per-bot 成本。
+- **Prompt queue**：平台侧排队，替代 `409 sandbox_busy`，让多个 bot 优雅串行。
+- **Golden image 与 DSH 版本**：官方镜像带当前 DSH（镜像为 `0.2.0-rc.2`，本地基线
+  `0.2.2-rc.1`），文档化版本矩阵，可选镜像构建/固定。
+
+---
+
+## 6. 后期 / 企业（不属于 OSS MVP）
+
+SSO/SAML/SCIM、组织 RBAC、审计导出/SIEM、DPA 与数据驻留、marketplace/agent API、
+多区域与 SLA。只有出现企业版时才重新考虑。
+
+---
+
+## 7. API 卫生
+
+- 版本化 API，发布 OpenAPI 作为真相源，维护 changelog 与弃用策略。今天不同页面
+  endpoint 数不一致（67 vs 93）。
+- 错误码字典、文档化限流、`Retry-After`。
+- 确认或标记 beta：运行时 `PUT /egress`、任意端口 ingress、PTY `/terminals`、
+  image builds 在 2026-11-01 测试中都“文档有、实际不可用”。
+
+---
+
+## 8. 优先级总表
+
+| 需求 | 需要时间 | 今天阻塞发布？ |
+| --- | --- | --- |
+| 1. session + 常驻 runtime 契约 | v0.1 | 需要确认 |
+| 2. 余额宽限 / 护栏 | v0.1 | 风险接受并警告 |
+| 3. 文件通道语义 | v0.1 | 否（有 workaround） |
+| 4. 出站控制通道 | v0.1 质量 | 否（轮询） |
+| 安全入站 | v0.2 | 否 |
+| Scoped credentials | v0.2 | 否 |
+| secret/生命周期/usage/queue/image | beta | 否 |
+| 企业项 | later | 否 |
+
+---
+
+## 9. 错误码与版本
+
+| 场景 | 码 |
+| --- | --- |
+| 依赖缺失 | `E_DEP_MISSING` |
+| 依赖版本不匹配 | `E_DEP_VERSION` |
+| 缺少 Rayrun token | `E_TOKEN_REQUIRED` |
+| 缺少 DeepSeek key | `E_KEY_REQUIRED` |
+| 机器停止 | `E_MACHINE_STOPPED` |
+| 机器忙碌 | `E_MACHINE_BUSY` |
+| bot host 不可用 | `E_HOST_DOWN` |
+
+完整错误表见 [`plans/mvp-plan.md`](plans/mvp-plan.md) §4.3；响应不得携带 token 或 key。
+
+---
+
+## 10. 未决项
+
+| 问题 | 影响 | 决策 |
+| --- | --- | --- |
+| 依赖的 host API 表面 | C1/D1 能否开工 | ADR-004 |
+| 常驻 host 的凭据注入 | “合上笔记本” | ADR-007 |
+| 文件通道的双写/CAS | 队列与审批 | ADR-003 |
+| 安全入站 | desktop/手机审批 | v0.2 平台需求 |
+| 版本矩阵与一次安装 | 发布路径 | S6 + Release |
+
+---
+
+## 11. 相关文档
+
+- [`01-system-architecture.md`](01-system-architecture.md)
+- [`04-cloud-host.md`](04-cloud-host.md)
+- [`05-approvals.md`](05-approvals.md)
+- [`06-local-state.md`](06-local-state.md)
+- [`adr/architecture-decisions.md`](adr/architecture-decisions.md)

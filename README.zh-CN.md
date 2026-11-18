@@ -14,7 +14,7 @@ Rayrun Bot 给 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harnes
 
 - **桌面——你机器上的 DeepSeek Harness。** 你在这里和 Bot 对话、审批动作、改设置。同一个 DSH profile 里跑两个 bundle：独立的云电脑插件提供 `rayrun_*` 工具和同源 RPC 接口，Rayrun Bot 的 Host 半区在它之上加 Bot 层；Client 半区往 DSH Web UI 里加页面。Bot 层上线后，合上笔记本不会让 Bot 停下来：桌面是你回来的地方，不是它们住的地方。
 - **身体——你的 Rayrun 云电脑。** 每人一台 Linux 机器，由这个人的所有 Bot 共享：独立的 vCPU 和内存、持久的 `/workspace`、`:99` 上的 X11 桌面，并且能跑命令、搬文件、开浏览器。按写作时（2026 年 11 月）的价格，2 vCPU / 2 GiB 常开约 ¥57.6/月；Rayrun 按秒计费，你付给 Rayrun，不是付给我们。
-- **大脑——你的 DeepSeek key。** 机器里的 agent 进程用你存在 Rayrun credential 里的 API key 调 DeepSeek。key 注入的是那个进程，不是工作区：`exec` 起的 shell 读不到它，它不在本仓库里，也不会出现在聊天消息里。日志是否会带出 key 仍在验证——见 [docs/security.md](docs/security.md)。
+- **大脑——你的 DeepSeek key。** 机器里的 agent 进程用你存在 Rayrun credential 里的 API key 调 DeepSeek。key 注入的是那个进程，不是工作区：`exec` 起的 shell 读不到它，它不在本仓库里，也不会出现在聊天消息里。日志是否会带出 key 仍在验证——见 [docs/07-security.md](docs/07-security.md)。
 - **记忆——机器上的 DSH 状态。** Bot 是持久的 DSH 对象：它的指令、技能、草稿本和会话都在一个 profile 目录里，重启后还在。Bot↔session 映射——从停下的地方继续，然后回来汇报——是本仓库要补的核心。
 
 ```
@@ -63,7 +63,7 @@ Windows 上在 PowerShell 里跑同样三条命令，路径写成 `"$PWD"`。
 2. **New computer** → 选镜像、至少给 2 GB 内存、打开远程桌面 → **Create and open**。大约 15 秒。
 3. 让 agent 列出你的机器——应该能看到你刚建的那台。负向检查值得做一次：登录之前，同样的请求必须回答 `token_required`，绝不能假装干完了。
 
-v0.1 的目标路径见[状态](#状态)与 [docs/roadmap.md](docs/roadmap.md)。Rayrun Bot 计划把这个插件声明为依赖，让一次安装带上两个；这条路还只是 spike（S6），不是承诺。
+v0.1 的目标路径见[状态](#状态)与 [docs/plans/roadmap.md](docs/plans/roadmap.md)。Rayrun Bot 计划把这个插件声明为依赖，让一次安装带上两个；这条路还只是 spike（S6），不是承诺。
 
 ## 机器人
 
@@ -116,12 +116,12 @@ Rayrun Bot/
 ├── CONTRIBUTING.md              # PR 规则（旁边还有 CODE_OF_CONDUCT.md）
 ├── .github/                     # issue/PR 模板与检查用 CI workflow
 ├── package.json                 # 私有 workspace 根
-├── docs/                        # 设计文档、计划、平台需求
+├── docs/                        # 00–09 文档、adr/、plans/、design/、research/、mockups/
 └── packages/
     └── dsh-rayrun-bots/         # health 路由 + v0.1 客户端界面、locale、测试
 ```
 
-云电脑插件（`dsh-rayrun-computer`）不在这个树里：它是**独立项目**，作为依赖被复用——同一个 DSH profile 里两个插件，一个产品。仓库和产品都叫 **Rayrun Bot**；插件包保留 `dsh-` 前缀，这是 DSH 插件生态的命名习惯。README 是产品页，细节在 `docs/`。深入阅读：[文档索引](docs/README.md)、[快速开始](docs/quickstart.md)、[产品方向](docs/00-product-direction.md)、[系统架构](docs/01-system-architecture.md)、[架构决策](docs/architecture-decisions.md)、[安全](docs/security.md)、[FAQ](docs/faq.md)、[路线图](docs/roadmap.md)、[Grok Bot 灵感](docs/inspiration.md)、[MVP 计划](docs/mvp-plan.md)、[客户端计划](docs/client-plan.md)、[界面设计](docs/ui-design.md)、[Bot 人格](docs/bot-persona.md)、[本地文件设计](docs/local-file-design.md)、[平台需求](docs/platform-asks.md)。两份 README 必须在同一个 commit 里更新——英文版为准。
+云电脑插件（`dsh-rayrun-computer`）不在这个树里：它是**独立项目**，作为依赖被复用——同一个 DSH profile 里两个插件，一个产品。仓库和产品都叫 **Rayrun Bot**；插件包保留 `dsh-` 前缀，这是 DSH 插件生态的命名习惯。README 是产品页，细节在 `docs/`。深入阅读：[文档索引](docs/README.md)、[产品方向](docs/00-product-direction.md)、[系统架构](docs/01-system-architecture.md)、[Bot 模型](docs/02-bot-model.md)、[客户端设计](docs/03-client-design.md)、[云端 host](docs/04-cloud-host.md)、[审批](docs/05-approvals.md)、[本地状态](docs/06-local-state.md)、[安全](docs/07-security.md)、[集成](docs/08-integration.md)、[部署](docs/09-deployment.md)、[计划](docs/plans/mvp-plan.md)、[架构决策](docs/adr/architecture-decisions.md)、[FAQ](docs/faq.md)。两份 README 必须在同一个 commit 里更新——英文版为准。
 
 ## 开发
 
@@ -148,7 +148,7 @@ dsh plugin --profile web add /absolute/path/to/package
 | **尚未构建** | Bot 名册与 Bot↔session 映射、机器上的常驻 DSH host、能拦住 worker 的远程审批、真正会跑的 routines 与触发器、来自账号的实时用量、IM 通道、两插件安装路径（依赖声明与版本检查）、npm 包以及发布用的 CI 路径。 |
 | **平台缺口** | 安全入向网络（今天 token ingress 不可用，只有 `public` 能用）、空闲自动停、spend cap、session 续跑契约。完整清单在 [docs/01-system-architecture.md](docs/01-system-architecture.md)。 |
 
-**v0.1 路径**——从 npm 安装 → 登录 → 创建一个 Bot → 批准它的第一个受限动作。验收标准在 [docs/roadmap.md](docs/roadmap.md)。
+**v0.1 路径**——从 npm 安装 → 登录 → 创建一个 Bot → 批准它的第一个受限动作。验收标准在 [docs/plans/roadmap.md](docs/plans/roadmap.md)。
 
 ## 致谢
 

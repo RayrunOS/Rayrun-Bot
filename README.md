@@ -14,7 +14,7 @@ A bot has four parts, and only one of them needs to be online.
 
 - **The desk — DeepSeek Harness, on your machine.** You talk to bots, approve actions and change settings here. Two bundles run in the same DSH profile: the separate cloud-computer plugin supplies the `rayrun_*` tools and the same-origin RPC surface, and Rayrun Bot's host half adds the bot layer on top; the client halves add pages to the DSH web UI. Once the bot layer ships, closing your laptop will not stop the bots: the desk is where you come back to, not where they live.
 - **The body — your Rayrun cloud computer.** One Linux machine per person, shared by that person's bots: its own vCPU and memory, a persistent `/workspace`, an X11 desktop on `:99`, and the ability to run commands, move files and drive a browser. A 2 vCPU / 2 GiB machine kept always-on cost about ¥57.6/month at the time of writing; Rayrun bills by the second, and you pay Rayrun, not us.
-- **The brain — your DeepSeek key.** The agent process inside the machine calls DeepSeek with the API key you stored as a Rayrun credential. The key is injected into that process, not into the workspace: `exec` shells cannot read it, and it doesn't live in this repository or appear in chat messages. Log hygiene is still being verified — see [docs/security.md](docs/security.md).
+- **The brain — your DeepSeek key.** The agent process inside the machine calls DeepSeek with the API key you stored as a Rayrun credential. The key is injected into that process, not into the workspace: `exec` shells cannot read it, and it doesn't live in this repository or appear in chat messages. Log hygiene is still being verified — see [docs/07-security.md](docs/07-security.md).
 - **Memory — DSH state on the machine.** A bot is a persistent DSH object: its instructions, skills, scratchpad and session live in a profile directory and survive restarts. The bot↔session mapping — resume where it stopped, then come back and report — is the core of what this repo adds.
 
 ```
@@ -63,7 +63,7 @@ On Windows, run the same commands in PowerShell with `"$PWD"` as the path.
 2. **New computer** → choose an image, give it at least 2 GB of memory, turn on the remote desktop → **Create and open**. It takes about 15 seconds.
 3. Ask the agent to list your machines — it should return the one you just created. The negative check is worth doing once: before you sign in, the same request must answer `token_required`, never pretend the work happened.
 
-The v0.1 path this repo is building toward is tracked in [Status](#status) and [docs/roadmap.md](docs/roadmap.md). Rayrun Bot is meant to declare this plugin as a dependency, so one install should bring both; that path is still a spike (S6), not a promise.
+The v0.1 path this repo is building toward is tracked in [Status](#status) and [docs/plans/roadmap.md](docs/plans/roadmap.md). Rayrun Bot is meant to declare this plugin as a dependency, so one install should bring both; that path is still a spike (S6), not a promise.
 
 ## The bots
 
@@ -116,12 +116,12 @@ Rayrun Bot/
 ├── CONTRIBUTING.md              # pull-request rules (CODE_OF_CONDUCT.md alongside)
 ├── .github/                     # issue/PR templates and the checks CI workflow
 ├── package.json                 # private workspace root
-├── docs/                        # design docs, plans, platform asks
+├── docs/                        # 00–09 docs, adr/, plans/, design/, research/, mockups/
 └── packages/
     └── dsh-rayrun-bots/         # health route + v0.1 client shell, locale, tests
 ```
 
-The cloud-computer plugin (`dsh-rayrun-computer`) is not in this tree: it is a **separate project**, consumed as a dependency. Two plugins in the same DSH profile, one product. The repository and product are called **Rayrun Bot**; the packages keep the `dsh-` prefix that the DSH ecosystem uses. The README is the product page; `docs/` holds the detail. Deeper reads: [documentation index](docs/README.md), [quick start](docs/quickstart.md), [product direction](docs/00-product-direction.md), [system architecture](docs/01-system-architecture.md), [architecture decisions](docs/architecture-decisions.md), [security](docs/security.md), [FAQ](docs/faq.md), [roadmap](docs/roadmap.md), [Grok Bot inspiration](docs/inspiration.md), [MVP plan](docs/mvp-plan.md), [client plan](docs/client-plan.md), [UI design](docs/ui-design.md), [bot persona](docs/bot-persona.md), [local file design](docs/local-file-design.md), [platform asks](docs/platform-asks.md). Both READMEs are updated in the same commit — English is the source of truth.
+The cloud-computer plugin (`dsh-rayrun-computer`) is not in this tree: it is a **separate project**, consumed as a dependency. Two plugins in the same DSH profile, one product. The repository and product are called **Rayrun Bot**; the packages keep the `dsh-` prefix that the DSH ecosystem uses. The README is the product page; `docs/` holds the detail. Deeper reads: [documentation index](docs/README.md), [product direction](docs/00-product-direction.md), [system architecture](docs/01-system-architecture.md), [bot model](docs/02-bot-model.md), [client design](docs/03-client-design.md), [cloud host](docs/04-cloud-host.md), [approvals](docs/05-approvals.md), [local state](docs/06-local-state.md), [security](docs/07-security.md), [integration](docs/08-integration.md), [deployment](docs/09-deployment.md), [plans](docs/plans/mvp-plan.md), [ADRs](docs/adr/architecture-decisions.md), [FAQ](docs/faq.md). Both READMEs are updated in the same commit — English is the source of truth.
 
 ## Development
 
@@ -148,7 +148,7 @@ dsh plugin --profile web add /absolute/path/to/package
 | **Not built yet** | Bot roster and bot↔session mapping, a persistent DSH host on the machine, remote approvals that gate a worker, routines that actually run, live usage from the account, IM channel, the two-plugin install path (dependency declaration and version check), npm packages and the release/publish CI path. |
 | **Platform gaps** | Safe inbound networking (today the token ingress is unusable and only `public` works), idle auto-stop, a spend cap, the session-resume contract. The full list is in [docs/01-system-architecture.md](docs/01-system-architecture.md). |
 
-**v0.1 path** — install from npm → sign in → create a bot → approve its first gated action. Exit criteria are in [docs/roadmap.md](docs/roadmap.md).
+**v0.1 path** — install from npm → sign in → create a bot → approve its first gated action. Exit criteria are in [docs/plans/roadmap.md](docs/plans/roadmap.md).
 
 ## Acknowledgements
 

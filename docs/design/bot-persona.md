@@ -4,8 +4,8 @@
 a light persona, not a character. Grok Bot frames its agents as "durable AI
 teammates with a name, a job, its own conversation, and working context"; we take
 that shape and keep the personality deliberately restrained. Related:
-[ui-design.md](ui-design.md) (where it shows), [client-plan.md](client-plan.md)
-(surfaces), [mvp-plan.md](mvp-plan.md) (bot schema).*
+[ui-design.md](ui-design.md) (where it shows), [client-plan.md](../plans/client-plan.md)
+(surfaces), [mvp-plan.md](../plans/mvp-plan.md) (bot schema).*
 
 ## 1. The model
 
@@ -131,6 +131,6 @@ any persona that speaks in the user's voice.
 Bots in a roster are colleagues, but v0.1 has no bot-to-bot channel: the machine
 runs one task at a time and handoffs are not implemented. The planned shape is a
 file-based handoff in the shared workspace with a done criterion and a hop limit,
-plus a receipt when the work returns — see [inspiration.md](inspiration.md) §4.
+plus a receipt when the work returns — see [inspiration.md](../research/inspiration.md) §4.
 Persona-wise nothing changes: the receiving bot is still a colleague, not a
 narrator of team drama.

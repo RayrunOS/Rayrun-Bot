@@ -4,13 +4,13 @@
 app as seen in the reference screenshot the user shared — one chat-list column, a
 markdown conversation in the middle, a per-bot details panel on the right — in a
 the visual language of rayrunos.com: white canvas, navy primary buttons, blue accents, hairline borders. Approvals are inline cards, not a separate
-inbox. The clickable reference is [`docs/mockups/index.html`](mockups/index.html);
+inbox. The clickable reference is [`docs/mockups/index.html`](../mockups/index.html);
 append `#library`, `#newbot`, `#setup` or `#settings` to the URL for the other
-screens. The mockups render the **zh-CN** locale; English copy in §5 is the source and ships alongside (`locale/en.json`, `locale/zh.json`); the default language follows DSH. Related: [client-plan.md](client-plan.md) (surfaces, RPC),
-[mvp-plan.md](mvp-plan.md) (approval semantics), [bot-persona.md](bot-persona.md)
-(names, voice), [local-file-design.md](local-file-design.md) (state).*
+screens. The mockups render the **zh-CN** locale; English copy in §5 is the source and ships alongside (`locale/en.json`, `locale/zh.json`); the default language follows DSH. Related: [client-plan.md](../plans/client-plan.md) (surfaces, RPC),
+[mvp-plan.md](../plans/mvp-plan.md) (approval semantics), [bot-persona.md](bot-persona.md)
+(names, voice), [local-file-design.md](../06-local-state.md) (state).*
 
-Rendered previews: [conversation](mockups/conversation.png) · [library](mockups/library.png) · [new bot](mockups/newbot.png) · [setup](mockups/setup.png) · [settings](mockups/cost-settings.png).
+Rendered previews: [conversation](../mockups/conversation.png) · [library](../mockups/library.png) · [new bot](../mockups/newbot.png) · [setup](../mockups/setup.png) · [settings](../mockups/cost-settings.png).
 
 ## 0. Principles
 
@@ -231,7 +231,7 @@ mark, and bold CJK-friendly headings.
 Rules: white cards on light-gray panels; navy primary controls; blue reserved for
 links, selected rows and tabs; amber only for warnings; one border weight and one
 shadow level; radii 12 px cards / 9 px controls; no gradients or colored panels.
-Brand: use the official Rayrun logo — the lucide **Boxes** mark shown in the rayrunos.com header, in `#003d9b`, plus the "Rayrun Bot" wordmark. The mockup inlines that official mark; the favicon variant (blue rounded square, white mark) is saved at [`docs/mockups/rayrun-logo.svg`](mockups/rayrun-logo.svg) for packaging. Never redraw or restyle the mark; it is the only place the brand blue appears. Type: system stack with `PingFang SC` / `Microsoft YaHei` fallbacks;
+Brand: use the official Rayrun logo — the lucide **Boxes** mark shown in the rayrunos.com header, in `#003d9b`, plus the "Rayrun Bot" wordmark. The mockup inlines that official mark; the favicon variant (blue rounded square, white mark) is saved at [`docs/mockups/rayrun-logo.svg`](../mockups/rayrun-logo.svg) for packaging. Never redraw or restyle the mark; it is the only place the brand blue appears. Type: system stack with `PingFang SC` / `Microsoft YaHei` fallbacks;
 14 px body, 13 px UI labels, 18 px page titles. Motion 120 ms; honor
 `prefers-reduced-motion`. Light only in v0.1; dark follows DSH when available.
 
@@ -249,6 +249,6 @@ Brand: use the official Rayrun logo — the lucide **Boxes** mark shown in the r
 Voice input/chat, group chats, X Chat, mobile layouts, shared bots, bot templates
 and marketplace, Vault/Secure Form, bot email, Auto Review rules and
 "Always allow" (v0.2), primary-bot check-ins, bot-to-bot handoff cards (v0.2
-candidate, see [inspiration.md](inspiration.md)), avatar upload or generation,
+candidate, see [inspiration.md](../research/inspiration.md)), avatar upload or generation,
 personality presets, custom themes, artifact preview beyond links, and keyboard
 shortcuts beyond Enter/Escape.

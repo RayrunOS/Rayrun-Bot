@@ -11,7 +11,7 @@ action. The screens are an in-memory preview. There is no bot layer yet.
   same-origin gated: a browser `Origin` that does not match the request `Host`
   is refused with 403. No credentials are touched.
 - Client half: a `Bots` sidebar entry and the three-column shell from
-  [docs/ui-design.md](../../docs/ui-design.md) — chat list, conversation,
+  [docs/design/ui-design.md](../../docs/design/ui-design.md) — chat list, conversation,
   details (Activity / Library), new bot, the four-step setup wizard, and
   settings. Sample bots, messages, receipts, and the approval card live in the
   page only. Deny / Allow once, creating a bot, the wizard, and settings update
@@ -20,7 +20,7 @@ action. The screens are an in-memory preview. There is no bot layer yet.
 
 Not built yet: a real bot roster, bot↔session mapping, remote approvals, routines
 that run, the adapter to `dsh-rayrun-computer`, and the npm release path. See the
-repo-level [MVP plan](../../docs/mvp-plan.md) and [client plan](../../docs/client-plan.md).
+repo-level [MVP plan](../../docs/plans/mvp-plan.md) and [client plan](../../docs/plans/client-plan.md).
 
 ## Install from a checkout
 
@@ -58,7 +58,7 @@ package.json       # name, exports, dsh.bundle + dsh.client
 cordis.patch.yml   # the bundle row (id rayrun-bots -> package dsh-rayrun-bots)
 index.js           # host half: same-origin RPC route, health action only
 client.js          # client half: v0.1 shell (in-memory preview)
-lib/errors.js      # stable error codes (shared with docs/mvp-plan.md §4.3)
+lib/errors.js      # stable error codes (shared with docs/plans/mvp-plan.md §4.3)
 lib/rpc.js         # JSON responses and request-body parsing
 locale/en.json     # source copy
 locale/zh.json     # mirror; keys must match

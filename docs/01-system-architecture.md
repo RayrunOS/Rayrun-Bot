@@ -4,7 +4,7 @@
 > 流转、信任模型是什么。
 > 产品范围与验收以 [`00-product-direction.md`](00-product-direction.md) 为准；当前实现
 > 状态以 [`../README.md`](../README.md) 的 **Status** 段为准；未决架构决策见
-> [`architecture-decisions.md`](architecture-decisions.md)。
+> [`adr/architecture-decisions.md`](adr/architecture-decisions.md)。
 > 本文中的 **计划 / TBD** 表示未实现或未验证，不要读成已交付。
 
 ## 0. 与现有文档的关系
@@ -13,13 +13,13 @@
 | --- | --- |
 | [`00-product-direction.md`](00-product-direction.md) | 产品方向唯一真相源；产品与技术冲突时以 00 为准 |
 | [`../README.md`](../README.md) | 产品页与实现状态；本文不复制状态 |
-| [`security.md`](security.md) | 威胁模型、凭据边界与“不保护什么”的细节 |
-| [`local-file-design.md`](local-file-design.md) | 本地状态目录、原子写、权限与保留规则 |
-| [`mvp-plan.md`](mvp-plan.md) | 工作分解、接口草案、A1–A12 验收 |
-| [`client-plan.md`](client-plan.md) | 客户端表面、RPC 分组与 DSH 集成 spike |
-| [`platform-asks.md`](platform-asks.md) | 需要 Rayrun 平台补的能力与优先级 |
-| [`architecture-decisions.md`](architecture-decisions.md) | ADR 登记册与未决决策；本文引用其编号 |
-| [`quickstart.md`](quickstart.md) | 怎么把现有插件跑起来 |
+| [`07-security.md`](07-security.md) | 威胁模型、凭据边界与“不保护什么”的细节 |
+| [`06-local-state.md`](06-local-state.md) | 本地状态目录、原子写、权限与保留规则 |
+| [`plans/mvp-plan.md`](plans/mvp-plan.md) | 工作分解、接口草案、A1–A12 验收 |
+| [`plans/client-plan.md`](plans/client-plan.md) | 客户端表面、RPC 分组与 DSH 集成 spike |
+| [`08-integration.md`](08-integration.md) | 需要 Rayrun 平台补的能力与优先级 |
+| [`adr/architecture-decisions.md`](adr/architecture-decisions.md) | ADR 登记册与未决决策；本文引用其编号 |
+| [`09-deployment.md`](09-deployment.md) | 怎么把现有插件跑起来 |
 
 ---
 
@@ -39,7 +39,7 @@
 | 打包 | 私有 workspace + npm 包 | 根 `package.json` 无依赖；`files` 必须包含 host/client/locale/lib |
 
 “无运行时依赖”指 **库依赖**；`dsh-rayrun-computer` 是 peer bundle 依赖，不是被复制进
-本仓库的代码（见 [`architecture-decisions.md`](architecture-decisions.md) ADR-004）。
+本仓库的代码（见 [`adr/architecture-decisions.md`](adr/architecture-decisions.md) ADR-004）。
 
 ### 1.2 目标拓扑（v0.1）
 
@@ -191,8 +191,8 @@ billing。token 只在本地 host 使用；云端 agent 只拿模型 key，不�
   边界。**
 - 推荐把受控动作放到凭据所在的一侧执行（本地 host 或平台），或由平台提供
   host/agent 权限隔离；若都做不到，必须改安全页的措辞并警告。
-- 这条与 [`security.md`](security.md) “The model is untrusted” 和
-  [`architecture-decisions.md`](architecture-decisions.md) ADR-001 一致。
+- 这条与 [`07-security.md`](07-security.md) “The model is untrusted” 和
+  [`adr/architecture-decisions.md`](adr/architecture-decisions.md) ADR-001 一致。
 
 ### 4.4 其他边界
 
@@ -223,18 +223,18 @@ billing。token 只在本地 host 使用；云端 agent 只拿模型 key，不�
 | 本地镜像与缓存 | 本地 host（派生） | `$DSH_HOME/state/rayrun-bot/` | 可丢弃；从机器重建；不写回机器 |
 
 完整的所有权矩阵与单写者规则见 ADR-002、ADR-003；本地目录、权限、原子写和保留规则
-见 [`local-file-design.md`](local-file-design.md)。
+见 [`06-local-state.md`](06-local-state.md)。
 
 ### 5.2 控制通道
 
 v0.1 没有入站网络。本地 → 云端通过 Rayrun API 写文件；云端 → 本地状态通过
 `/workspace/.rayrun/` 下的文件，本地每 3 秒轮询。审批、队列和 outbox 都走这个文件
-邮箱。平台的原子写/ETag 语义尚未确认（[`platform-asks.md`](platform-asks.md) §3），
+邮箱。平台的原子写/ETag 语义尚未确认（[`08-integration.md`](08-integration.md) §3），
 所以协议必须按“无 CAS”设计：每项一个文件、一个写者、临时文件 + rename。
 
 ### 5.3 Schema
 
-固定格式见 [`mvp-plan.md`](mvp-plan.md) §4.3：
+固定格式见 [`plans/mvp-plan.md`](plans/mvp-plan.md) §4.3：
 
 - `bot.json`：`schema`、`id`、`name`、`label`、`avatar`、`instructions`、`skills`、
   `model?`、`createdAt`、`updatedAt`；指令上限 8 KB。
@@ -305,7 +305,7 @@ tombstone，action hash 的 canonicalization 未定义；见 ADR-011/012。
 - idle 策略只能 stop/pause；`destroy` 必须由人类明确请求。
 - 删除前应提示 workspace 不可恢复；本地镜像可保留 bot 定义，但不是完整备份。
 - 余额耗尽可能触发平台 force-destroy；这是平台行为，不是本插件的 destroy 路径
-  （[`platform-asks.md`](platform-asks.md) #2）。
+  （[`08-integration.md`](08-integration.md) #2）。
 
 ---
 
@@ -335,7 +335,7 @@ tombstone，action hash 的 canonicalization 未定义；见 ADR-011/012。
 - 成本栏与诚实的状态报告；
 - 打包、测试和文档。
 
-**平台必须补**（细节与优先级见 [`platform-asks.md`](platform-asks.md)）：
+**平台必须补**（细节与优先级见 [`08-integration.md`](08-integration.md)）：
 
 - session 与常驻 runtime 契约：能否按 id 创建/续接 session，受监督进程如何跨
   stop/start 存活，是否有 startup hook；
@@ -353,7 +353,7 @@ tombstone，action hash 的 canonicalization 未定义；见 ADR-011/012。
 ## 9. 未决架构决策
 
 完整的 13 项决策、选项和建议见
-[`architecture-decisions.md`](architecture-decisions.md)；登记册见
+[`adr/architecture-decisions.md`](adr/architecture-decisions.md)；登记册见
 [`docs/README.md`](README.md) §3。C/E 动工前必须先定：
 
 | 编号 | 决策 | 为什么阻塞 |
@@ -373,8 +373,8 @@ ADR-013（文档清理）。
 ## 10. 文档约定
 
 - 产品方向：00；技术基线：本文；实现状态：README Status。
-- 安全与威胁模型：`security.md`；本地状态：`local-file-design.md`。
-- 工作分解与验收：`mvp-plan.md`；客户端：`client-plan.md`；平台 handoff：
-  `platform-asks.md`。
-- 未决/已定架构决策：`architecture-decisions.md`，登记册在 `docs/README.md` §3。
+- 安全与威胁模型：`07-security.md`；本地状态：`06-local-state.md`。
+- 工作分解与验收：`plans/mvp-plan.md`；客户端：`plans/client-plan.md`；平台 handoff：
+  `08-integration.md`。
+- 未决/已定架构决策：`adr/architecture-decisions.md`，登记册在 `docs/README.md` §3。
 - 与代码冲突时：先核实当前行为，再修正错误的一方；不要凭记忆描述现状。

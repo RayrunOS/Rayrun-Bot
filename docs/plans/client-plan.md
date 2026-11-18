@@ -3,10 +3,12 @@
 *Status: 2026-11-11. The client is the Rayrun Bot plugin's client half — the
 pages a user touches in the DSH web UI (`dsh web` or the DSH desktop shell). This
 plan covers the client only; the bot host, approval bridge and cloud calls are in
-Layout is the three-column shell in [ui-design.md](ui-design.md): chat list, conversation, per-bot details. [mvp-plan.md](mvp-plan.md). Assumption, per the research: v0.1 ships as a DSH
+[mvp-plan.md](mvp-plan.md). Layout is the three-column shell in
+[ui-design.md](../design/ui-design.md): chat list, conversation, per-bot details.
+Assumption, per the research: v0.1 ships as a DSH
 plugin + `dsh web`, with no standalone desktop app. Visual spec, copy deck and
-clickable mockups: [ui-design.md](ui-design.md). Bot identity, names, avatars and
-voice: [bot-persona.md](bot-persona.md).*
+clickable mockups: [ui-design.md](../design/ui-design.md). Bot identity, names, avatars and
+voice: [bot-persona.md](../design/bot-persona.md).*
 
 ## What the client owns
 

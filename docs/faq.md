@@ -4,8 +4,8 @@
 at [RayrunOS/dsh-rayrun-computer](https://github.com/RayrunOS/dsh-rayrun-computer)
 works on its own; the bot half of this repository does not exist yet and will
 reuse that plugin as an external dependency. Short answers here; details in
-[system architecture](01-system-architecture.md), [security](security.md) and
-[roadmap](roadmap.md).*
+[system architecture](01-system-architecture.md), [security](07-security.md) and
+[roadmap](plans/roadmap.md).*
 
 ## Is this a SaaS?
 
@@ -44,14 +44,14 @@ one later would be a redesign of the plugin's cloud layer, not a config flag.
 It should be: the token lives in the DeepSeek Harness credential vault on the
 host side, the page never receives it, and a page→host call is a same-origin,
 origin-checked RPC. Passwords are memory-only. Residual risks — a compromised
-host, a malicious plugin in the same profile — are in [security.md](security.md).
+host, a malicious plugin in the same profile — are in [07-security.md](07-security.md).
 
 ## Is my DeepSeek key safe?
 
 The key is stored as a Rayrun credential and injected into the agent process
 only; `exec` shells in the machine cannot read it, and the plugin does not read
 it. "Never in logs" is a design claim still being verified — see the status
-note in the [README](../README.md) and [security.md](security.md). Whether the
+note in the [README](../README.md) and [07-security.md](07-security.md). Whether the
 cloud provider itself could read a stored credential is **not verified**; do
 not assume it cannot.
 
@@ -81,7 +81,7 @@ Install the separate cloud-computer plugin from a checkout into DeepSeek Harness
 and use its seven tools: create/stop/pause/destroy a machine, run commands, move
 files, drive the desktop, delegate tasks, sync a workspace, project a worker
 layer. It is a dependency of Rayrun Bot, not part of this repository. The
-[quickstart](quickstart.md) has the exact commands and a "what is missing" table.
+[quickstart](09-deployment.md) has the exact commands and a "what is missing" table.
 
 ## How is this different from Grok Bot?
 
@@ -146,4 +146,4 @@ telemetry.
 Short version: v0.1 is the bot plugin plus the cloud-computer dependency, on
 `dsh web`, with one computer, a bot roster, fail-closed approvals and a cost bar;
 v0.2 adds an IM channel with your own bot token; v1.0 may add a thin desktop
-shell. Exit criteria and the not-planned list are in [roadmap.md](roadmap.md).
+shell. Exit criteria and the not-planned list are in [plans/roadmap.md](plans/roadmap.md).

@@ -1,0 +1,213 @@
+# 06 — 本地文件与状态
+
+> 状态：2026-11-18。本文定义插件包、本地状态目录与云电脑镜像的文件布局、原子写、
+> 权限与保留规则。技术基线见 [`01-system-architecture.md`](01-system-architecture.md)；
+> 云 host 见 [`04-cloud-host.md`](04-cloud-host.md)；审批文件见
+> [`05-approvals.md`](05-approvals.md)；未决决策见
+> [`adr/architecture-decisions.md`](adr/architecture-decisions.md)。
+> 实现状态以 [`../README.md`](../README.md) 的 **Status** 段为准。
+
+## 0. 与现有文档的关系
+
+| 文档 | 负责什么 |
+| --- | --- |
+| [`01-system-architecture.md`](01-system-architecture.md) | 所有权、信任边界与数据流 |
+| [`04-cloud-host.md`](04-cloud-host.md) | 机器上的 host、队列与 session |
+| [`05-approvals.md`](05-approvals.md) | request/decision 文件与审批审计 |
+| [`plans/mvp-plan.md`](plans/mvp-plan.md) | §4.2/§4.3 的机器布局与 schema |
+| [`adr/architecture-decisions.md`](adr/architecture-decisions.md) | ADR-002（所有权）、ADR-003（单写者）、ADR-012（恢复） |
+
+---
+
+## 1. 原则
+
+1. **安装目录不可变。** 代码在插件包里；所有可变状态在 DSH 状态目录，不写在
+   `index.js` 旁边。
+2. **本地是镜像与控制面。** 云电脑权威运行态；用户 checkout 权威代码；本地文件是
+   派生、可重建的。
+3. **我们不落密钥。** Rayrun token 在 Harness vault，DeepSeek key 在 Rayrun
+   credential；本项目不把它们写到文件、日志或镜像。
+4. **每个持久文件有 schema 版本、写者和保留规则。** 格式是 JSON/JSONL；写入原子
+   （tmp + rename）；日志只追加。
+5. **无构建步骤。** 纯 ESM，kebab-case 文件名，一个模块一个职责。
+6. **删除本地状态是安全的。** 丢 `$DSH_HOME/state/rayrun-bot/` 只丢缓存和审计历史；
+   bot 可以从机器重建。
+
+---
+
+## 2. 插件包布局
+
+```
+packages/dsh-rayrun-bots/
+├── package.json          # name、exports、dsh.bundle、dsh.client、files
+├── cordis.patch.yml      # 挂载 host half 的 bundle row
+├── index.js              # host half 入口：同源 RPC、tools、路由
+├── client.js             # client half；页面启动时加载
+├── README.md             # 包级安装与限制
+├── locale/
+│   ├── en.json           # 源文案
+│   └── zh.json           # 镜像；key 必须一致
+├── lib/
+│   ├── rpc.js            # 信封、origin 校验、大小限制
+│   ├── bots.js           # registry CRUD（计划）
+│   ├── bot-schema.js     # bot.json 校验/默认值/迁移（计划）
+│   ├── local-store.js    # 状态目录、原子写、锁（计划）
+│   ├── dependency.js     # 依赖检测、版本检查、能力调用（计划）
+│   ├── queue.js          # 本地队列视图（计划）
+│   ├── approvals.js      # 审批状态机（计划）
+│   ├── setup.js          # onboarding 状态（计划）
+│   ├── cost.js           # 余额/机器小时（计划）
+│   ├── errors.js         # 稳定错误码
+│   └── log.js            # 脱敏 JSONL 日志（计划）
+├── test/
+│   └── *.mjs             # 纯 Node 测试
+└── client/               # 仅当 C-S1 证明相对模块加载可行
+```
+
+规则：
+
+- `package.json` 的 `files` 必须包含 `index.js`、`client.js`、`cordis.patch.yml`、
+  `lib/*.js`、`locale/*.json` 和 `README.md`；漏一个 host 模块就是坏安装。
+- `client.js` 在 v0.1 是**单文件**；DSH 以 client module 加载，无构建步骤。只有
+  C-S1 证明相对 import 可用后，才拆 `client/`。
+- 依赖方向单向：`index.js` → `lib/*`；`client.js` 自包含；`lib/` 不 import client。
+- 用户文案在 `locale/en.json`（源）和 `locale/zh.json`（镜像）；key 用 `bots.*`、
+  `approval.*`、`setup.*`、`cost.*`、`error.*`。
+- 测试镜像模块：`test/<module>.mjs`；无框架。
+- 依赖声明在 S6 确认前保持两装路径；见 [`08-integration.md`](08-integration.md)。
+
+---
+
+## 3. 本地状态目录
+
+`$DSH_HOME` 从环境解析（Windows `%USERPROFILE%\.dsh`，其他 `~/.dsh`）。未设置时不要
+静默猜：setup 返回 `E_HOST_DOWN` 和期望路径。首次启动创建，权限仅用户可读。
+
+```
+$DSH_HOME/state/rayrun-bot/
+├── schema.json              # { schema: 1, pluginVersion, createdAt }
+├── mirror/
+│   └── bots/<botId>/
+│       ├── bot.json         # 机器定义的副本（只读）
+│       ├── queue.json       # 最近队列快照
+│       └── approvals.jsonl  # 决定历史（id、时间；无 payload）
+├── cache/
+│   ├── dependency.json      # 依赖版本/路径，TTL 1h
+│   ├── cost.json            # 余额/小时，TTL 15s
+│   └── setup.json           # onboarding 状态，TTL 5s
+├── outbox/cursor.json       # 客户端已消费的 seq
+├── locks/<botId>.lock       # { pid, host, acquiredAt, beatAt }
+├── tmp/                     # 原子写暂存；启动时清理
+└── logs/
+    ├── host.log             # JSONL，5 MB 轮转，保留 3 份
+    └── audit.log            # 审批请求/决定，只追加
+```
+
+| 路径 | 写者 | 读者 | 密钥 | 保留 | 可重建 |
+| --- | --- | --- | --- | --- | --- |
+| `schema.json` | host | host | 否 | 永久 | 否（重建） |
+| `mirror/bots/<id>/` | host | client、host | 否 | 最近状态 | 是，从机器 |
+| `cache/*.json` | host | client、host | 否 | 上述 TTL | 是 |
+| `outbox/cursor.json` | host | client | 否 | 永久 | 是 |
+| `locks/*.lock` | host | host | 否 | 2× 轮询后 stale | 是 |
+| `logs/host.log` | host | 用户按需 | 否 | 轮转 | 否 |
+| `logs/audit.log` | host | 用户按需 | 否 | 永久 | 否（重要） |
+
+规则：
+
+- **v0.1 没有配置文件。** 非密钥设置放在 profile 的 `cordis.patch.yml` bundle row；
+  这个目录只放派生数据和缓存。
+- **镜像是可丢弃的。** `rm -rf` 后重开面板，bot 从机器重新列出；只有审计历史不会
+  回来，runbook 要明说。
+- **锁是提示，不是权威。** 超过两个轮询间隔的锁可回收；机器侧队列仍是真相。
+- **日志不含 token、key、prompt 或 workspace 内容。** 只记 id、字节数、错误码和耗时；
+  审批 payload 留在机器上并会过期。
+- 启动时清理 `tmp/`；没人读它们。
+
+---
+
+## 4. 机器上的布局
+
+权威运行文件在 [`plans/mvp-plan.md`](plans/mvp-plan.md) §4.2：
+
+```
+/workspace/.rayrun/
+├── bots/<botId>/
+│   ├── bot.json            # 定义 + schema 版本
+│   ├── memory/             # 每 bot 笔记与产物
+│   ├── sessions/           # session id + transcript 引用
+│   ├── queue.jsonl         # 旧草案；建议拆 inbox/state（ADR-003）
+│   ├── approvals/          # req-<id>.json、res-<id>.json
+│   └── log/bot.jsonl       # host 日志，无密钥
+├── host/state.json         # supervisor pid、health、schema
+└── outbox/events.jsonl     # 给本地 UI 的事件，只追加
+```
+
+方向规则：机器赢运行态（session、队列、待审批），本地赢用户意图（创建/编辑/删除、
+审批决定），仓库赢代码。本地镜像**不整体写回**机器；只发送明确动作。
+
+---
+
+## 5. 格式与原子性
+
+格式固定在 [`plans/mvp-plan.md`](plans/mvp-plan.md) §4.3（`bot.json`、queue item、
+approval request/decision、outbox event）。本文补四个本地格式：
+
+- **`schema.json`** — `{ schema: 1, pluginVersion, createdAt }`；host 拒绝更新版本的
+  状态，旧版本走迁移。
+- **`locks/<botId>.lock`** — `{ pid, host, acquiredAt, beatAt }`；持有者存活时重写，
+  干净退出时删除。
+- **`approvals.jsonl`** — `{ at, requestId, botId, nonce, actionHash, decision,
+  decidedAt }`；无 action payload、无密钥；只追加。
+- **`host.log` / `audit.log`** — `{ at, level, code?, botId?, event, n? }`；字段稳定，
+  runbook 可 grep。
+
+**写入规则**：所有 JSON/JSONL 写 `name.tmp-<random>`，fsync，rename 到目标；读者在
+目标缺失时回退 `name.bak`。JSONL 追加在每 bot 锁下用一次 `appendFile`。**每个文件
+一个写者**；需要两个方向时拆文件，不共享追加（ADR-003）。
+
+---
+
+## 6. 权限
+
+- POSIX：目录 `0700`，文件 `0600`；不做 world/group 可读。
+- Windows：继承用户 profile ACL；不添加 everyone 可读路径。
+- 镜像可能包含用户指令和会话元数据；即使没有凭据，也按私有用户数据处理。
+- Harness vault（`.credentials.yaml`）和 Rayrun credential slot **不直接读**；host
+  只在需要调用时向 Harness API 取值，且不缓存到磁盘。
+
+---
+
+## 7. 生命周期
+
+| 事件 | 发生什么 |
+| --- | --- |
+| 首次启动 | 创建状态目录，写 `schema.json`，清 `tmp/`，检测依赖，启动轮询 |
+| 升级 | 备份到 `state/rayrun-bot.bak-<version>/`，跑迁移，增加 `schema` |
+| 依赖缺失 | 保留状态，写 `cache/dependency.json` 错误，setup 显示 `E_DEP_MISSING` |
+| 机器丢失/销毁 | 镜像保留；定义可恢复；destroy 前应拉取；runbook 说明 |
+| 卸载 | 删 `$DSH_HOME/state/rayrun-bot/` 和包；Rayrun token 由用户在 vault 吊销 |
+| 缓存增长 | TTL、日志轮转、`tmp/` 清理、删除 bot 时清镜像 |
+
+---
+
+## 8. 未决项
+
+| 问题 | 影响 | 决策 |
+| --- | --- | --- |
+| DSH 是否有每插件状态目录约定？ | 状态路径 | 待确认；没有就沿用本布局 |
+| 队列用 `queue.jsonl` 还是 inbox/state？ | 双写/丢更新 | ADR-003 |
+| `bot.json` 谁写、删除是否 tombstone？ | 镜像/恢复 | ADR-002、ADR-012 |
+| 本地审计是否 tamper-evident？ | 安全声明 | ADR-012 |
+| transcript 是否镜像、上限多少？ | 隐私/磁盘 | P1；v0.1 默认只镜像元数据 |
+
+---
+
+## 9. 相关文档
+
+- [`01-system-architecture.md`](01-system-architecture.md)
+- [`04-cloud-host.md`](04-cloud-host.md)
+- [`05-approvals.md`](05-approvals.md)
+- [`07-security.md`](07-security.md)
+- [`plans/mvp-plan.md`](plans/mvp-plan.md) §4
+- [`adr/architecture-decisions.md`](adr/architecture-decisions.md)

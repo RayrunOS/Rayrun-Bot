@@ -39,7 +39,7 @@
 - `README.md` / `README.zh-CN.md` — 产品页；英文为真相源，中文同 commit 镜像。
 - `CLAUDE.md` — 本文件，只放指令。
 - `docs/README.md` — 文档索引、分类与 ADR 登记册。
-- `docs/` — 设计、计划与平台诉求：00-product-direction、01-system-architecture、quickstart、security、FAQ、roadmap、mvp-plan、client-plan、ui-design、bot-persona、local-file-design、platform-asks、inspiration、architecture-decisions，以及 `docs/mockups/`。
+- `docs/` — 编号顶层文档：00-product-direction、01-system-architecture、02-bot-model、03-client-design、04-cloud-host、05-approvals、06-local-state、07-security、08-integration、09-deployment、faq；子目录：`adr/`（ADR 登记）、`plans/`（MVP/客户端/路线图）、`design/`（UI/人格）、`research/`（调研）、`mockups/`（视觉素材）。
 - `packages/dsh-rayrun-bots/` — 目前唯一的包：host half（`index.js`）、client half（`client.js`）、`lib/`、`locale/en.json` + `zh.json`、`test/`、`cordis.patch.yml`、包 `README.md`、`package.json`。
 - 根 `package.json` — 私有 workspace 根；无依赖、无构建步骤。
 - `.github/workflows/checks.yml` — push/PR 的 checks-only CI。
@@ -52,7 +52,7 @@
 - **包身份。** 每个包的包名、client module id、bundle row `name` 必须一致；`lib/*.js` 必须留在 `files` 列表；client half 必须自包含，只能加载 DSH 自身提供的模块。
 - **本机 ↔ 云端。** 执行可以在云端，审批、本地 profile 和 Rayrun token 留在本机。云端 → 本机状态通过 `/workspace/.rayrun/` 下的文件，本机 → 云端通过 Rayrun API；不使用入站网络，不把 public desktop 当产品面板。
 - **页面 ↔ host。** 同源、origin 校验的 RPC；不要把 token 交给页面来绕过它。
-- **依赖方向。** 根 `package.json` 是私有 workspace 根，无运行时依赖。`dsh-rayrun-computer` 的版本契约与安装路径以 `README.md` 和 `docs/mvp-plan.md` §4.5 为准。
+- **依赖方向。** 根 `package.json` 是私有 workspace 根，无运行时依赖。`dsh-rayrun-computer` 的版本契约与安装路径以 `README.md` 和 `docs/plans/mvp-plan.md` §4.5 为准。
 
 ## 4. Claude Code 工作方式
 
@@ -102,7 +102,7 @@
 8. **同源 RPC。** 新的 page→host 动作保持同源、origin 校验的 RPC 属性；不要把 token 交给页面来绕过它。
 9. **文档诚实。** 绝不把计划中的功能写成已实现。`README.md` 和 `docs/` 中带日期的状态陈述是事实；做了就更新，发现失效的说法就修。
 10. **默认无遥测。** 不收集、不上传任何东西。未来的遥测必须 opt-in、有文档，且绝不包含 prompt、key 或 workspace 内容。
-11. **没有 bubblewrap 的云端就是 root。** worker profile 故意跑 `danger-full-access`，这是 workaround，不是隔离。绝不把它说成沙箱保证，也不削弱 `docs/security.md` 中的警告。
+11. **没有 bubblewrap 的云端就是 root。** worker profile 故意跑 `danger-full-access`，这是 workaround，不是隔离。绝不把它说成沙箱保证，也不削弱 `docs/07-security.md` 中的警告。
 12. **云电脑插件是依赖，不是我们的代码。** `dsh-rayrun-computer` 在自己的仓库里，绝不从这里编辑、fork 或 vendor。集成只通过其已发布 tools/RPC 表面和版本契约；需要它改行为 → 去那个仓库开 issue/PR，或在本仓库写 adapter。
 
 ## 7. 文档约定
@@ -112,7 +112,7 @@
 - 新增文档先登记到 `docs/README.md` 的文档地图；新增决策在 ADR 登记册加一行。Markdown 链接必须可解析。
 - 本文件只承载指令，不承载项目状态、交付进度或文档索引。
 - 产品方向以 `docs/00-product-direction.md` 为准，技术基线以 `docs/01-system-architecture.md` 为准；实现状态只回 README 的 Status 段。
-- 架构性决策同步到 `docs/01-system-architecture.md`、`docs/security.md` 或对应计划页；平台相关缺口进 `docs/platform-asks.md`。
+- 架构性决策同步到 `docs/01-system-architecture.md`、`docs/07-security.md` 或对应计划页；平台相关缺口进 `docs/08-integration.md`。
 - 不描述不存在的功能；不夸大安全保证。代码与文档冲突时，先核实当前行为，再修正错误的一方。
 
 ## 8. 测试与验证
@@ -131,7 +131,7 @@ node packages/dsh-rayrun-bots/test/client-contract.mjs
 - 审批拒绝、超时、密钥泄漏的负向测试在该代码出现后是强制项。
 - 绝不为了让改动通过而削弱或删除安全测试；修行为，或说明为什么测试本身错了。
 - 实时集成测试需要真实 Rayrun 凭据，绝不在 CI 运行。
-- 页面变更只做语法/契约检查不算打通；v0.1 没有浏览器测试框架，手工 golden path 见 `docs/client-plan.md`。
+- 页面变更只做语法/契约检查不算打通；v0.1 没有浏览器测试框架，手工 golden path 见 `docs/plans/client-plan.md`。
 - CI（`.github/workflows/checks.yml`）在 push/PR 上跑语法检查和所有 `test/*.mjs`。
 
 **“完成”的标准：**

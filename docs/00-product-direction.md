@@ -3,8 +3,8 @@
 > 状态：2026-11-18。本文是**产品层的唯一真相源**：卖给谁、解决什么问题、v0.1 做什么、怎么算做完。
 > 实现状态与进度只看 [`../README.md`](../README.md) 的 **Status** 段；本文不复制状态。
 > 技术方案见 [`01-system-architecture.md`](01-system-architecture.md)；工作分解与验收见
-> [`mvp-plan.md`](mvp-plan.md)；未决架构决策见
-> [`architecture-decisions.md`](architecture-decisions.md)。
+> [`plans/mvp-plan.md`](plans/mvp-plan.md)；未决架构决策见
+> [`adr/architecture-decisions.md`](adr/architecture-decisions.md)。
 
 ## 0. 与现有文档的关系
 
@@ -12,14 +12,14 @@
 | --- | --- |
 | [`../README.md`](../README.md) | 产品页与状态。本文不重复“今天能做什么”；状态以它为准 |
 | [`01-system-architecture.md`](01-system-architecture.md) | 技术落点。产品与技术冲突时以本文为准；技术细节以 01 为准 |
-| [`mvp-plan.md`](mvp-plan.md) | v0.1 工作分解与 A1–A12 验收。本文只定方向和范围 |
-| [`roadmap.md`](roadmap.md) | 里程碑、阶段与不做什么。本文 §8 只给摘要 |
+| [`plans/mvp-plan.md`](plans/mvp-plan.md) | v0.1 工作分解与 A1–A12 验收。本文只定方向和范围 |
+| [`plans/roadmap.md`](plans/roadmap.md) | 里程碑、阶段与不做什么。本文 §8 只给摘要 |
 | [`faq.md`](faq.md) | 用户问题的短答；本文不重复 |
-| [`bot-persona.md`](bot-persona.md) | bot 身份、默认指令模板与 UI 出现位置；本文只定产品原则 |
-| [`inspiration.md`](inspiration.md) | 调研材料；不是真相源 |
-| [`platform-asks.md`](platform-asks.md) | 交给 Rayrun 平台的能力清单；本文 §7 只引用风险 |
-| [`architecture-decisions.md`](architecture-decisions.md) | 未决架构决策与 ADR 登记；本文 §10 只列未决产品决策 |
-| [`security.md`](security.md) | 安全目标与威胁模型；本文不重复 |
+| [`design/bot-persona.md`](design/bot-persona.md) | bot 身份、默认指令模板与 UI 出现位置；本文只定产品原则 |
+| [`research/inspiration.md`](research/inspiration.md) | 调研材料；不是真相源 |
+| [`08-integration.md`](08-integration.md) | 交给 Rayrun 平台的能力清单；本文 §7 只引用风险 |
+| [`adr/architecture-decisions.md`](adr/architecture-decisions.md) | 未决架构决策与 ADR 登记；本文 §10 只列未决产品决策 |
+| [`07-security.md`](07-security.md) | 安全目标与威胁模型；本文不重复 |
 
 ---
 
@@ -129,7 +129,7 @@ key 思考；没有项目方托管的账号、控制面、代理或中继。
 
 IM 审批（v0.2）、移动 App、bot/skill 市场、模型 provider 抽象、独立桌面壳、浏览器
 登录状态持久化、公网 ingress 面板、bot 间 handoff、多租户/RBAC、同一台机器上并行
-跑多个 bot。完整清单见 [`mvp-plan.md`](mvp-plan.md) §3。
+跑多个 bot。完整清单见 [`plans/mvp-plan.md`](plans/mvp-plan.md) §3。
 
 ### 5.4 必须端到端跑通的三条旅程
 
@@ -142,7 +142,7 @@ IM 审批（v0.2）、移动 App、bot/skill 市场、模型 provider 抽象、�
 
 ### 5.5 怎么算做完
 
-v0.1 的完成标准是 [`mvp-plan.md`](mvp-plan.md) §2 的 A1–A12 全部有证据通过，其中
+v0.1 的完成标准是 [`plans/mvp-plan.md`](plans/mvp-plan.md) §2 的 A1–A12 全部有证据通过，其中
 四条是硬门槛：
 
 - 干净 profile 三分钟内装好并跑到第一个 bot；
@@ -150,7 +150,7 @@ v0.1 的完成标准是 [`mvp-plan.md`](mvp-plan.md) §2 的 A1–A12 全部有�
 - 受控动作停在审批上，批准后才发生副作用；
 - 同一个 bot 的第二次对话能续接。
 
-不在本文重复 A1–A12 的表格；验收证据以 `mvp-plan.md` 和 release notes 为准。
+不在本文重复 A1–A12 的表格；验收证据以 `plans/mvp-plan.md` 和 release notes 为准。
 
 ---
 
@@ -181,7 +181,7 @@ v0.1 的完成标准是 [`mvp-plan.md`](mvp-plan.md) §2 的 A1–A12 全部有�
 | 一台机器串行跑 bot 可接受 | 平台同时只允许一个 agent 任务 | 队列延迟成为 UX 问题；需要平台侧 prompt queue |
 | desktop 有安全访问路径 | “watch / take over”是产品承诺 | 只给 public 端口警告，或从 v0.1 推迟 takeover（ADR-008） |
 
-安全边界、威胁模型和“不保护什么”以 [`security.md`](security.md) 为准。
+安全边界、威胁模型和“不保护什么”以 [`07-security.md`](07-security.md) 为准。
 
 ---
 
@@ -192,10 +192,10 @@ v0.1 的完成标准是 [`mvp-plan.md`](mvp-plan.md) §2 的 A1–A12 全部有�
 | v0.1 | 闭环保通 | 双插件、一台电脑、bot 注册表、续接、审批、成本栏、打包与 A1–A12 |
 | v0.2 | 手机上也能批 | 用户自己的 IM bot token（Telegram / Feishu）；无项目方中继；浏览器路径保持可用 |
 | v1.0 | 可选桌面壳 | 只在有证据需要时包一层 `dsh web`；不重写聊天 UI |
-| 不计划 | 见 [`roadmap.md`](roadmap.md) “Not planned” | 多租户 SaaS、托管账号、团队/RBAC、市场、移动 App、provider 抽象、转售计费、多区域/SLA |
+| 不计划 | 见 [`plans/roadmap.md`](plans/roadmap.md) “Not planned” | 多租户 SaaS、托管账号、团队/RBAC、市场、移动 App、provider 抽象、转售计费、多区域/SLA |
 
-v0.1 的估算与排序见 [`mvp-plan.md`](mvp-plan.md)；里程碑摘要见
-[`roadmap.md`](roadmap.md)。估时是工程判断，不是承诺。
+v0.1 的估算与排序见 [`plans/mvp-plan.md`](plans/mvp-plan.md)；里程碑摘要见
+[`plans/roadmap.md`](plans/roadmap.md)。估时是工程判断，不是承诺。
 
 ---
 
@@ -218,7 +218,7 @@ v0.1 的估算与排序见 [`mvp-plan.md`](mvp-plan.md)；里程碑摘要见
 
 ## 10. 未决产品决策
 
-这些会改变产品范围或承诺；未决细节见 [`architecture-decisions.md`](architecture-decisions.md)：
+这些会改变产品范围或承诺；未决细节见 [`adr/architecture-decisions.md`](adr/architecture-decisions.md)：
 
 - **审批是安全边界还是用户同意？** 取决于执行点放在哪一侧（ADR-001）。
 - **routines / scheduler 进不进 v0.1？** 架构层写了 scheduler，MVP 计划标 P1，需统一（ADR-009）。
@@ -233,7 +233,7 @@ v0.1 的估算与排序见 [`mvp-plan.md`](mvp-plan.md)；里程碑摘要见
 
 - 产品方向以本文为准；实现状态以 [`../README.md`](../README.md) 为准。
 - 技术基线以 [`01-system-architecture.md`](01-system-architecture.md) 为准。
-- 工作分解与验收以 [`mvp-plan.md`](mvp-plan.md) 为准。
-- 架构决策以 [`architecture-decisions.md`](architecture-decisions.md) 为准；ADR-001 与
+- 工作分解与验收以 [`plans/mvp-plan.md`](plans/mvp-plan.md) 为准。
+- 架构决策以 [`adr/architecture-decisions.md`](adr/architecture-decisions.md) 为准；ADR-001 与
   ADR-002 是 C/E 动工前的门槛。
-- 用户短答见 [`faq.md`](faq.md)；操作步骤见 [`quickstart.md`](quickstart.md)。
+- 用户短答见 [`faq.md`](faq.md)；操作步骤见 [`09-deployment.md`](09-deployment.md)。

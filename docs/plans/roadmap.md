@@ -81,7 +81,7 @@ Scope:
 - the same fail-closed semantics as the browser path;
 - candidate, not committed: bot-to-bot handoff via the shared workspace, a
   primary bot that checks in, and a memory review panel — see
-  [inspiration.md](inspiration.md).
+  [inspiration.md](../research/inspiration.md).
 
 Exit criteria:
 
@@ -145,8 +145,8 @@ two confirmed; the rest are v0.2/beta:
   generic secret injection beyond model slots — beta.
 
 The full handoff list, with the API shape we would want and our workarounds, is
-in [platform-asks.md](platform-asks.md). [01-system-architecture.md](01-system-architecture.md)
-explains each one; [faq.md](faq.md) has the user-facing version. One packaging
+in [platform-asks.md](../08-integration.md). [01-system-architecture.md](../01-system-architecture.md)
+explains each one; [faq.md](../faq.md) has the user-facing version. One packaging
 risk is not the platform's: neither package is on npm yet, so both install from
 checkouts until `dsh-rayrun-computer` is published and the one-install bundle
 dependency is verified (W0 spike S6, **TBD**).
