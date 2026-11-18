@@ -127,7 +127,7 @@ not send anything. Steps 2–5 do not reach Rayrun yet. See
 
 ## Read next
 
-- [Architecture](architecture.md) — the layered picture and its tradeoffs.
+- [System architecture](01-system-architecture.md) — the layered picture and its tradeoffs.
 - [Security](security.md) — what is protected, and what is not.
 - [FAQ](faq.md) — short answers, including "why is this repo mostly docs?".
 - [Roadmap](roadmap.md) — v0.1 / v0.2 / v1.0 exit criteria.

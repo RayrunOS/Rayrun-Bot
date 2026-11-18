@@ -4,7 +4,7 @@
 at [RayrunOS/dsh-rayrun-computer](https://github.com/RayrunOS/dsh-rayrun-computer)
 works on its own; the bot half of this repository does not exist yet and will
 reuse that plugin as an external dependency. Short answers here; details in
-[architecture](architecture.md), [security](security.md) and
+[system architecture](01-system-architecture.md), [security](security.md) and
 [roadmap](roadmap.md).*
 
 ## Is this a SaaS?

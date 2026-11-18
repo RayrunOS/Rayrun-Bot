@@ -140,5 +140,5 @@ delete-on-request guarantee on their behalf, and does not.
 ## Related
 
 - [SECURITY.md](../SECURITY.md) — reporting and scope.
-- [Architecture](architecture.md) — where each boundary sits.
+- [System architecture](01-system-architecture.md) — where each boundary sits.
 - [FAQ](faq.md) — short answers about accounts, models and hosting.

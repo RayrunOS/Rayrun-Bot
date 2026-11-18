@@ -121,7 +121,7 @@ Rayrun Bot/
     └── dsh-rayrun-bots/         # health 路由 + v0.1 客户端界面、locale、测试
 ```
 
-云电脑插件（`dsh-rayrun-computer`）不在这个树里：它是**独立项目**，作为依赖被复用——同一个 DSH profile 里两个插件，一个产品。仓库和产品都叫 **Rayrun Bot**；插件包保留 `dsh-` 前缀，这是 DSH 插件生态的命名习惯。README 是产品页，细节在 `docs/`。深入阅读：[文档索引](docs/README.md)、[快速开始](docs/quickstart.md)、[架构](docs/architecture.md)、[架构决策](docs/architecture-decisions.md)、[安全](docs/security.md)、[FAQ](docs/faq.md)、[路线图](docs/roadmap.md)、[Grok Bot 灵感](docs/inspiration.md)、[MVP 计划](docs/mvp-plan.md)、[客户端计划](docs/client-plan.md)、[界面设计](docs/ui-design.md)、[Bot 人格](docs/bot-persona.md)、[本地文件设计](docs/local-file-design.md)、[平台需求](docs/platform-asks.md)。两份 README 必须在同一个 commit 里更新——英文版为准。
+云电脑插件（`dsh-rayrun-computer`）不在这个树里：它是**独立项目**，作为依赖被复用——同一个 DSH profile 里两个插件，一个产品。仓库和产品都叫 **Rayrun Bot**；插件包保留 `dsh-` 前缀，这是 DSH 插件生态的命名习惯。README 是产品页，细节在 `docs/`。深入阅读：[文档索引](docs/README.md)、[快速开始](docs/quickstart.md)、[产品方向](docs/00-product-direction.md)、[系统架构](docs/01-system-architecture.md)、[架构决策](docs/architecture-decisions.md)、[安全](docs/security.md)、[FAQ](docs/faq.md)、[路线图](docs/roadmap.md)、[Grok Bot 灵感](docs/inspiration.md)、[MVP 计划](docs/mvp-plan.md)、[客户端计划](docs/client-plan.md)、[界面设计](docs/ui-design.md)、[Bot 人格](docs/bot-persona.md)、[本地文件设计](docs/local-file-design.md)、[平台需求](docs/platform-asks.md)。两份 README 必须在同一个 commit 里更新——英文版为准。
 
 ## 开发
 
@@ -146,7 +146,7 @@ dsh plugin --profile web add /absolute/path/to/package
 | **今天可用**（独立项目，我们的依赖） | 7 个 `rayrun_*` 工具、noVNC 桌面、按会话的云/本地路由、双端哈希校验的 workspace 同步、任务委托、worker 投影、可选空闲停机。已在 DeepSeek Harness `0.2.1-rc.5` 上验证。 |
 | **本仓库** | README、docs、issue/PR 模板、agent 规则、依赖边界，以及 `dsh-rayrun-bots`：一条 health 路由加上 v0.1 客户端界面（五个画面，内存里的预览），带普通 Node 检查与只跑检查的 CI workflow。还没有持久化的 Bot 层，也没有可发布版本。 |
 | **尚未构建** | Bot 名册与 Bot↔session 映射、机器上的常驻 DSH host、能拦住 worker 的远程审批、真正会跑的 routines 与触发器、来自账号的实时用量、IM 通道、两插件安装路径（依赖声明与版本检查）、npm 包以及发布用的 CI 路径。 |
-| **平台缺口** | 安全入向网络（今天 token ingress 不可用，只有 `public` 能用）、空闲自动停、spend cap、session 续跑契约。完整清单在 [docs/architecture.md](docs/architecture.md)。 |
+| **平台缺口** | 安全入向网络（今天 token ingress 不可用，只有 `public` 能用）、空闲自动停、spend cap、session 续跑契约。完整清单在 [docs/01-system-architecture.md](docs/01-system-architecture.md)。 |
 
 **v0.1 路径**——从 npm 安装 → 登录 → 创建一个 Bot → 批准它的第一个受限动作。验收标准在 [docs/roadmap.md](docs/roadmap.md)。
 

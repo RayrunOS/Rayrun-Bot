@@ -39,7 +39,7 @@
 - `README.md` / `README.zh-CN.md` — 产品页；英文为真相源，中文同 commit 镜像。
 - `CLAUDE.md` — 本文件，只放指令。
 - `docs/README.md` — 文档索引、分类与 ADR 登记册。
-- `docs/` — 设计、计划与平台诉求：quickstart、architecture、security、FAQ、roadmap、mvp-plan、client-plan、ui-design、bot-persona、local-file-design、platform-asks、inspiration、architecture-decisions，以及 `docs/mockups/`。
+- `docs/` — 设计、计划与平台诉求：00-product-direction、01-system-architecture、quickstart、security、FAQ、roadmap、mvp-plan、client-plan、ui-design、bot-persona、local-file-design、platform-asks、inspiration、architecture-decisions，以及 `docs/mockups/`。
 - `packages/dsh-rayrun-bots/` — 目前唯一的包：host half（`index.js`）、client half（`client.js`）、`lib/`、`locale/en.json` + `zh.json`、`test/`、`cordis.patch.yml`、包 `README.md`、`package.json`。
 - 根 `package.json` — 私有 workspace 根；无依赖、无构建步骤。
 - `.github/workflows/checks.yml` — push/PR 的 checks-only CI。
@@ -111,7 +111,8 @@
 - 状态陈述带日期、与代码一致；构建了某功能就更新状态；“状态”以 README 的 Status 段为准，不在本文件复述。
 - 新增文档先登记到 `docs/README.md` 的文档地图；新增决策在 ADR 登记册加一行。Markdown 链接必须可解析。
 - 本文件只承载指令，不承载项目状态、交付进度或文档索引。
-- 架构性决策同步到 `docs/architecture.md`、`docs/security.md` 或对应计划页；平台相关缺口进 `docs/platform-asks.md`。
+- 产品方向以 `docs/00-product-direction.md` 为准，技术基线以 `docs/01-system-architecture.md` 为准；实现状态只回 README 的 Status 段。
+- 架构性决策同步到 `docs/01-system-architecture.md`、`docs/security.md` 或对应计划页；平台相关缺口进 `docs/platform-asks.md`。
 - 不描述不存在的功能；不夸大安全保证。代码与文档冲突时，先核实当前行为，再修正错误的一方。
 
 ## 8. 测试与验证

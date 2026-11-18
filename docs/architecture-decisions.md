@@ -2,7 +2,7 @@
 
 *状态：2026-11-18。本文是对 v0.1 架构的评审，以及在云 host 与审批层动工前必须定下来的决策。它记录设计在哪里不完整、互相矛盾或存在安全问题，并为每一项给出建议。本文不描述已实现的行为。只有状态为 **Decided** 的条目才算最终决定；其余都是未决。*
 
-相关：[架构](architecture.md) 是设计；[MVP 计划](mvp-plan.md) 是工作分解；[安全](security.md) 是威胁模型；[本地文件设计](local-file-design.md) 是状态布局；[平台需求](platform-asks.md) 是交给 Rayrun 平台的清单。
+相关：[产品方向](00-product-direction.md) 是范围；[系统架构](01-system-architecture.md) 是设计；[MVP 计划](mvp-plan.md) 是工作分解；[安全](security.md) 是威胁模型；[本地文件设计](local-file-design.md) 是状态布局；[平台需求](platform-asks.md) 是交给 Rayrun 平台的清单。
 
 ## 如何阅读
 
@@ -68,7 +68,7 @@ JSON 写回。请求带 nonce、bot id、action hash 和 TTL；云 host 读到�
 **影响。** 改变审批桥、E1–E7、安全页和平台需求。任何审批代码动工前应先定这一项。
 
 **证据。** [MVP 计划](mvp-plan.md) §4.1(5)、§4.3；[安全](security.md) “The model
-is untrusted” 与 “What is not protected”；[架构](architecture.md) “Approval
+is untrusted” 与 “What is not protected”；[系统架构](01-system-architecture.md) “Approval
 channel”；[平台需求](platform-asks.md) §3–4。
 
 <a id="adr-002"></a>
@@ -80,7 +80,7 @@ channel”；[平台需求](platform-asks.md) §3–4。
 
 **当前设计。** 文档之间的措辞不一致：
 
-- [架构](architecture.md) “Layers” 说本地 host 增加 bot registry，并且是
+- [系统架构](01-system-architecture.md) “Layers” 说本地 host 增加 bot registry，并且是
   configuration 与 profile projection 的一部分权威；“Where the truth lives” 表说
   bot state、sessions、memory 以云电脑为权威，而 profile 与 bot definitions 以本地
   DSH profile 为权威。
@@ -111,7 +111,7 @@ channel”；[平台需求](platform-asks.md) §3–4。
 **影响。** B1–B4、C3、C8、E2–E4。B1 可以定义字段，但在这一项定下来前不能最终确定
 谁写这些字段。
 
-**证据。** [架构](architecture.md) “Layers” 与 “Where the truth lives”；
+**证据。** [系统架构](01-system-architecture.md) “Layers” 与 “Where the truth lives”；
 [MVP 计划](mvp-plan.md) §4.1；[本地文件设计](local-file-design.md) §3；
 [CLAUDE.md](../CLAUDE.md) 不变量 3–4。
 
@@ -155,7 +155,7 @@ CAS 的 API。丢更新或交错追加会丢工作或破坏状态。平台需求
 **问题。** bot host 具体调用依赖的哪些能力，通过哪个表面，版本与错误语义是什么？
 
 **当前设计。** bot host 消费其已发布的 tools/RPC 表面；本地文件设计把
-`lib/dependency.js` 写成“detect … tool check, tool calls”（[架构](architecture.md)
+`lib/dependency.js` 写成“detect … tool check, tool calls”（[系统架构](01-system-architecture.md)
 “Layers”；[本地文件设计](local-file-design.md) §1）。MVP 计划说 bot host 通过依赖的
 `rayrun_*` tools 或其 RPC 路由驱动，由 spike S6 决定（[MVP 计划](mvp-plan.md) §4.4）。
 
@@ -172,7 +172,7 @@ ship 一个 bot host；但没有任何扩展点文档。
 
 **影响。** A2、C1–C5、D1、G1。这是 ADR-001/002 之后的第一个实现阻塞。
 
-**证据。** [架构](architecture.md) “Layers”“What this repo builds”；[MVP 计划](mvp-plan.md)
+**证据。** [系统架构](01-system-architecture.md) “Layers”“What this repo builds”；[MVP 计划](mvp-plan.md)
 §4.4、§4.5；[本地文件设计](local-file-design.md) §1。
 
 <a id="adr-005"></a>
@@ -242,7 +242,7 @@ G3；[客户端计划](client-plan.md) “UX flows and failure states”）。
 **影响。** A5、A6、G3；README 与 FAQ 措辞。
 
 **证据。** [README](../README.md) “How it works”；[FAQ](faq.md)；
-[架构](architecture.md) “Concurrency, cost and failure”；[MVP 计划](mvp-plan.md)
+[系统架构](01-system-architecture.md) “Concurrency, cost and failure”；[MVP 计划](mvp-plan.md)
 C6、G3。
 
 <a id="adr-007"></a>
@@ -254,7 +254,7 @@ C6、G3。
 
 **当前设计。** Rayrun 把 DeepSeek key 注入 agent 进程。设计想要一个常驻 DSH host，
 每个 bot 一个 session 和一个 profile 目录；今天平台按每次 prompt 启动
-`dsh --profile headless`（[架构](architecture.md) “Layers”；[平台需求](platform-asks.md)
+`dsh --profile headless`（[系统架构](01-system-architecture.md) “Layers”；[平台需求](platform-asks.md)
 §1）。
 
 **问题。** 平台文档只保证 agent 进程的凭据注入，不保证 supervisor 再 spawn DSH
@@ -268,7 +268,7 @@ replay 作为有文档的回退，并写清它的 UX 与成本。
 
 **影响。** C1–C4、D1–D5、A5、A8。这是最大的未验证平台赌注。
 
-**证据。** [架构](architecture.md) “Layers”；[平台需求](platform-asks.md) §1；
+**证据。** [系统架构](01-system-architecture.md) “Layers”；[平台需求](platform-asks.md) §1；
 [安全](security.md) “Design goals” 3。
 
 <a id="adr-008"></a>
@@ -303,7 +303,7 @@ replay 作为有文档的回退，并写清它的 UX 与成本。
 
 **问题。** v0.1 里 scheduler 是 P0 还是 P1？
 
-**当前设计。** [架构](architecture.md) “Layers” 把 scheduler 放进本地 host 核心；
+**当前设计。** [系统架构](01-system-architecture.md) “Layers” 把 scheduler 放进本地 host 核心；
 [路线图](roadmap.md) “v0.1” 包含最小 routines；[MVP 计划](mvp-plan.md) §3 把 routines
 标为 P1，§11 又把决定列为 W0 到期。
 
@@ -316,7 +316,7 @@ replay 作为有文档的回退，并写清它的 UX 与成本。
 
 **影响。** M1、M4、范围与估时。
 
-**证据。** [架构](architecture.md) “Layers”；[路线图](roadmap.md) “v0.1”；
+**证据。** [系统架构](01-system-architecture.md) “Layers”；[路线图](roadmap.md) “v0.1”；
 [MVP 计划](mvp-plan.md) §3、§11 决策 2。
 
 ## P2 — 契约与文档对齐
@@ -430,7 +430,7 @@ untrusted”；[客户端计划](client-plan.md) C-S6。
 
 - [客户端计划](client-plan.md) 开头：“…cloud calls are in Layout is the
   three-column shell…” 是断句，`mvp-plan` 链接掉进了句子里。
-- [架构](architecture.md) “Concurrency, cost and failure”：“the DSH host on their
+- [系统架构](01-system-architecture.md) “Concurrency, cost and failure”：“the DSH host on their
   machine” 没有说明是本地还是云端。
 - [安全](security.md) “The model is untrusted”：“the mitigation is the approval
   layer” 必须与 ADR-001 的决定一致；如果 gate 不是边界，就直说。

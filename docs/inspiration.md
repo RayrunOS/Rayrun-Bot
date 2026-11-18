@@ -4,7 +4,7 @@
 personal AI agent that runs a team of named bots on a shared cloud computer — and
 what we deliberately leave out. Sources: the 2026-11-09 docs snapshot
 (`research/_sources/grokbot-docs/`), the product description in this thread, and
-our own [architecture](architecture.md), [MVP plan](mvp-plan.md) and
+our own [system architecture](01-system-architecture.md), [MVP plan](mvp-plan.md) and
 [bot persona](bot-persona.md).*
 
 ## 1. The three pillars, restated
@@ -28,7 +28,7 @@ result comes back to the user.
 | Grok Bot idea | Where we have it |
 | --- | --- |
 | Named bot with a job and a light persona | [bot-persona.md](bot-persona.md); `bot.json` name/label/instructions |
-| One shared cloud computer per user | [architecture.md](architecture.md) §4.1; Rayrun one machine per user |
+| One shared cloud computer per user | [01-system-architecture.md](01-system-architecture.md) §3.2; Rayrun one machine per user |
 | Per-bot conversation and memory | `/workspace/.rayrun/bots/<id>/{memory,sessions}` in [mvp-plan.md](mvp-plan.md) §4.2 |
 | Autonomous run after the laptop closes | persistent bot host; run continues without the local UI |
 | Human-in-the-loop for outside effects | approval cards, deny/allow once, expired background cards |

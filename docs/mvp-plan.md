@@ -5,7 +5,7 @@ frozen; only the P0 items below ship. Estimates are engineer-days and assume
 1–2 engineers plus coding agents; the research estimate of 4–6 weeks assumes the
 cloud-computer layer is reused as-is and no platform blocker hits. Related:
 [client plan](client-plan.md), [platform asks](platform-asks.md),
-[architecture](architecture.md), [roadmap](roadmap.md).*
+[system architecture](01-system-architecture.md), [roadmap](roadmap.md).*
 
 ## 0. How to read this plan
 
@@ -117,7 +117,7 @@ The local (plugin-side) file layout is specified in
 8. **One queue, one agent task.** The host never relies on the platform to queue;
    busy is retried, never dropped.
 9. **Authority split.** Local-first for ownership and decisions, cloud for
-   execution; see [architecture.md](architecture.md#where-the-truth-lives).
+   execution; see [01-system-architecture.md](01-system-architecture.md#51-真相在哪).
 
 ### 4.2 On-machine layout
 

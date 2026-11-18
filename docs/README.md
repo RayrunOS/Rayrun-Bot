@@ -10,7 +10,8 @@
 | --- | --- |
 | [`../README.md`](../README.md) | 产品页与状态；英文为准 |
 | [`../README.zh-CN.md`](../README.zh-CN.md) | 中文镜像，同一 commit 更新 |
-| [`architecture.md`](architecture.md) | 技术基线：分层、边界、信任模型 |
+| [`00-product-direction.md`](00-product-direction.md) | 产品方向：定位、目标用户、v0.1 范围与产品决策 |
+| [`01-system-architecture.md`](01-system-architecture.md) | 技术基线：分层、边界、信任模型 |
 | [`security.md`](security.md) | 安全目标与威胁模型 |
 | [`mvp-plan.md`](mvp-plan.md) | v0.1 范围、验收任务、工作分解 |
 | [`architecture-decisions.md`](architecture-decisions.md) | 未决架构决策与 ADR 登记 |
@@ -20,8 +21,8 @@
 
 | 分类 | 文档 | 负责什么 |
 | --- | --- | --- |
-| 产品与方向 | [路线图](roadmap.md)、[FAQ](faq.md) | 里程碑、不做什么、用户常见问题 |
-| 技术基线 | [架构](architecture.md)、[安全](security.md)、[本地文件设计](local-file-design.md) | 分层、边界、状态布局、威胁模型 |
+| 产品与方向 | [产品方向](00-product-direction.md)、[路线图](roadmap.md)、[FAQ](faq.md) | 定位、目标用户、v0.1 范围、里程碑与用户常见问题 |
+| 技术基线 | [系统架构](01-system-architecture.md)、[安全](security.md)、[本地文件设计](local-file-design.md) | 分层、边界、状态布局、威胁模型 |
 | 设计与人格 | [UI 设计](ui-design.md)、[Bot 人格](bot-persona.md)、[mockups](mockups/) | 界面、交互、bot 身份与默认模板 |
 | 计划与验收 | [MVP 计划](mvp-plan.md)、[客户端计划](client-plan.md) | v0.1 范围、工作分解、客户端交付 |
 | 平台 handoff | [平台需求](platform-asks.md) | 需要 Rayrun 平台补的能力与优先级 |
@@ -29,8 +30,10 @@
 | 调研 | [灵感](inspiration.md) | Grok Bot 等参考；不是真相源 |
 | 决策 | [架构决策](architecture-decisions.md) | [ADR-001–ADR-013](#3-adr-登记册)；只有 Decided 才算最终 |
 
-当前文档保持扁平布局；上面的分类用于导航。文档数量继续增长时，再按这些分类拆成
-`adr/`、`plans/`、`howto/`、`research/` 子目录，并同步更新本表。
+`00-product-direction.md` 与 `01-system-architecture.md` 是 rayrun 式的编号顶层文档：
+前者是产品方向的唯一真相源，后者是技术基线的唯一真相源。其余文档保持扁平布局，
+上面的分类用于导航；文档数量继续增长时，再按这些分类拆成 `adr/`、`plans/`、
+`howto/`、`research/` 子目录，并同步更新本表。
 
 ## 3. ADR 登记册
 
@@ -70,9 +73,10 @@
 
 ## 5. 文档约定
 
-- **真相源优先级**：产品与状态 → `README.md`；技术基线 → `architecture.md`；
-  安全 → `security.md`；范围与验收 → `mvp-plan.md`；未决架构 →
-  `architecture-decisions.md`；导航 → 本文件。文档冲突时按此顺序回落。
+- **真相源优先级**：产品方向 → `00-product-direction.md`；产品状态 → `README.md`；
+  技术基线 → `01-system-architecture.md`；安全 → `security.md`；范围与验收 →
+  `mvp-plan.md`；未决架构 → `architecture-decisions.md`；导航 → 本文件。文档冲突时
+  按此顺序回落。
 - **分类**：`plans/` 记“为什么这么做、怎么做”；`howto/` 记“怎么跑起来”；`adr/`
   记不可轻易逆转的决策；`research/` 是调研材料，不是真相源。当前保持扁平布局，
   在本文件 §2 登记分类。
