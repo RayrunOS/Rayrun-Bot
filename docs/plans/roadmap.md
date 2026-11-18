@@ -101,7 +101,9 @@ Also in scope for a stable v1.0, as capacity allows:
 
 - a documented version compatibility matrix (DSH × cloud image × packages);
 - release and install polish (package manager installs, provenance, an update
-  story);
+  story); the v1.0 desktop distribution design, including a bundled DSH and
+  signed whole-bundle updates, is in
+  [desktop distribution](../design/desktop-distribution.md) (ADR-014);
 - public, dated status docs that match the shipped code.
 
 Exit criteria:

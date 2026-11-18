@@ -27,7 +27,7 @@
 | 产品与方向 | [产品方向](00-product-direction.md)、[路线图](plans/roadmap.md)、[FAQ](faq.md) | 定位、目标用户、v0.1 范围、里程碑与用户常见问题 |
 | 技术基线 | [系统架构](01-system-architecture.md)、[安全](07-security.md)、[本地状态](06-local-state.md) | 分层、边界、状态布局、威胁模型 |
 | Bot 与云端 | [Bot 模型](02-bot-model.md)、[云端 host](04-cloud-host.md)、[审批](05-approvals.md) | bot 定义、队列/session、审批语义 |
-| 客户端与设计 | [客户端设计](03-client-design.md)、[UI 设计](design/ui-design.md)、[Bot 人格](design/bot-persona.md)、[mockups](mockups) | 表面、RPC、视觉规范、bot 身份 |
+| 客户端与设计 | [客户端设计](03-client-design.md)、[UI 设计](design/ui-design.md)、[Bot 人格](design/bot-persona.md)、[桌面发行版](design/desktop-distribution.md)、[mockups](mockups) | 表面、RPC、视觉规范、bot 身份、v1.0 桌面更新 |
 | 计划与验收 | [MVP 计划](plans/mvp-plan.md)、[客户端计划](plans/client-plan.md) | v0.1 工作分解、客户端交付 |
 | 平台集成 | [集成与平台需求](08-integration.md) | 依赖契约、平台能力与优先级 |
 | 部署与操作 | [部署与运行](09-deployment.md) | 安装、配置、检查、故障处理 |
@@ -42,7 +42,7 @@
 
 > 状态只取 `Proposed` / `Decided`；`Open` 表示还没有提案。本表只登记，决策细节、
 > 证据和修订以 [architecture-decisions.md](adr/architecture-decisions.md) 为准。
-> **下一个可用编号：ADR-014。** 编号一旦占用不再复用。
+> **下一个可用编号：ADR-015。** 编号一旦占用不再复用。
 
 | 编号 | 标题 | 状态 | 文件 |
 | --- | --- | --- | --- |
@@ -59,9 +59,10 @@
 | ADR-011 | 审批 schema 与 canonical action hash | Proposed | [architecture-decisions.md](adr/architecture-decisions.md#adr-011) |
 | ADR-012 | 恢复与运行语义 | Proposed | [architecture-decisions.md](adr/architecture-decisions.md#adr-012) |
 | ADR-013 | 文档清理 | Proposed | [architecture-decisions.md](adr/architecture-decisions.md#adr-013) |
+| ADR-014 | 桌面发行版与更新单元 | Proposed（v1.0） | [architecture-decisions.md](adr/architecture-decisions.md#adr-014) |
 
 **先定 ADR-001 与 ADR-002。** 它们分别决定审批的信任边界和产物所有权；在它们
-定下来之前，C/E 工作流不应动工。
+定下来之前，C/E 工作流不应动工。ADR-014 属于 v1.0，不阻塞 v0.1。
 
 ## 4. 进行中的计划
 
