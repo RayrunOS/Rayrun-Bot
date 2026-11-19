@@ -1,7 +1,9 @@
-# 04 — 云端 bot host
+# 04 — 云端 bot runtime（bot host）
 
-> 状态：2026-11-18。本文定义云电脑上的常驻 host：进程模型、队列、session 映射、
-> 执行、心跳与恢复。技术基线见 [`01-system-architecture.md`](01-system-architecture.md)；
+> 状态：2026-11-20。本文定义云电脑上的 **bot runtime**（历史名 bot host）：进程模型、
+> 队列、session 映射、执行、心跳与恢复。本地 bot 控制面见
+> [`01-system-architecture.md`](01-system-architecture.md) §1.4 与 ADR-016；
+> 技术基线见 [`01-system-architecture.md`](01-system-architecture.md)；
 > 审批见 [`05-approvals.md`](05-approvals.md)；本地状态见
 > [`06-local-state.md`](06-local-state.md)；未决决策见
 > [`adr/architecture-decisions.md`](adr/architecture-decisions.md)。
@@ -12,27 +14,52 @@
 
 | 文档 | 负责什么 |
 | --- | --- |
-| [`01-system-architecture.md`](01-system-architecture.md) | host 在系统中的位置、信任模型 |
+| [`01-system-architecture.md`](01-system-architecture.md) | runtime 在栈中的位置、信任模型 |
 | [`05-approvals.md`](05-approvals.md) | 受控动作的审批门 |
 | [`06-local-state.md`](06-local-state.md) | `/workspace/.rayrun/` 与本地镜像的格式 |
 | [`08-integration.md`](08-integration.md) | 与 `dsh-rayrun-computer` 的能力契约 |
 | [`plans/mvp-plan.md`](plans/mvp-plan.md) | C1–C9、D1–D5 工作项与验收 |
-| [`adr/architecture-decisions.md`](adr/architecture-decisions.md) | ADR-003（控制通道）、ADR-004（依赖）、ADR-005（副作用）、ADR-007（常驻 host）、ADR-012（恢复） |
+| [`adr/architecture-decisions.md`](adr/architecture-decisions.md) | ADR-003（控制通道）、ADR-004（依赖）、ADR-005（副作用）、ADR-007（常驻 runtime）、ADR-012（恢复）、ADR-015（本层）、ADR-016（本地控制面） |
 
 ---
 
 ## 1. 目标
 
-云电脑上需要一个**受监督的常驻 host**，而不是每次 prompt 起一个一次性进程：
+云电脑上需要一个**受监督的常驻 bot runtime**，而不是每次 prompt 起一个一次性进程：
 
-- 接收本地 host 提交的任务，按 FIFO 执行；
+- 接收本地控制面提交的任务，按 FIFO 执行；
 - 为每个 bot 维护持久 DSH session 与 profile/memory 目录；
 - 在需要审批时停在卡片上，批准后继续；
 - 机器重启/进程被杀后能恢复队列与未完成工作；
 - 让“合上笔记本，bot 继续工作”成立（新任务和审批仍受本地/平台限制，见 01 §6.4）。
 
-当前平台按每次 prompt 启动 `dsh --profile headless`，session 不跨 run；常驻 host、
+当前平台按每次 prompt 启动 `dsh --profile headless`，session 不跨 run；常驻 runtime、
 凭据注入和 profile 模型都是 **TBD**（ADR-007）。
+
+### 1.1 在栈里的位置
+
+```
+本地 bot 控制面（DSH host + 插件 host half；token/审批/成本）
+        │ Rayrun API
+Rayrun 平台（机器 / exec / files / credentials / billing）
+        │ 云电脑内
+本文的 bot runtime（queue / session / DSH 监督 / 事件 / 恢复）
+        │
+DSH agent sessions（bot）
+```
+
+### 1.2 拥有 / 不拥有
+
+| 拥有 | 不拥有 |
+| --- | --- |
+| FIFO 队列、单飞执行、重试 | Rayrun token |
+| bot↔session/profile/memory 映射 | 机器生命周期、billing |
+| DSH agent 进程启动/监督/重启 | 审批决定（本地/人类，ADR-016） |
+| 心跳、恢复、事件 outbox | 模型 key 存储（由平台注入） |
+| 审批**提案**、执行日志（ADR-005） | 多 bot 之间的安全隔离 |
+
+它与 agent 同机、以 root/`danger-full-access` 运行，**不是安全边界**；审批执行点
+由 ADR-001 决定。
 
 ---
 
@@ -40,7 +67,7 @@
 
 ```
 云电脑
-├── bot host (supervisor)          # 本项目 ship 的 Node 进程
+├── bot runtime (supervisor)       # 本项目 ship 的 Node 进程
 │   ├── queue worker               # 一次一个 agent 任务
 │   ├── session/profile manager    # 每 bot 一个 session + 目录
 │   ├── approval gate              # 受控动作先写 request
@@ -142,7 +169,7 @@
 - **模型 key**：Rayrun 把 DeepSeek key 注入 agent 进程；宿 host 如何拿到注入、监督
   进程是否也能拿到，未验证（ADR-007）。
 - **Rayrun token**：不进入云电脑；本地 host 通过 Rayrun API 操作机器与文件。
-- **依赖**：`dsh-rayrun-computer` 提供云能力；bot host 通过其发布表面调用（service
+- **依赖**：`dsh-rayrun-computer` 提供云能力；bot runtime 通过其发布表面调用（service
   injection / host RPC / adapter 未定，ADR-004）。不直接复制 token，不修改依赖。
 - **版本检查**：启动时记录依赖版本；缺失/过旧返回 `E_DEP_MISSING` /
   `E_DEP_VERSION`。
@@ -169,6 +196,7 @@
 | 副作用崩溃/重试语义 | 重复发送/花钱 | ADR-005 |
 | 队列字段、状态机、恢复 | A8/A9 | ADR-012 |
 | 依赖 host API | C1/D1 能否开工 | ADR-004 |
+| 本地控制面 ↔ runtime 的契约 | 启动、任务、审批、事件 | ADR-015/016 |
 
 ---
 

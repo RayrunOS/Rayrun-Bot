@@ -28,6 +28,8 @@
 | [ADR-012](#adr-012) | 恢复与运行语义 | Proposed | 补字段、时钟规则、限流与审计语义 | C8, D4, E5–E7, A8, A9 |
 | [ADR-013](#adr-013) | 文档清理 | Proposed | 与相关决策同批修正下文列出的矛盾 | docs |
 | [ADR-014](#adr-014) | 桌面发行版与更新单元 | Proposed（v1.0） | 默认官方 DSH 桌面 + 首启装插件；单一更新单元才做自定义发行版；薄壳 fallback | v1.0, 09-deployment |
+| [ADR-015](#adr-015) | 云端 bot runtime 层 | Proposed（v0.1） | 用户云电脑内的 supervisor；queue/session/DSH/事件/恢复 | C1–C9, D1–D5, E1–E7 |
+| [ADR-016](#adr-016) | 本地 bot 控制面 | Proposed（v0.1） | DSH host + 插件 host half；token/审批/成本/依赖；不做托管服务 | A2/A3, B1–B4, E3/E4, G1/G2 |
 
 ## P0 — 云 host 与审批动工前必须定
 
@@ -153,19 +155,19 @@ CAS 的 API。丢更新或交错追加会丢工作或破坏状态。平台需求
 
 **状态：** Proposed.
 
-**问题。** bot host 具体调用依赖的哪些能力，通过哪个表面，版本与错误语义是什么？
+**问题。** bot runtime 具体调用依赖的哪些能力，通过哪个表面，版本与错误语义是什么？
 
-**当前设计。** bot host 消费其已发布的 tools/RPC 表面；本地文件设计把
+**当前设计。** bot runtime 消费其已发布的 tools/RPC 表面；本地文件设计把
 `lib/dependency.js` 写成“detect … tool check, tool calls”（[系统架构](../01-system-architecture.md)
-“Layers”；[本地文件设计](../06-local-state.md) §1）。MVP 计划说 bot host 通过依赖的
+“Layers”；[本地文件设计](../06-local-state.md) §1）。MVP 计划说 bot runtime 通过依赖的
 `rayrun_*` tools 或其 RPC 路由驱动，由 spike S6 决定（[MVP 计划](../plans/mvp-plan.md) §4.4）。
 
 **问题。** `rayrun_*` 是注册给 DSH agent 的 tools，不一定是 host 可 import 的 API。
-bot host 需要程序化调用：machine ensure/start/stop、`exec`、file read/write/list、
+bot runtime 需要程序化调用：machine ensure/start/stop、`exec`、file read/write/list、
 agent prompt + SSE、session create/continue、credential-injection status、balance/
 usage。它不能为此复制 Rayrun token。文档没有说这些是 service injection、host RPC
 action，还是用依赖的 token 直接调 API。C1 还假设依赖的 worker projection 可以
-ship 一个 bot host；但没有任何扩展点文档。
+ship 一个 bot runtime；但没有任何扩展点文档。
 
 **建议。** 在依赖仓库写一份一页的契约并链接到这里。对每个能力写清：名称、输入、
 输出、错误码、是否使用 token、启动顺序、版本协商。把 S6（bundle 能否声明依赖）与
@@ -500,16 +502,104 @@ external plugins。要预装插件或把它们放进同一个更新单元，必�
 v1.0；[部署](../09-deployment.md) §7；[安全](../07-security.md) §4.6；
 [集成](../08-integration.md) §5。
 
+<a id="adr-015"></a>
+### ADR-015 — 云端 bot runtime 层
+
+**状态：** Proposed（v0.1）.
+
+**问题。** Rayrun 平台和 bot（DSH agent）之间是否需要一个专门的 bot runtime
+中间层？它承接什么、不承接什么？
+
+**当前设计。** [`04-cloud-host.md`](../04-cloud-host.md) 已经描述了“云端 bot
+host”：常驻 supervisor、FIFO 队列、每 bot session/profile、心跳/恢复、审批提案。
+它是事实上的中间层，但没有被当作独立层命名，职责和 `dsh-rayrun-computer` 的边界
+混在一起。
+
+**问题。** 如果把 bot 语义（队列、session 映射、恢复、事件）塞进 DSH 插件、本地
+host 或 Rayrun adapter：
+
+- DSH 重启会丢队列/状态；
+- 本地 host 需要理解云内进程；
+- Rayrun API 变化会穿透到 bot 层；
+- 测试需要真云。
+
+中间层把这些收敛到一个可测试的 supervisor。
+
+**决策。** 采用一个**每用户云电脑内的 bot runtime**：
+
+- **拥有**：FIFO 队列/单飞、bot↔session/profile 映射、DSH 进程监督、心跳/恢复、
+  事件 outbox、审批提案、执行日志（ADR-005）。
+- **不拥有**：Rayrun token、机器生命周期/计费、审批决定（本地/人类，ADR-016）、
+  模型 key 存储（注入）、多 bot 安全隔离。
+- **向上**：与本地控制面通过版本化控制协议（queue inbox/state、approval、outbox；
+  单写者 ADR-003）。
+- **向下**：DSH agent sessions/profile、workspace、模型调用。
+- **信任**：与 agent 同机、root/`danger-full-access`，**不是安全边界**；审批执行点
+  按 ADR-001。
+- **生命周期**：由平台 worker projection 或本地 watchdog 启动；心跳写
+  `host/state.json`；版本进入版本矩阵。
+- **不调用 Rayrun API 的账号 token**；需要平台能力时走 `dsh-rayrun-computer` 的
+  host 表面（ADR-004）。
+
+**理由。** 稳定契约、可测试、可恢复、串行执行、隔离 Rayrun API 变化。
+
+**替代方案。** 本地-only runtime（合上笔记本失败）；DSH 插件即 runtime（耦合、
+丢恢复）；项目方托管 runtime（违反不变量 3/4）。
+
+**影响。** C1–C9、D1–D5、E1–E7；ADR-003/004/005/007/012。不改变 ADR-001 的执行点。
+
+**证据。** [`04-cloud-host.md`](../04-cloud-host.md)；
+[`01-system-architecture.md`](../01-system-architecture.md) §3；
+[`08-integration.md`](../08-integration.md)。
+
+<a id="adr-016"></a>
+### ADR-016 — 本地 bot 控制面
+
+**状态：** Proposed（v0.1）.
+
+**问题。** Rayrun API 之上、用户与 bot 之间的控制层放在哪里？它拥有什么？
+
+**当前设计。** 本地 host half 已经承担 token、setup、审批、成本等；文档没有把它
+作为独立层命名，容易和云端 bot runtime 混淆。
+
+**决策。** **Rayrun 之上是用户侧控制面**：DSH host + `dsh-rayrun-bots` host
+half，不是项目方托管服务。
+
+- **拥有**：Rayrun token/vault、登录/setup、机器 ensure/start/stop 命令、bot
+  定义/注册表（ADR-002）、审批 UI/决定、成本汇总、依赖版本检查、watchdog、本地
+  镜像/outbox cursor、审计。
+- **不拥有**：bot 任务执行、DSH sessions、模型调用、billing、多租户/RBAC、项目方
+  控制面。
+- **接口**：向上同源 RPC（ADR-010）；向下 Rayrun API（token 只在本地）与 bot
+  runtime 控制文件。
+- **信任**：本地用户侧可信；同 profile 的恶意插件是残余风险；不做托管。
+- **拒绝**：项目方托管的 SaaS 控制面、共享账号、代管 token、统一调度。
+
+**理由。** 权限/凭据留在用户侧；Rayrun 是可替换的基础设施；控制面可以吸收 API
+变化；没有项目服务器。
+
+**替代方案。** 项目方托管控制面（违反不变量 3/4）；纯云端控制（丢失本地权威/
+token）；provider 抽象（v0.1 不做）。
+
+**影响。** A2/A3、B1–B4、E3/E4、G1/G2；ADR-002/004/010。审批执行点仍由 ADR-001
+决定。
+
+**证据。** [`01-system-architecture.md`](../01-system-architecture.md) §3.1；
+[`05-approvals.md`](../05-approvals.md)；[`08-integration.md`](../08-integration.md)；
+[`00-product-direction.md`](../00-product-direction.md) §1。
+
 ## 建议顺序
 
-1. **先定 ADR-001 与 ADR-002。** 它们决定信任边界与所有权模型，其他项依赖它们。
-2. **再定 ADR-004。** 在 C1/D1 之前确认依赖的 host 表面；这是第一个实现阻塞。
-3. **ADR-003、ADR-005、ADR-011 一起定。** 它们把控制协议、执行日志和审批 schema
+1. **先定 ADR-015 与 ADR-016。** 它们决定控制面/执行面的分层与权威；没有它们，
+   审批和所有权没有落点。
+2. **再定 ADR-001 与 ADR-002。** 它们决定信任边界与所有权模型，其他项依赖它们。
+3. **ADR-004。** 在 C1/D1 之前确认依赖的 host 表面；这是第一个实现阻塞。
+4. **ADR-003、ADR-005、ADR-011 一起定。** 它们把控制协议、执行日志和审批 schema
    定义成一组一致的契约。
-4. **ADR-007 spike。** M2 前必须拿到 session、常驻 host 和凭据注入的证据。
-5. **ADR-006、ADR-008、ADR-009 并行。** 它们是范围/产品决策，不是代码阻塞。
-6. **ADR-010 与 ADR-013 作为清理。** 在客户端接 host 之前对齐 RPC 契约和文档。
-7. **ADR-014 是 v1.0 的前置。** 先确认 A/B：默认 A（官方 DSH 桌面 + 首启装插件）；
+5. **ADR-007 spike。** M2 前必须拿到 session、常驻 host 和凭据注入的证据。
+6. **ADR-006、ADR-008、ADR-009 并行。** 它们是范围/产品决策，不是代码阻塞。
+7. **ADR-010 与 ADR-013 作为清理。** 在客户端接 host 之前对齐 RPC 契约和文档。
+8. **ADR-014 是 v1.0 的前置。** 先确认 A/B：默认 A（官方 DSH 桌面 + 首启装插件）；
    只有必须单一签名更新单元时才做 B，并先跑 spike D-S1。不在 v0.1 做桌面发行版。
 
 B1（`bot.json` schema）可以在 ADR-002 与 ADR-011 定下字段和所有权后开始；不要先

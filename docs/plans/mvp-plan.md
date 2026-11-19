@@ -13,7 +13,7 @@ cloud-computer layer is reused as-is and no platform blocker hits. Related:
   the release.
 - §5 holds work items with IDs, deliverables, dependencies and estimates; §6
   sequences them into milestones M0–M5.
-- §4 fixes the interfaces so host, bot host and client can be built in parallel
+- §4 fixes the interfaces so host, bot runtime and client can be built in parallel
   against stubs.
 - Anything not in §3 is out of scope; open decisions in §11 are due before M1.
 
@@ -53,7 +53,7 @@ manual rows are recorded as a screen capture plus the log files.
 | A6 | Approve | a gated action stops; the card appears within 10 s; approval resumes the bot within 10 s; the side effect happens only after the decision |
 | A7 | Deny and expiry | a denial means no side effect; a background card expires after 30 minutes and is denied; a chat-started card waits; replayed, wrong-bot and expired requests are rejected and logged (negative tests) |
 | A8 | Resume | the same bot's second conversation continues the first, and still continues after the host process is killed and after machine stop/start |
-| A9 | Recovery | killing the bot host loses no queued work; the watchdog restarts it within 60 s and the queue drains |
+| A9 | Recovery | killing the bot runtime loses no queued work; the watchdog restarts it within 60 s and the queue drains |
 | A10 | Cost and lifecycle | balance and hours shown; idle stop stops, never destroys; `destroy` only from an explicit human action |
 | A11 | Security regression | repo, logs and workspace scan clean of tokens and keys; no public ingress; approval negative tests green; dependency version check enforced |
 | A12 | Release | README/quickstart three-minute path verified on a clean machine; npm tarball contains host half, client half, locale and bundle patch; CI green |
@@ -70,7 +70,7 @@ In — P0 unless marked P1:
 | Bot registry: name, label, avatar, instructions, skills, memory dir | bots are profile directories on the machine, not code |
 | Chat list, conversation and per-bot details panel | Grok Bot three-column shell; reuse DSH chat where the API allows |
 | Bot↔session mapping | persisted on the machine, mirrored locally |
-| Cloud bot host: queue, inbox/outbox, watchdog | one agent task at a time |
+| Cloud bot runtime: queue, inbox/outbox, watchdog | one agent task at a time |
 | Fail-closed approval gate | TTL 30 min, replay protection, audit line |
 | Inline approval cards | cards in the conversation; a dot in the chat list marks attention |
 | Cloud-computer dependency integration | dependency declaration, version check, missing-plugin error |
@@ -97,7 +97,7 @@ The local (plugin-side) file layout is specified in
    cloud → local state is written as files under `/workspace/.rayrun/`. The
    public desktop port is never used as the product panel.
 2. **One computer per user**, shared by that user's bots. Rayrun runs one agent
-   task per machine (`409 sandbox_busy`), so the bot host owns a FIFO queue.
+   task per machine (`409 sandbox_busy`), so the bot runtime owns a FIFO queue.
 3. **Bot state lives on the machine**; the local side keeps a read-only mirror
    and pulls it back as the recovery anchor.
 4. **Persistent host on the machine**: a small Node supervisor, shipped by the
@@ -170,7 +170,7 @@ its checkpoint.
 The client ↔ host contract is defined in [client-plan.md](client-plan.md):
 same-origin `/plugins/<bundle-id>/rpc`, size-limited JSON, `{ action, payload }`
 in and `{ ok, data }` or `{ ok: false, code, message }` out. Responses never
-carry the Rayrun token or the DeepSeek key. The bot host has no public RPC; it is
+carry the Rayrun token or the DeepSeek key. The bot runtime has no public RPC; it is
 driven by the host half through the dependency's `rayrun_*` tools or its RPC
 route, decided by spike S6.
 
@@ -214,7 +214,7 @@ Estimates include tests; "Done when" is the evidence, not a code-complete claim.
 | B5 | Recovery pull | pull bot dirs to local snapshot | B3 | 1 | losing the machine is recoverable |
 | B6 | Migration runway | schema field + upgrade function | B1 | 0.5 | an old `bot.json` still opens |
 
-### C. Cloud bot host
+### C. Cloud bot runtime
 
 | ID | Task | Deliverable | Depends | Est | Done when |
 | --- | --- | --- | --- | --- | --- |

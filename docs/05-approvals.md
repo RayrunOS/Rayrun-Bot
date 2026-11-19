@@ -2,7 +2,7 @@
 
 > 状态：2026-11-18。本文定义“什么需要审批、谁来执行、失败怎么拒绝、决定怎么绑定
 > 动作”。技术基线见 [`01-system-architecture.md`](01-system-architecture.md)；
-> 云 host 见 [`04-cloud-host.md`](04-cloud-host.md)；本地状态见
+> 云端 bot runtime 见 [`04-cloud-host.md`](04-cloud-host.md)；本地状态见
 > [`06-local-state.md`](06-local-state.md)；威胁模型见
 > [`07-security.md`](07-security.md)；未决决策见
 > [`adr/architecture-decisions.md`](adr/architecture-decisions.md)。

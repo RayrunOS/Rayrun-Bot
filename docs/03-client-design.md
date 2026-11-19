@@ -125,7 +125,7 @@ bot 的安全边界。
 - 没有 Rayrun token（`E_TOKEN_REQUIRED`）
 - 没有 DeepSeek key（`E_KEY_REQUIRED`）
 - 电脑停止/忙碌（`E_MACHINE_STOPPED` / `E_MACHINE_BUSY`）
-- bot host 恢复中（`E_HOST_DOWN`）
+- bot runtime 恢复中（`E_HOST_DOWN`）
 - 审批过期/重放/未知（`E_APPROVAL_*`）
 - 余额低（`E_BALANCE_LOW`）
 - 网络离线

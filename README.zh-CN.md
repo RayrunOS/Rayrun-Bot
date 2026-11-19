@@ -121,7 +121,7 @@ Rayrun Bot/
     └── dsh-rayrun-bots/         # health 路由 + v0.1 客户端界面、locale、测试
 ```
 
-云电脑插件（`dsh-rayrun-computer`）不在这个树里：它是**独立项目**，作为依赖被复用——同一个 DSH profile 里两个插件，一个产品。仓库和产品都叫 **Rayrun Bot**；插件包保留 `dsh-` 前缀，这是 DSH 插件生态的命名习惯。README 是产品页，细节在 `docs/`。深入阅读：[文档索引](docs/README.md)、[产品方向](docs/00-product-direction.md)、[系统架构](docs/01-system-architecture.md)、[Bot 模型](docs/02-bot-model.md)、[客户端设计](docs/03-client-design.md)、[云端 host](docs/04-cloud-host.md)、[审批](docs/05-approvals.md)、[本地状态](docs/06-local-state.md)、[安全](docs/07-security.md)、[集成](docs/08-integration.md)、[部署](docs/09-deployment.md)、[计划](docs/plans/mvp-plan.md)、[架构决策](docs/adr/architecture-decisions.md)、[FAQ](docs/faq.md)。两份 README 必须在同一个 commit 里更新——英文版为准。
+云电脑插件（`dsh-rayrun-computer`）不在这个树里：它是**独立项目**，作为依赖被复用——同一个 DSH profile 里两个插件，一个产品。仓库和产品都叫 **Rayrun Bot**；插件包保留 `dsh-` 前缀，这是 DSH 插件生态的命名习惯。README 是产品页，细节在 `docs/`。深入阅读：[文档索引](docs/README.md)、[产品方向](docs/00-product-direction.md)、[系统架构](docs/01-system-architecture.md)、[Bot 模型](docs/02-bot-model.md)、[客户端设计](docs/03-client-design.md)、[云端 bot runtime](docs/04-cloud-host.md)、[审批](docs/05-approvals.md)、[本地状态](docs/06-local-state.md)、[安全](docs/07-security.md)、[集成](docs/08-integration.md)、[部署](docs/09-deployment.md)、[计划](docs/plans/mvp-plan.md)、[架构决策](docs/adr/architecture-decisions.md)、[FAQ](docs/faq.md)。两份 README 必须在同一个 commit 里更新——英文版为准。
 
 ## 开发
 

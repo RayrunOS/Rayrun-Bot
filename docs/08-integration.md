@@ -2,7 +2,7 @@
 
 > 状态：2026-11-18。本文定义与 `dsh-rayrun-computer` 的依赖边界，以及 Rayrun 平台
 > 需要补的能力和优先级。技术基线见 [`01-system-architecture.md`](01-system-architecture.md)；
-> 云 host 见 [`04-cloud-host.md`](04-cloud-host.md)；未决决策见
+> 云端 bot runtime 见 [`04-cloud-host.md`](04-cloud-host.md)；未决决策见
 > [`adr/architecture-decisions.md`](adr/architecture-decisions.md)。
 > 本文是 handoff 清单；状态以 [`../README.md`](../README.md) 与各平台文档为准。
 
@@ -11,7 +11,7 @@
 | 文档 | 负责什么 |
 | --- | --- |
 | [`01-system-architecture.md`](01-system-architecture.md) | 分层、依赖边界、信任模型 |
-| [`04-cloud-host.md`](04-cloud-host.md) | 云 host 如何使用这些能力 |
+| [`04-cloud-host.md`](04-cloud-host.md) | 云端 bot runtime 如何使用这些能力 |
 | [`05-approvals.md`](05-approvals.md) | 文件控制通道的审批部分 |
 | [`06-local-state.md`](06-local-state.md) | 本地/机器文件布局 |
 | [`adr/architecture-decisions.md`](adr/architecture-decisions.md) | ADR-003（控制通道）、ADR-004（依赖契约）、ADR-007（常驻 host） |
@@ -36,7 +36,7 @@
 
 ---
 
-## 2. bot host 需要依赖提供的能力
+## 2. bot runtime 需要依赖提供的能力
 
 | 能力 | 用途 | 关键问题 |
 | --- | --- | --- |
@@ -65,7 +65,7 @@ hook，都没有文档。
 
 1. 按 id 创建/续接 session 的契约；
 2. 在机器内运行受监督的常驻进程：启动命令、重启策略、stop/start/reboot 行为；
-3. startup hook 或平台 supervisor，让 bot host 在机器重启后回来。
+3. startup hook 或平台 supervisor，让 bot runtime 在机器重启后回来。
 
 为什么：bot↔session 映射和“合上笔记本继续工作”是产品核心。
 
@@ -175,7 +175,7 @@ SSO/SAML/SCIM、组织 RBAC、审计导出/SIEM、DPA 与数据驻留、marketpl
 | 缺少 DeepSeek key | `E_KEY_REQUIRED` |
 | 机器停止 | `E_MACHINE_STOPPED` |
 | 机器忙碌 | `E_MACHINE_BUSY` |
-| bot host 不可用 | `E_HOST_DOWN` |
+| bot runtime 不可用 | `E_HOST_DOWN` |
 
 完整错误表见 [`plans/mvp-plan.md`](plans/mvp-plan.md) §4.3；响应不得携带 token 或 key。
 

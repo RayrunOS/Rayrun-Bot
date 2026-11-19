@@ -92,6 +92,30 @@ ADR-007。
 8. **模型 provider。** v0.1 只接 DeepSeek；其他 provider 由 DSH 负责，不在本仓库设计
    provider 抽象。
 
+### 1.4 控制面与执行面
+
+```
+DSH 客户端
+  │ 同源 RPC
+本地 bot 控制面（DSH host + 插件 host half）        ← Rayrun 之上
+  │ Rayrun API（token 只在本地）
+Rayrun 平台（机器 / exec / files / credentials / billing）
+  │ 云电脑内
+云端 bot runtime（queue / session / DSH 监督 / 事件 / 恢复）
+  │
+DSH agent sessions（bot）
+```
+
+- **本地 bot 控制面**：用户意图、审批、token、成本、依赖、watchdog；不是托管服务
+  （ADR-016）。
+- **云端 bot runtime**：机器内 supervisor；不持有 Rayrun token、不做审批授权、不是
+  安全边界（ADR-015）。
+- **Rayrun**：基础设施；不承载 bot 语义。
+- **DSH**：agent 会话与 UI。
+
+名字固定后，`04-cloud-host.md` 的“host”就是 bot runtime；`03-client-design.md` 的
+host half 属于本地控制面。
+
 ---
 
 ## 2. 设计原则与取舍
@@ -114,6 +138,8 @@ ADR-007。
 
 ### 3.1 本地侧
 
+这一侧就是**本地 bot 控制面**（ADR-016）。
+
 - **DSH host**：加载两个 bundle；本仓库的 host half 用 `ctx.inject(['webServer'])`
   注册同源路由，最小路由见 [`../packages/dsh-rayrun-bots/index.js`](../packages/dsh-rayrun-bots/index.js)；
   实现状态以 README 为准。
@@ -126,6 +152,8 @@ ADR-007。
 - **Tool guard**：由云电脑插件提供，负责 cloud/local 路由选择；本仓库不复制它。
 
 ### 3.2 云端
+
+这一侧是**云端 bot runtime**（ADR-015）。
 
 - 一人一台机器，bots 共享 `/workspace`、X11、browser profile 和文件；不是安全边界。
 - 平台同时只允许一个 agent 任务；第二个 prompt 返回 `409 sandbox_busy`，不排队。
@@ -146,7 +174,7 @@ billing。token 只在本地 host 使用；云端 agent 只拿模型 key，不�
 
 - **我们使用**：`rayrun_*` tools 的语义、同源 RPC 路由、worker projection 和版本
   契约。
-- **未定**：bot host 具体通过 service injection、host RPC 还是其他 adapter 调用它；
+- **未定**：bot runtime 具体通过 service injection、host RPC 还是其他 adapter 调用它；
   这是 ADR-004，S6 只解决“bundle 能否声明依赖”，不等于 host API 问题。
 - **禁止**：修改、fork、vendor 或复制它的代码；需要它改行为 → 去它的仓库提
   issue/PR，或在本仓库写 adapter。
@@ -352,16 +380,17 @@ tombstone，action hash 的 canonicalization 未定义；见 ADR-011/012。
 
 ## 9. 未决架构决策
 
-完整的 13 项决策、选项和建议见
+完整的决策、选项和建议见
 [`adr/architecture-decisions.md`](adr/architecture-decisions.md)；登记册见
-[`docs/README.md`](README.md) §3。C/E 动工前必须先定：
+[`docs/README.md`](README.md) §3。先定 **ADR-015/016**（控制面/执行面），再定
+**ADR-001/002**（审批/所有权）。C/E 动工前必须先定：
 
 | 编号 | 决策 | 为什么阻塞 |
 | --- | --- | --- |
 | ADR-001 | 审批在哪里执行 | 决定审批是安全边界还是用户同意 |
 | ADR-002 | 所有权矩阵与单写者规则 | 决定 `bot.json`、队列、审批谁写 |
 | ADR-003 | 文件控制通道协议 | 决定队列/状态怎么交换，避免双写丢更新 |
-| ADR-004 | 与 `dsh-rayrun-computer` 的契约 | 决定 bot host 能否调用云能力 |
+| ADR-004 | 与 `dsh-rayrun-computer` 的契约 | 决定 bot runtime 能否调用云能力 |
 | ADR-005 | 副作用执行语义 | 决定崩溃/重试会不会重复发送或花钱 |
 
 其余：ADR-006（合上笔记本）、ADR-007（常驻 host/凭据）、ADR-008（desktop）、

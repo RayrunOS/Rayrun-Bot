@@ -30,7 +30,7 @@ result comes back to the user.
 | Named bot with a job and a light persona | [design/bot-persona.md](../design/bot-persona.md); `bot.json` name/label/instructions |
 | One shared cloud computer per user | [01-system-architecture.md](../01-system-architecture.md) §3.2; Rayrun one machine per user |
 | Per-bot conversation and memory | `/workspace/.rayrun/bots/<id>/{memory,sessions}` in [plans/mvp-plan.md](../plans/mvp-plan.md) §4.2 |
-| Autonomous run after the laptop closes | persistent bot host; run continues without the local UI |
+| Autonomous run after the laptop closes | persistent bot runtime; run continues without the local UI |
 | Human-in-the-loop for outside effects | approval cards, deny/allow once, expired background cards |
 | Attention states and report-back | needs attention / unread / working in the roster |
 

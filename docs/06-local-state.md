@@ -2,7 +2,7 @@
 
 > 状态：2026-11-18。本文定义插件包、本地状态目录与云电脑镜像的文件布局、原子写、
 > 权限与保留规则。技术基线见 [`01-system-architecture.md`](01-system-architecture.md)；
-> 云 host 见 [`04-cloud-host.md`](04-cloud-host.md)；审批文件见
+> 云端 bot runtime 见 [`04-cloud-host.md`](04-cloud-host.md)；审批文件见
 > [`05-approvals.md`](05-approvals.md)；未决决策见
 > [`adr/architecture-decisions.md`](adr/architecture-decisions.md)。
 > 实现状态以 [`../README.md`](../README.md) 的 **Status** 段为准。
@@ -12,7 +12,7 @@
 | 文档 | 负责什么 |
 | --- | --- |
 | [`01-system-architecture.md`](01-system-architecture.md) | 所有权、信任边界与数据流 |
-| [`04-cloud-host.md`](04-cloud-host.md) | 机器上的 host、队列与 session |
+| [`04-cloud-host.md`](04-cloud-host.md) | 机器上的 bot runtime、队列与 session |
 | [`05-approvals.md`](05-approvals.md) | request/decision 文件与审批审计 |
 | [`plans/mvp-plan.md`](plans/mvp-plan.md) | §4.2/§4.3 的机器布局与 schema |
 | [`adr/architecture-decisions.md`](adr/architecture-decisions.md) | ADR-002（所有权）、ADR-003（单写者）、ADR-012（恢复） |
