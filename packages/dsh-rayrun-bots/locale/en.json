@@ -219,7 +219,10 @@
       "day": "Today 09:13",
       "reply": "Publishing would send the digest to the channel. I'm stopped here until you approve.",
       "approvalTitle": "Publish “Week 45 digest” to Feishu #weekly",
-      "approvalMeta": "Requested 09:13 · from this chat"
+      "approvalMeta": "Requested 09:13 · from this chat",
+      "expiredDay": "Yesterday 18:00",
+      "expiredTitle": "Publish “Week 44 digest” to Feishu #weekly",
+      "expiredMeta": "Requested yesterday 18:00 · from a routine"
     },
     "june": {
       "name": "June",

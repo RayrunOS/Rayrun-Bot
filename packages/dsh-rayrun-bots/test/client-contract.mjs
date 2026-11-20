@@ -114,5 +114,10 @@ for (const screen of ['chat', 'newbot', 'setup', 'settings']) {
   assert.match(client, new RegExp(`data-screen': '${screen}'`))
 }
 assert.match(client, /data-screen': 'chat'[\s\S]*library/)
+assert.match(client, /'data-state': approval\.state/)
+assert.match(client, /approval\.state === 'expired'/)
+assert.match(client, /t\('approval\.expired'\)/)
+assert.match(client, /t\('approval\.expires', \{ n: approval\.expiresMin \}\)/)
+assert.match(client, /rb-card-expired/)
 
 console.log('client contract ok')

@@ -219,7 +219,10 @@
       "day": "今天 09:13",
       "reply": "发布会把摘要发到频道里，我停在这里等你批准。",
       "approvalTitle": "发布《Week 45 摘要》到 Feishu #weekly",
-      "approvalMeta": "请求于 09:13 · 来自本对话"
+      "approvalMeta": "请求于 09:13 · 来自本对话",
+      "expiredDay": "昨天 18:00",
+      "expiredTitle": "发布《Week 44 摘要》到 Feishu #weekly",
+      "expiredMeta": "请求于昨天 18:00 · 来自定时任务"
     },
     "june": {
       "name": "June",

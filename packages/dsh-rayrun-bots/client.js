@@ -236,7 +236,10 @@ window.__ModuleLoader__.load({
       "day": "Today 09:13",
       "reply": "Publishing would send the digest to the channel. I'm stopped here until you approve.",
       "approvalTitle": "Publish “Week 45 digest” to Feishu #weekly",
-      "approvalMeta": "Requested 09:13 · from this chat"
+      "approvalMeta": "Requested 09:13 · from this chat",
+      "expiredDay": "Yesterday 18:00",
+      "expiredTitle": "Publish “Week 44 digest” to Feishu #weekly",
+      "expiredMeta": "Requested yesterday 18:00 · from a routine"
     },
     "june": {
       "name": "June",
@@ -483,7 +486,10 @@ window.__ModuleLoader__.load({
       "day": "今天 09:13",
       "reply": "发布会把摘要发到频道里，我停在这里等你批准。",
       "approvalTitle": "发布《Week 45 摘要》到 Feishu #weekly",
-      "approvalMeta": "请求于 09:13 · 来自本对话"
+      "approvalMeta": "请求于 09:13 · 来自本对话",
+      "expiredDay": "昨天 18:00",
+      "expiredTitle": "发布《Week 44 摘要》到 Feishu #weekly",
+      "expiredMeta": "请求于昨天 18:00 · 来自定时任务"
     },
     "june": {
       "name": "June",
@@ -605,6 +611,7 @@ window.__ModuleLoader__.load({
 .rb-msg.rb-user { grid-template-columns: minmax(0, 1fr); justify-items: end; }
 .rb-bubble { background: #f1f4f9; border-radius: 12px; padding: 8px 13px; max-width: 560px; font-size: 13.5px; overflow-wrap: anywhere; }
 .rb-card { border: 1px solid #e4e8f0; background: #fff; border-radius: 12px; padding: 13px 15px; display: grid; gap: 8px; }
+.rb-card-expired { opacity: .72; }
 .rb-card-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 .rb-card-title { font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; min-width: 0; }
 .rb-warn { color: #b45309; }
@@ -858,6 +865,7 @@ window.__ModuleLoader__.load({
               titleKey: 'sample.nora.approvalTitle',
               metaKey: 'sample.nora.approvalMeta',
               state: 'pending',
+              expiresMin: 28,
             },
           },
           receipts: [
@@ -885,16 +893,25 @@ window.__ModuleLoader__.load({
           timeKey: 'sample.eli.time',
           snippetKey: 'sample.eli.snippet',
           messages: [
+            { id: 'eli-xd', kind: 'day', textKey: 'sample.eli.expiredDay' },
+            { id: 'eli-x', kind: 'approval', approvalId: 'eli-expired' },
             { id: 'eli-d', kind: 'day', textKey: 'sample.eli.day' },
             { id: 'eli-b', kind: 'bot', textKey: 'sample.eli.reply' },
             { id: 'eli-a', kind: 'approval', approvalId: 'eli-pub' },
           ],
           approvals: {
+            'eli-expired': {
+              id: 'eli-expired',
+              titleKey: 'sample.eli.expiredTitle',
+              metaKey: 'sample.eli.expiredMeta',
+              state: 'expired',
+            },
             'eli-pub': {
               id: 'eli-pub',
               titleKey: 'sample.eli.approvalTitle',
               metaKey: 'sample.eli.approvalMeta',
               state: 'pending',
+              expiresMin: 27,
             },
           },
           receipts: [
@@ -1474,21 +1491,24 @@ window.__ModuleLoader__.load({
 
     function ApprovalCard({ t, approval, onDecide }) {
       const pending = approval.state === 'pending'
+      const expired = approval.state === 'expired'
       const title = fieldText(approval, t, 'titleKey')
       const meta = fieldText(approval, t, 'metaKey')
       let side = t('approval.waits')
+      if (pending && Number.isFinite(approval.expiresMin)) side = t('approval.expires', { n: approval.expiresMin })
       if (approval.state === 'allowed') side = t('approval.snippetAllowed')
       if (approval.state === 'denied') side = t('approval.snippetDenied')
+      if (expired) side = t('approval.expired')
       return h(
         'div',
-        { className: 'rb-card', role: 'group', 'aria-label': title },
+        { className: expired ? 'rb-card rb-card-expired' : 'rb-card', 'data-state': approval.state, role: 'group', 'aria-label': title },
         h(
           'div',
           { className: 'rb-card-top' },
           h('span', { className: 'rb-card-title' }, h('span', { className: 'rb-warn', 'aria-hidden': 'true' }, '⚠'), title),
           h('span', { className: 'rb-m' }, side),
         ),
-        pending ? h('div', { className: 'rb-warnline' }, t('approval.warning')) : h('div', { className: 'rb-result' }, t(approval.state === 'allowed' ? 'approval.allowedLocal' : 'approval.deniedLocal')),
+        pending ? h('div', { className: 'rb-warnline' }, t('approval.warning')) : expired ? null : h('div', { className: 'rb-result' }, t(approval.state === 'allowed' ? 'approval.allowedLocal' : 'approval.deniedLocal')),
         h('div', { className: 'rb-meta' }, meta),
         pending ? h(
           'div',

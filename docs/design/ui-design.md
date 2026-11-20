@@ -130,6 +130,11 @@ dot and the latest snippet says what waits. There is **no separate approvals
 page in v0.1** — the earlier inbox is dropped to match the reference; the store
 and RPC still expose the same list for future views.
 
+Pending cards show `expires in N min` for background work (or `waits for you`
+for chat-started work) plus `Deny` / `Allow once`. Expired cards are muted, show
+`Expired — the bot did not act`, and have no actions. Answered cards keep the
+local-only result line and no actions.
+
 ## 3. Alignment with Grok Bot
 
 | Grok Bot pattern | Source | Our v0.1 |
