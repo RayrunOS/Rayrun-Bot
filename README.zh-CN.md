@@ -117,6 +117,7 @@ Rayrun Bot/
 ├── .github/                     # issue/PR 模板与检查用 CI workflow
 ├── package.json                 # 私有 workspace 根
 ├── docs/                        # 00–09 文档、adr/、plans/、design/、research/、mockups/
+├── tools/update-poc/            # 更新内核原型；不进入插件包
 └── packages/
     └── dsh-rayrun-bots/         # health 路由 + v0.1 客户端界面、locale、测试
 ```

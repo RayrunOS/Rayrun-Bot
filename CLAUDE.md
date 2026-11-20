@@ -41,6 +41,7 @@
 - `docs/README.md` — 文档索引、分类与 ADR 登记册。
 - `docs/` — 编号顶层文档：00-product-direction、01-system-architecture、02-bot-model、03-client-design、04-cloud-host、05-approvals、06-local-state、07-security、08-integration、09-deployment、faq；子目录：`adr/`（ADR 登记）、`plans/`（MVP/客户端/路线图）、`design/`（UI/人格）、`research/`（调研）、`mockups/`（视觉素材）。
 - `packages/dsh-rayrun-bots/` — 目前唯一的包：host half（`index.js`）、client half（`client.js`）、`lib/`、`locale/en.json` + `zh.json`、`test/`、`cordis.patch.yml`、包 `README.md`、`package.json`。
+- `tools/update-poc/` — 更新内核原型（签名 manifest、校验、暂存、原子切换、回滚）；不进入插件运行时，也不进 npm 包。
 - 根 `package.json` — 私有 workspace 根；无依赖、无构建步骤。
 - `.github/workflows/checks.yml` — push/PR 的 checks-only CI。
 - `LICENSE`、`SECURITY.md`、`CONTRIBUTING.md`、`CODE_OF_CONDUCT.md` — 许可证、漏洞上报、PR 规则与行为准则。
@@ -125,6 +126,7 @@ node packages/dsh-rayrun-bots/test/manifest-check.mjs
 node packages/dsh-rayrun-bots/test/locale-audit.mjs
 node packages/dsh-rayrun-bots/test/rpc-contract.mjs
 node packages/dsh-rayrun-bots/test/client-contract.mjs
+node tools/update-poc/test/update.mjs
 ```
 
 - 新行为必须带测试；测试是纯 Node、无框架，沿用 `node test/*.mjs`。
@@ -132,7 +134,7 @@ node packages/dsh-rayrun-bots/test/client-contract.mjs
 - 绝不为了让改动通过而削弱或删除安全测试；修行为，或说明为什么测试本身错了。
 - 实时集成测试需要真实 Rayrun 凭据，绝不在 CI 运行。
 - 页面变更只做语法/契约检查不算打通；v0.1 没有浏览器测试框架，手工 golden path 见 `docs/plans/client-plan.md`。
-- CI（`.github/workflows/checks.yml`）在 push/PR 上跑语法检查和所有 `test/*.mjs`。
+- CI（`.github/workflows/checks.yml`）在 push/PR 上跑语法检查、所有 `test/*.mjs`，以及更新内核原型的测试。
 
 **“完成”的标准：**
 
@@ -156,6 +158,7 @@ node packages/dsh-rayrun-bots/test/client-contract.mjs
 | `node packages/dsh-rayrun-bots/test/locale-audit.mjs` | en/zh key 对齐、内嵌 locale 一致 |
 | `node packages/dsh-rayrun-bots/test/rpc-contract.mjs` | RPC 信封、同源门、体积上限 |
 | `node packages/dsh-rayrun-bots/test/client-contract.mjs` | 客户端文案、无外部请求、无占位符 |
+| `node tools/update-poc/test/update.mjs` | 更新内核原型：签名、哈希、版本、原子切换、回滚 |
 | `dsh plugin --profile web add <绝对路径>` | 从 checkout 载入 DSH profile；改 client half 后需重启 DSH |
 | `git log --oneline` | 查看提交历史 |
 

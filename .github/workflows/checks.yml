@@ -28,3 +28,5 @@ jobs:
             echo "--- $test"
             node "$test"
           done
+      - name: Run the update prototype checks
+        run: node tools/update-poc/test/update.mjs

@@ -117,6 +117,7 @@ Rayrun Bot/
 ├── .github/                     # issue/PR templates and the checks CI workflow
 ├── package.json                 # private workspace root
 ├── docs/                        # 00–09 docs, adr/, plans/, design/, research/, mockups/
+├── tools/update-poc/            # update kernel prototype; not shipped in the plugin
 └── packages/
     └── dsh-rayrun-bots/         # health route + v0.1 client shell, locale, tests
 ```
