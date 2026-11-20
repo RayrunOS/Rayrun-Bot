@@ -54,7 +54,8 @@
     "activity": "Activity",
     "library": "Library",
     "recent": "Recent",
-    "recentEmpty": "Nothing recent.",
+    "recentEmpty": "No activity yet.",
+    "recentEmptyHint": "Replies and receipts show up here after your bot works.",
     "upcoming": "Upcoming",
     "computer": "Computer",
     "usage": "Usage",
@@ -69,10 +70,12 @@
     "today": "Today",
     "week": "This week",
     "older": "Older",
-    "empty": "No artifacts yet."
+    "empty": "No artifacts yet.",
+    "emptyHint": "Files your bot saves in the workspace show up here."
   },
   "routine": {
     "empty": "No routines yet.",
+    "emptyHint": "Routines run on a schedule and stop for approval before acting outside your computer.",
     "on": "on",
     "off": "off"
   },
@@ -90,6 +93,7 @@
   "notice": {
     "recovering": "The bot host is restarting. This conversation resumes on its own.",
     "reconnecting": "Computer reconnecting… retrying in 5s",
+    "sleeping": "Computer is sleeping. Open it in the cloud-computer plugin to wake it.",
     "attach": "Attachments aren't available in this preview.",
     "preview": "In-memory preview. Nothing on this page is saved, and approvals are not sent to a worker."
   },
@@ -106,7 +110,8 @@
     "sampleSpend": "¥6.80"
   },
   "cost": {
-    "low": "Balance is low — top up in the Rayrun console. Stop is safe; destroy is not."
+    "low": "Balance is low — top up in the Rayrun console. Stop is safe; destroy is not.",
+    "lowShort": "Balance low"
   },
   "empty": {
     "heading": "No bots yet",

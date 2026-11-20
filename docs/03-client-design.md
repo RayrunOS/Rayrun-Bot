@@ -1,6 +1,6 @@
 # 03 — 客户端设计
 
-> 状态：2026-11-20。本文定义 DSH 客户端半区的表面、交互、RPC 分组与失败状态。
+> 状态：2026-11-21。本文定义 DSH 客户端半区的表面、交互、RPC 分组与失败状态。
 > 产品方向见 [`00-product-direction.md`](00-product-direction.md)；技术基线见
 > [`01-system-architecture.md`](01-system-architecture.md)；视觉规范见
 > [`design/ui-design.md`](design/ui-design.md)；交付计划见
@@ -113,7 +113,7 @@ host adapter 持有 Rayrun token 与文件邮箱。**当前代码与计划的路
 bot 的安全边界。
 
 页内预览：发送消息后先显示 working row；约 1.2 秒后出现模拟回复和 pending 审批卡，
-不调用 host，也不发送任何东西。
+不调用 host，也不发送任何东西。对话在发送、回复和切换 bot 时滚动到最新一条。
 
 ---
 
@@ -124,7 +124,10 @@ bot 的安全边界。
 安装提示，不崩溃。
 
 **空 roster**：列表和中心区显示 `No bots yet` + `Create bot`；新建 bot 后进入空对话
-欢迎态。可用 `?first-run=1` 预览（仅页内预览，不会连 host）。
+欢迎态并聚焦 composer，details 面板的 Recent / Upcoming / Library 显示空态和一句内容
+出现时机的提示，不放没有行为的按钮。可用 `?first-run=1` 预览（仅页内预览，不会连 host）；
+`?computer=live|reconnecting|sleeping|unreachable` 预览电脑状态，`?low-balance=1`
+预览低余额提示。
 
 **失败状态**（每个一句提示 + 一个下一步）：
 

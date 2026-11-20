@@ -88,15 +88,22 @@ const required = [
   'draft.send',
   'draft.discard',
   'details.recent',
+  'details.recentEmpty',
+  'details.recentEmptyHint',
   'details.upcoming',
   'details.computer',
   'details.usage',
+  'routine.emptyHint',
+  'library.emptyHint',
   'computer.live',
   'computer.reconnecting',
+  'computer.sleeping',
   'computer.unreachable',
   'computer.takeOver',
   'notice.recovering',
+  'notice.sleeping',
   'cost.low',
+  'cost.lowShort',
   'error.hostDown',
   'persona.template',
 ]
@@ -144,5 +151,46 @@ assert.match(client, /approval\.originChat/)
 assert.match(client, /approval\.riskOutside/)
 assert.match(client, /targetKey/)
 assert.match(client, /risk: \['outside', 'irreversible'\]/)
+assert.match(client, /function EmptyBlock/)
+assert.match(client, /'data-empty': name/)
+assert.match(client, /h\(EmptyBlock, \{ name: 'recent'/)
+assert.match(client, /h\(EmptyBlock, \{ name: 'routines'/)
+assert.match(client, /h\(EmptyBlock, \{ name: 'library'/)
+assert.match(client, /details\.recentEmptyHint/)
+assert.match(client, /routine\.emptyHint/)
+assert.match(client, /library\.emptyHint/)
+assert.match(client, /rb-count/)
+assert.match(client, /count\(bot\.receipts\.length\)/)
+assert.match(client, /count\(bot\.routines\.length\)/)
+assert.match(client, /count\(items\.length\)/)
+assert.match(client, /LOW_BALANCE_PREVIEW/)
+assert.match(client, /COMPUTER_PREVIEW/)
+assert.match(client, /computer: COMPUTER_PREVIEW/)
+assert.match(client, /'data-state': status/)
+assert.equal(client.includes('rb-st rb-st-${status}'), true)
+assert.equal(client.includes("'data-low': low ? 'true' : 'false'"), true)
+assert.equal(client.includes('rb-usage-low'), true)
+assert.match(client, /function Notice/)
+assert.match(client, /notice\.sleeping/)
+assert.match(client, /computer === 'live'\) return null/)
+assert.match(client, /rb-danger/)
+assert.match(client, /function ChatList\(\{ t, state, rows, selected, searchRef, low,/)
+assert.match(client, /low \? 'rb-textbtn rb-textbtn-low' : 'rb-textbtn'/)
+assert.match(client, /low \? h\('span', \{ className: 'rb-dot rb-needs'/)
+assert.match(client, /cost\.lowShort/)
+assert.match(client, /const threadRef = useRef\(null\)/)
+assert.match(client, /className: 'rb-thread', ref: threadRef/)
+assert.match(client, /thread\.scrollTop = thread\.scrollHeight/)
+assert.match(client, /\[bot\.id, bot\.messages\.length\]/)
+assert.match(client, /autoFocus: true/)
+assert.match(client, /focusComposer: false/)
+assert.match(client, /focusComposer: true/)
+assert.match(client, /const composerRef = useRef\(null\)/)
+assert.match(client, /composerRef\.current\?\.focus\(\)/)
+assert.match(client, /function Conversation\(\{ t, state, bot, composerRef,/)
+assert.match(client, /ref: composerRef/)
+assert.match(client, /function SettingsScreen\(\{ t, state, onTab, onChange, onClose, onSetup \}\)/)
+assert.equal(client.includes('rb-btn rb-ghost rb-back'), true)
+assert.equal(client.includes("'aria-label': t('setup.back')"), true)
 
 console.log('client contract ok')

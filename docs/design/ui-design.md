@@ -1,6 +1,6 @@
 # UI design — v0.1
 
-*Status: 2026-11-12 (rev 4). The client copies the layout of Grok Bot's desktop
+*Status: 2026-11-21 (rev 5). The client copies the layout of Grok Bot's desktop
 app as seen in the reference screenshot the user shared — one chat-list column, a
 markdown conversation in the middle, a per-bot details panel on the right — in a
 the visual language of rayrunos.com: white canvas, navy primary buttons, blue accents, hairline borders. Approvals are inline cards, not a separate
@@ -77,6 +77,8 @@ Column widths: 296 px / flexible / 328 px. The details column collapses below
   matches keeps `No matching bots`. Preview it with `?first-run=1` on the DSH
   page URL.
 - Footer: the user's avatar, name, `Rayrun connected · balance`, settings gear.
+  A low balance turns that line amber with an amber dot and a screen-reader
+  label; the full top-up line stays in Usage.
 
 ### 2.2 Conversation
 
@@ -87,12 +89,16 @@ Column widths: 296 px / flexible / 328 px. The details column collapses below
   `No messages yet`; the composer stays available.
 - Sending a message shows a working row; after a short preview-only delay a
   simulated reply and a pending approval card appear. Nothing leaves the page.
+  The thread scrolls to the newest entry on send, reply and bot switch.
 - Approval and draft blocks are the only cards: thin border, white surface,
   origin/target chips, a risk line (`Outside your computer · Can't be undone`),
   `Deny` / `Allow once`, and a metadata line (`requested 20:07`).
 - **Computer activity.** A thin row with a mini screen — `On the computer · Feishu #weekly — pasted the digest, waiting for approval` and a `View` button.
-- Notices sit above the composer as one line with a dot.
-- Composer: `+` attach, input, dark circular send.
+- Notices sit above the composer as one line with a dot. The line follows the
+  computer state — reconnecting (amber), sleeping (quiet), unreachable (red) —
+  and is absent while the computer is live; a flash message overrides it.
+- Composer: `+` attach, input, dark circular send. The composer takes focus
+  after a bot is created.
 
 ### 2.3 Details panel
 
@@ -105,18 +111,28 @@ Profile header (avatar, name, `job · computer`), then `Activity | Library` tabs
 - **Upcoming** — routines: one row per routine with title, schedule and a toggle.
   v0.1 ships at most one routine (P1); the other rows illustrate the shape.
 - **Computer** — a compact row near the bottom, like the reference: name and
-  state (`live` / `reconnecting…` / `sleeping`) on the left, a small 44×30 screen
-  thumbnail on the right, and `Open` / `Take over` right-aligned below. No large
-  preview in v0.1; the live view opens the dependency's desktop page.
-- **Usage** — balance, machine-hours, this week's spend, idle-stop policy.
+  state (`live` / `reconnecting…` / `sleeping` / `unreachable`) on the left with
+  a colored dot (green / amber / gray / red), a small 44×30 screen thumbnail on
+  the right, and `Open` / `Take over` right-aligned below. No large preview in
+  v0.1; the live view opens the dependency's desktop page. Preview the states
+  with `?computer=live|reconnecting|sleeping|unreachable`.
+- **Usage** — balance, machine-hours, this week's spend, idle-stop policy. The
+  balance turns amber and a low-balance line appears below the threshold;
+  preview it with `?low-balance=1`.
 
 **Library** groups artifacts under Today / This week / Older; each row is a file,
 image or link with one muted subline. P1 in v0.1.
+
+Filled sections show their item count next to the section header. Empty Recent,
+Upcoming or Library sections render a dashed block with one state line and one
+hint about when content appears; no dead action button.
+
 ### 2.4 New bot
 
 The `+` opens a small form, not a wizard: monogram preview, **Name**, **Job, one
-line**, **Instructions, optional**, then `Cancel` / `Create bot`. Defaults come
-from [bot-persona.md](bot-persona.md); no personality picker.
+line**, **Instructions, optional**, then `Cancel` / `Create bot`. The name field
+is focused when the form opens. Defaults come from
+[bot-persona.md](bot-persona.md); no personality picker.
 
 ### 2.5 Setup
 
@@ -127,8 +143,9 @@ disabled until the step passes; `Skip for now` leaves the setup row in place.
 ### 2.6 Settings
 
 Reached from the footer gear: Account (Rayrun connection, dependency health),
-Usage, Notifications, Appearance/language. Plain rows with hairline separators;
-no stat cards.
+Usage, Notifications, Appearance/language. A Back control returns to the
+conversation; Escape does the same. Plain rows with hairline separators; no stat
+cards.
 
 ### 2.7 Approvals (inline only)
 
@@ -210,10 +227,13 @@ Two anchors: the reference screenshot decides the layout (three columns, chat-li
 | `details.usage` | Usage | 用量 |
 | `computer.live` | live | 在线 |
 | `computer.reconnecting` | reconnecting… | 正在重连… |
+| `computer.sleeping` | sleeping | 休眠 |
 | `computer.unreachable` | Couldn't reach the computer. | 连不上电脑。 |
 | `computer.takeOver` | Take over | 接管 |
 | `notice.recovering` | The bot host is restarting. This conversation resumes on its own. | Bot host 正在重启，这个会话会自动恢复。 |
+| `notice.sleeping` | Computer is sleeping. Open it in the cloud-computer plugin to wake it. | 电脑正在休眠。打开云电脑插件即可唤醒。 |
 | `cost.low` | Balance is low — top up in the Rayrun console. Stop is safe; destroy is not. | 余额偏低——去 Rayrun 控制台充值。停机会保留磁盘，销毁不会。 |
+| `cost.lowShort` | Balance low | 余额偏低 |
 
 Approval and key copy never contains jokes; every error row has one next action.
 
@@ -254,7 +274,8 @@ Brand: use the official Rayrun logo — the lucide **Boxes** mark shown in the r
 ## 7. Accessibility and responsive
 
 - Keyboard: search → rows → conversation → approval buttons; visible focus;
-  Escape closes forms.
+  Escape closes forms. Opening the new-bot form focuses its name field; creating
+  a bot focuses the composer.
 - Approval changes announced with `aria-live="polite"`; countdowns are silent.
 - Contrast ≥ 4.5:1; dots always paired with an accessible label.
 - Three columns ≥1120 px; details collapses below; list collapses below 900 px.

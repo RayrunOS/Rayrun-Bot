@@ -8,7 +8,8 @@
  * approval, and setting on this page is in-memory preview state. Decisions are
  * not sent to a worker and nothing is saved.
  *
- * Preview the first-run roster by appending ?first-run=1 to the DSH page URL.
+ * Preview states with these DSH page URL parameters: ?first-run=1,
+ * ?low-balance=1, ?computer=live|reconnecting|sleeping|unreachable.
  */
 window.__ModuleLoader__.load({
   id: 'dsh-rayrun-bots',
@@ -16,7 +17,12 @@ window.__ModuleLoader__.load({
     const React = require('react')
     const h = React.createElement
     const { useEffect, useRef, useState } = React
-    const FIRST_RUN_PREVIEW = new URLSearchParams(window.location.search).get('first-run') === '1'
+    const PREVIEW = new URLSearchParams(window.location.search)
+    const FIRST_RUN_PREVIEW = PREVIEW.get('first-run') === '1'
+    const LOW_BALANCE_PREVIEW = PREVIEW.get('low-balance') === '1'
+    const COMPUTER_PREVIEW = ['live', 'reconnecting', 'sleeping', 'unreachable'].includes(PREVIEW.get('computer'))
+      ? PREVIEW.get('computer')
+      : 'reconnecting'
 
     const EN = {
   "meta": {
@@ -74,7 +80,8 @@ window.__ModuleLoader__.load({
     "activity": "Activity",
     "library": "Library",
     "recent": "Recent",
-    "recentEmpty": "Nothing recent.",
+    "recentEmpty": "No activity yet.",
+    "recentEmptyHint": "Replies and receipts show up here after your bot works.",
     "upcoming": "Upcoming",
     "computer": "Computer",
     "usage": "Usage",
@@ -89,10 +96,12 @@ window.__ModuleLoader__.load({
     "today": "Today",
     "week": "This week",
     "older": "Older",
-    "empty": "No artifacts yet."
+    "empty": "No artifacts yet.",
+    "emptyHint": "Files your bot saves in the workspace show up here."
   },
   "routine": {
     "empty": "No routines yet.",
+    "emptyHint": "Routines run on a schedule and stop for approval before acting outside your computer.",
     "on": "on",
     "off": "off"
   },
@@ -110,6 +119,7 @@ window.__ModuleLoader__.load({
   "notice": {
     "recovering": "The bot host is restarting. This conversation resumes on its own.",
     "reconnecting": "Computer reconnecting… retrying in 5s",
+    "sleeping": "Computer is sleeping. Open it in the cloud-computer plugin to wake it.",
     "attach": "Attachments aren't available in this preview.",
     "preview": "In-memory preview. Nothing on this page is saved, and approvals are not sent to a worker."
   },
@@ -126,7 +136,8 @@ window.__ModuleLoader__.load({
     "sampleSpend": "¥6.80"
   },
   "cost": {
-    "low": "Balance is low — top up in the Rayrun console. Stop is safe; destroy is not."
+    "low": "Balance is low — top up in the Rayrun console. Stop is safe; destroy is not.",
+    "lowShort": "Balance low"
   },
   "empty": {
     "heading": "No bots yet",
@@ -340,7 +351,8 @@ window.__ModuleLoader__.load({
     "activity": "动态",
     "library": "资料库",
     "recent": "最近",
-    "recentEmpty": "最近没有动态。",
+    "recentEmpty": "还没有动态。",
+    "recentEmptyHint": "Bot 开始工作后，回复和收据会出现在这里。",
     "upcoming": "即将进行",
     "computer": "电脑",
     "usage": "用量",
@@ -355,10 +367,12 @@ window.__ModuleLoader__.load({
     "today": "今天",
     "week": "本周",
     "older": "更早",
-    "empty": "还没有产物。"
+    "empty": "还没有产物。",
+    "emptyHint": "Bot 保存在工作区里的文件会出现在这里。"
   },
   "routine": {
     "empty": "还没有日程。",
+    "emptyHint": "日程按计划运行；在电脑之外执行动作前会停下来等审批。",
     "on": "开",
     "off": "关"
   },
@@ -376,6 +390,7 @@ window.__ModuleLoader__.load({
   "notice": {
     "recovering": "Bot host 正在重启，这个会话会自动恢复。",
     "reconnecting": "电脑正在重连… 5 秒后重试",
+    "sleeping": "电脑正在休眠。打开云电脑插件即可唤醒。",
     "attach": "这个预览里还不能添加附件。",
     "preview": "这是页内预览。内容不会保存，审批也不会发给 worker。"
   },
@@ -392,7 +407,8 @@ window.__ModuleLoader__.load({
     "sampleSpend": "¥6.80"
   },
   "cost": {
-    "low": "余额偏低——去 Rayrun 控制台充值。停机会保留磁盘，销毁不会。"
+    "low": "余额偏低——去 Rayrun 控制台充值。停机会保留磁盘，销毁不会。",
+    "lowShort": "余额偏低"
   },
   "empty": {
     "heading": "还没有 Bot",
@@ -623,11 +639,14 @@ window.__ModuleLoader__.load({
 .rb-dot.rb-needs { background: #b45309; }
 .rb-dot.rb-working { background: #15803d; }
 .rb-dot.rb-unread { background: #5b7fc4; }
+.rb-dot.rb-danger { background: #b42318; }
 .rb-foot { margin-top: auto; border-top: 1px solid #eef1f6; padding: 10px 14px; display: flex; align-items: center; gap: 9px; }
 .rb-who { flex: 1; font-size: 12px; min-width: 0; }
 .rb-who small { display: block; color: #8a93a3; font-size: 10.5px; }
 .rb-textbtn { border: 0; background: transparent; padding: 0; color: #8a93a3; font-size: 10.5px; text-align: left; }
 .rb-textbtn:hover { color: #0f172a; }
+.rb-frame button.rb-textbtn.rb-textbtn-low { color: #b45309; }
+.rb-textbtn .rb-dot { margin-right: 4px; vertical-align: middle; }
 .rb-empty-list { color: #8a93a3; font-size: 12px; padding: 8px 10px; }
 .rb-firstrun { padding: 10px; }
 .rb-main { background: #fff; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
@@ -667,6 +686,8 @@ window.__ModuleLoader__.load({
 .rb-btn.rb-ghost:hover { color: #0f172a; background: #eef2f8; }
 .rb-btn:disabled { opacity: .45; cursor: not-allowed; }
 .rb-notice { margin: 0 34px 8px; max-width: 760px; align-self: center; width: 100%; color: #b45309; font-size: 11.5px; display: flex; gap: 7px; align-items: center; }
+.rb-notice.rb-quiet { color: #5b6472; }
+.rb-notice.rb-error { color: #b42318; }
 .rb-composer { max-width: 760px; width: 100%; align-self: center; display: flex; align-items: center; gap: 8px; border: 1px solid #e4e8f0; background: #fff; border-radius: 14px; padding: 7px 8px 7px 10px; margin: 0 34px 18px; }
 .rb-composer input { flex: 1; border: 0; outline: 0; background: transparent; font-size: 13.5px; min-width: 0; }
 .rb-composer input:focus { outline: none; }
@@ -681,8 +702,17 @@ window.__ModuleLoader__.load({
 .rb-computer-act { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: 10px; align-items: center; border: 1px solid #e4e8f0; background: #fff; border-radius: 10px; padding: 8px 10px; }
 .rb-computer-act .rb-t, .rb-computer .rb-nm { font-size: 12px; }
 .rb-computer-act .rb-s, .rb-computer .rb-st, .rb-act .rb-s, .rb-routine .rb-s { color: #8a93a3; font-size: 10.5px; }
+.rb-computer .rb-st { display: flex; align-items: center; gap: 5px; }
+.rb-computer .rb-st.rb-st-live { color: #15803d; }
+.rb-computer .rb-st.rb-st-reconnecting { color: #b45309; }
+.rb-computer .rb-st.rb-st-sleeping { color: #8a93a3; }
+.rb-computer .rb-st.rb-st-unreachable { color: #b42318; }
 .rb-sections { padding: 14px 16px 24px; display: grid; gap: 20px; }
-.rb-sec h3 { margin: 0 0 8px; color: #8a93a3; font-size: 10px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; }
+.rb-sec h3 { margin: 0 0 8px; color: #8a93a3; font-size: 10px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.rb-count { color: #8a93a3; font-size: 10px; font-weight: 500; letter-spacing: 0; text-transform: none; }
+.rb-empty { background: #fff; border: 1px dashed #e4e8f0; border-radius: 10px; padding: 12px; display: grid; gap: 3px; }
+.rb-empty-title { color: #5b6472; font-size: 12px; font-weight: 500; }
+.rb-empty-hint { color: #8a93a3; font-size: 10.5px; line-height: 1.5; }
 .rb-act { background: #fff; border: 1px solid #e4e8f0; border-radius: 10px; padding: 10px 12px; display: grid; gap: 4px; margin-bottom: 7px; }
 .rb-act .rb-t { font-size: 12px; font-weight: 600; display: flex; justify-content: space-between; gap: 8px; }
 .rb-ok { color: #15803d; font-weight: 500; font-size: 11px; white-space: nowrap; }
@@ -702,6 +732,7 @@ window.__ModuleLoader__.load({
 .rb-comp-acts .rb-btn { padding: 4px 9px; font-size: 11px; }
 .rb-usage { color: #5b6472; font-size: 12px; display: grid; gap: 3px; }
 .rb-usage b { color: #0f172a; font-weight: 600; }
+.rb-usage .rb-usage-low b { color: #b45309; }
 .rb-low { color: #b45309; font-size: 12px; }
 .rb-faint { color: #8a93a3; font-size: 11px; }
 .rb-page { background: #fff; overflow: auto; display: flex; flex-direction: column; min-height: 0; min-width: 0; }
@@ -727,6 +758,7 @@ window.__ModuleLoader__.load({
 .rb-mono { margin-bottom: 16px; }
 .rb-hint { color: #8a93a3; font-size: 11.5px; }
 .rb-page-inner { max-width: 760px; width: 100%; align-self: center; padding: 34px 34px 60px; }
+.rb-page-inner .rb-back { margin: 0 0 14px; padding-left: 0; }
 .rb-page-inner .rb-sub { color: #8a93a3; margin: 0 0 22px; font-size: 11.5px; }
 .rb-snav { display: flex; gap: 16px; border-bottom: 1px solid #eef1f6; margin-bottom: 8px; }
 .rb-snav button { border: 0; background: transparent; color: #8a93a3; font-size: 12px; padding: 8px 0; border-bottom: 1.5px solid transparent; }
@@ -999,11 +1031,13 @@ window.__ModuleLoader__.load({
         screen: 'chat',
         selectedId: 'nora',
         tab: 'activity',
+        computer: COMPUTER_PREVIEW,
         searchOpen: false,
         search: '',
         composer: '',
         flash: null,
         live: '',
+        focusComposer: false,
         settingsTab: 'account',
         setupStep: 1,
         forceList: false,
@@ -1196,6 +1230,7 @@ window.__ModuleLoader__.load({
               className: 'rb-field',
               value: name,
               maxLength: 40,
+              autoFocus: true,
               onChange: (event) => onName(event.target.value),
             }),
           ),
@@ -1239,6 +1274,7 @@ window.__ModuleLoader__.load({
       const t = makeT(lang === 'zh' ? ZH : EN)
       const frameRef = useRef(null)
       const searchRef = useRef(null)
+      const composerRef = useRef(null)
       const replyTimers = useRef(new Map())
       const width = useContainerWidth(frameRef)
 
@@ -1263,6 +1299,12 @@ window.__ModuleLoader__.load({
       useEffect(() => {
         if (state.searchOpen) searchRef.current?.focus()
       }, [state.searchOpen])
+
+      useEffect(() => {
+        if (!state.focusComposer || state.screen !== 'chat') return
+        composerRef.current?.focus()
+        setState((current) => ({ ...current, focusComposer: false }))
+      }, [state.focusComposer, state.screen])
 
       const selected = state.bots.find((bot) => bot.id === state.selectedId) || state.bots[0] || null
       const listOn = width >= 900 || state.forceList
@@ -1411,6 +1453,7 @@ window.__ModuleLoader__.load({
             selectedId: id,
             tab: 'activity',
             flash: null,
+            focusComposer: true,
             bots: [...current.bots, bot],
           }
         })
@@ -1421,7 +1464,8 @@ window.__ModuleLoader__.load({
       const catalog = lang === 'zh' ? ZH : EN
       const balance = moneyNumber(t('usage.sampleBalance'))
       const threshold = moneyNumber(state.settings.lowBalance)
-      const low = Number.isFinite(balance) && Number.isFinite(threshold) && balance < threshold
+      const low = LOW_BALANCE_PREVIEW
+        || (Number.isFinite(balance) && Number.isFinite(threshold) && balance < threshold)
 
       const query = state.search.trim().toLowerCase()
       const rows = state.bots.filter((bot) => {
@@ -1449,6 +1493,7 @@ window.__ModuleLoader__.load({
         onSettingsTab: (settingsTab) => patch({ settingsTab }),
         catalog,
         width,
+        composerRef,
         onToggleList: () => patch({ forceList: !state.forceList }),
         onToggleDetail: () => patch({ forceDetail: !state.forceDetail }),
       })
@@ -1468,6 +1513,7 @@ window.__ModuleLoader__.load({
             rows,
             selected,
             searchRef,
+            low,
             onSearchToggle: () => patch({ searchOpen: !state.searchOpen, search: state.searchOpen ? '' : state.search }),
             onSearch: (search) => patch({ search }),
             onSelect: selectBot,
@@ -1484,6 +1530,7 @@ window.__ModuleLoader__.load({
             bot: selected,
             tab: state.tab,
             onTab: (tab) => patch({ tab }),
+            computer: state.computer,
             low,
             idle: idleLabel(t, state.settings.idle),
             onToggleRoutine: (index) => updateBot(selected.id, (bot) => ({
@@ -1496,7 +1543,7 @@ window.__ModuleLoader__.load({
       )
     }
 
-    function ChatList({ t, state, rows, selected, searchRef, onSearchToggle, onSearch, onSelect, onNew, onSettings, onSetup }) {
+    function ChatList({ t, state, rows, selected, searchRef, low, onSearchToggle, onSearch, onSelect, onNew, onSettings, onSetup }) {
       const userName = t('sample.user.name')
       return h(
         'aside',
@@ -1587,10 +1634,13 @@ window.__ModuleLoader__.load({
               null,
               h('button', {
                 type: 'button',
-                className: 'rb-textbtn',
+                className: low ? 'rb-textbtn rb-textbtn-low' : 'rb-textbtn',
                 onClick: onSetup,
                 title: t('setup.title'),
-              }, t('sample.user.foot', { balance: t('usage.sampleBalance') })),
+              },
+              low ? h('span', { className: 'rb-dot rb-needs', 'aria-hidden': 'true' }) : null,
+              t('sample.user.foot', { balance: t('usage.sampleBalance') }),
+              low ? h('span', { className: 'rb-sr' }, t('cost.lowShort')) : null),
             ),
           ),
           h('button', { type: 'button', className: 'rb-icon', title: t('list.settings'), 'aria-label': t('list.settings'), onClick: onSettings }, h(GearIcon)),
@@ -1646,9 +1696,38 @@ window.__ModuleLoader__.load({
       )
     }
 
-    function Conversation({ t, state, bot, onComposer, onSend, onDecide, onView, onAttach, showListButton, showDetailButton, onToggleList, onToggleDetail }) {
+    function Notice({ t, flash, computer }) {
+      if (flash) {
+        return h(
+          'div',
+          { className: 'rb-notice', role: 'status', 'data-computer': computer },
+          h('span', { className: 'rb-dot rb-needs', 'aria-hidden': 'true' }),
+          flash,
+        )
+      }
+      if (computer === 'live') return null
+      const sleeping = computer === 'sleeping'
+      const unreachable = computer === 'unreachable'
+      return h(
+        'div',
+        {
+          className: unreachable ? 'rb-notice rb-error' : sleeping ? 'rb-notice rb-quiet' : 'rb-notice',
+          role: 'status',
+          'data-computer': computer,
+        },
+        h('span', { className: `rb-dot${unreachable ? ' rb-danger' : sleeping ? '' : ' rb-needs'}`, 'aria-hidden': 'true' }),
+        t(sleeping ? 'notice.sleeping' : unreachable ? 'computer.unreachable' : 'notice.reconnecting'),
+      )
+    }
+
+    function Conversation({ t, state, bot, composerRef, onComposer, onSend, onDecide, onView, onAttach, showListButton, showDetailButton, onToggleList, onToggleDetail }) {
       const name = botName(bot, t)
       const job = botJob(bot, t)
+      const threadRef = useRef(null)
+      useEffect(() => {
+        const thread = threadRef.current
+        if (thread) thread.scrollTop = thread.scrollHeight
+      }, [bot.id, bot.messages.length])
       return h(
         'main',
         { className: 'rb-main', 'data-screen': 'chat' },
@@ -1660,7 +1739,7 @@ window.__ModuleLoader__.load({
         ) : null,
         h(
           'div',
-          { className: 'rb-thread' },
+          { className: 'rb-thread', ref: threadRef },
           bot.messages.length ? bot.messages.map((entry) => {
             if (entry.kind === 'working') return h('div', { key: entry.id, className: 'rb-working-row', role: 'status' }, h('span', { className: 'rb-dot rb-working', 'aria-hidden': 'true' }), t('chat.working'))
             if (entry.kind === 'day') return h('div', { key: entry.id, className: 'rb-day' }, textOf(entry, t))
@@ -1701,17 +1780,13 @@ window.__ModuleLoader__.load({
             h('p', { className: 'rb-thread-empty' }, t('empty.thread')),
           ),
         ),
-        h(
-          'div',
-          { className: 'rb-notice', role: 'status' },
-          h('span', { className: 'rb-dot rb-needs', 'aria-hidden': 'true' }),
-          state.flash || t('notice.reconnecting'),
-        ),
+        h(Notice, { t, flash: state.flash, computer: state.computer }),
         h(
           'div',
           { className: 'rb-composer' },
           h('button', { type: 'button', className: 'rb-icon', title: t('composer.attach'), 'aria-label': t('composer.attach'), onClick: onAttach }, '+'),
           h('input', {
+            ref: composerRef,
             value: state.composer,
             disabled: !!bot.working,
             placeholder: t('composer.placeholder', { name }),
@@ -1729,9 +1804,19 @@ window.__ModuleLoader__.load({
       )
     }
 
-    function Details({ t, catalog, bot, tab, onTab, low, idle, onToggleRoutine, onComputer }) {
+    function EmptyBlock({ name, title, hint }) {
+      return h(
+        'div',
+        { className: 'rb-empty', 'data-empty': name },
+        h('div', { className: 'rb-empty-title' }, title),
+        h('div', { className: 'rb-empty-hint' }, hint),
+      )
+    }
+
+    function Details({ t, catalog, bot, tab, onTab, computer, low, idle, onToggleRoutine, onComputer }) {
       const name = botName(bot, t)
       const job = botJob(bot, t)
+      const count = (n) => (n ? h('span', { className: 'rb-count' }, String(n)) : null)
       const groups = [
         ['today', 'library.today'],
         ['week', 'library.week'],
@@ -1759,18 +1844,18 @@ window.__ModuleLoader__.load({
           h(
             'section',
             { className: 'rb-sec' },
-            h('h3', null, t('details.recent')),
+            h('h3', null, t('details.recent'), count(bot.receipts.length)),
             bot.receipts.length ? bot.receipts.map((receipt, index) => h(
               'div',
               { key: index, className: 'rb-act' },
               h('div', { className: 'rb-t' }, h('span', null, t(receipt.titleKey)), h('span', { className: 'rb-ok' }, t(receipt.stateKey))),
               h('div', { className: 'rb-s' }, t(receipt.metaKey)),
-            )) : h('div', { className: 'rb-s' }, t('details.recentEmpty')),
+            )) : h(EmptyBlock, { name: 'recent', title: t('details.recentEmpty'), hint: t('details.recentEmptyHint') }),
           ),
           h(
             'section',
             { className: 'rb-sec' },
-            h('h3', null, t('details.upcoming')),
+            h('h3', null, t('details.upcoming'), count(bot.routines.length)),
             bot.routines.length ? bot.routines.map((routine, index) => {
               const title = t(routine.titleKey)
               return h(
@@ -1783,9 +1868,9 @@ window.__ModuleLoader__.load({
                   onClick: () => onToggleRoutine(index),
                 }),
               )
-            }) : h('div', { className: 'rb-s' }, t('routine.empty')),
+            }) : h(EmptyBlock, { name: 'routines', title: t('routine.empty'), hint: t('routine.emptyHint') }),
           ),
-          h(ComputerBlock, { t, onComputer }),
+          h(ComputerBlock, { t, status: computer, onComputer }),
           h(UsageBlock, { t, catalog, idle, low }),
         ) : h(
           'div',
@@ -1796,7 +1881,7 @@ window.__ModuleLoader__.load({
             return h(
               'section',
               { key: group, className: 'rb-sec' },
-              h('h3', null, t(labelKey)),
+              h('h3', null, t(labelKey), count(items.length)),
               items.map((item, index) => h(
                 'div',
                 { key: `${group}-${index}`, className: 'rb-act' },
@@ -1804,23 +1889,41 @@ window.__ModuleLoader__.load({
                 h('div', { className: 'rb-s' }, t(item.metaKey)),
               )),
             )
-          }) : h('div', { className: 'rb-s' }, t('library.empty')),
+          }) : h(EmptyBlock, { name: 'library', title: t('library.empty'), hint: t('library.emptyHint') }),
         ),
       )
     }
 
-    function ComputerBlock({ t, onComputer }) {
+    function ComputerBlock({ t, status, onComputer }) {
+      const label = status === 'live' ? t('computer.live')
+        : status === 'sleeping' ? t('computer.sleeping')
+        : status === 'unreachable' ? t('computer.unreachable')
+        : t('computer.reconnecting')
+      const dot = status === 'live' ? 'rb-working'
+        : status === 'unreachable' ? 'rb-danger'
+        : status === 'sleeping' ? ''
+        : 'rb-needs'
       return h(
         'section',
         { className: 'rb-sec' },
         h('h3', null, t('details.computer')),
         h(
           'div',
-          { className: 'rb-computer' },
+          { className: 'rb-computer', 'data-state': status },
           h(
             'div',
             { className: 'rb-comp-row' },
-            h('div', null, h('div', { className: 'rb-nm' }, t('sample.computerName')), h('div', { className: 'rb-st' }, t('computer.reconnecting'))),
+            h(
+              'div',
+              null,
+              h('div', { className: 'rb-nm' }, t('sample.computerName')),
+              h(
+                'div',
+                { className: `rb-st rb-st-${status}` },
+                h('span', { className: `rb-dot ${dot}`.trim(), 'aria-hidden': 'true' }),
+                label,
+              ),
+            ),
             h('div', { className: 'rb-thumb', 'aria-hidden': 'true' }),
           ),
           h(
@@ -1843,8 +1946,8 @@ window.__ModuleLoader__.load({
         h('h3', null, t('details.usage')),
         h(
           'div',
-          { className: 'rb-usage' },
-          h('span', null, lineParts(lookup(catalog, 'usage.balanceLine'), { balance, hours }, new Set(['balance']))),
+          { className: 'rb-usage', 'data-low': low ? 'true' : 'false' },
+          h('span', { className: low ? 'rb-usage-low' : '' }, lineParts(lookup(catalog, 'usage.balanceLine'), { balance, hours }, new Set(['balance']))),
           h('span', null, lineParts(lookup(catalog, 'usage.weekLine'), { spend, idle }, new Set(['spend']))),
           low ? h('span', { className: 'rb-low' }, t('cost.low')) : null,
         ),
@@ -1871,6 +1974,7 @@ window.__ModuleLoader__.load({
           state,
           onTab: ctx.onSettingsTab,
           onChange: ctx.onSettings,
+          onClose: () => ctx.onScreen('chat'),
           onSetup: () => {
             ctx.onSetupStep(1)
             ctx.onScreen('setup')
@@ -1888,6 +1992,7 @@ window.__ModuleLoader__.load({
         t,
         state,
         bot: selected,
+        composerRef: ctx.composerRef,
         onComposer: ctx.onComposer,
         onSend: ctx.onSend,
         onDecide: ctx.onDecide,
@@ -2060,7 +2165,7 @@ window.__ModuleLoader__.load({
       )
     }
 
-    function SettingsScreen({ t, state, onTab, onChange, onSetup }) {
+    function SettingsScreen({ t, state, onTab, onChange, onClose, onSetup }) {
       const shownLang = state.settings.lang || (lookup(ZH, 'settings.title') === t('settings.title') ? 'zh' : 'en')
       const scrollTo = (id) => {
         onTab(id)
@@ -2073,6 +2178,12 @@ window.__ModuleLoader__.load({
         h(
           'div',
           { className: 'rb-page-inner' },
+          h('button', {
+            type: 'button',
+            className: 'rb-btn rb-ghost rb-back',
+            'aria-label': t('setup.back'),
+            onClick: onClose,
+          }, `← ${t('setup.back')}`),
           h('h1', null, t('settings.title')),
           h('p', { className: 'rb-sub' }, t('settings.sub')),
           h(

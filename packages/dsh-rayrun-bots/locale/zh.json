@@ -54,7 +54,8 @@
     "activity": "动态",
     "library": "资料库",
     "recent": "最近",
-    "recentEmpty": "最近没有动态。",
+    "recentEmpty": "还没有动态。",
+    "recentEmptyHint": "Bot 开始工作后，回复和收据会出现在这里。",
     "upcoming": "即将进行",
     "computer": "电脑",
     "usage": "用量",
@@ -69,10 +70,12 @@
     "today": "今天",
     "week": "本周",
     "older": "更早",
-    "empty": "还没有产物。"
+    "empty": "还没有产物。",
+    "emptyHint": "Bot 保存在工作区里的文件会出现在这里。"
   },
   "routine": {
     "empty": "还没有日程。",
+    "emptyHint": "日程按计划运行；在电脑之外执行动作前会停下来等审批。",
     "on": "开",
     "off": "关"
   },
@@ -90,6 +93,7 @@
   "notice": {
     "recovering": "Bot host 正在重启，这个会话会自动恢复。",
     "reconnecting": "电脑正在重连… 5 秒后重试",
+    "sleeping": "电脑正在休眠。打开云电脑插件即可唤醒。",
     "attach": "这个预览里还不能添加附件。",
     "preview": "这是页内预览。内容不会保存，审批也不会发给 worker。"
   },
@@ -106,7 +110,8 @@
     "sampleSpend": "¥6.80"
   },
   "cost": {
-    "low": "余额偏低——去 Rayrun 控制台充值。停机会保留磁盘，销毁不会。"
+    "low": "余额偏低——去 Rayrun 控制台充值。停机会保留磁盘，销毁不会。",
+    "lowShort": "余额偏低"
   },
   "empty": {
     "heading": "还没有 Bot",
