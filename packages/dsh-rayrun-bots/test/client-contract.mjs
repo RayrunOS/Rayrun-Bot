@@ -75,11 +75,16 @@ const required = [
   'approval.expired',
   'approval.irreversible',
   'approval.outside',
+  'approval.originChat',
+  'approval.originBackground',
+  'approval.riskOutside',
+  'approval.riskIrreversible',
   'chat.working',
   'chat.simulatedReply',
   'chat.simulatedSnippet',
   'chat.simulatedApprovalTitle',
   'chat.simulatedApprovalMeta',
+  'chat.simulatedTarget',
   'draft.send',
   'draft.discard',
   'details.recent',
@@ -133,5 +138,11 @@ assert.match(client, /rb-working-row/)
 assert.match(client, /chat\.simulatedApprovalTitle/)
 assert.match(client, /setTimeout\(/)
 assert.match(client, /disabled: !!bot\.working/)
+assert.match(client, /rb-card-fields/)
+assert.match(client, /rb-chip/)
+assert.match(client, /approval\.originChat/)
+assert.match(client, /approval\.riskOutside/)
+assert.match(client, /targetKey/)
+assert.match(client, /risk: \['outside', 'irreversible'\]/)
 
 console.log('client contract ok')

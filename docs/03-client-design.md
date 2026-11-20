@@ -102,7 +102,8 @@ host adapter 持有 Rayrun token 与文件邮箱。**当前代码与计划的路
 卡片是产品最敏感的表面，规则见 [`05-approvals.md`](05-approvals.md) 和 ADR-011：
 
 - 显示结构化字段：动作类型、目标、金额/收件人/URL、风险、来源（chat/background）、
-  TTL；不渲染机器提供的 HTML 或 markdown。
+  TTL；来源与目标用 chips，风险用一行短标签，元数据不再重复来源；不渲染机器提供的
+  HTML 或 markdown。
 - 两个动作：Deny、Allow once；没有“永远允许”或默认放行。
 - 过期、已答、stale、错 bot 显示明确状态，并刷新列表。
 - 列表上的 attention 点标记“等你”；不显示未读 bait。

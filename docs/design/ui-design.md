@@ -87,9 +87,9 @@ Column widths: 296 px / flexible / 328 px. The details column collapses below
   `No messages yet`; the composer stays available.
 - Sending a message shows a working row; after a short preview-only delay a
   simulated reply and a pending approval card appear. Nothing leaves the page.
-- Approval and draft blocks are the only cards: thin border, white surface, one
-  warning line, `Deny` / `Allow once`, and a metadata line (`requested 20:07 ·
-  from this chat`).
+- Approval and draft blocks are the only cards: thin border, white surface,
+  origin/target chips, a risk line (`Outside your computer · Can't be undone`),
+  `Deny` / `Allow once`, and a metadata line (`requested 20:07`).
 - **Computer activity.** A thin row with a mini screen — `On the computer · Feishu #weekly — pasted the digest, waiting for approval` and a `View` button.
 - Notices sit above the composer as one line with a dot.
 - Composer: `+` attach, input, dark circular send.
@@ -198,6 +198,10 @@ Two anchors: the reference screenshot decides the layout (three columns, chat-li
 | `approval.expired` | Expired — the bot did not act | 已过期——Bot 没有执行 |
 | `approval.irreversible` | This can't be undone. | 此操作无法撤销。 |
 | `approval.outside` | This shares data outside your computer. | 这会把数据发到你的电脑之外。 |
+| `approval.originChat` | From this chat | 来自本对话 |
+| `approval.originBackground` | From a routine | 来自定时任务 |
+| `approval.riskOutside` | Outside your computer | 离开你的电脑 |
+| `approval.riskIrreversible` | Can't be undone | 无法撤销 |
 | `draft.send` | Send | 发送 |
 | `draft.discard` | Discard | 丢弃 |
 | `details.recent` | Recent | 最近 |

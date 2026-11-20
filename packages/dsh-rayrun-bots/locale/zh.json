@@ -7,8 +7,9 @@
     "working": "正在处理…",
     "simulatedReply": "完成。这是预览里的模拟回复；下面的审批也只在本页。",
     "simulatedSnippet": "待审批：模拟结果",
-    "simulatedApprovalTitle": "把模拟结果发送到你的电脑",
-    "simulatedApprovalMeta": "刚刚请求 · 来自本对话"
+    "simulatedApprovalTitle": "把模拟结果发到团队频道",
+    "simulatedApprovalMeta": "刚刚请求",
+    "simulatedTarget": "团队频道"
   },
   "list": {
     "search": "搜索",
@@ -31,6 +32,10 @@
     "expired": "已过期——Bot 没有执行",
     "irreversible": "此操作无法撤销。",
     "outside": "这会把数据发到你的电脑之外。",
+    "originChat": "来自本对话",
+    "originBackground": "来自定时任务",
+    "riskOutside": "离开你的电脑",
+    "riskIrreversible": "无法撤销",
     "warning": "这会把数据发到你的电脑之外，且无法撤销。",
     "allowedLocal": "只记在这一页：已批准一次。没有发送到任何地方。",
     "deniedLocal": "只记在这一页：已拒绝。没有发送到任何地方。",
@@ -198,7 +203,7 @@
       "computerTitle": "电脑上 · Feishu #weekly",
       "computerSub": "已粘贴摘要，等待你的审批",
       "approvalTitle": "发布《Week 45 摘要》到 Feishu #weekly",
-      "approvalMeta": "请求于 20:07 · 来自本对话",
+      "approvalMeta": "请求于 20:07",
       "r1": "起草每周摘要",
       "r1meta": "09:13 · 3 个产物 · 今日 ¥3.10",
       "r2": "发布到 #weekly",
@@ -226,10 +231,10 @@
       "day": "今天 09:13",
       "reply": "发布会把摘要发到频道里，我停在这里等你批准。",
       "approvalTitle": "发布《Week 45 摘要》到 Feishu #weekly",
-      "approvalMeta": "请求于 09:13 · 来自本对话",
+      "approvalMeta": "请求于 09:13",
       "expiredDay": "昨天 18:00",
       "expiredTitle": "发布《Week 44 摘要》到 Feishu #weekly",
-      "expiredMeta": "请求于昨天 18:00 · 来自定时任务"
+      "expiredMeta": "请求于昨天 18:00"
     },
     "june": {
       "name": "June",

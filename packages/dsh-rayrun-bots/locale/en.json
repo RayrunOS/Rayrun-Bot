@@ -7,8 +7,9 @@
     "working": "Working…",
     "simulatedReply": "Done. This reply is simulated in the preview; the approval below is also local.",
     "simulatedSnippet": "Needs approval: simulated result",
-    "simulatedApprovalTitle": "Send the simulated result to your computer",
-    "simulatedApprovalMeta": "Requested just now · from this chat"
+    "simulatedApprovalTitle": "Post the simulated result to the team channel",
+    "simulatedApprovalMeta": "Requested just now",
+    "simulatedTarget": "Team channel"
   },
   "list": {
     "search": "Search",
@@ -31,6 +32,10 @@
     "expired": "Expired — the bot did not act",
     "irreversible": "This can't be undone.",
     "outside": "This shares data outside your computer.",
+    "originChat": "From this chat",
+    "originBackground": "From a routine",
+    "riskOutside": "Outside your computer",
+    "riskIrreversible": "Can't be undone",
     "warning": "This shares data outside your computer, and it can't be undone.",
     "allowedLocal": "Allowed once, on this page only. Nothing was sent.",
     "deniedLocal": "Denied, on this page only. Nothing was sent.",
@@ -198,7 +203,7 @@
       "computerTitle": "On the computer · Feishu #weekly",
       "computerSub": "Pasted the digest, waiting for your approval",
       "approvalTitle": "Publish “Week 45 digest” to Feishu #weekly",
-      "approvalMeta": "Requested 20:07 · from this chat",
+      "approvalMeta": "Requested 20:07",
       "r1": "Draft the weekly digest",
       "r1meta": "09:13 · 3 artifacts · today ¥3.10",
       "r2": "Publish to #weekly",
@@ -226,10 +231,10 @@
       "day": "Today 09:13",
       "reply": "Publishing would send the digest to the channel. I'm stopped here until you approve.",
       "approvalTitle": "Publish “Week 45 digest” to Feishu #weekly",
-      "approvalMeta": "Requested 09:13 · from this chat",
+      "approvalMeta": "Requested 09:13",
       "expiredDay": "Yesterday 18:00",
       "expiredTitle": "Publish “Week 44 digest” to Feishu #weekly",
-      "expiredMeta": "Requested yesterday 18:00 · from a routine"
+      "expiredMeta": "Requested yesterday 18:00"
     },
     "june": {
       "name": "June",

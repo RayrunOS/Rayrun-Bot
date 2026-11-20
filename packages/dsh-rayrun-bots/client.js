@@ -27,8 +27,9 @@ window.__ModuleLoader__.load({
     "working": "Working…",
     "simulatedReply": "Done. This reply is simulated in the preview; the approval below is also local.",
     "simulatedSnippet": "Needs approval: simulated result",
-    "simulatedApprovalTitle": "Send the simulated result to your computer",
-    "simulatedApprovalMeta": "Requested just now · from this chat"
+    "simulatedApprovalTitle": "Post the simulated result to the team channel",
+    "simulatedApprovalMeta": "Requested just now",
+    "simulatedTarget": "Team channel"
   },
   "list": {
     "search": "Search",
@@ -51,6 +52,10 @@ window.__ModuleLoader__.load({
     "expired": "Expired — the bot did not act",
     "irreversible": "This can't be undone.",
     "outside": "This shares data outside your computer.",
+    "originChat": "From this chat",
+    "originBackground": "From a routine",
+    "riskOutside": "Outside your computer",
+    "riskIrreversible": "Can't be undone",
     "warning": "This shares data outside your computer, and it can't be undone.",
     "allowedLocal": "Allowed once, on this page only. Nothing was sent.",
     "deniedLocal": "Denied, on this page only. Nothing was sent.",
@@ -218,7 +223,7 @@ window.__ModuleLoader__.load({
       "computerTitle": "On the computer · Feishu #weekly",
       "computerSub": "Pasted the digest, waiting for your approval",
       "approvalTitle": "Publish “Week 45 digest” to Feishu #weekly",
-      "approvalMeta": "Requested 20:07 · from this chat",
+      "approvalMeta": "Requested 20:07",
       "r1": "Draft the weekly digest",
       "r1meta": "09:13 · 3 artifacts · today ¥3.10",
       "r2": "Publish to #weekly",
@@ -246,10 +251,10 @@ window.__ModuleLoader__.load({
       "day": "Today 09:13",
       "reply": "Publishing would send the digest to the channel. I'm stopped here until you approve.",
       "approvalTitle": "Publish “Week 45 digest” to Feishu #weekly",
-      "approvalMeta": "Requested 09:13 · from this chat",
+      "approvalMeta": "Requested 09:13",
       "expiredDay": "Yesterday 18:00",
       "expiredTitle": "Publish “Week 44 digest” to Feishu #weekly",
-      "expiredMeta": "Requested yesterday 18:00 · from a routine"
+      "expiredMeta": "Requested yesterday 18:00"
     },
     "june": {
       "name": "June",
@@ -284,8 +289,9 @@ window.__ModuleLoader__.load({
     "working": "正在处理…",
     "simulatedReply": "完成。这是预览里的模拟回复；下面的审批也只在本页。",
     "simulatedSnippet": "待审批：模拟结果",
-    "simulatedApprovalTitle": "把模拟结果发送到你的电脑",
-    "simulatedApprovalMeta": "刚刚请求 · 来自本对话"
+    "simulatedApprovalTitle": "把模拟结果发到团队频道",
+    "simulatedApprovalMeta": "刚刚请求",
+    "simulatedTarget": "团队频道"
   },
   "list": {
     "search": "搜索",
@@ -308,6 +314,10 @@ window.__ModuleLoader__.load({
     "expired": "已过期——Bot 没有执行",
     "irreversible": "此操作无法撤销。",
     "outside": "这会把数据发到你的电脑之外。",
+    "originChat": "来自本对话",
+    "originBackground": "来自定时任务",
+    "riskOutside": "离开你的电脑",
+    "riskIrreversible": "无法撤销",
     "warning": "这会把数据发到你的电脑之外，且无法撤销。",
     "allowedLocal": "只记在这一页：已批准一次。没有发送到任何地方。",
     "deniedLocal": "只记在这一页：已拒绝。没有发送到任何地方。",
@@ -475,7 +485,7 @@ window.__ModuleLoader__.load({
       "computerTitle": "电脑上 · Feishu #weekly",
       "computerSub": "已粘贴摘要，等待你的审批",
       "approvalTitle": "发布《Week 45 摘要》到 Feishu #weekly",
-      "approvalMeta": "请求于 20:07 · 来自本对话",
+      "approvalMeta": "请求于 20:07",
       "r1": "起草每周摘要",
       "r1meta": "09:13 · 3 个产物 · 今日 ¥3.10",
       "r2": "发布到 #weekly",
@@ -503,10 +513,10 @@ window.__ModuleLoader__.load({
       "day": "今天 09:13",
       "reply": "发布会把摘要发到频道里，我停在这里等你批准。",
       "approvalTitle": "发布《Week 45 摘要》到 Feishu #weekly",
-      "approvalMeta": "请求于 09:13 · 来自本对话",
+      "approvalMeta": "请求于 09:13",
       "expiredDay": "昨天 18:00",
       "expiredTitle": "发布《Week 44 摘要》到 Feishu #weekly",
-      "expiredMeta": "请求于昨天 18:00 · 来自定时任务"
+      "expiredMeta": "请求于昨天 18:00"
     },
     "june": {
       "name": "June",
@@ -630,6 +640,9 @@ window.__ModuleLoader__.load({
 .rb-bubble { background: #f1f4f9; border-radius: 12px; padding: 8px 13px; max-width: 560px; font-size: 13.5px; overflow-wrap: anywhere; }
 .rb-card { border: 1px solid #e4e8f0; background: #fff; border-radius: 12px; padding: 13px 15px; display: grid; gap: 8px; }
 .rb-card-expired { opacity: .72; }
+.rb-card-fields { display: flex; flex-wrap: wrap; gap: 6px; }
+.rb-chip { border: 1px solid #e4e8f0; border-radius: 999px; padding: 1px 7px; color: #5b6472; font-size: 10.5px; line-height: 1.6; }
+.rb-chip-target { color: #3a4351; background: #f6f8fb; }
 .rb-card-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 .rb-card-title { font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; min-width: 0; }
 .rb-warn { color: #b45309; }
@@ -889,6 +902,9 @@ window.__ModuleLoader__.load({
               metaKey: 'sample.nora.approvalMeta',
               state: 'pending',
               expiresMin: 28,
+              origin: 'chat',
+              target: 'Feishu #weekly',
+              risk: ['outside', 'irreversible'],
             },
           },
           receipts: [
@@ -928,6 +944,9 @@ window.__ModuleLoader__.load({
               titleKey: 'sample.eli.expiredTitle',
               metaKey: 'sample.eli.expiredMeta',
               state: 'expired',
+              origin: 'background',
+              target: 'Feishu #weekly',
+              risk: ['outside', 'irreversible'],
             },
             'eli-pub': {
               id: 'eli-pub',
@@ -935,6 +954,9 @@ window.__ModuleLoader__.load({
               metaKey: 'sample.eli.approvalMeta',
               state: 'pending',
               expiresMin: 27,
+              origin: 'chat',
+              target: 'Feishu #weekly',
+              risk: ['outside', 'irreversible'],
             },
           },
           receipts: [
@@ -1316,6 +1338,9 @@ window.__ModuleLoader__.load({
                     titleKey: 'chat.simulatedApprovalTitle',
                     metaKey: 'chat.simulatedApprovalMeta',
                     state: 'pending',
+                    origin: 'chat',
+                    targetKey: 'chat.simulatedTarget',
+                    risk: ['outside', 'irreversible'],
                   },
                 },
               }
@@ -1570,6 +1595,18 @@ window.__ModuleLoader__.load({
       const expired = approval.state === 'expired'
       const title = fieldText(approval, t, 'titleKey')
       const meta = fieldText(approval, t, 'metaKey')
+      const origin = approval.origin === 'background'
+        ? t('approval.originBackground')
+        : approval.origin === 'chat'
+          ? t('approval.originChat')
+          : ''
+      const target = approval.targetKey ? t(approval.targetKey) : approval.target || ''
+      const risks = Array.isArray(approval.risk)
+        ? approval.risk
+          .map((risk) => risk === 'outside' ? t('approval.riskOutside') : risk === 'irreversible' ? t('approval.riskIrreversible') : null)
+          .filter(Boolean)
+        : []
+      const riskLine = risks.length ? risks.join(' · ') : t('approval.warning')
       let side = t('approval.waits')
       if (pending && Number.isFinite(approval.expiresMin)) side = t('approval.expires', { n: approval.expiresMin })
       if (approval.state === 'allowed') side = t('approval.snippetAllowed')
@@ -1584,7 +1621,13 @@ window.__ModuleLoader__.load({
           h('span', { className: 'rb-card-title' }, h('span', { className: 'rb-warn', 'aria-hidden': 'true' }, '⚠'), title),
           h('span', { className: 'rb-m' }, side),
         ),
-        pending ? h('div', { className: 'rb-warnline' }, t('approval.warning')) : expired ? null : h('div', { className: 'rb-result' }, t(approval.state === 'allowed' ? 'approval.allowedLocal' : 'approval.deniedLocal')),
+        origin || target ? h(
+          'div',
+          { className: 'rb-card-fields' },
+          origin ? h('span', { className: 'rb-chip' }, origin) : null,
+          target ? h('span', { className: 'rb-chip rb-chip-target' }, target) : null,
+        ) : null,
+        pending ? h('div', { className: 'rb-warnline' }, riskLine) : expired ? null : h('div', { className: 'rb-result' }, t(approval.state === 'allowed' ? 'approval.allowedLocal' : 'approval.deniedLocal')),
         h('div', { className: 'rb-meta' }, meta),
         pending ? h(
           'div',
