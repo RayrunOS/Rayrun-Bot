@@ -1,6 +1,6 @@
 # 06 — 本地文件与状态
 
-> 状态：2026-11-18。本文定义插件包、本地状态目录与云电脑镜像的文件布局、原子写、
+> 状态：2026-11-20。本文定义插件包、本地状态目录与云电脑镜像的文件布局、原子写、
 > 权限与保留规则。技术基线见 [`01-system-architecture.md`](01-system-architecture.md)；
 > 云端 bot runtime 见 [`04-cloud-host.md`](04-cloud-host.md)；审批文件见
 > [`05-approvals.md`](05-approvals.md)；未决决策见

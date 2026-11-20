@@ -1,6 +1,6 @@
 # 01 — 系统架构
 
-> 状态：2026-11-18。本文是**技术层的唯一真相源**：系统由什么组成、边界在哪、状态怎么
+> 状态：2026-11-20。本文是**技术层的唯一真相源**：系统由什么组成、边界在哪、状态怎么
 > 流转、信任模型是什么。
 > 产品范围与验收以 [`00-product-direction.md`](00-product-direction.md) 为准；当前实现
 > 状态以 [`../README.md`](../README.md) 的 **Status** 段为准；未决架构决策见
@@ -66,7 +66,7 @@
                             agent 进程）
 ```
 
-`*` = 未实现。常驻 host、session 续接和 bot 映射是 v0.1 的未验证项；见 §3、§9 与
+`*` = 未实现。常驻 bot runtime、session 续接和 bot 映射是 v0.1 的未验证项；见 §3、§9 与
 ADR-007。
 
 ### 1.3 分层
@@ -75,20 +75,24 @@ ADR-007。
    bot 页面。复用 DSH 的聊天、session、审批、设置和插件机制，不重写聊天应用。代价是
    受 DSH client API 约束；独立桌面壳推迟到 v1.0。
 2. **本地 DSH host + 两个插件半区。** 独立的 `dsh-rayrun-computer` 注册 `rayrun_*`
-   tools、同源 RPC 路由与 tool guard；本仓库的 host half 消费其表面，增加 bot 注册表、
-   bot↔session 映射、scheduler 和审批路由。两者共同负责配置、profile 投影和文件合并。
+   tools、同源 RPC 路由与 tool guard；本仓库的 host half 作为本地控制面消费其表面，
+   增加 bot 注册表、审批路由、成本与依赖检查（scheduler 的范围见 ADR-009）。
+   bot↔session 映射、队列和 DSH 监督属于云端 bot runtime（ADR-015/016）。两者共同
+   负责配置、profile 投影和文件合并。
 3. **Rayrun API。** 机器生命周期、命令、文件、agent prompt（SSE）、credential 和
    billing 的单一 HTTPS API；token 只存在于本地 Harness vault，且只用在这里。
 4. **云电脑。** 一人一台，bots 共享：vCPU/内存、持久 `/workspace`、X11 `:99`、
-   browser profile。设计要求常驻 DSH host，每 bot 一个 session 与 profile 目录；当前
-   平台按每次 prompt 启 headless，session 不能跨 run 存活，常驻 host 是 **TBD**。
+   browser profile。设计要求一个常驻 **bot runtime**（ADR-015）监督 DSH host，每 bot
+   一个 session 与 profile 目录；当前平台按每次 prompt 启 headless，session 不能跨 run
+   存活，常驻 runtime 是 **TBD**。
 5. **Bot↔session 映射。** bot 是持久对象：名字、指令、skills、memory 目录和 session
-   id 在机器上。映射必须存在 host 内存之外；DSH 如何从云路径恢复指定 session 尚未
-   验证。
-6. **审批通道。** 受控动作走 DSH 审批 seam → host half → client 卡片 → 决定写回。
-   失败即拒绝；浏览器先做，IM 是 v0.2。当前文件邮箱的信任边界见 §4.3 与 ADR-001。
+   id 在机器上。映射必须存在 supervisor 内存之外；DSH 如何从云路径恢复指定 session
+   尚未验证。
+6. **审批通道。** 受控动作走 DSH 审批 seam → bot runtime 提案 → 本地控制面卡片 →
+   决定写回；执行点见 ADR-001。失败即拒绝；浏览器先做，IM 是 v0.2。当前文件邮箱的
+   信任边界见 §4.3。
 7. **Routines / triggers。** 定时或事件唤醒 bot。DSH core 有 scheduling，web profile
-   会挂载；headless cloud profile 不会。routines 依赖常驻 host，范围见 ADR-009。
+   会挂载；headless cloud profile 不会。routines 依赖常驻 bot runtime，范围见 ADR-009。
 8. **模型 provider。** v0.1 只接 DeepSeek；其他 provider 由 DSH 负责，不在本仓库设计
    provider 抽象。
 
@@ -114,7 +118,8 @@ DSH agent sessions（bot）
 - **DSH**：agent 会话与 UI。
 
 名字固定后，`04-cloud-host.md` 的“host”就是 bot runtime；`03-client-design.md` 的
-host half 属于本地控制面。
+host half 属于本地控制面。**ADR-015/016 目前是 Proposed**；在它们标为 Decided 前，
+这一分层是设计方向，不是已定契约。
 
 ---
 
@@ -123,7 +128,7 @@ host half 属于本地控制面。
 | 决策 | 理由 | 代价 |
 | --- | --- | --- |
 | 薄客户端 on DSH | 不重写聊天/审批/插件；分发是插件安装，不是签名应用 | 受 DSH client API 约束；多租户和推送要自己做 |
-| Local-first for ownership | 用户的 checkout 权威，云端工作可审查；session 在机器上，可拉回 | 两个写者要经 review/merge；常驻 host 落地前，合上笔记本不能继续 |
+| Local-first for ownership | 用户的 checkout 权威，云端工作可审查；session 在机器上，可拉回 | 两个写者要经 review/merge；常驻 bot runtime 落地前，合上笔记本不能继续 |
 | BYO accounts | 没有项目方控制面、密钥池或计量 | 没有项目方的保护层：余额、花费和 provider 条款由用户承担 |
 | 一人一台电脑 | 更便宜，更像人的桌面 | **bot 不是安全边界**；两个 bot 不能互相当沙箱 |
 | 云电脑插件独立 | 复用成熟云层，不 fork/合并仓库 | 两个包、版本契约、安装摩擦；特性请求跨仓库 |
@@ -158,7 +163,7 @@ host half 属于本地控制面。
 - 一人一台机器，bots 共享 `/workspace`、X11、browser profile 和文件；不是安全边界。
 - 平台同时只允许一个 agent 任务；第二个 prompt 返回 `409 sandbox_busy`，不排队。
 - v0.1 设计要常驻 DSH host + 每 bot session/profile；当前平台按次启动
-  `dsh --profile headless`，session 不跨 run。常驻 host 的进程、凭据注入、profile
+  `dsh --profile headless`，session 不跨 run。常驻 bot runtime 的进程、凭据注入、profile
   模型见 ADR-007。
 - 机器按秒计费；stop 保留磁盘，destroy 删除机器与 workspace；余额耗尽可能被平台
   force-destroy。成本模型见 §7。
@@ -166,7 +171,7 @@ host half 属于本地控制面。
 ### 3.3 Rayrun API
 
 单一 HTTPS API，负责机器生命周期、`exec`、文件、agent prompt + SSE、credential 和
-billing。token 只在本地 host 使用；云端 agent 只拿模型 key，不拿 Rayrun token。
+billing。token 只在本地控制面使用；云端 agent 只拿模型 key，不拿 Rayrun token。
 
 ### 3.4 依赖边界
 
@@ -174,8 +179,9 @@ billing。token 只在本地 host 使用；云端 agent 只拿模型 key，不�
 
 - **我们使用**：`rayrun_*` tools 的语义、同源 RPC 路由、worker projection 和版本
   契约。
-- **未定**：bot runtime 具体通过 service injection、host RPC 还是其他 adapter 调用它；
-  这是 ADR-004，S6 只解决“bundle 能否声明依赖”，不等于 host API 问题。
+- **未定**：本地控制面通过 service injection、host RPC 还是其他 adapter 调用它；
+  bot runtime 如何由它的 worker projection ship/启动，也是 ADR-004。S6 只解决
+  “bundle 能否声明依赖”，不等于这个接口问题。
 - **禁止**：修改、fork、vendor 或复制它的代码；需要它改行为 → 去它的仓库提
   issue/PR，或在本仓库写 adapter。
 - **版本检查**：host 启动时记录已安装版本，缺失/过旧返回 `E_DEP_MISSING` /
@@ -217,7 +223,7 @@ billing。token 只在本地 host 使用；云端 agent 只拿模型 key，不�
 
 - **在 ADR-001 定下执行点之前，审批是“用户同意/审计”，不能当成对被控 bot 的安全
   边界。**
-- 推荐把受控动作放到凭据所在的一侧执行（本地 host 或平台），或由平台提供
+- 推荐把受控动作放到凭据所在的一侧执行（本地控制面或平台），或由平台提供
   host/agent 权限隔离；若都做不到，必须改安全页的措辞并警告。
 - 这条与 [`07-security.md`](07-security.md) “The model is untrusted” 和
   [`adr/architecture-decisions.md`](adr/architecture-decisions.md) ADR-001 一致。
@@ -245,10 +251,10 @@ billing。token 只在本地 host 使用；云端 agent 只拿模型 key，不�
 | Bot 定义（`bot.json`） | 本地用户意图 | 机器上的副本 | 本地意图赢；云端应用后返回 revision；离线时留在本地 outbox（ADR-002） |
 | 运行态：session、memory、transcript | 云电脑 | 活的 session、profile/memory 目录 | 本地只读镜像；拉回用于审查与恢复 |
 | 队列 | 云端负责状态，本地负责新工作 | `queue/inbox/`、`queue/state/` | 每个文件一个写者；不做共享 JSONL 追加（ADR-003） |
-| 审批请求 | 云 host 作为提案 | `approvals/req-<id>.json` | 提案不是授权；执行点按 ADR-001 |
-| 审批决定 | 本地 host 或平台审批服务 | `approvals/res-<id>.json` | 每个 id 一个决定；执行方在 agent 写不到的地方 |
-| Outbox 事件 | 云 host | `outbox/events.jsonl` | 本地按 `seq` 读；忽略旧 checkpoint 之前的空档 |
-| 本地镜像与缓存 | 本地 host（派生） | `$DSH_HOME/state/rayrun-bot/` | 可丢弃；从机器重建；不写回机器 |
+| 审批请求 | bot runtime 作为提案 | `approvals/req-<id>.json` | 提案不是授权；执行点按 ADR-001 |
+| 审批决定 | 本地控制面或平台审批服务 | `approvals/res-<id>.json` | 每个 id 一个决定；执行方在 agent 写不到的地方 |
+| Outbox 事件 | bot runtime | `outbox/events.jsonl` | 本地按 `seq` 读；忽略旧 checkpoint 之前的空档 |
+| 本地镜像与缓存 | 本地控制面（派生） | `$DSH_HOME/state/rayrun-bot/` | 可丢弃；从机器重建；不写回机器 |
 
 完整的所有权矩阵与单写者规则见 ADR-002、ADR-003；本地目录、权限、原子写和保留规则
 见 [`06-local-state.md`](06-local-state.md)。
@@ -285,15 +291,15 @@ tombstone，action hash 的 canonicalization 未定义；见 ADR-011/012。
 ### 6.1 创建 bot
 
 1. 用户在客户端填写名字、职责、指令；client 发同源 RPC。
-2. 本地 host 校验 `bot.json`（B1）、写本地 outbox，向云 host 提交创建意图。
-3. 云 host 在 `/workspace/.rayrun/bots/<id>/` 落目录与 `bot.json`，返回 revision。
+2. 本地控制面校验 `bot.json`（B1）、写本地 outbox，向 bot runtime 提交创建意图。
+3. bot runtime 在 `/workspace/.rayrun/bots/<id>/` 落目录与 `bot.json`，返回 revision。
 4. 本地镜像记录；机器不可用时，意图留在本地 outbox，等机器可用再应用。
 5. 谁是定义的唯一写者、创建失败如何回滚：ADR-002，尚未定。
 
 ### 6.2 发任务 / 对话
 
-1. 本地 host 把任务写入 `queue/inbox/<itemId>.json`。
-2. 云 host claim 一项，状态写 `queue/state/<itemId>.json`；一台机器同时只有一项
+1. 本地控制面把任务写入 `queue/inbox/<itemId>.json`。
+2. bot runtime claim 一项，状态写 `queue/state/<itemId>.json`；一台机器同时只有一项
    `running`。
 3. agent 在 DSH session 中执行；事件写 outbox；本地轮询并渲染。
 4. 需要审批时进入 `waiting_approval`；批准后执行，失败/过期按 §6.3。
@@ -303,7 +309,7 @@ tombstone，action hash 的 canonicalization 未定义；见 ADR-011/012。
 
 1. 受控动作在云侧生成 request（提案）：id、botId、actionId、nonce、actionHash、
    action、risk、origin、TTL。
-2. 本地 host 轮询到 request，显示卡片；卡片内容来自结构化字段，不信任机器提供的
+2. 本地控制面轮询到 request，显示卡片；卡片内容来自结构化字段，不信任机器提供的
    HTML/markdown。
 3. 用户 Deny / Allow once；决定写回 `res-<id>.json`（或由本地/平台执行，见 ADR-001）。
 4. 执行方校验 id、botId、nonce、actionHash；任何不匹配、过期、重放、错 bot 都拒绝。
@@ -314,7 +320,7 @@ tombstone，action hash 的 canonicalization 未定义；见 ADR-011/012。
 
 ### 6.4 合上笔记本
 
-- 已排队的**非受控**工作可以在云 host 上继续。
+- 已排队的**非受控**工作可以在 bot runtime 上继续。
 - 新任务无法提交；gated 后台动作等待并在 30 分钟后过期；chat 卡等待。
 - 本地 idle stop 与 watchdog 不运行，机器继续计费；平台没有 idle auto-stop。
 - 重新打开时拉状态/outbox，显示 working、unread、pending、expired。
@@ -323,7 +329,7 @@ tombstone，action hash 的 canonicalization 未定义；见 ADR-011/012。
 ### 6.5 恢复
 
 - 本地 watchdog 通过 `exec` 检查心跳，host 丢失后尝试重启（C6）。
-- 云 host 重启后重读队列与审批状态，不丢已排队工作（C8）。
+- bot runtime 重启后重读队列与审批状态，不丢已排队工作（C8）。
 - session 续接要求平台契约；未验证前回退到 transcript replay（ADR-007、D1–D5）。
 - 机器 stop/start 保留磁盘；destroy 删除一切，只能由人类明确请求。
 - A8/A9 的字段与状态机缺口见 ADR-012。
@@ -339,7 +345,7 @@ tombstone，action hash 的 canonicalization 未定义；见 ADR-011/012。
 
 ## 7. 并发、成本与失败
 
-- **并发**：平台一台机器一次只跑一个 agent 任务（`409 sandbox_busy`）。云 host 拥有
+- **并发**：平台一台机器一次只跑一个 agent 任务（`409 sandbox_busy`）。bot runtime 拥有
   FIFO 队列；第二项等待，不丢。公平性、超时、取消和队列上限尚未定义（ADR-012）。
 - **成本**：按秒计费；stop 保留磁盘，destroy 删除机器与 workspace。余额耗尽可能
   force-destroy 整个组织的机器；平台没有 spend cap。本地可以轮询余额、警告、idle
@@ -373,8 +379,8 @@ tombstone，action hash 的 canonicalization 未定义；见 ADR-011/012。
 - 运行期 egress 更新、通用 secret injection、per-sandbox usage、镜像/DSH 版本对齐。
 
 **依赖边界**：`dsh-rayrun-computer` 永远是独立项目；需要它改行为 → 去它的仓库，
-或在我们的包里写 adapter。`dsh-rayrun-computer` 的 host API 契约是 ADR-004，未定
-之前 C1/D1 不应动工。
+或在我们的包里写 adapter。`dsh-rayrun-computer` 的接口/worker projection 契约是
+ADR-004，未定之前 C1/D1 不应动工。
 
 ---
 
@@ -387,15 +393,16 @@ tombstone，action hash 的 canonicalization 未定义；见 ADR-011/012。
 
 | 编号 | 决策 | 为什么阻塞 |
 | --- | --- | --- |
+| ADR-015 | 云端 bot runtime 层 | 决定执行面落点 |
+| ADR-016 | 本地 bot 控制面 | 决定控制面权威 |
 | ADR-001 | 审批在哪里执行 | 决定审批是安全边界还是用户同意 |
 | ADR-002 | 所有权矩阵与单写者规则 | 决定 `bot.json`、队列、审批谁写 |
 | ADR-003 | 文件控制通道协议 | 决定队列/状态怎么交换，避免双写丢更新 |
 | ADR-004 | 与 `dsh-rayrun-computer` 的契约 | 决定 bot runtime 能否调用云能力 |
 | ADR-005 | 副作用执行语义 | 决定崩溃/重试会不会重复发送或花钱 |
 
-其余：ADR-006（合上笔记本）、ADR-007（常驻 host/凭据）、ADR-008（desktop）、
-ADR-009（routines）、ADR-010（RPC）、ADR-011（审批 schema）、ADR-012（恢复）、
-ADR-013（文档清理）。
+其余：ADR-006–ADR-013（合上笔记本、常驻 runtime/凭据、desktop、routines、RPC、
+审批 schema、恢复、文档清理）；ADR-014 属于 v1.0。
 
 ---
 

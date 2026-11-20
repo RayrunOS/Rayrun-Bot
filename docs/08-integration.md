@@ -1,6 +1,6 @@
 # 08 — 集成与平台需求
 
-> 状态：2026-11-18。本文定义与 `dsh-rayrun-computer` 的依赖边界，以及 Rayrun 平台
+> 状态：2026-11-20。本文定义与 `dsh-rayrun-computer` 的依赖边界，以及 Rayrun 平台
 > 需要补的能力和优先级。技术基线见 [`01-system-architecture.md`](01-system-architecture.md)；
 > 云端 bot runtime 见 [`04-cloud-host.md`](04-cloud-host.md)；未决决策见
 > [`adr/architecture-decisions.md`](adr/architecture-decisions.md)。
@@ -14,7 +14,7 @@
 | [`04-cloud-host.md`](04-cloud-host.md) | 云端 bot runtime 如何使用这些能力 |
 | [`05-approvals.md`](05-approvals.md) | 文件控制通道的审批部分 |
 | [`06-local-state.md`](06-local-state.md) | 本地/机器文件布局 |
-| [`adr/architecture-decisions.md`](adr/architecture-decisions.md) | ADR-003（控制通道）、ADR-004（依赖契约）、ADR-007（常驻 host） |
+| [`adr/architecture-decisions.md`](adr/architecture-decisions.md) | ADR-003（控制通道）、ADR-004（依赖契约）、ADR-007（常驻 bot runtime） |
 
 ---
 
@@ -27,29 +27,33 @@
 - **不修改、不 fork、不 vendor、不复制**它的代码；
 - 需要它改行为 → 去它的仓库提 issue/PR，或在本仓库写 adapter；
 - 安装：npm 发布前双方都从 checkout 安装；S6 只决定“bundle 能否声明依赖、一次安装
-  是否带两个插件”，不是 host API 问题；
-- host API 的具体调用方式（service injection / host RPC / adapter）是 **ADR-004**，
-  未定前 C1/D1 不应动工。
+  是否带两个插件”，不是这个依赖接口问题；
+- 本地控制面调用依赖的接口方式（service injection / host RPC / adapter）与 bot
+  runtime 的 worker-projection 落地方式，都是 **ADR-004**；未定前 C1/D1 不应动工。
 
 **版本检查**：host 启动时记录依赖版本；缺失/过旧返回 `E_DEP_MISSING` /
 `E_DEP_VERSION`，并给一句可执行的安装提示。不要静默降级。
 
 ---
 
-## 2. bot runtime 需要依赖提供的能力
+## 2. 本地控制面与 bot runtime 对依赖的要求
 
 | 能力 | 用途 | 关键问题 |
 | --- | --- | --- |
 | 机器 ensure/start/stop | 创建/停止用户的云电脑 | 是否复用 `sandboxName`；幂等 |
-| `exec` | 启动 host、watchdog、健康检查 | 超时/退出码/输出上限 |
+| `exec` | 启动 runtime、watchdog、健康检查 | 超时/退出码/输出上限 |
 | 文件 read/write/list | 队列、审批、outbox、镜像 | 原子写/ETag/分页/大小上限 |
 | agent prompt + SSE | 发任务、流式回复 | session id、取消、`409 sandbox_busy` |
 | session create/continue | bot 续接 | 平台契约（P0 #1） |
 | credential 注入状态 | 确认模型 key 已注入 | 监督进程是否也能拿到（ADR-007） |
 | balance/usage | 成本栏 | 余额、机器小时；per-sandbox 是 beta |
+| worker projection | 把 bot runtime ship 到机器并启动 | 扩展点、hash、启动/重启 |
 
-契约要写清：名称、输入、输出、错误码、是否使用 Rayrun token、启动顺序、版本协商。
-如果依赖没有 host 表面，adapter 放在我们的包里，不改依赖。
+前几项由**本地控制面**通过依赖的 tools/RPC 调用；`worker projection` 是 **bot
+runtime** 的落地路径。在常驻 runtime 路径下，session/agent 由 bot runtime 直接管理；
+依赖的 `agent prompt` / `session` 能力是本地控制面的兼容/回退路径。契约要写清：名称、
+输入、输出、错误码、是否使用 Rayrun token、启动顺序、版本协商。如果依赖没有相应表面，
+adapter 放在我们的包里，不改依赖。
 
 ---
 
@@ -185,8 +189,8 @@ SSO/SAML/SCIM、组织 RBAC、审计导出/SIEM、DPA 与数据驻留、marketpl
 
 | 问题 | 影响 | 决策 |
 | --- | --- | --- |
-| 依赖的 host API 表面 | C1/D1 能否开工 | ADR-004 |
-| 常驻 host 的凭据注入 | “合上笔记本” | ADR-007 |
+| 依赖接口 / worker projection | C1/D1 能否开工 | ADR-004 |
+| 常驻 bot runtime 的凭据注入 | “合上笔记本” | ADR-007 |
 | 文件通道的双写/CAS | 队列与审批 | ADR-003 |
 | 安全入站 | desktop/手机审批 | v0.2 平台需求 |
 | 版本矩阵与一次安装 | 发布路径 | S6 + Release |

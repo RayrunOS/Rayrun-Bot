@@ -1,6 +1,6 @@
 # 桌面发行版设计（v1.0）
 
-> 状态：2026-11-19。**设计提案，不是已实现功能。** 本文基于对 DeepSeek Harness
+> 状态：2026-11-20。**设计提案，不是已实现功能。** 本文基于对 DeepSeek Harness
 > `master` 的实际确认（`apps/desktop`、`packages/util/official-bundles`、
 > `docs/capability-seams.md`），描述“打开即用”的三种分发方案、更新单元、签名与
 > 版本矩阵。
@@ -64,9 +64,9 @@
 | 更新源 | 官方更新 feed 是 DeepSeek 的（`download.deepseek.com`），第三方不能发布 | `apps/desktop/publishing/README.md` |
 | 版本 | DSH 仓库的 Desktop 包为 `0.2.2-rc.5`；DSH 是 developer preview，会有 breaking changes | `apps/desktop/package.json`、README |
 
-**注意**：以上是 DSH `master` 的事实，不是本仓库已实现的功能。DSH 版本与云端镜像的
-DSH 版本可能不同（本文档写入时：本地基线 `0.2.2-rc.1`，云端镜像 `0.2.0-rc.2`），
-版本矩阵见 §7。
+**注意**：以上是 DSH `master` 的事实，不是本仓库已实现的功能。确认时 DSH 仓库的
+Desktop 包是 `0.2.2-rc.5`，而本仓库记录的本地基线是 `0.2.2-rc.1`，云端镜像为
+`0.2.0-rc.2`；选 A/B 前需要复验，版本矩阵见 §7。
 
 ---
 

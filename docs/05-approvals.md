@@ -1,6 +1,6 @@
 # 05 — 审批
 
-> 状态：2026-11-18。本文定义“什么需要审批、谁来执行、失败怎么拒绝、决定怎么绑定
+> 状态：2026-11-20。本文定义“什么需要审批、谁来执行、失败怎么拒绝、决定怎么绑定
 > 动作”。技术基线见 [`01-system-architecture.md`](01-system-architecture.md)；
 > 云端 bot runtime 见 [`04-cloud-host.md`](04-cloud-host.md)；本地状态见
 > [`06-local-state.md`](06-local-state.md)；威胁模型见
@@ -51,7 +51,7 @@ nonce，再写一个匹配的 `res-<id>.json` 自批；也可以修改 host、�
 
 ADR-001 的三个选项：
 
-1. **在用户侧执行**：云端只提交提案；本地 host 或平台校验后用该侧凭据执行。推荐用于
+1. **在用户侧执行**：云端只提交提案；本地控制面或平台校验后用该侧凭据执行。推荐用于
    凭据在用户侧的动作。
 2. **平台权限隔离**：host 与 agent 使用不同用户/命名空间，host 持有 agent 读不到的
    密钥。当前平台没有，需要写进平台需求。
@@ -66,8 +66,8 @@ ADR-001 的三个选项：
 
 1. **提案**：受控动作在云侧生成 request：id、botId、actionId、nonce、actionHash、
    action、risk、origin、createdAt、expiresAt。
-2. **送达**：request 写入审批目录；本地 host 每 3 秒轮询（平台无入站通道）。
-3. **卡片**：本地 host 显示结构化字段；用户 Deny / Allow once。卡片内容不信任机器
+2. **送达**：request 写入审批目录；本地控制面每 3 秒轮询（平台无入站通道）。
+3. **卡片**：本地控制面显示结构化字段；用户 Deny / Allow once。卡片内容不信任机器
    提供的 HTML/markdown。
 4. **决定**：决定写入 `res-<id>.json`；或由本地/平台执行（ADR-001）。
 5. **执行**：执行方校验 id、botId、actionId、nonce、actionHash；任何不匹配、过期、
@@ -86,9 +86,9 @@ ADR-001 的三个选项：
 
 | 文件 | 写者 | 读者 | 规则 |
 | --- | --- | --- | --- |
-| `approvals/req-<id>.json` | 云 host（提案） | 本地 host | 唯一 id；临时文件 + rename；不覆盖已有文件 |
-| `approvals/res-<id>.json` | 本地 host（或平台） | 执行方 | 每个 id 一个决定；重复决定按 id 幂等，第一个有效决定赢 |
-| `logs/audit.log` | 本地 host | 用户/支持 | 只追加；记录 id、botId、nonce、actionHash、决定、时间；不记录 action payload |
+| `approvals/req-<id>.json` | bot runtime（提案） | 本地控制面 | 唯一 id；临时文件 + rename；不覆盖已有文件 |
+| `approvals/res-<id>.json` | 本地控制面（或平台） | 执行方 | 每个 id 一个决定；重复决定按 id 幂等，第一个有效决定赢 |
+| `logs/audit.log` | 本地控制面 | 用户/支持 | 只追加；记录 id、botId、nonce、actionHash、决定、时间；不记录 action payload |
 
 - **单一写者**：request 与 decision 是不同文件，各自只有一个写者；不要把它们合并成
   一个 JSONL。

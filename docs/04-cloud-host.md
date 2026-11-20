@@ -8,7 +8,8 @@
 > [`06-local-state.md`](06-local-state.md)；未决决策见
 > [`adr/architecture-decisions.md`](adr/architecture-decisions.md)。
 > 实现状态以 [`../README.md`](../README.md) 的 **Status** 段为准；本文中的
-> **计划 / TBD** 不是已交付。
+> **计划 / TBD** 不是已交付。本层由 **ADR-015** 提案（Proposed）；定稿前它仍是
+> 设计方向。
 
 ## 0. 与现有文档的关系
 
@@ -78,7 +79,7 @@ DSH agent sessions（bot）
 - **一个 supervisor** 管理队列与 session；agent 任务串行执行。
 - **每 bot 一个 session 与 profile 目录**：是否能在同一个 DSH 进程里承载多个 profile，
   还是每 bot 一个进程/端口，尚未验证；见 ADR-007。
-- **不把 Rayrun token 放进云电脑**：本地 host 通过 Rayrun API 写文件/读文件；云 host
+- **不把 Rayrun token 放进云电脑**：本地控制面通过 Rayrun API 写文件/读文件；bot runtime
   只使用模型 key 与本地文件。它如何被启动/监督，取决于平台与依赖契约。
 - **权限现实**：agent 以 root、`danger-full-access` 运行；host 与 agent 在同一台机器
   上没有强隔离。审批不是安全边界，见 [`05-approvals.md`](05-approvals.md) ADR-001。
@@ -168,9 +169,10 @@ DSH agent sessions（bot）
 
 - **模型 key**：Rayrun 把 DeepSeek key 注入 agent 进程；宿 host 如何拿到注入、监督
   进程是否也能拿到，未验证（ADR-007）。
-- **Rayrun token**：不进入云电脑；本地 host 通过 Rayrun API 操作机器与文件。
-- **依赖**：`dsh-rayrun-computer` 提供云能力；bot runtime 通过其发布表面调用（service
-  injection / host RPC / adapter 未定，ADR-004）。不直接复制 token，不修改依赖。
+- **Rayrun token**：不进入云电脑；本地控制面通过 Rayrun API 操作机器与文件。
+- **依赖**：`dsh-rayrun-computer` 提供云能力；本地控制面通过其发布表面调用（service
+  injection / host RPC / adapter 未定，ADR-004）；bot runtime 由它的 worker projection
+  ship/启动，不直接调用本地依赖。不复制 token，不修改依赖。
 - **版本检查**：启动时记录依赖版本；缺失/过旧返回 `E_DEP_MISSING` /
   `E_DEP_VERSION`。
 
@@ -190,12 +192,12 @@ DSH agent sessions（bot）
 
 | 问题 | 影响 | 决策 |
 | --- | --- | --- |
-| 常驻 host 能否拿到模型凭据？ | “合上笔记本”能否成立 | ADR-007 |
+| 常驻 bot runtime 能否拿到模型凭据？ | “合上笔记本”能否成立 | ADR-007 |
 | 一个 DSH 进程还是每 bot 一进程？ | 资源、端口、隔离 | ADR-007 |
 | 队列/状态的单写者协议 | 丢工作/丢更新 | ADR-003 |
 | 副作用崩溃/重试语义 | 重复发送/花钱 | ADR-005 |
 | 队列字段、状态机、恢复 | A8/A9 | ADR-012 |
-| 依赖 host API | C1/D1 能否开工 | ADR-004 |
+| 依赖接口 / worker projection | C1/D1 能否开工 | ADR-004 |
 | 本地控制面 ↔ runtime 的契约 | 启动、任务、审批、事件 | ADR-015/016 |
 
 ---

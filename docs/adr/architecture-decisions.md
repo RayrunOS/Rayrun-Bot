@@ -1,6 +1,6 @@
 # 架构决策 — v0.1
 
-*状态：2026-11-18。本文是对 v0.1 架构的评审，以及在云 host 与审批层动工前必须定下来的决策。它记录设计在哪里不完整、互相矛盾或存在安全问题，并为每一项给出建议。本文不描述已实现的行为。只有状态为 **Decided** 的条目才算最终决定；其余都是未决。*
+*状态：2026-11-20。本文是对 v0.1 架构的评审，以及在 bot runtime 与审批层动工前必须定下来的决策。它记录设计在哪里不完整、互相矛盾或存在安全问题，并为每一项给出建议。本文不描述已实现的行为。只有状态为 **Decided** 的条目才算最终决定；其余都是未决。*
 
 相关：[产品方向](../00-product-direction.md) 是范围；[系统架构](../01-system-architecture.md) 是设计；[MVP 计划](../plans/mvp-plan.md) 是工作分解；[安全](../07-security.md) 是威胁模型；[本地文件设计](../06-local-state.md) 是状态布局；[平台需求](../08-integration.md) 是交给 Rayrun 平台的清单。
 
@@ -8,7 +8,7 @@
 
 每项是一个决策。**状态**取 `Open`、`Proposed`、`Decided`；**阻塞**列出在决策前不能安全实现的工作项；**证据**指向当前文本，用章节号而不是行号，以免编辑后失效。
 
-本次评审发现 1 个安全边界错误（ADR-001）、3 个阻塞云 host 的契约缺口（ADR-003、ADR-004、ADR-005），以及一组范围与文档不一致。下面的建议都是提案，不是决定。
+本次评审发现 1 个安全边界错误（ADR-001）、3 个阻塞 bot runtime 的契约缺口（ADR-003、ADR-004、ADR-005），以及一组范围与文档不一致。下面的建议都是提案，不是决定。
 
 ## 决策总表
 
@@ -20,7 +20,7 @@
 | [ADR-004](#adr-004) | 与 `dsh-rayrun-computer` 的契约 | Proposed | 在依赖仓库写能力/版本契约；不复制 token | A2, C1–C5, D1, G1 |
 | [ADR-005](#adr-005) | 副作用执行语义 | Proposed | `actionId`、执行日志、幂等与重试规则 | C8, E1–E7, A7 |
 | [ADR-006](#adr-006) | “合上笔记本”意味着什么 | Proposed | 写清允许的工作、审批过期与计费后果 | A5, A6, G3 |
-| [ADR-007](#adr-007) | 常驻 host 的凭据与 DSH profile 模型 | Proposed | M2 前做 spike；回退到逐次 headless + transcript replay | C1–C4, D1–D5, A5, A8 |
+| [ADR-007](#adr-007) | 常驻 bot runtime 的凭据与 DSH profile 模型 | Proposed | M2 前做 spike；回退到逐次 headless + transcript replay | C1–C4, D1–D5, A5, A8 |
 | [ADR-008](#adr-008) | Desktop 访问路径 | Proposed | 核实依赖的路径；没有安全路径就不要承诺 takeover | F5, security |
 | [ADR-009](#adr-009) | Routines / scheduler 范围 | Proposed | 除非 W3 有余量，否则定为 P1；从核心分层图移除 scheduler | M1, M4 |
 | [ADR-010](#adr-010) | RPC 路由与信封 | Proposed | 选定一个契约，代码、测试、文档一起对齐 | F2, F4 |
@@ -31,7 +31,7 @@
 | [ADR-015](#adr-015) | 云端 bot runtime 层 | Proposed（v0.1） | 用户云电脑内的 supervisor；queue/session/DSH/事件/恢复 | C1–C9, D1–D5, E1–E7 |
 | [ADR-016](#adr-016) | 本地 bot 控制面 | Proposed（v0.1） | DSH host + 插件 host half；token/审批/成本/依赖；不做托管服务 | A2/A3, B1–B4, E3/E4, G1/G2 |
 
-## P0 — 云 host 与审批动工前必须定
+## P0 — bot runtime 与审批动工前必须定
 
 <a id="adr-001"></a>
 ### ADR-001 — 审批在哪里执行？
@@ -41,8 +41,8 @@
 **问题。** 在 bot 以 root、`danger-full-access` 运行于云电脑内的前提下，由哪个组件可信地执行审批？
 
 **当前设计。** 云端 gate 把请求 JSON 写到
-`/workspace/.rayrun/.../approvals/`；本地 host 轮询该文件、显示卡片，再把决定
-JSON 写回。请求带 nonce、bot id、action hash 和 TTL；云 host 读到决定后执行动作
+`/workspace/.rayrun/.../approvals/`；本地控制面轮询该文件、显示卡片，再把决定
+JSON 写回。请求带 nonce、bot id、action hash 和 TTL；bot runtime 读到决定后执行动作
 （[MVP 计划](../plans/mvp-plan.md) §4.1(5)、§4.3）。
 
 **问题。** 审批目录位于 agent 可读可写的工作区内。agent 可以读取请求（包括 nonce
@@ -54,7 +54,7 @@ JSON 写回。请求带 nonce、bot id、action hash 和 TTL；云 host 读到�
 
 **选项。**
 
-1. **在用户侧执行。** 云端只提交提案；本地 host（或平台）校验后用该侧持有的凭据
+1. **在用户侧执行。** 云端只提交提案；本地控制面（或平台）校验后用该侧持有的凭据
    执行。云端永远拿不到一个它可以伪造的授权。这符合 [CLAUDE.md](../../CLAUDE.md)
    不变量 4（“权限与凭据不离开用户侧”）。
 2. **平台提供权限隔离。** host 与 agent 使用不同用户或不同挂载命名空间，host 持有
@@ -83,7 +83,7 @@ channel”；[平台需求](../08-integration.md) §3–4。
 
 **当前设计。** 文档之间的措辞不一致：
 
-- [系统架构](../01-system-architecture.md) “Layers” 说本地 host 增加 bot registry，并且是
+- [系统架构](../01-system-architecture.md) “Layers” 说本地控制面增加 bot registry，并且是
   configuration 与 profile projection 的一部分权威；“Where the truth lives” 表说
   bot state、sessions、memory 以云电脑为权威，而 profile 与 bot definitions 以本地
   DSH profile 为权威。
@@ -98,15 +98,15 @@ channel”；[平台需求](../08-integration.md) §3–4。
 
 | 产物 | 唯一写者 | 读者 | 冲突 / 离线规则 |
 | --- | --- | --- | --- |
-| Bot 定义（`bot.json`） | 本地 host，在用户明确操作时写 | 云 host、本地镜像 | 本地意图赢；云端应用后返回 revision。机器不可用时，意图留在本地 outbox。 |
-| 运行态：sessions、memory、transcript | 云 host | 本地镜像与 UI | 云端赢；本地副本只读。 |
-| 队列 inbox（新工作） | 本地 host | 云 host | 每项一个文件；机器接收前由本地持有。 |
-| 队列状态（`queued` → `done`） | 云 host | 本地 host | 云端赢；本地只渲染。 |
-| 审批请求 | 云 host，作为提案 | 本地 host | 提案，不是授权；执行点按 ADR-001。 |
-| 审批决定 | 本地 host，或平台审批服务 | 执行方 | 每个 id 一个决定；执行方必须在 agent 写不到的地方。 |
-| Outbox 事件 | 云 host | 本地 host | 只追加；本地按 `seq` 读取。 |
-| 本地镜像 | 本地 host（派生） | Client | 可丢弃；从云端重建。 |
-| Setup 与 cost 缓存 | 本地 host | Client | 有 TTL；永远不是权威。 |
+| Bot 定义（`bot.json`） | 本地控制面，在用户明确操作时写 | bot runtime、本地镜像 | 本地意图赢；云端应用后返回 revision。机器不可用时，意图留在本地 outbox。 |
+| 运行态：sessions、memory、transcript | bot runtime | 本地镜像与 UI | 云端赢；本地副本只读。 |
+| 队列 inbox（新工作） | 本地控制面 | bot runtime | 每项一个文件；机器接收前由本地持有。 |
+| 队列状态（`queued` → `done`） | bot runtime | 本地控制面 | 云端赢；本地只渲染。 |
+| 审批请求 | bot runtime，作为提案 | 本地控制面 | 提案，不是授权；执行点按 ADR-001。 |
+| 审批决定 | 本地控制面，或平台审批服务 | 执行方 | 每个 id 一个决定；执行方必须在 agent 写不到的地方。 |
+| Outbox 事件 | bot runtime | 本地控制面 | 只追加；本地按 `seq` 读取。 |
+| 本地镜像 | 本地控制面（派生） | Client | 可丢弃；从云端重建。 |
+| Setup 与 cost 缓存 | 本地控制面 | Client | 有 TTL；永远不是权威。 |
 
 **建议。** 采用这张矩阵，让所有页面链接到它，而不是各自用散文重述权威。若某个文件
 需要两个写者，按方向拆文件（见 ADR-003），不要加锁。
@@ -123,10 +123,10 @@ channel”；[平台需求](../08-integration.md) §3–4。
 
 **状态：** Proposed.
 
-**问题。** 本地 host 与云 host 如何在没有原子追加、没有 compare-and-swap 的
+**问题。** 本地控制面与 bot runtime 如何在没有原子追加、没有 compare-and-swap 的
 Rayrun 文件 API 上交换队列项和状态？
 
-**当前设计。** `queue.jsonl` 是 append-only FIFO；云 host 拥有队列，本地侧又有一个
+**当前设计。** `queue.jsonl` 是 append-only FIFO；bot runtime 拥有队列，本地侧又有一个
 “local queue view”，可以 enqueue、dispatch、retry（[MVP 计划](../plans/mvp-plan.md) §4.2；
 [本地文件设计](../06-local-state.md) §1）。锁只是提示，不跨机器共享。
 
@@ -155,23 +155,27 @@ CAS 的 API。丢更新或交错追加会丢工作或破坏状态。平台需求
 
 **状态：** Proposed.
 
-**问题。** bot runtime 具体调用依赖的哪些能力，通过哪个表面，版本与错误语义是什么？
+**问题。** 本地控制面通过 `dsh-rayrun-computer` 调用哪些能力、通过哪个表面？bot
+runtime 如何由它的 worker projection 落地？
 
-**当前设计。** bot runtime 消费其已发布的 tools/RPC 表面；本地文件设计把
+**当前设计。** 本地控制面消费其已发布的 tools/RPC 表面；本地文件设计把
 `lib/dependency.js` 写成“detect … tool check, tool calls”（[系统架构](../01-system-architecture.md)
-“Layers”；[本地文件设计](../06-local-state.md) §1）。MVP 计划说 bot runtime 通过依赖的
-`rayrun_*` tools 或其 RPC 路由驱动，由 spike S6 决定（[MVP 计划](../plans/mvp-plan.md) §4.4）。
+“Layers”；[本地文件设计](../06-local-state.md) §1）。MVP 计划说本地控制面通过依赖的
+`rayrun_*` tools 或其 RPC 路由驱动，由 spike S6 决定（[MVP 计划](../plans/mvp-plan.md) §4.4）；
+bot runtime 由 worker projection ship/启动。
 
 **问题。** `rayrun_*` 是注册给 DSH agent 的 tools，不一定是 host 可 import 的 API。
-bot runtime 需要程序化调用：machine ensure/start/stop、`exec`、file read/write/list、
+本地控制面需要程序化调用：machine ensure/start/stop、`exec`、file read/write/list、
 agent prompt + SSE、session create/continue、credential-injection status、balance/
 usage。它不能为此复制 Rayrun token。文档没有说这些是 service injection、host RPC
 action，还是用依赖的 token 直接调 API。C1 还假设依赖的 worker projection 可以
 ship 一个 bot runtime；但没有任何扩展点文档。
 
-**建议。** 在依赖仓库写一份一页的契约并链接到这里。对每个能力写清：名称、输入、
-输出、错误码、是否使用 token、启动顺序、版本协商。把 S6（bundle 能否声明依赖）与
-这个 host API 问题分开。如果没有 host 表面，adapter 放在我们的包里，不改依赖。
+**建议。** 在依赖仓库写一份一页的契约并链接到这里，分两部分：
+1. 本地控制面的能力调用：名称、输入、输出、错误码、是否使用 token；
+2. bot runtime 的 worker projection：ship、启动、重启、hash/版本与扩展点。
+把 S6（bundle 能否声明依赖）与这个接口问题分开。如果没有相应表面，adapter 放在我们
+的包里，不改依赖。
 
 **影响。** A2、C1–C5、D1、G1。这是 ADR-001/002 之后的第一个实现阻塞。
 
@@ -218,7 +222,7 @@ schema 还缺 `botId` 和 `actionHash`，而正文要求匹配 bot 并绑定动�
 
 **问题。** 本地 DSH 关闭时，哪些工作继续，代价是什么？
 
-**当前设计。** README 说合上笔记本不会让 bot 停止。本地 host 运行审批轮询、
+**当前设计。** README 说合上笔记本不会让 bot 停止。本地控制面运行审批轮询、
 idle-stop 策略和 watchdog。平台没有 idle auto-stop；`max_lifetime_seconds` 只停不
 重启；后台审批卡 30 分钟后过期（[README](../../README.md) “How it works”；
 [FAQ](../faq.md) “What happens if I forget to stop the computer?”；[MVP 计划](../plans/mvp-plan.md)
@@ -232,7 +236,7 @@ G3；[客户端计划](../plans/client-plan.md) “UX flows and failure states�
 
 | 本地 DSH 关闭期间 | 行为 |
 | --- | --- |
-| 已排队的非受控工作 | 在云 host 上继续。 |
+| 已排队的非受控工作 | 在 bot runtime 上继续。 |
 | 新任务 | 无法提交；在本地排队，等下次打开。 |
 | 后台受控动作 | 等待，30 分钟后过期并拒绝。 |
 | Chat 发起的受控动作 | 不设计时，一直等待。 |
@@ -249,11 +253,11 @@ G3；[客户端计划](../plans/client-plan.md) “UX flows and failure states�
 C6、G3。
 
 <a id="adr-007"></a>
-### ADR-007 — 常驻 host 的凭据与 DSH profile 模型
+### ADR-007 — 常驻 bot runtime 的凭据与 DSH profile 模型
 
 **状态：** Proposed.
 
-**问题。** 受监督的云 host 能否拿到模型凭据，并按 bot 运行 session/profile？
+**问题。** 受监督的 bot runtime 能否拿到模型凭据，并按 bot 运行 session/profile？
 
 **当前设计。** Rayrun 把 DeepSeek key 注入 agent 进程。设计想要一个常驻 DSH host，
 每个 bot 一个 session 和一个 profile 目录；今天平台按每次 prompt 启动
@@ -286,7 +290,7 @@ replay 作为有文档的回退，并写清它的 UX 与成本。
 产品面板。
 
 **问题。** 如果唯一的 desktop 路径是 public URL，v0.1 不能承诺安全的 takeover。
-如果依赖通过本地 host 代理 noVNC，这条路径需要写清并测试。当前文档同时暗示了两种
+如果依赖通过本地控制面代理 noVNC，这条路径需要写清并测试。当前文档同时暗示了两种
 情况，却没有调和。
 
 **建议。** 核实依赖的 desktop 路由：本地出站代理、本地页面，还是 public URL。把答案
@@ -306,7 +310,7 @@ replay 作为有文档的回退，并写清它的 UX 与成本。
 
 **问题。** v0.1 里 scheduler 是 P0 还是 P1？
 
-**当前设计。** [系统架构](../01-system-architecture.md) “Layers” 把 scheduler 放进本地 host 核心；
+**当前设计。** [系统架构](../01-system-architecture.md) “Layers” 把 scheduler 放进本地控制面核心；
 [路线图](../plans/roadmap.md) “v0.1” 包含最小 routines；[MVP 计划](../plans/mvp-plan.md) §3 把 routines
 标为 P1，§11 又把决定列为 W0 到期。
 
@@ -429,14 +433,17 @@ untrusted”；[客户端计划](../plans/client-plan.md) C-S6。
 
 **状态：** Proposed.
 
-以下是决策定下后要直接修掉的矛盾：
+**已处理（2026-11-20）。**
 
-- [客户端计划](../plans/client-plan.md) 开头：“…cloud calls are in Layout is the
-  three-column shell…” 是断句，`mvp-plan` 链接掉进了句子里。
-- [系统架构](../01-system-architecture.md) “Concurrency, cost and failure”：“the DSH host on their
-  machine” 没有说明是本地还是云端。
-- [安全](../07-security.md) “The model is untrusted”：“the mitigation is the approval
-  layer” 必须与 ADR-001 的决定一致；如果 gate 不是边界，就直说。
+- [客户端计划](../plans/client-plan.md) 开头的断句已修：链接回到 `mvp-plan.md`，
+  句子已重排。
+- [系统架构](../01-system-architecture.md) 的 “Concurrency, cost and failure” 已
+  重写为中文“并发、成本与失败”，不再有 “the DSH host on their machine” 的歧义。
+- [安全](../07-security.md) 的措辞已按 ADR-001 的开放状态改写：审批不是安全边界，
+  文件邮箱可被 root agent 伪造；不再写 “mitigation is the approval layer”。
+
+**仍开放。**
+
 - “no runtime dependencies”（README、CLAUDE.md）与声明 `dsh-rayrun-computer`：
   区分库依赖与 peer bundle。
 - [errors.js](../../packages/dsh-rayrun-bots/lib/errors.js) 和 MVP 错误码表缺
@@ -519,7 +526,7 @@ host”：常驻 supervisor、FIFO 队列、每 bot session/profile、心跳/恢
 host 或 Rayrun adapter：
 
 - DSH 重启会丢队列/状态；
-- 本地 host 需要理解云内进程；
+- 本地控制面需要理解云内进程；
 - Rayrun API 变化会穿透到 bot 层；
 - 测试需要真云。
 
@@ -538,8 +545,8 @@ host 或 Rayrun adapter：
   按 ADR-001。
 - **生命周期**：由平台 worker projection 或本地 watchdog 启动；心跳写
   `host/state.json`；版本进入版本矩阵。
-- **不调用 Rayrun API 的账号 token**；需要平台能力时走 `dsh-rayrun-computer` 的
-  host 表面（ADR-004）。
+- **不调用 Rayrun API 的账号 token**；由依赖的 worker projection ship/启动；平台
+  能力由本地控制面通过依赖调用（ADR-004/016）。
 
 **理由。** 稳定契约、可测试、可恢复、串行执行、隔离 Rayrun API 变化。
 
@@ -559,7 +566,7 @@ host 或 Rayrun adapter：
 
 **问题。** Rayrun API 之上、用户与 bot 之间的控制层放在哪里？它拥有什么？
 
-**当前设计。** 本地 host half 已经承担 token、setup、审批、成本等；文档没有把它
+**当前设计。** 本地控制面（host half）已经承担 token、setup、审批、成本等；文档没有把它
 作为独立层命名，容易和云端 bot runtime 混淆。
 
 **决策。** **Rayrun 之上是用户侧控制面**：DSH host + `dsh-rayrun-bots` host
@@ -596,7 +603,7 @@ token）；provider 抽象（v0.1 不做）。
 3. **ADR-004。** 在 C1/D1 之前确认依赖的 host 表面；这是第一个实现阻塞。
 4. **ADR-003、ADR-005、ADR-011 一起定。** 它们把控制协议、执行日志和审批 schema
    定义成一组一致的契约。
-5. **ADR-007 spike。** M2 前必须拿到 session、常驻 host 和凭据注入的证据。
+5. **ADR-007 spike。** M2 前必须拿到 session、常驻 bot runtime 和凭据注入的证据。
 6. **ADR-006、ADR-008、ADR-009 并行。** 它们是范围/产品决策，不是代码阻塞。
 7. **ADR-010 与 ADR-013 作为清理。** 在客户端接 host 之前对齐 RPC 契约和文档。
 8. **ADR-014 是 v1.0 的前置。** 先确认 A/B：默认 A（官方 DSH 桌面 + 首启装插件）；

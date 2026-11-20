@@ -1,6 +1,6 @@
 # 03 — 客户端设计
 
-> 状态：2026-11-18。本文定义 DSH 客户端半区的表面、交互、RPC 分组与失败状态。
+> 状态：2026-11-20。本文定义 DSH 客户端半区的表面、交互、RPC 分组与失败状态。
 > 产品方向见 [`00-product-direction.md`](00-product-direction.md)；技术基线见
 > [`01-system-architecture.md`](01-system-architecture.md)；视觉规范见
 > [`design/ui-design.md`](design/ui-design.md)；交付计划见

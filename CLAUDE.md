@@ -112,7 +112,7 @@
 - 新增文档先登记到 `docs/README.md` 的文档地图；新增决策在 ADR 登记册加一行。Markdown 链接必须可解析。
 - 本文件只承载指令，不承载项目状态、交付进度或文档索引。
 - 产品方向以 `docs/00-product-direction.md` 为准，技术基线以 `docs/01-system-architecture.md` 为准；实现状态只回 README 的 Status 段。
-- 架构性决策同步到 `docs/01-system-architecture.md`、`docs/07-security.md` 或对应计划页；平台相关缺口进 `docs/08-integration.md`。
+- 架构性决策同步到 `docs/01-system-architecture.md`、`docs/07-security.md`、`docs/adr/architecture-decisions.md` 或对应计划页；平台相关缺口进 `docs/08-integration.md`。
 - 不描述不存在的功能；不夸大安全保证。代码与文档冲突时，先核实当前行为，再修正错误的一方。
 
 ## 8. 测试与验证

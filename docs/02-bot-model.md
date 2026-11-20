@@ -1,6 +1,6 @@
 # 02 — Bot 模型
 
-> 状态：2026-11-18。本文定义 bot 是什么、`bot.json` 的字段与校验、默认指令模板、
+> 状态：2026-11-20。本文定义 bot 是什么、`bot.json` 的字段与校验、默认指令模板、
 > 生命周期与身份边界。产品方向见 [`00-product-direction.md`](00-product-direction.md)；
 > 技术基线见 [`01-system-architecture.md`](01-system-architecture.md)；未决决策见
 > [`adr/architecture-decisions.md`](adr/architecture-decisions.md)。
@@ -142,8 +142,8 @@ If something is unclear, ask one question instead of guessing.
 
 | 阶段 | 发生什么 | 归属 |
 | --- | --- | --- |
-| 创建 | 客户端提交名字/职责/指令 → 本地 host 校验 → 云 host 落 `bot.json` 与目录 | 本地意图，云端应用（ADR-002 待定） |
-| 首次运行 | 建立 bot↔session 映射；profile/memory 目录就绪 | 云 host |
+| 创建 | 客户端提交名字/职责/指令 → 本地控制面校验 → bot runtime 落 `bot.json` 与目录 | 本地意图，云端应用（ADR-002 待定） |
+| 首次运行 | 建立 bot↔session 映射；profile/memory 目录就绪 | bot runtime |
 | 编辑 | 用户改名字/职责/指令 → revision 检查 → 更新 | 本地意图 |
 | 删除 | 删除 bot 目录与镜像；是否保留 tombstone 见 ADR-012 | 用户明确动作 |
 | 机器丢失 | 本地镜像保留定义；拉回/重建；完整恢复要求机器未销毁 | 本地镜像 + 用户操作 |

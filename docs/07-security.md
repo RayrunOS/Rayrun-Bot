@@ -1,6 +1,6 @@
 # 07 — 安全
 
-> 状态：2026-11-18。本文定义安全目标、威胁模型、凭据边界与“不保护什么”。
+> 状态：2026-11-20。本文定义安全目标、威胁模型、凭据边界与“不保护什么”。
 > 技术基线见 [`01-system-architecture.md`](01-system-architecture.md)；审批的信任
 > 边界见 [`05-approvals.md`](05-approvals.md)；本地状态见
 > [`06-local-state.md`](06-local-state.md)；平台 handoff 见
@@ -73,7 +73,7 @@ key 或 workspace 内容（[`../CLAUDE.md`](../CLAUDE.md) 不变量 10）。
 
 ## 4. 威胁模型
 
-### 4.1 本地 host 上的凭据
+### 4.1 本地控制面上的凭据
 
 token 是账号级 API token；读到它就能创建/销毁机器并花余额。缓解：vault 存储、token
 不进 client/RPC/日志/仓库、同源 RPC。残余风险：本地机器被攻陷、同 profile 的恶意

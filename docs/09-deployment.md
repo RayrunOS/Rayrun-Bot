@@ -1,6 +1,6 @@
 # 09 — 部署与运行
 
-> 状态：2026-11-18。本文说明依赖、安装、运行、配置、检查与故障处理。它是
+> 状态：2026-11-20。本文说明依赖、安装、运行、配置、检查与故障处理。它是
 > [`../README.md`](../README.md) 快速开始的展开版；实现状态以 README 的 **Status**
 > 段为准。产品方向见 [`00-product-direction.md`](00-product-direction.md)；技术基线见
 > [`01-system-architecture.md`](01-system-architecture.md)；平台 handoff 见

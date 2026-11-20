@@ -154,7 +154,7 @@ rolls back on any RPC error.
   reads a config file directly.
 - Pages first-paint within a second on a normal laptop; no new runtime
   dependencies; client module loads on `0.2.2-rc.1`.
-- Failure states above are all implemented and checked manually.
+- Failure states above are implemented and checked manually before release.
 
 ## Not in v0.1
 

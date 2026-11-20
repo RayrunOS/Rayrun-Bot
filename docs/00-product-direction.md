@@ -1,6 +1,6 @@
 # 00 — 产品方向：定位与 v0.1 范围
 
-> 状态：2026-11-18。本文是**产品层的唯一真相源**：卖给谁、解决什么问题、v0.1 做什么、怎么算做完。
+> 状态：2026-11-20。本文是**产品层的唯一真相源**：卖给谁、解决什么问题、v0.1 做什么、怎么算做完。
 > 实现状态与进度只看 [`../README.md`](../README.md) 的 **Status** 段；本文不复制状态。
 > 技术方案见 [`01-system-architecture.md`](01-system-architecture.md)；工作分解与验收见
 > [`plans/mvp-plan.md`](plans/mvp-plan.md)；未决架构决策见
@@ -227,6 +227,8 @@ v0.1 的估算与排序见 [`plans/mvp-plan.md`](plans/mvp-plan.md)；里程碑�
 - **routines / scheduler 进不进 v0.1？** 架构层写了 scheduler，MVP 计划标 P1，需统一（ADR-009）。
 - **“合上笔记本”期间哪些工作继续、计费怎么处理？** 后台审批 30 分钟过期，本地 idle stop 不在运行（ADR-006）。
 - **desktop / takeover 的安全路径是什么？** public 端口不能当产品面板（ADR-008）。
+- **v1.0 桌面发行版选 A 还是 B？** 默认 A（官方 DSH 桌面 + 首启装插件）；只有
+  “必须单一签名更新单元”时才做 B（ADR-014）。
 - **IM 审批何时做？** v0.2，用户自己的 bot token，无项目方中继。
 - **per-bot 成本归因是否进 v0.1？** MVP 计划标 P1。
 

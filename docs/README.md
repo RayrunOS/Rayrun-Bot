@@ -32,7 +32,7 @@
 | 平台集成 | [集成与平台需求](08-integration.md) | 依赖契约、平台能力与优先级 |
 | 部署与操作 | [部署与运行](09-deployment.md) | 安装、配置、检查、故障处理 |
 | 调研 | [灵感](research/inspiration.md) | Grok Bot 等参考；不是真相源 |
-| 决策 | [架构决策](adr/architecture-decisions.md) | [ADR-001–ADR-013](#3-adr-登记册)；只有 Decided 才算最终 |
+| 决策 | [架构决策](adr/architecture-decisions.md) | [ADR-001–ADR-016](#3-adr-登记册)；只有 Decided 才算最终 |
 
 `00`–`09` 是编号顶层文档；`plans/`、`adr/`、`design/`、`research/` 放细节，
 `mockups/` 放视觉素材。`00`/`01` 分别是产品与技术的第一真相源；其余编号文档是
@@ -52,7 +52,7 @@
 | ADR-004 | 与 `dsh-rayrun-computer` 的契约 | Proposed | [architecture-decisions.md](adr/architecture-decisions.md#adr-004) |
 | ADR-005 | 副作用执行语义 | Proposed | [architecture-decisions.md](adr/architecture-decisions.md#adr-005) |
 | ADR-006 | “合上笔记本”意味着什么 | Proposed | [architecture-decisions.md](adr/architecture-decisions.md#adr-006) |
-| ADR-007 | 常驻 host 的凭据与 DSH profile 模型 | Proposed | [architecture-decisions.md](adr/architecture-decisions.md#adr-007) |
+| ADR-007 | 常驻 bot runtime 的凭据与 DSH profile 模型 | Proposed | [architecture-decisions.md](adr/architecture-decisions.md#adr-007) |
 | ADR-008 | Desktop 访问路径 | Proposed | [architecture-decisions.md](adr/architecture-decisions.md#adr-008) |
 | ADR-009 | Routines / scheduler 范围 | Proposed | [architecture-decisions.md](adr/architecture-decisions.md#adr-009) |
 | ADR-010 | RPC 路由与信封 | Proposed | [architecture-decisions.md](adr/architecture-decisions.md#adr-010) |
@@ -76,7 +76,7 @@
 | [MVP 计划](plans/mvp-plan.md) | A1–A12 验收、B/C/D/E 工作流 | §2、§5、§6 |
 | [客户端计划](plans/client-plan.md) | C-S1–C-S6 spike 与客户端接线 | Week 0、Delivery waves |
 | [集成与平台需求](08-integration.md) | 会话/常驻 runtime、余额护栏 | §3 |
-| [架构决策](adr/architecture-decisions.md) | ADR-001–ADR-013 | 本文 §3 |
+| [架构决策](adr/architecture-decisions.md) | ADR-001–ADR-016 | 本文 §3 |
 
 ## 5. 文档约定
 

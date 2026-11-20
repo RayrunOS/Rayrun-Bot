@@ -42,8 +42,8 @@ Scope:
   closes. The session-resume contract with Rayrun is the first spike.
 - **Fail-closed approvals.** DSH approval seam → host half → browser card →
   decision written back. Timeout, unknown or closed panel means deny.
-- **Routines, minimal.** A scheduled prompt that wakes a bot; no marketplace of
-  triggers.
+- **Routines, minimal (P1; decision open, ADR-009).** A scheduled prompt that
+  wakes a bot; no marketplace of triggers.
 - **Cost bar.** Machine hours and balance visible; idle stop remains a plugin
   option (stop only, never destroy).
 - **Packaging and CI.** npm package(s), version compatibility with DSH, tests,
