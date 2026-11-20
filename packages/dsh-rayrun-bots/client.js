@@ -7,6 +7,8 @@
  * checks they match). The bot host is still health-only, so every bot, message,
  * approval, and setting on this page is in-memory preview state. Decisions are
  * not sent to a worker and nothing is saved.
+ *
+ * Preview the first-run roster by appending ?first-run=1 to the DSH page URL.
  */
 window.__ModuleLoader__.load({
   id: 'dsh-rayrun-bots',
@@ -14,12 +16,20 @@ window.__ModuleLoader__.load({
     const React = require('react')
     const h = React.createElement
     const { useEffect, useRef, useState } = React
+    const FIRST_RUN_PREVIEW = new URLSearchParams(window.location.search).get('first-run') === '1'
 
     const EN = {
   "panel": {
     "label": "Bots"
   },
   "brand": "Rayrun Bot",
+  "chat": {
+    "working": "Working…",
+    "simulatedReply": "Done. This reply is simulated in the preview; the approval below is also local.",
+    "simulatedSnippet": "Needs approval: simulated result",
+    "simulatedApprovalTitle": "Send the simulated result to your computer",
+    "simulatedApprovalMeta": "Requested just now · from this chat"
+  },
   "list": {
     "search": "Search",
     "searchPlaceholder": "Search bots",
@@ -270,6 +280,13 @@ window.__ModuleLoader__.load({
     "label": "Bots"
   },
   "brand": "Rayrun Bot",
+  "chat": {
+    "working": "正在处理…",
+    "simulatedReply": "完成。这是预览里的模拟回复；下面的审批也只在本页。",
+    "simulatedSnippet": "待审批：模拟结果",
+    "simulatedApprovalTitle": "把模拟结果发送到你的电脑",
+    "simulatedApprovalMeta": "刚刚请求 · 来自本对话"
+  },
   "list": {
     "search": "搜索",
     "searchPlaceholder": "搜索 Bot",
@@ -594,6 +611,7 @@ window.__ModuleLoader__.load({
 .rb-textbtn { border: 0; background: transparent; padding: 0; color: #8a93a3; font-size: 10.5px; text-align: left; }
 .rb-textbtn:hover { color: #0f172a; }
 .rb-empty-list { color: #8a93a3; font-size: 12px; padding: 8px 10px; }
+.rb-firstrun { padding: 10px; }
 .rb-main { background: #fff; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 .rb-thread { flex: 1; overflow: auto; padding: 26px 34px 12px; display: flex; flex-direction: column; gap: 20px; }
 .rb-thread > * { max-width: 760px; width: 100%; align-self: center; }
@@ -702,6 +720,11 @@ window.__ModuleLoader__.load({
 .rb-center-empty h2 { margin: 0; font-size: 18px; font-weight: 650; }
 .rb-center-empty p { margin: 0; color: #5b6472; font-size: 13px; }
 .rb-thread-empty { color: #8a93a3; font-size: 13px; text-align: center; padding: 24px 0; }
+.rb-thread-welcome { margin: auto; display: grid; gap: 6px; justify-items: center; text-align: center; padding: 40px 16px; }
+.rb-thread-welcome-title { font-size: 15px; font-weight: 650; }
+.rb-thread-welcome-job { color: #8a93a3; font-size: 12px; }
+.rb-thread-welcome .rb-thread-empty { padding: 0; }
+.rb-working-row { display: flex; align-items: center; gap: 8px; color: #5b6472; font-size: 13px; }
 .rb-mini { display: flex; gap: 8px; padding: 8px 12px; border-bottom: 1px solid #eef1f6; }
 @media (prefers-reduced-motion: reduce) {
   .rb-toggle::after { transition: none; }
@@ -961,7 +984,7 @@ window.__ModuleLoader__.load({
           notifications: true,
           lang: null,
         },
-        bots: seedBots(),
+        bots: FIRST_RUN_PREVIEW ? [] : seedBots(),
       }
     }
 
@@ -1186,6 +1209,7 @@ window.__ModuleLoader__.load({
       const t = makeT(lang === 'zh' ? ZH : EN)
       const frameRef = useRef(null)
       const searchRef = useRef(null)
+      const replyTimers = useRef(new Map())
       const width = useContainerWidth(frameRef)
 
       useEffect(() => {
@@ -1199,6 +1223,11 @@ window.__ModuleLoader__.load({
         }
         document.addEventListener('keydown', onKey)
         return () => document.removeEventListener('keydown', onKey)
+      }, [])
+
+      useEffect(() => () => {
+        for (const timer of replyTimers.current.values()) clearTimeout(timer)
+        replyTimers.current.clear()
       }, [])
 
       useEffect(() => {
@@ -1235,24 +1264,65 @@ window.__ModuleLoader__.load({
 
       const send = () => {
         const text = state.composer.trim()
-        if (!text || !selected) return
+        if (!text || !selected || selected.working) return
+        const botId = selected.id
+        const workingId = uid('working')
+        const userId = uid('user')
         const snippet = text.length > 48 ? `${text.slice(0, 47)}…` : text
         setState((current) => ({
           ...current,
           composer: '',
           flash: null,
+          live: t('chat.working'),
           bots: current.bots.map((bot) => {
-            if (bot.id !== selected.id) return bot
+            if (bot.id !== botId) return bot
             return {
               ...bot,
+              working: true,
+              attention: 'working',
               snippet,
               snippetKey: null,
               time: clock(),
               timeKey: null,
-              messages: [...bot.messages, { id: uid('user'), kind: 'user', text }],
+              messages: [...bot.messages, { id: userId, kind: 'user', text }, { id: workingId, kind: 'working' }],
             }
           }),
         }))
+        const timer = setTimeout(() => {
+          replyTimers.current.delete(botId)
+          setState((current) => ({
+            ...current,
+            live: t('chat.simulatedReply'),
+            bots: current.bots.map((bot) => {
+              if (bot.id !== botId) return bot
+              const approvalId = uid('approval')
+              return {
+                ...bot,
+                working: false,
+                attention: 'needs',
+                snippet: null,
+                snippetKey: 'chat.simulatedSnippet',
+                time: clock(),
+                timeKey: null,
+                messages: [
+                  ...bot.messages.filter((entry) => entry.id !== workingId),
+                  { id: uid('bot'), kind: 'bot', textKey: 'chat.simulatedReply' },
+                  { id: uid('approval-card'), kind: 'approval', approvalId },
+                ],
+                approvals: {
+                  ...bot.approvals,
+                  [approvalId]: {
+                    id: approvalId,
+                    titleKey: 'chat.simulatedApprovalTitle',
+                    metaKey: 'chat.simulatedApprovalMeta',
+                    state: 'pending',
+                  },
+                },
+              }
+            }),
+          }))
+        }, 1200)
+        replyTimers.current.set(botId, timer)
       }
 
       const decide = (approvalId, decision) => {
@@ -1463,7 +1533,13 @@ window.__ModuleLoader__.load({
               ),
               h('div', { className: 'rb-tm' }, botTime(bot, t)),
             )
-          }) : h('div', { className: 'rb-empty-list' }, t('list.empty')),
+          }) : state.bots.length === 0
+            ? h(
+              'div',
+              { className: 'rb-firstrun' },
+              h('button', { type: 'button', className: 'rb-btn rb-primary', onClick: onNew }, t('newBot.create')),
+            )
+            : h('div', { className: 'rb-empty-list' }, t('list.empty')),
         ),
         h(
           'div',
@@ -1535,6 +1611,7 @@ window.__ModuleLoader__.load({
           'div',
           { className: 'rb-thread' },
           bot.messages.length ? bot.messages.map((entry) => {
+            if (entry.kind === 'working') return h('div', { key: entry.id, className: 'rb-working-row', role: 'status' }, h('span', { className: 'rb-dot rb-working', 'aria-hidden': 'true' }), t('chat.working'))
             if (entry.kind === 'day') return h('div', { key: entry.id, className: 'rb-day' }, textOf(entry, t))
             if (entry.kind === 'user') {
               return h('div', { key: entry.id, className: 'rb-msg rb-user' }, h('div', { className: 'rb-bubble' }, textOf(entry, t)))
@@ -1564,7 +1641,14 @@ window.__ModuleLoader__.load({
                 h(RichText, { text: textOf(entry, t) }),
               ),
             )
-          }) : h('div', { className: 'rb-thread-empty' }, t('empty.thread')),
+          }) : h(
+            'div',
+            { className: 'rb-thread-welcome' },
+            h(Avatar, { size: 'big', name }),
+            h('div', { className: 'rb-thread-welcome-title' }, name),
+            h('div', { className: 'rb-thread-welcome-job' }, job),
+            h('p', { className: 'rb-thread-empty' }, t('empty.thread')),
+          ),
         ),
         h(
           'div',
@@ -1578,6 +1662,7 @@ window.__ModuleLoader__.load({
           h('button', { type: 'button', className: 'rb-icon', title: t('composer.attach'), 'aria-label': t('composer.attach'), onClick: onAttach }, '+'),
           h('input', {
             value: state.composer,
+            disabled: !!bot.working,
             placeholder: t('composer.placeholder', { name }),
             'aria-label': t('composer.placeholder', { name }),
             onChange: (event) => onComposer(event.target.value),
@@ -1588,7 +1673,7 @@ window.__ModuleLoader__.load({
               }
             },
           }),
-          h('button', { type: 'button', className: 'rb-send', title: t('composer.send'), 'aria-label': t('composer.send'), onClick: onSend }, '↑'),
+          h('button', { type: 'button', className: 'rb-send', disabled: !!bot.working, title: t('composer.send'), 'aria-label': t('composer.send'), onClick: onSend }, '↑'),
         ),
       )
     }

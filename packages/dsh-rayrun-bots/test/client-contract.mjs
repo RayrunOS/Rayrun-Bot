@@ -75,6 +75,11 @@ const required = [
   'approval.expired',
   'approval.irreversible',
   'approval.outside',
+  'chat.working',
+  'chat.simulatedReply',
+  'chat.simulatedSnippet',
+  'chat.simulatedApprovalTitle',
+  'chat.simulatedApprovalMeta',
   'draft.send',
   'draft.discard',
   'details.recent',
@@ -119,5 +124,14 @@ assert.match(client, /approval\.state === 'expired'/)
 assert.match(client, /t\('approval\.expired'\)/)
 assert.match(client, /t\('approval\.expires', \{ n: approval\.expiresMin \}\)/)
 assert.match(client, /rb-card-expired/)
+assert.match(client, /FIRST_RUN_PREVIEW/)
+assert.match(client, /state\.bots\.length === 0/)
+assert.match(client, /rb-firstrun/)
+assert.match(client, /rb-thread-welcome/)
+assert.match(client, /kind === 'working'/)
+assert.match(client, /rb-working-row/)
+assert.match(client, /chat\.simulatedApprovalTitle/)
+assert.match(client, /setTimeout\(/)
+assert.match(client, /disabled: !!bot\.working/)
 
 console.log('client contract ok')

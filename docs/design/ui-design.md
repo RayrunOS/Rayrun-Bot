@@ -73,6 +73,9 @@ Column widths: 296 px / flexible / 328 px. The details column collapses below
 - Rows: 34 px avatar, name, one-line latest snippet, time; a 6 px dot marks
   needs attention (amber), unread (blue) or working (green). Opening a row marks
   it read.
+- Empty roster: first-run copy plus a Create bot button; a search with no
+  matches keeps `No matching bots`. Preview it with `?first-run=1` on the DSH
+  page URL.
 - Footer: the user's avatar, name, `Rayrun connected · balance`, settings gear.
 
 ### 2.2 Conversation
@@ -80,6 +83,10 @@ Column widths: 296 px / flexible / 328 px. The details column collapses below
 - Rich text messages with a 26 px avatar, name and job label; user messages are
   short right-aligned bubbles.
 - A day separator (`Today 20:07`) opens each session.
+- A new bot with no messages shows its avatar, name, job and
+  `No messages yet`; the composer stays available.
+- Sending a message shows a working row; after a short preview-only delay a
+  simulated reply and a pending approval card appear. Nothing leaves the page.
 - Approval and draft blocks are the only cards: thin border, white surface, one
   warning line, `Deny` / `Allow once`, and a metadata line (`requested 20:07 ·
   from this chat`).

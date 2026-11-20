@@ -3,6 +3,13 @@
     "label": "Bots"
   },
   "brand": "Rayrun Bot",
+  "chat": {
+    "working": "Working…",
+    "simulatedReply": "Done. This reply is simulated in the preview; the approval below is also local.",
+    "simulatedSnippet": "Needs approval: simulated result",
+    "simulatedApprovalTitle": "Send the simulated result to your computer",
+    "simulatedApprovalMeta": "Requested just now · from this chat"
+  },
   "list": {
     "search": "Search",
     "searchPlaceholder": "Search bots",

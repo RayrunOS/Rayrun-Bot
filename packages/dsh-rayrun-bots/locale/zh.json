@@ -3,6 +3,13 @@
     "label": "Bots"
   },
   "brand": "Rayrun Bot",
+  "chat": {
+    "working": "正在处理…",
+    "simulatedReply": "完成。这是预览里的模拟回复；下面的审批也只在本页。",
+    "simulatedSnippet": "待审批：模拟结果",
+    "simulatedApprovalTitle": "把模拟结果发送到你的电脑",
+    "simulatedApprovalMeta": "刚刚请求 · 来自本对话"
+  },
   "list": {
     "search": "搜索",
     "searchPlaceholder": "搜索 Bot",
