@@ -3,13 +3,15 @@ name: checks
 on:
   push:
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
   group: checks-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Keep a main-branch run (including its deploy job) alive; cancel stale PR runs.
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   checks:
@@ -56,6 +58,8 @@ jobs:
           done
       - name: Run the update prototype checks
         run: node tools/update-poc/test/update.mjs
+      - name: Run the Rayrun deploy contract checks
+        run: node tools/rayrun-deploy/test/contract.mjs
 
   dsh-plugin:
     name: dsh ${{ matrix.dsh }} (node ${{ matrix.node }})
@@ -93,3 +97,71 @@ jobs:
           dsh --profile ci --dump-config > "$RUNNER_TEMP/composed-config.yml"
           grep -A1 '^- id: rayrun-bots$' "$RUNNER_TEMP/composed-config.yml" \
             | grep -q '^  name: dsh-rayrun-bots$'
+
+  deploy:
+    name: deploy to Rayrun sandbox
+    # Only main pushes and manual runs deploy; PRs and feature branches never
+    # receive the Rayrun token. Missing configuration skips the job.
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
+    needs: [checks, dsh-plugin]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: rayrun-deploy
+      cancel-in-progress: false
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Check the Rayrun deploy configuration
+        id: gate
+        env:
+          RAYRUN_TOKEN: ${{ secrets.RAYRUN_TOKEN }}
+          RAYRUN_SANDBOX_ID: ${{ vars.RAYRUN_SANDBOX_ID }}
+        run: |
+          if [ -z "$RAYRUN_TOKEN" ] || [ -z "$RAYRUN_SANDBOX_ID" ]; then
+            echo "Rayrun deploy is not configured; skipping."
+            echo "Set the RAYRUN_TOKEN secret and the RAYRUN_SANDBOX_ID variable to enable it."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Check whether the plugin package changed
+        id: changes
+        if: steps.gate.outputs.enabled == 'true'
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BEFORE_SHA: ${{ github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          if [ "$EVENT_NAME" = "workflow_dispatch" ] \
+            || [ -z "$BEFORE_SHA" ] \
+            || [ "$BEFORE_SHA" = "0000000000000000000000000000000000000000" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          elif git diff --name-only "$BEFORE_SHA" "$HEAD_SHA" | grep -q '^packages/dsh-rayrun-bots/'; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No change under packages/dsh-rayrun-bots; skipping deploy."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Pack the plugin
+        id: pack
+        if: steps.gate.outputs.enabled == 'true' && steps.changes.outputs.changed == 'true'
+        run: |
+          npm pack ./packages/dsh-rayrun-bots --pack-destination "$RUNNER_TEMP"
+          TARBALL=$(ls "$RUNNER_TEMP"/dsh-rayrun-bots-*.tgz | head -1)
+          echo "path=$TARBALL" >> "$GITHUB_OUTPUT"
+          echo "name=$(basename "$TARBALL")" >> "$GITHUB_OUTPUT"
+      - name: Deploy to the Rayrun sandbox
+        if: steps.gate.outputs.enabled == 'true' && steps.changes.outputs.changed == 'true'
+        env:
+          RAYRUN_TOKEN: ${{ secrets.RAYRUN_TOKEN }}
+          RAYRUN_SANDBOX_ID: ${{ vars.RAYRUN_SANDBOX_ID }}
+          PLUGIN_TARBALL: ${{ steps.pack.outputs.path }}
+          DEPLOY_LABEL: ${{ github.sha }}
+        run: node .github/scripts/deploy-rayrun.mjs

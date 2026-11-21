@@ -1,6 +1,6 @@
 # 07 — 安全
 
-> 状态：2026-11-20。本文定义安全目标、威胁模型、凭据边界与“不保护什么”。
+> 状态：2026-11-21。本文定义安全目标、威胁模型、凭据边界与“不保护什么”。
 > 技术基线见 [`01-system-architecture.md`](01-system-architecture.md)；审批的信任
 > 边界见 [`05-approvals.md`](05-approvals.md)；本地状态见
 > [`06-local-state.md`](06-local-state.md)；平台 handoff 见
@@ -120,6 +120,19 @@ lockfile/provenance 实践 TBD。
 
 Rayrun 运行机器，DeepSeek 服务模型；它们的条款、数据处理和可用性适用于到达它们的
 数据。本项目不能代它们承诺 DPA、SOC 2、区域驻留或删除请求，也不做这种承诺。
+
+### 4.8 CI 部署凭据（可选）
+
+main-only 的 Rayrun deploy job 需要把 Rayrun token 存成 GitHub Actions secret
+`RAYRUN_TOKEN`，把目标 sandbox id 存成仓库变量 `RAYRUN_SANDBOX_ID`。这是**维护者
+凭据**，不是产品运行时路径：它只用于上传包和重启指定沙盒的 `dsh web`，不会进入
+client、RPC、沙盒环境、工作区或日志；PR/fork 永远不运行这个 job。部署写入的
+`/workspace/dsh-web-url.txt` 含 DSH 进程 token，mode 600，取链接时按凭据处理。
+
+残余风险：今天 Rayrun token 是账号级、无 scope；能改 main 的人可以触发部署并使用
+它。缓解：专用、可吊销的 Rayrun 账号/token；GitHub environment protection 或
+required reviewers；定期轮换；固定 sandbox id；只在 main 上运行。部署会把 DSH 暴露
+在 public 6080 ingress，唯一门禁是该进程 token；不用时 stop 沙盒。
 
 ---
 

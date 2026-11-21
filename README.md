@@ -114,10 +114,11 @@ Rayrun Bot/
 ├── LICENSE                      # MIT
 ├── SECURITY.md                  # how to report a vulnerability, privately
 ├── CONTRIBUTING.md              # pull-request rules (CODE_OF_CONDUCT.md alongside)
-├── .github/                     # issue/PR templates and the checks CI workflow
+├── .github/                     # issue/PR templates, checks CI, and the deploy script
 ├── package.json                 # private workspace root
 ├── docs/                        # 00–09 docs, adr/, plans/, design/, research/, mockups/
 ├── tools/update-poc/            # update kernel prototype; not shipped in the plugin
+├── tools/rayrun-deploy/         # CI deploy helper and contract test; not shipped
 └── packages/
     └── dsh-rayrun-bots/         # health route + v0.1 client shell, locale, tests
 ```
@@ -134,9 +135,9 @@ dsh plugin --profile web add /absolute/path/to/package
 # restart DSH afterwards; the page loads the new client half on start
 ```
 
-- Checks: `node --check` on `packages/dsh-rayrun-bots/index.js` and `client.js`, then `node packages/dsh-rayrun-bots/test/manifest-check.mjs`, `locale-audit.mjs`, `rpc-contract.mjs`, and `client-contract.mjs`.
-- CI: those checks run on Node 24 and 26, the pushed diff must pass `git diff --check`, and a separate job installs the package into a throwaway DSH profile and composes its config against DSH `0.2.1-rc.5` and `0.2.2-rc.5` (`.github/workflows/checks.yml`). That job does not test the cloud-computer plugin, start the web app, or make Rayrun calls.
-- Live integration tests need real Rayrun credentials and never run in CI.
+- Checks: `node --check` on `packages/dsh-rayrun-bots/index.js` and `client.js`, then `node packages/dsh-rayrun-bots/test/manifest-check.mjs`, `locale-audit.mjs`, `rpc-contract.mjs`, `client-contract.mjs`, and `node tools/rayrun-deploy/test/contract.mjs`.
+- CI: those checks run on Node 24 and 26, the pushed diff must pass `git diff --check`, and a separate job installs the package into a throwaway DSH profile and composes its config against DSH `0.2.1-rc.5` and `0.2.2-rc.5` (`.github/workflows/checks.yml`). That job does not test the cloud-computer plugin, start the web app, or make Rayrun calls. An opt-in `deploy` job runs on a main-branch push (or manual dispatch) when `RAYRUN_TOKEN` and `RAYRUN_SANDBOX_ID` are configured and `packages/dsh-rayrun-bots/**` changed: it packs the plugin, installs it into the sandbox's DSH web profile, restarts `dsh web` on the public 6080 ingress, and writes the tokenized URL to `/workspace/dsh-web-url.txt` (mode 600). The URL and token are never printed; fetch the URL with `node tools/rayrun-deploy/fetch-url.mjs`. A stopped sandbox is started (billable).
+- Live integration tests still need real Rayrun credentials and never run in CI. The deploy job is the only CI path that uses a real Rayrun token; it is a maintainer deployment, not a test, and never runs on pull requests or forks.
 - Read [`CLAUDE.md`](CLAUDE.md) and [`CONTRIBUTING.md`](CONTRIBUTING.md) before changing anything. Commit messages are in English with `feat:`, `fix:`, `chore:` or `docs:` prefixes.
 
 ## Status
@@ -146,7 +147,7 @@ dsh plugin --profile web add /absolute/path/to/package
 | | |
 | --- | --- |
 | **Works today** (separate project, our dependency) | Seven `rayrun_*` tools, noVNC desktop, per-session cloud/local routing, hash-verified workspace sync, task delegation, worker projection, optional idle stop. Verified on DeepSeek Harness `0.2.1-rc.5`. |
-| **This repository** | README, docs, issue and PR templates, agent rules, the dependency boundary, and `dsh-rayrun-bots`: a health route plus the v0.1 client shell (five screens, in-memory preview, same-origin host status, setup Rayrun token bridge, setup computer creation, and Open / Take over through the cloud-computer plugin RPC), with plain-Node checks and a checks-only CI workflow (Node 24/26 plus a DSH profile-install smoke). No persisted bot layer and no publishable release yet. |
+| **This repository** | README, docs, issue and PR templates, agent rules, the dependency boundary, and `dsh-rayrun-bots`: a health route plus the v0.1 client shell (five screens, in-memory preview, same-origin host status, setup Rayrun token bridge, setup computer creation, and Open / Take over through the cloud-computer plugin RPC), with plain-Node checks, a checks-first CI workflow (Node 24/26 plus a DSH profile-install smoke), and an opt-in main-only Rayrun deploy job. No persisted bot layer and no publishable release yet. |
 | **Not built yet** | Page-level computer-creation verification, bot roster and bot↔session mapping, a persistent DSH host on the machine, remote approvals that gate a worker, routines that actually run, per-bot spend attribution, IM channel, the two-plugin install path (dependency declaration and version check), npm packages and the release/publish CI path. |
 | **Platform gaps** | Safe inbound networking (today the token ingress is unusable and only `public` works), idle auto-stop, a spend cap, dynamic resource adjustment, the session-resume contract. The full list is in [docs/01-system-architecture.md](docs/01-system-architecture.md). |
 

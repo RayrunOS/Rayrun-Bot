@@ -42,8 +42,10 @@
 - `docs/` — 编号顶层文档：00-product-direction、01-system-architecture、02-bot-model、03-client-design、04-cloud-host、05-approvals、06-local-state、07-security、08-integration、09-deployment、10-rayrun-verification、11-dsh-rayrun-computer-issues、faq；子目录：`adr/`（ADR 登记）、`plans/`（MVP/客户端/路线图）、`design/`（UI/人格）、`research/`（调研）、`mockups/`（视觉素材）。
 - `packages/dsh-rayrun-bots/` — 目前唯一的包：host half（`index.js`）、client half（`client.js`）、`lib/`、`locale/en.json` + `zh.json`、`test/`、`cordis.patch.yml`、包 `README.md`、`package.json`。
 - `tools/update-poc/` — 更新内核原型（签名 manifest、校验、暂存、原子切换、回滚）；不进入插件运行时，也不进 npm 包。
+- `tools/rayrun-deploy/` — CI 部署 helper（`fetch-url.mjs`）与部署契约测试；不进入插件运行时，也不进 npm 包。
 - 根 `package.json` — 私有 workspace 根；无依赖、无构建步骤。
-- `.github/workflows/checks.yml` — push/PR 的 checks-only CI。
+- `.github/workflows/checks.yml` — push/PR 的 checks CI，以及 main-only 的可选 Rayrun deploy job。
+- `.github/scripts/deploy-rayrun.mjs` — deploy job 调用的 Rayrun 沙盒部署脚本（上传、安装、重启 `dsh web`）。
 - `LICENSE`、`SECURITY.md`、`CONTRIBUTING.md`、`CODE_OF_CONDUCT.md` — 许可证、漏洞上报、PR 规则与行为准则。
 - 非本仓库：`dsh-rayrun-computer`（独立项目，绝不修改、fork 或 vendor）、Rayrun 平台、DeepSeek Harness 运行时。
 
@@ -105,6 +107,7 @@
 10. **默认无遥测。** 不收集、不上传任何东西。未来的遥测必须 opt-in、有文档，且绝不包含 prompt、key 或 workspace 内容。
 11. **没有 bubblewrap 的云端就是 root。** worker profile 故意跑 `danger-full-access`，这是 workaround，不是隔离。绝不把它说成沙箱保证，也不削弱 `docs/07-security.md` 中的警告。
 12. **云电脑插件是依赖，不是我们的代码。** `dsh-rayrun-computer` 在自己的仓库里，绝不从这里编辑、fork 或 vendor。集成只通过其已发布 tools/RPC 表面和版本契约；需要它改行为 → 去那个仓库开 issue/PR，或在本仓库写 adapter。
+13. **CI 部署凭据是维护者凭据，不是产品运行时凭据。** Rayrun deploy token 只存 GitHub Actions secret，只用于 main-only deploy job；不进仓库、日志、沙盒、client 或 RPC。PR/fork 永远不运行部署。今天 Rayrun token 是账号级、无 scope；用专用、可吊销的 token。
 
 ## 7. 文档约定
 
@@ -127,6 +130,7 @@ node packages/dsh-rayrun-bots/test/locale-audit.mjs
 node packages/dsh-rayrun-bots/test/rpc-contract.mjs
 node packages/dsh-rayrun-bots/test/client-contract.mjs
 node tools/update-poc/test/update.mjs
+node tools/rayrun-deploy/test/contract.mjs
 ```
 
 - 新行为必须带测试；测试是纯 Node、无框架，沿用 `node test/*.mjs`。
@@ -134,7 +138,7 @@ node tools/update-poc/test/update.mjs
 - 绝不为了让改动通过而削弱或删除安全测试；修行为，或说明为什么测试本身错了。
 - 实时集成测试需要真实 Rayrun 凭据，绝不在 CI 运行。
 - 页面变更只做语法/契约检查不算打通；v0.1 没有浏览器测试框架，手工 golden path 见 `docs/plans/client-plan.md`。
-- CI（`.github/workflows/checks.yml`）在 push/PR 上跑语法检查、所有 `test/*.mjs`，以及更新内核原型的测试。
+- CI（`.github/workflows/checks.yml`）在 push/PR 上跑语法检查、所有 `test/*.mjs`、更新内核原型的测试和 Rayrun 部署契约。push 到 main 的可选 `deploy` job 只在配置了 `RAYRUN_TOKEN`/`RAYRUN_SANDBOX_ID` 且 `packages/dsh-rayrun-bots/**` 有变更时运行；它使用真实 Rayrun token，只做部署，不做集成测试。
 
 **“完成”的标准：**
 
@@ -159,6 +163,7 @@ node tools/update-poc/test/update.mjs
 | `node packages/dsh-rayrun-bots/test/rpc-contract.mjs` | RPC 信封、同源门、体积上限 |
 | `node packages/dsh-rayrun-bots/test/client-contract.mjs` | 客户端文案、无外部请求、无占位符 |
 | `node tools/update-poc/test/update.mjs` | 更新内核原型：签名、哈希、版本、原子切换、回滚 |
+| `node tools/rayrun-deploy/test/contract.mjs` | Rayrun 部署契约：main-only、secret 来源、URL 不打印 |
 | `dsh plugin --profile web add <绝对路径>` | 从 checkout 载入 DSH profile；改 client half 后需重启 DSH |
 | `git log --oneline` | 查看提交历史 |
 

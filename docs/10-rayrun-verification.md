@@ -152,6 +152,11 @@
   返回 303 换 cookie，再得到 200 DSH shell，Firefox 渲染 Bots 中文界面。沙箱内不保存
   Rayrun token，因此 Bots 显示“未连接”；验证后只 stop，不 destroy。该入口是 public、
   RCE 级，仅临时使用。
+- CI 部署脚本本机实测（2026-11-21，同一沙盒）：运行 `.github/scripts/deploy-rayrun.mjs`
+  用真实 Rayrun token 完成 upload → `dsh plugin add` → 重启 `dsh web`；新
+  `/workspace/dsh-web-url.txt` mode 600，公网 token URL 303→200，token 未打印、未进入
+  沙盒。首次失败暴露了 `pgrep` 清理模式误杀执行 shell（exit 143）；改为按 6080 监听者
+  和精确 `node ... dsh web` 命令行清理后通过。
 
 > 前三条是通过本机 Node 直接 import `dsh-rayrun-computer@1.0.0` 的 `lib/rayrun.js`
 > 验证的，调用的是插件页面使用的同一组函数；第四条是在本机 DSH web 页面里用
