@@ -24,14 +24,16 @@
 1. **安装目录不可变。** 代码在插件包里；所有可变状态在 DSH 状态目录，不写在
    `index.js` 旁边。
 2. **本地是镜像与控制面。** 云电脑权威运行态；用户 checkout 权威代码；本地文件是
-   派生、可重建的。
+   派生、可重建的。例外：云端 runtime 落地前，roster 的 `bot.json` 先写在本地，
+   它是用户意图源；runtime 落地后再同步到机器。
 3. **我们不落密钥。** Rayrun token 在 Harness vault，DeepSeek key 在 Rayrun
    credential；本项目不把它们写到文件、日志或镜像。
 4. **每个持久文件有 schema 版本、写者和保留规则。** 格式是 JSON/JSONL；写入原子
    （tmp + rename）；日志只追加。
 5. **无构建步骤。** 纯 ESM，kebab-case 文件名，一个模块一个职责。
 6. **删除本地状态是安全的。** 丢 `$DSH_HOME/state/rayrun-bot/` 只丢缓存和审计历史；
-   bot 可以从机器重建。
+   bot 可以从机器重建。例外：云端 runtime 落地前，`bots/` 是 Bot 定义的唯一副本，
+   删除会丢定义。
 
 ---
 
@@ -49,9 +51,9 @@ packages/dsh-rayrun-bots/
 │   └── zh.json           # 镜像；key 必须一致
 ├── lib/
 │   ├── rpc.js            # 信封、origin 校验、大小限制
-│   ├── bots.js           # registry CRUD（计划）
+│   ├── bots.js           # registry CRUD
 │   ├── bot-schema.js     # bot.json 校验/默认值（迁移计划）
-│   ├── local-store.js    # 状态目录、原子写、锁（计划）
+│   ├── local-store.js    # 状态目录、原子写（锁待建）
 │   ├── dependency.js     # 依赖检测、版本检查（能力调用计划）
 │   ├── queue.js          # 本地队列视图（计划）
 │   ├── approvals.js      # 审批状态机（计划）
@@ -86,6 +88,7 @@ packages/dsh-rayrun-bots/
 ```
 $DSH_HOME/state/rayrun-bot/
 ├── schema.json              # { schema: 1, pluginVersion, createdAt }
+├── bots/<botId>/bot.json    # v0.1 本地意图源；runtime 落地后同步到机器
 ├── mirror/
 │   └── bots/<botId>/
 │       ├── bot.json         # 机器定义的副本（只读）
@@ -106,6 +109,7 @@ $DSH_HOME/state/rayrun-bot/
 | 路径 | 写者 | 读者 | 密钥 | 保留 | 可重建 |
 | --- | --- | --- | --- | --- | --- |
 | `schema.json` | host | host | 否 | 永久 | 否（重建） |
+| `bots/<id>/bot.json` | host | client、host | 否 | 永久 | runtime 落地前否；之后是机器副本 |
 | `mirror/bots/<id>/` | host | client、host | 否 | 最近状态 | 是，从机器 |
 | `cache/*.json` | host | client、host | 否 | 上述 TTL | 是 |
 | `outbox/cursor.json` | host | client | 否 | 永久 | 是 |

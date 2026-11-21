@@ -5,7 +5,8 @@
  * locale/en.json and locale/zh.json. This check keeps those copies identical,
  * requires the v0.1 copy deck, and refuses a client that still shows the A1
  * placeholder or reaches off the machine. The only requests are the same-origin
- * host health check and the cloud-computer plugin's same-origin RPC.
+ * host health check, the host roster RPC, and the cloud-computer plugin's
+ * same-origin RPC.
  *
  *   node test/client-contract.mjs
  */
@@ -153,6 +154,7 @@ const required = [
   'settings.hostReady',
   'settings.retry',
   'error.hostDown',
+  'error.botCreate',
   'persona.template',
 ]
 for (const key of required) assert.equal(keys.has(key), true, `missing copy-deck key ${key}`)
@@ -193,7 +195,13 @@ assert.match(client, /M2\.97 12\.92A2 2 0 0 0 2 14\.63/)
 assert.match(client, /stroke: '#003d9b'/)
 assert.equal((client.match(/fetch\(/g) || []).length, 2)
 assert.match(client, /fetch\('\/plugins\/rayrun-bots\?action=health'/)
-assert.match(client, /fetch\('\/plugins\/rayrun\/rpc', \{[\s\S]*?method: 'POST'/)
+assert.match(client, /fetch\(path, \{[\s\S]*?method: 'POST'/)
+assert.match(client, /pluginRpc\('\/plugins\/rayrun\/rpc'/)
+assert.match(client, /pluginRpc\('\/plugins\/rayrun-bots'/)
+assert.match(client, /hostRpc\('bots\.list'\)/)
+assert.match(client, /hostRpc\('bots\.create'/)
+assert.match(client, /bots\.create returned no bot/)
+assert.match(client, /source: 'real'/)
 assert.match(client, /machine\.password/)
 assert.match(client, /overview\.connection\?\.configured !== true/)
 assert.match(client, /machine\.desktopRepair/)

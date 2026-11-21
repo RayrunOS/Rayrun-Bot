@@ -162,6 +162,11 @@
   launch token 每个进程随机生成；cookie 签名 secret 存在
   `$DSH_HOME/.credentials.yaml`，默认 30 天、绑定 host:port。因此 token URL 每次
   部署都会变，但同一浏览器不需要重新取 key；新浏览器/设备才需要。
+- Bots 页面层 roster（2026-11-21，本机 DSH web `0.2.2-rc.5` + Firefox/geckodriver）：
+  在样例名册之上新建 `Roster Test` 后，聊天列表切换为真实名册；页面同源 `bots.list`
+  返回 `roster-test`；刷新页面后名册仍在、样例未回来；随后用同源 `bots.delete` 清理。
+  roster 路径不读 Rayrun token；该测试 profile 里已有连接，页面同时显示余额，但未做
+  机器操作。
 
 > 前三条是通过本机 Node 直接 import `dsh-rayrun-computer@1.0.0` 的 `lib/rayrun.js`
 > 验证的，调用的是插件页面使用的同一组函数；第四条是在本机 DSH web 页面里用

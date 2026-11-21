@@ -9,7 +9,7 @@
  */
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { Readable } from 'node:stream'
@@ -223,6 +223,116 @@ check('no reply carries a credential shape', async () => {
     assert.doesNotMatch(reply.text, /Bearer\s|RAYRUN_TOKEN|sk-[A-Za-z0-9]{16,}|api[_-]?key\s*[:=]/i)
   }
 })
+
+/** Run one roster check against an isolated DSH home. */
+async function withState(fn) {
+  const home = mkdtempSync(path.join(tmpdir(), 'rayrun-bots-state-'))
+  const previous = process.env.DSH_HOME
+  process.env.DSH_HOME = home
+  try {
+    return await fn(home)
+  } finally {
+    if (previous === undefined) delete process.env.DSH_HOME
+    else process.env.DSH_HOME = previous
+    rmSync(home, { recursive: true, force: true })
+  }
+}
+
+function post(action, payload, headers = {}) {
+  return { action, body: JSON.stringify({ action, ...payload }), headers }
+}
+
+check('the roster starts empty, persists a created bot, and lists it after a reload', () => withState(async (home) => {
+  const { handler } = hostFor()
+  const empty = await request(handler, { action: 'bots.list' })
+  assert.equal(empty.status, 200)
+  assert.deepEqual(empty.json, { ok: true, bots: [] })
+
+  const created = await request(handler, post('bots.create', {
+    name: 'Weekly Watch',
+    label: 'Watches the weekly numbers',
+    instructions: 'You are Weekly Watch.',
+  }))
+  assert.equal(created.status, 200)
+  assert.equal(created.json.ok, true)
+  assert.equal(created.json.bot.id, 'weekly-watch')
+  assert.equal(created.json.bot.revision, 1)
+  assert.equal(
+    JSON.parse(readFileSync(path.join(home, 'state', 'rayrun-bot', 'bots', 'weekly-watch', 'bot.json'), 'utf8')).name,
+    'Weekly Watch',
+  )
+
+  const roster = await request(hostFor().handler, { action: 'bots.list' })
+  assert.equal(roster.status, 200)
+  assert.deepEqual(roster.json.bots, [created.json.bot])
+
+  const fetched = await request(hostFor().handler, post('bots.get', { id: 'weekly-watch' }))
+  assert.equal(fetched.status, 200)
+  assert.deepEqual(fetched.json.bot, created.json.bot)
+
+  const updated = await request(hostFor().handler, post('bots.update', {
+    id: 'weekly-watch',
+    patch: { label: 'Watches and reports' },
+  }))
+  assert.equal(updated.status, 200)
+  assert.equal(updated.json.bot.label, 'Watches and reports')
+  assert.equal(updated.json.bot.revision, 2)
+
+  const deleted = await request(hostFor().handler, post('bots.delete', { id: 'weekly-watch' }))
+  assert.equal(deleted.status, 200)
+  assert.deepEqual(deleted.json, { ok: true, deleted: 'weekly-watch' })
+  assert.deepEqual((await request(hostFor().handler, { action: 'bots.list' })).json.bots, [])
+}))
+
+check('roster errors carry stable codes and statuses', () => withState(async () => {
+  const { handler } = hostFor()
+  const invalid = await request(handler, post('bots.create', { name: '', label: 'x' }))
+  assert.equal(invalid.status, 400)
+  assert.equal(invalid.json.error.code, 'E_BOT_INVALID')
+
+  const unknown = await request(handler, post('bots.get', { id: 'missing' }))
+  assert.equal(unknown.status, 404)
+  assert.equal(unknown.json.error.code, 'E_BOT_UNKNOWN')
+
+  const created = await request(handler, post('bots.create', {
+    id: 'weekly', name: 'Weekly Watch', label: 'Watches', instructions: 'Watch.',
+  }))
+  assert.equal(created.status, 200)
+  const duplicate = await request(handler, post('bots.create', {
+    id: 'weekly', name: 'Other', label: 'Other.', instructions: 'Other.',
+  }))
+  assert.equal(duplicate.status, 409)
+  assert.equal(duplicate.json.error.code, 'E_BOT_EXISTS')
+
+  const traversal = await request(handler, post('bots.get', { id: '../etc/passwd' }))
+  assert.equal(traversal.status, 400)
+  assert.equal(traversal.json.error.code, 'E_BOT_INVALID')
+}))
+
+check('a cross-origin roster write is refused before it touches state', () => withState(async (home) => {
+  const { handler } = hostFor()
+  const reply = await request(handler, post('bots.create', {
+    name: 'Weekly Watch', label: 'Watches', instructions: 'Watch.',
+  }, { origin: 'http://evil.example', host: '127.0.0.1:53109' }))
+  assert.equal(reply.status, 403)
+  assert.equal(reply.json.error.code, 'E_INTERNAL')
+  assert.equal(existsSync(path.join(home, 'state', 'rayrun-bot', 'bots')), false)
+}))
+
+check('roster replies expose no credential shape', () => withState(async () => {
+  const { handler } = hostFor()
+  const created = await request(handler, post('bots.create', {
+    name: 'Weekly Watch', label: 'Watches', instructions: 'Watch.',
+  }))
+  const replies = [
+    created,
+    await request(handler, { action: 'bots.list' }),
+    await request(handler, post('bots.get', { id: 'weekly-watch' })),
+  ]
+  for (const reply of replies) {
+    assert.doesNotMatch(reply.text, /Bearer\s|RAYRUN_TOKEN|sk-[A-Za-z0-9]{16,}|api[_-]?key\s*[:=]/i)
+  }
+}))
 
 let failed = 0
 for (const { name, fn } of checks) {

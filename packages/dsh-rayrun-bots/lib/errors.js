@@ -15,6 +15,7 @@ export const ERROR_CODES = Object.freeze({
   hostDown: 'E_HOST_DOWN',
   botUnknown: 'E_BOT_UNKNOWN',
   botInvalid: 'E_BOT_INVALID',
+  botExists: 'E_BOT_EXISTS',
   queueFull: 'E_QUEUE_FULL',
   balanceLow: 'E_BALANCE_LOW',
   internal: 'E_INTERNAL',

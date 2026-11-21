@@ -328,6 +328,7 @@
     "computerName": "dsh-workspace"
   },
   "error": {
-    "hostDown": "Bot host 没有响应。"
+    "hostDown": "Bot host 没有响应。",
+    "botCreate": "无法保存 Bot：{message}"
   }
 }

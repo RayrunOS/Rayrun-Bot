@@ -126,6 +126,18 @@ function defaultAvatar(name, id) {
 }
 
 /**
+ * Validate one bot id before it is used in a lookup or a file path.
+ * @param {unknown} value
+ * @returns {string}
+ * @throws {BotValidationError} When the id is not kebab-case.
+ */
+export function assertBotId(value) {
+  const id = text(value, 'id', { max: 64 })
+  if (!ID_PATTERN.test(id)) fail('id', 'id must be kebab-case (lowercase letters, digits and single hyphens).')
+  return id
+}
+
+/**
  * Validate and normalize a stored `bot.json`.
  * @param {unknown} value Parsed JSON value.
  * @returns {object} A normalized bot definition.
@@ -142,8 +154,7 @@ export function validateBot(value) {
     if (!FIELDS.has(key)) fail(key, `Unknown bot field: ${key}.`)
   }
 
-  const id = text(value.id, 'id', { max: 64 })
-  if (!ID_PATTERN.test(id)) fail('id', 'id must be kebab-case (lowercase letters, digits and single hyphens).')
+  const id = assertBotId(value.id)
   const name = text(value.name, 'name', { max: 80, oneLine: true })
   const label = text(value.label, 'label', { max: 120, oneLine: true })
   const avatar = avatarOf(value.avatar)

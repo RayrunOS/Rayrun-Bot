@@ -328,6 +328,7 @@
     "computerName": "dsh-workspace"
   },
   "error": {
-    "hostDown": "The bot host is not responding."
+    "hostDown": "The bot host is not responding.",
+    "botCreate": "Could not save the bot: {message}"
   }
 }

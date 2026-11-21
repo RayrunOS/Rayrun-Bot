@@ -1,8 +1,10 @@
 # dsh-rayrun-bots
 
-The Rayrun Bot plugin package. Status: **client shell** — the bundle loads, the
-client half renders the v0.1 screens, and the host half answers one health
-action. The screens are an in-memory preview. There is no bot layer yet.
+The Rayrun Bot plugin package. Status: **client shell with a local roster** —
+the bundle loads, the client half renders the v0.1 screens, and the host half
+answers health and persists the bot roster. Conversations, approvals, routines
+and settings are still an in-memory preview; there is no cloud runtime yet. The
+page-level create/reload path was verified on 2026-11-21 in a local DSH page.
 
 ## What it does today
 
@@ -12,12 +14,22 @@ action. The screens are an in-memory preview. There is no bot layer yet.
   `incompatible` (`E_DEP_VERSION`), or `unknown` when no profile context exists.
   `POST` is same-origin gated: a browser `Origin` that does not match the request
   `Host` is refused with 403. No credentials are touched.
+- Host half: `bots.list`, `bots.get`, `bots.create`, `bots.update` and
+  `bots.delete` persist validated `bot.json` files under
+  `$DSH_HOME/state/rayrun-bot/bots/<id>/` (atomic writes, private modes, stable
+  `E_BOT_*` errors). The roster is the user's intent store until the cloud
+  runtime lands; the machine will become the runtime truth. Ids are derived
+  from the name when the client does not send one, and collisions get a numeric
+  suffix.
 - Client half: a `Bots` sidebar entry and the three-column shell from
   [docs/design/ui-design.md](../../docs/design/ui-design.md) — chat list, conversation,
   details (Activity / Library), new bot, the four-step setup wizard, and
-  settings. Sample bots, messages, receipts, and the approval card live in the
-  page only. Deny / Allow once, creating a bot, the wizard, and settings update
-  that in-memory state. The client activates Bots on load and covers the DSH
+  settings. When the host roster has entries, the chat list shows those bots
+  instead of the sample list; creating a bot in the new-bot screen or the setup
+  wizard writes through to the host and selects the saved bot. Messages,
+  receipts, the approval card and settings still live in the page only. Deny /
+  Allow once, the wizard, and settings update that in-memory state. The client
+  activates Bots on load and covers the DSH
   sidebar and bottom bar; there is no in-product return to the Harness shell
   (ADR-017). The setup Rayrun step calls the cloud-computer plugin's
   same-origin RPC with a pasted token and shows the real balance/machine count.
@@ -51,9 +63,9 @@ action. The screens are an in-memory preview. There is no bot layer yet.
   language row writes the choice back to DSH so it survives a reload. The rest
   stays in the page, and the client keeps neither the token nor a DeepSeek key.
 
-Not built yet: a Bots-page-level verified computer-creation success path, a real
-bot roster, bot↔session mapping, remote approvals, routines that run, and the
-npm release path. See the
+Not built yet: a Bots-page-level verified computer-creation success path,
+bot↔session mapping, remote approvals, routines that run, and the npm release
+path. See the
 repo-level [MVP plan](../../docs/plans/mvp-plan.md) and [client plan](../../docs/plans/client-plan.md).
 
 ## DSH compatibility
@@ -88,6 +100,8 @@ node test/manifest-check.mjs
 node test/locale-audit.mjs
 node test/rpc-contract.mjs
 node test/client-contract.mjs
+node test/bot-schema.mjs
+node test/bot-store.mjs
 ```
 
 The same commands run in the repository's checks-only CI workflow on push and
@@ -102,11 +116,13 @@ need real Rayrun credentials and never run in CI.
 ```
 package.json       # name, exports, dsh.bundle + dsh.client
 cordis.patch.yml   # the bundle row (id rayrun-bots -> package dsh-rayrun-bots)
-index.js           # host half: same-origin RPC route, health action only
-client.js          # client half: v0.1 shell (in-memory preview)
+index.js           # host half: same-origin RPC route, health + bots.* actions
+client.js          # client half: v0.1 shell, roster read/write, preview conversation
+lib/bots.js        # persistent roster: list/get/create/update/delete
 lib/bot-schema.js  # bot.json validation, defaults and creation
 lib/dependency.js  # dsh-rayrun-computer detection and version check
 lib/errors.js      # stable error codes (shared with docs/plans/mvp-plan.md §4.3)
+lib/local-store.js # state-directory resolution and atomic JSON writes
 lib/rpc.js         # JSON responses and request-body parsing
 locale/en.json     # source copy
 locale/zh.json     # mirror; keys must match

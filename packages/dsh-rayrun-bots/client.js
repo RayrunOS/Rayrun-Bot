@@ -4,9 +4,10 @@
  * v0.1 shell: chat list, conversation, details, new bot, setup, and settings,
  * in the layout of docs/ui-design.md and docs/mockups/index.html. Copy comes
  * from locale/en.json and locale/zh.json (embedded below; the locale audit
- * checks they match). The bot host is still health-only, so every bot, message,
- * approval, and setting on this page is in-memory preview state. Decisions are
- * not sent to a worker and nothing is saved.
+ * checks they match). The host half persists the bot roster; the chat list
+ * reads it when it has entries, and creating a bot writes through to it.
+ * Messages, approvals, routines and settings on this page are still in-memory
+ * preview state; decisions are not sent to a worker.
  *
  * Preview states with these DSH page URL parameters: ?first-run=1,
  * ?low-balance=1, ?computer=live|reconnecting|sleeping|unreachable.
@@ -354,7 +355,8 @@ window.__ModuleLoader__.load({
     "computerName": "dsh-workspace"
   },
   "error": {
-    "hostDown": "The bot host is not responding."
+    "hostDown": "The bot host is not responding.",
+    "botCreate": "Could not save the bot: {message}"
   }
 }
     const ZH = {
@@ -687,7 +689,8 @@ window.__ModuleLoader__.load({
     "computerName": "dsh-workspace"
   },
   "error": {
-    "hostDown": "Bot host 没有响应。"
+    "hostDown": "Bot host 没有响应。",
+    "botCreate": "无法保存 Bot：{message}"
   }
 }
 
@@ -953,9 +956,9 @@ window.__ModuleLoader__.load({
       return Number.isFinite(n) ? n : NaN
     }
 
-    /** Same-origin call into the cloud-computer plugin; the token never enters this plugin. */
-    async function rayRpc(action, payload = {}) {
-      const res = await fetch('/plugins/rayrun/rpc', {
+    /** Same-origin POST to one of the two plugin RPC routes. */
+    async function pluginRpc(path, action, payload = {}) {
+      const res = await fetch(path, {
         method: 'POST',
         mode: 'same-origin',
         credentials: 'same-origin',
@@ -970,11 +973,19 @@ window.__ModuleLoader__.load({
         const code = typeof error === 'string' ? error : error?.code ?? `http_${res.status}`
         const message = error && typeof error === 'object' && error.message
           ? error.message
-          : `Rayrun RPC failed (${res.status}).`
-        throw new Error(`${code}: ${message}`)
+          : `RPC failed (${res.status}).`
+        const failure = new Error(`${code}: ${message}`)
+        failure.code = code
+        throw failure
       }
       return body
     }
+
+    /** Call into the cloud-computer plugin; the token never enters this plugin. */
+    const rayRpc = (action, payload) => pluginRpc('/plugins/rayrun/rpc', action, payload)
+
+    /** Call into this bundle's host half; health stays a GET. */
+    const hostRpc = (action, payload) => pluginRpc('/plugins/rayrun-bots', action, payload)
 
     function balanceText(balance) {
       const cents = Number(balance?.balance_cents)
@@ -998,17 +1009,22 @@ window.__ModuleLoader__.load({
       return { color, background }
     }
 
-    function botIdFromName(name, bots) {
-      const ascii = String(name || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
-      const base = ascii || 'bot'
-      const used = new Set(bots.map((bot) => bot.id))
-      let id = base
-      let n = 2
-      while (used.has(id)) {
-        id = `${base}-${n}`
-        n += 1
+    /** Map one host roster entry to the client's bot shape; the conversation is still local. */
+    function realBot(bot) {
+      return {
+        id: bot.id,
+        name: bot.name,
+        job: bot.label,
+        source: 'real',
+        attention: null,
+        time: '',
+        snippetKey: 'empty.snippet',
+        messages: [],
+        approvals: {},
+        receipts: [],
+        routines: [],
+        library: [],
       }
-      return id
     }
 
     let seq = 0
@@ -1556,6 +1572,28 @@ window.__ModuleLoader__.load({
         return () => controller.abort()
       }, [hostAttempt])
 
+      useEffect(() => {
+        if (host.status !== 'loaded') return undefined
+        let cancelled = false
+        void (async () => {
+          try {
+            const body = await hostRpc('bots.list')
+            const bots = Array.isArray(body.bots) ? body.bots : []
+            if (cancelled || bots.length === 0) return
+            setState((current) => {
+              const roster = bots.map(realBot)
+              const selectedId = roster.some((bot) => bot.id === current.selectedId)
+                ? current.selectedId
+                : roster[0].id
+              return { ...current, bots: roster, selectedId }
+            })
+          } catch {
+            // Keep the preview; the Settings host row reports the failure.
+          }
+        })()
+        return () => { cancelled = true }
+      }, [host.status])
+
       const selected = state.bots.find((bot) => bot.id === state.selectedId) || state.bots[0] || null
       const listOn = width >= 900 || state.forceList
       const detailOn = state.screen === 'chat' && (width >= 1120 || state.forceDetail)
@@ -1698,37 +1736,23 @@ window.__ModuleLoader__.load({
         }))
       }
 
-      const createBot = (draft) => {
+      const createBot = async (draft) => {
         const name = draft.name.trim()
         if (!name) return
         const job = draft.job.trim()
         const instructions = draft.instructions.trim() || t('persona.template', { name, job: job || '…' })
-        setState((current) => {
-          const id = botIdFromName(name, current.bots)
-          const bot = {
-            id,
-            name,
-            job,
-            instructions,
-            attention: null,
-            time: '',
-            snippetKey: 'empty.snippet',
-            messages: [],
-            approvals: {},
-            receipts: [],
-            routines: [],
-            library: [],
-          }
-          return {
-            ...current,
-            screen: 'chat',
-            selectedId: id,
-            tab: 'activity',
-            flash: null,
-            focusComposer: true,
-            bots: [...current.bots, bot],
-          }
-        })
+        const body = await hostRpc('bots.create', { name, label: job, instructions })
+        const bot = body.bot
+        if (!bot || typeof bot.id !== 'string') throw new Error('bots.create returned no bot')
+        setState((current) => ({
+          ...current,
+          screen: 'chat',
+          selectedId: bot.id,
+          tab: 'activity',
+          flash: null,
+          focusComposer: true,
+          bots: [...current.bots.filter((item) => item.source === 'real'), realBot(bot)],
+        }))
       }
 
       const flash = (text) => patch({ flash: text, live: text })
@@ -2033,7 +2057,9 @@ window.__ModuleLoader__.load({
               { className: 'rb-firstrun' },
               h('button', { type: 'button', className: 'rb-btn rb-primary', onClick: onNew }, t('newBot.create')),
             )
-            : h('div', { className: 'rb-empty-list' }, t('list.empty')),
+            : state.search.trim()
+              ? h('div', { className: 'rb-empty-list' }, t('list.empty'))
+              : null,
         ),
         h(
           'div',
@@ -2528,6 +2554,20 @@ window.__ModuleLoader__.load({
       const [name, setName] = useState(() => t('newBot.defaultName'))
       const [job, setJob] = useState(() => t('newBot.defaultJob'))
       const [instructions, setInstructions] = useState('')
+      const [busy, setBusy] = useState(false)
+      const [error, setError] = useState('')
+      const submit = async () => {
+        if (!name.trim() || busy) return
+        setBusy(true)
+        setError('')
+        try {
+          await onCreate({ name, job, instructions })
+        } catch (failure) {
+          setError(t('error.botCreate', { message: String(failure?.message ?? failure) }))
+        } finally {
+          setBusy(false)
+        }
+      }
       return h(
         'main',
         { className: 'rb-page', 'data-screen': 'newbot' },
@@ -2540,6 +2580,7 @@ window.__ModuleLoader__.load({
             h('h1', null, t('newBot.title')),
             h('p', { className: 'rb-sub' }, t('newBot.sub')),
             h(BotFields, { t, name, job, instructions, onName: setName, onJob: setJob, onInstructions: setInstructions }),
+            error ? h('p', { className: 'rb-say', role: 'alert', style: { color: '#b45309' } }, error) : null,
             h(
               'div',
               { className: 'rb-form-foot' },
@@ -2547,8 +2588,8 @@ window.__ModuleLoader__.load({
               h('button', {
                 type: 'button',
                 className: 'rb-btn rb-primary',
-                disabled: !name.trim(),
-                onClick: () => onCreate({ name, job, instructions }),
+                disabled: busy || !name.trim(),
+                onClick: submit,
               }, t('newBot.create')),
             ),
           ),
@@ -2569,6 +2610,7 @@ window.__ModuleLoader__.load({
       const [machineLoading, setMachineLoading] = useState(false)
       const [machineBusy, setMachineBusy] = useState(false)
       const [machineError, setMachineError] = useState('')
+      const [creating, setCreating] = useState(false)
       const [computerName, setComputerName] = useState(DEFAULT_COMPUTER)
       const steps = [
         ['dependency', 'setup.steps.dependency'],
@@ -2624,13 +2666,20 @@ window.__ModuleLoader__.load({
         if (step >= 3) onClose()
         else onStep(step + 1)
       }
-      const next = () => {
-        if (!canContinue) return
+      const next = async () => {
+        if (!canContinue || creating) return
         if (step < 3) {
           onStep(step + 1)
           return
         }
-        onCreate({ name, job, instructions })
+        setCreating(true)
+        try {
+          await onCreate({ name, job, instructions })
+        } catch (error) {
+          onFlash(t('error.botCreate', { message: String(error?.message ?? error) }))
+        } finally {
+          setCreating(false)
+        }
       }
       const createComputer = async () => {
         const name = computerName.trim()
@@ -2838,12 +2887,12 @@ window.__ModuleLoader__.load({
             h(
               'div',
               { className: 'rb-form-foot' },
-              h('button', { type: 'button', className: 'rb-btn rb-ghost', onClick: back }, t('setup.back')),
+              h('button', { type: 'button', className: 'rb-btn rb-ghost', disabled: creating, onClick: back }, t('setup.back')),
               h(
                 'div',
                 { className: 'rb-line' },
-                h('button', { type: 'button', className: 'rb-btn rb-ghost', onClick: skip }, t('setup.skip')),
-                h('button', { type: 'button', className: 'rb-btn rb-primary', disabled: !canContinue, onClick: next }, t('setup.continue')),
+                h('button', { type: 'button', className: 'rb-btn rb-ghost', disabled: creating, onClick: skip }, t('setup.skip')),
+                h('button', { type: 'button', className: 'rb-btn rb-primary', disabled: creating || !canContinue, onClick: next }, t('setup.continue')),
               ),
             ),
           ),
