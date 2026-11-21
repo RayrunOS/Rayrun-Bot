@@ -137,8 +137,9 @@ attention、snippet 与时间。chat 来源没有 TTL，显示 `waits for you`�
 `machine.create`，规格取插件的 `defaults`（默认 `deepseek-harness@1`、2 vCPU、至少 2 GB、
 远程桌面）。key 只作为 `modelKey` 交给云电脑插件存成机器凭据，不进入 Bots 的 host 状态，
 成功后清空输入。按钮文案明确说明这是 Rayrun 账号上的计费机器，且 Bots 永不销毁它；
-未连接时按钮不可用，失败显示一句可执行错误。创建成功路径尚未在 Rayrun 沙箱验证，见
-[`10-rayrun-verification.md`](10-rayrun-verification.md) §4。
+未连接时按钮不可用，失败显示一句可执行错误。依赖层创建成功路径已在本机用真实 token
+和 model key 验证（token 未进入沙箱）；Bots 页面内的创建按钮、已有机器采用和 Continue
+仍待真实 DSH 页面验证，见 [`10-rayrun-verification.md`](10-rayrun-verification.md) §4。
 
 每一步显示内联状态和“去修复”的链接；全部就绪时可跳过；依赖缺失或版本不匹配要给一句
 可执行的安装提示，不崩溃。
@@ -149,7 +150,8 @@ attention、snippet 与时间。chat 来源没有 TTL，显示 `waits for you`�
 提示先连接（`computer.connectFirst`）；没有机器、弹窗被拦截、启动超时、没有 desktop
 时各自一句可执行提示。成功时在新标签打开 `desktop_url`，密码只保存在页面状态里，用
 可关闭的提示条显示。两个按钮当前调用同一路径，`Take over` 的共享控制语义尚未实现。
-成功路径尚未在 Rayrun 沙箱用真实 token 和真实机器验证，见
+依赖层 Open 成功路径已在本机用真实 token 和真实机器验证（token 未进入沙箱）；Bots
+页面内的弹窗和密码提示条仍待真实 DSH 页面验证，见
 [`10-rayrun-verification.md`](10-rayrun-verification.md) §4。
 
 **空 roster**：列表和中心区显示 `No bots yet` + `Create bot`；新建 bot 后进入空对话

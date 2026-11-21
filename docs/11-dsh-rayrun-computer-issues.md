@@ -54,6 +54,7 @@
 | RC-011 | 2026-11-21 | Medium | 安全 | `machine.password` 通过同源 RPC 直接返回桌面密码（stdout/stderr），没有额外授权或一次性限制。证据：`index.js` `machine.password` → `desktopPassword(id)`；插件 UI 同样读取。 | 同源脚本可在用户不知情时读取密码；Bots 只在用户点击 Open 后调用且不记录，但依赖层没有门槛。 | Open；上游可考虑短期/一次性 token 或显式确认；Bots 继续只在用户动作后读取。 |
 | RC-012 | 2026-11-21 | Low | 契约 | RPC surface 没有机器可读的 schema 或版本；action 名称和返回形状靠源码/文档约定。证据：`index.js` action switch；本仓库 `lib/dependency.js` 只检查包 semver。 | 依赖升级可能静默改形状；Bots 的 contract 测试只能测自己的假设。 | Open；上游应发布 action/schema 版本或 JSON schema；Bots 在版本检查之外加形状探测。 |
 | RC-013 | 2026-11-21 | Low | 契约 | `machine.desktopRepair` 返回 exec 输出而不是更新后的 machine；调用方要再 `machine.get`。证据：`index.js` 返回 `{ ok: true, result }`。 | Bots Open 多一次往返；当前 repair 不改 `desktop_url`，所以用旧对象未出错。 | Open；Bots 可按需 refetch。上游应返回 machine 或文档说明需要 refetch。 |
+| RC-014 | 2026-11-21 | Medium | 隐私/契约 | `ensureModelCredential` 用本机 hostname 生成 credential 名称（`dsh-model-<hostname>`）。证据：`lib/rayrun.js` 的 `modelCredentialName()` 调 `hostname()`；2026-11-21 真实测试返回的名称含本机主机名（本文不记录具体值）。 | Rayrun 账号会看到本机主机标识；换机器会生成新 credential，产生重复；Bots 无法给用户稳定、友好的凭据名。 | Open；上游应接受调用方提供的显示名或用稳定标签；Bots 目前不能改名。 |
 
 ## 4. 按设计/非问题
 
@@ -81,7 +82,7 @@
 
 ## 6. 记录规则
 
-- 新问题从 `RC-014` 起编号；写日期、严重度、类型、证据、影响/workaround、状态与下一步。
+- 新问题从 `RC-015` 起编号；写日期、严重度、类型、证据、影响/workaround、状态与下一步。
 - 上游 issue/PR 引用本文 ID；解决后把状态改为 `Resolved（日期）`，保留行。
 - 只记录**依赖自身**的问题；测试环境缺口放 10，平台能力需求放 08。
 - 不在本仓库修改、fork 或 vendor `dsh-rayrun-computer`；需要适配就写在我们包里。

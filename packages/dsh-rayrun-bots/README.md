@@ -25,23 +25,25 @@ action. The screens are an in-memory preview. There is no bot layer yet.
   `machine.create` with the plugin's defaults; a pasted DeepSeek key is passed as
   `modelKey` and becomes the machine's Rayrun credential, then the input is
   cleared. The step says the machine is billable, and the button is disabled
-  until Rayrun is connected. Creating a machine for real has not been run
-  because a real token is not placed in the sandbox.
+  until Rayrun is connected. Creating a machine was run on a real Rayrun account
+  from a local harness with test keys (the keys never entered the sandbox); the
+  Bots page success path is still a manual check.
   `Open` / `Take over` on the computer card uses the same RPC to start or resume
   the machine, wait for `Running`, repair the desktop service, read `desktop_url` and the desktop password,
   then open the desktop in a new tab and show the password in a dismissible
   toast; both buttons currently run the same path. It fails closed with one
   actionable line when Rayrun is not connected, there is no machine, the popup
   is blocked, the machine does not start in time, or it has no desktop. The
-  success path against a real machine has not been run in the Rayrun sandbox.
+  dependency-level start/repair/desktop/password path was run locally against a
+  real machine; the Bots page success path is still a manual check.
   The Settings Usage row reads the real balance, machine-hours and machine count
   through the same RPC; without a connection it says so instead of showing sample
   numbers. The rest stays in the page, and the client keeps neither the token nor
   a DeepSeek key.
 
-Not built yet: a verified computer-creation success path, a verified `Open`
-success path, a real bot roster, bot↔session mapping, remote approvals,
-routines that run, and the npm release path. See the
+Not built yet: Bots-page-level verified computer-creation and `Open` success
+paths, a real bot roster, bot↔session mapping, remote approvals, routines that
+run, and the npm release path. See the
 repo-level [MVP plan](../../docs/plans/mvp-plan.md) and [client plan](../../docs/plans/client-plan.md).
 
 ## DSH compatibility

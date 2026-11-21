@@ -111,6 +111,24 @@
 - Bots 未连接状态的界面（2026-11-21）：详情电脑块显示 `Not connected`（中性点），聊天
   底部不再显示 `Computer reconnecting…`；Settings 的 Usage 行调 `overview` 并显示
   `Connect Rayrun to see usage.`，不显示样本余额。
+- Rayrun 连接成功路径（2026-11-21，本机依赖库 + 测试 token）：`overview` 返回
+  `configured: true`、余额 ¥27.44、231.0 机时、3 台非 Terminated 机器；token 只在
+  本机读取，没有进入任何 Rayrun 沙箱、仓库或日志。
+- Open 成功路径（2026-11-21，本机依赖库 + `dsh-desktop-build`）：Stopped → Running，
+  `machine.desktopRepair` 成功，`desktop_url` GET 返回 200 `text/html`，
+  `machine.password` 返回非空 stdout（137 字符，未记录值）；测试后 `stop` 回 Stopped，
+  未 destroy。
+- 云电脑创建成功路径（2026-11-21，本机依赖库 + 测试 model key）：
+  `ensureModelCredential` 成功，`machine.create` 创建 `rayrun-bot-test`（2 vCPU /
+  2048 MB / remote desktop），返回 Running，desktop URL 200，password 非空；测试后
+  `stop` 回 Stopped，未 destroy。
+
+> 以上三条是通过本机 Node 直接 import `dsh-rayrun-computer@1.0.0` 的
+> `lib/rayrun.js` 验证的，调用的是插件页面使用的同一组函数；没有启动 DSH web/页面。
+> 复现：从 1.0.0 tarball 解包，`createRayrun({ token })`，按
+> `overview` → `machineAction` → `machine` → `repairDesktop` → `desktopPassword`
+> 调用；创建用 `ensureModelCredential` → `createMachine`。token 和 model key 只在本机
+> 读取，不打印，不上传沙箱。页面层的按钮、弹窗和密码提示条仍未验证（见 §4）。
 
 ---
 
@@ -118,18 +136,16 @@
 
 - 官方 DSH 桌面安装器、更新器、卸载、再分发条款、analytics（R-G001）；
 - `profiles/desktop` 的创建、插件写入和 Electron 启动；
-- 把 Rayrun token 放进沙箱后做真实云电脑操作（出于安全刻意没做；产品里 token
-  只应在本地 host）；
-- Bots `Open` / `Take over` 成功路径：真实 token、真实 Running 机器、`desktop_url`、
-  `machine.password`、桌面新标签和密码提示条；沙箱只验了未连接/弹窗拦截/无机器等负向
-  状态，成功路径需要在本地 DSH 用真实 token 和机器手工验证；
-- Bots setup 的云电脑创建成功路径：真实 token + `machine.create`（计费动作），包括采用
-  已有机器、把 DeepSeek key 作为 `modelKey`、创建后清空输入；沙箱只验了未连接/禁用
-  状态，成功路径需要在本地 DSH 用真实 token 手工验证；
-- Bots setup 的真实 Rayrun 连接成功路径：云端沙箱只用假 token 验了 401；真实 token
-  不进入云端沙箱，需要在本地 DSH 用真实 token 手工验证；
+- 在 Rayrun 云端沙箱内放真实 token 并直接操作云电脑（出于安全刻意不做；本轮在本机
+  依赖库验证，token 未进入沙箱）；
+- Bots 页面内的 `Open` / `Take over` 成功路径：依赖层的 start/repair/desktop_url/
+  password 已验证；页面层的按钮点击、弹窗、密码提示条仍待真实 DSH 页面手工验证；
+- Bots 页面内的云电脑创建成功路径：依赖层的 `ensureModelCredential` + `machine.create`
+  已验证；页面层的按钮、已有机器采用、Continue 仍待真实 DSH 页面手工验证；
+- Bots 页面内的 setup Rayrun 连接成功路径：依赖层 `overview` 已用真实 token 验证；
+  页面层的粘贴/Connect/余额显示仍待真实 DSH 页面手工验证；
 - bot 会话、审批往返、远程审批、队列与恢复；
-- DeepSeek 模型调用（测试没有 DeepSeek key）；
+- DeepSeek 模型调用（本轮只创建了 model credential，没有发模型请求）；
 - 零余额宽限/force-destroy 行为（R-G009，不做破坏性验证）；
 - 在 Rayrun 上构建自定义 Dockerfile 镜像（R-G013）。
 

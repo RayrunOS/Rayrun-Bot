@@ -4,7 +4,7 @@
 
 Rayrun Bot 给 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 里的 Bot 一个名字、一副身体和一个家。Bot 不是聊天会话：它有名字、指令、记忆和日程，住在你自己的 [Rayrun](https://rayrunos.com/) 云电脑上——一台你能看见、也能接管的 Linux 机器——并用你自己的 DeepSeek API key 思考。没有我们托管的东西：算力记在你自己 Rayrun 账号上，模型账单是你的，审批提示就是约定。本仓库就是把这个产品造出来的地方。
 
-> **状态（2026 年 11 月）。** Pre-alpha。本项目赖以构建的云电脑插件是一个独立项目，在 [RayrunOS/dsh-rayrun-computer](https://github.com/RayrunOS/dsh-rayrun-computer) 单独维护；Rayrun Bot 在它之上加 Bot 层，本仓库造的就是这一层。`packages/dsh-rayrun-bots` 已经能作为 bundle 加载。它的 Client 半区打开即进入 Bots 表面，画出 v0.1 界面（聊天列表、对话、详情、新建 Bot、设置向导、设置页），数据只存在这一页的内存里，并通过同源 health 动作读取 host 状态；setup 的 Rayrun 步骤会经云电脑插件的同源 RPC 粘贴 token，setup 的云电脑步骤也经同一 RPC 采用或创建第一台云电脑，电脑卡片的 Open / Take over 也走同一 RPC 启停机器并打开桌面；Settings 的用量行读取真实余额、机时与云电脑数量。Host 半区仍然只回答一次 health 检查。没有持久化的名册，没有远程审批，也没有可发布的版本。
+> **状态（2026 年 11 月）。** Pre-alpha。本项目赖以构建的云电脑插件是一个独立项目，在 [RayrunOS/dsh-rayrun-computer](https://github.com/RayrunOS/dsh-rayrun-computer) 单独维护；Rayrun Bot 在它之上加 Bot 层，本仓库造的就是这一层。`packages/dsh-rayrun-bots` 已经能作为 bundle 加载。它的 Client 半区打开即进入 Bots 表面，画出 v0.1 界面（聊天列表、对话、详情、新建 Bot、设置向导、设置页），数据只存在这一页的内存里，并通过同源 health 动作读取 host 状态；setup 的 Rayrun 步骤会经云电脑插件的同源 RPC 粘贴 token，setup 的云电脑步骤也经同一 RPC 采用或创建第一台云电脑，电脑卡片的 Open / Take over 也走同一 RPC 启停机器并打开桌面；Settings 的用量行读取真实余额、机时与云电脑数量。依赖层的连接、创建和桌面成功路径已在 2026-11-21 用本地测试 key 验证；页面层的成功路径仍需真实 DSH 页面验证。Host 半区仍然只回答一次 health 检查。没有持久化的名册，没有远程审批，也没有可发布的版本。
 
 ## 工作原理
 
@@ -147,7 +147,7 @@ dsh plugin --profile web add /absolute/path/to/package
 | --- | --- |
 | **今天可用**（独立项目，我们的依赖） | 7 个 `rayrun_*` 工具、noVNC 桌面、按会话的云/本地路由、双端哈希校验的 workspace 同步、任务委托、worker 投影、可选空闲停机。已在 DeepSeek Harness `0.2.1-rc.5` 上验证。 |
 | **本仓库** | README、docs、issue/PR 模板、agent 规则、依赖边界，以及 `dsh-rayrun-bots`：一条 health 路由加上 v0.1 客户端界面（五个画面，内存里的预览，同源读取 host 状态，setup 的 Rayrun token 桥接，setup 的云电脑创建，以及经云电脑插件 RPC 的 Open / Take over），带普通 Node 检查与只跑检查的 CI workflow（Node 24/26 加 DSH profile 安装冒烟）。还没有持久化的 Bot 层，也没有可发布版本。 |
-| **尚未构建** | 已验证的云电脑创建成功路径、Bot 名册与 Bot↔session 映射、机器上的常驻 DSH host、能拦住 worker 的远程审批、真正会跑的 routines 与触发器、来自账号的实时用量、IM 通道、两插件安装路径（依赖声明与版本检查）、npm 包以及发布用的 CI 路径。 |
+| **尚未构建** | setup 与 Open 的页面层成功验证、Bot 名册与 Bot↔session 映射、机器上的常驻 DSH host、能拦住 worker 的远程审批、真正会跑的 routines 与触发器、来自账号的实时用量、IM 通道、两插件安装路径（依赖声明与版本检查）、npm 包以及发布用的 CI 路径。 |
 | **平台缺口** | 安全入向网络（今天 token ingress 不可用，只有 `public` 能用）、空闲自动停、spend cap、session 续跑契约。完整清单在 [docs/01-system-architecture.md](docs/01-system-architecture.md)。 |
 
 **v0.1 路径**——从 npm 安装 → 登录 → 创建一个 Bot → 批准它的第一个受限动作。验收标准在 [docs/plans/roadmap.md](docs/plans/roadmap.md)。
