@@ -157,6 +157,11 @@
   `/workspace/dsh-web-url.txt` mode 600，公网 token URL 303→200，token 未打印、未进入
   沙盒。首次失败暴露了 `pgrep` 清理模式误杀执行 shell（exit 143）；改为按 6080 监听者
   和精确 `node ... dsh web` 命令行清理后通过。
+- DSH launch token 与 cookie（2026-11-21，同一沙盒）：部署前的签名 cookie 对部署后的
+  `dsh web` 进程仍返回 200。源码 `dsh-client-connection/src/browser-auth.ts` 确认
+  launch token 每个进程随机生成；cookie 签名 secret 存在
+  `$DSH_HOME/.credentials.yaml`，默认 30 天、绑定 host:port。因此 token URL 每次
+  部署都会变，但同一浏览器不需要重新取 key；新浏览器/设备才需要。
 
 > 前三条是通过本机 Node 直接 import `dsh-rayrun-computer@1.0.0` 的 `lib/rayrun.js`
 > 验证的，调用的是插件页面使用的同一组函数；第四条是在本机 DSH web 页面里用

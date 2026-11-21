@@ -190,7 +190,12 @@ Rayrun 调用。实时集成测试仍需要真实 Rayrun 凭据，不在 CI 运�
 | `RAYRUN_SANDBOX_ID` | variable | 目标沙盒 id；必须已有 public 6080 ingress（`remote_desktop: true`） |
 
 没有配置时 job 自动跳过，workflow 保持绿色；PR/fork 不运行该 job。部署会重启公网
-DSH，所以每次部署 token URL 都会变。取新链接（不要贴到公开渠道）：
+DSH，所以每次部署的 launch token URL 都会变。但首次用 token 交换后，浏览器会拿到
+30 天、绑定 host:port 的签名 cookie；签名 secret 存在沙盒 DSH 的 credential store
+（`$DSH_HOME/.credentials.yaml`），跨 DSH 重启/部署仍然有效（2026-11-21 实测：
+部署前的 cookie 在部署后仍返回 200）。同一浏览器可以继续用不带 token 的公网 URL；
+只有新浏览器/新设备、清 cookie、30 天到期，或 DSH home / ingress host 改变时才
+需要新的 token URL。取新链接（不要贴到公开渠道）：
 
 ```bash
 RAYRUN_TOKEN="$(cat <path-to-rayrun-token>)" \

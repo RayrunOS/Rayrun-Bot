@@ -128,6 +128,9 @@ main-only 的 Rayrun deploy job 需要把 Rayrun token 存成 GitHub Actions sec
 凭据**，不是产品运行时路径：它只用于上传包和重启指定沙盒的 `dsh web`，不会进入
 client、RPC、沙盒环境、工作区或日志；PR/fork 永远不运行这个 job。部署写入的
 `/workspace/dsh-web-url.txt` 含 DSH 进程 token，mode 600，取链接时按凭据处理。
+launch token 每个 `dsh web` 进程随机生成；token 交换后的签名 cookie 默认 30 天、
+绑定 host:port，签名 secret 存在沙盒 DSH 的 credential store，因此同一浏览器跨
+部署仍可用不带 token 的公网 URL。新浏览器/设备需要新的 token URL。
 
 残余风险：今天 Rayrun token 是账号级、无 scope；能改 main 的人可以触发部署并使用
 它。缓解：专用、可吊销的 Rayrun 账号/token；GitHub environment protection 或
