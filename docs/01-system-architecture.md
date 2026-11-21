@@ -402,7 +402,7 @@ ADR-004，未定之前 C1/D1 不应动工。
 | ADR-005 | 副作用执行语义 | 决定崩溃/重试会不会重复发送或花钱 |
 
 其余：ADR-006–ADR-013（合上笔记本、常驻 runtime/凭据、desktop、routines、RPC、
-审批 schema、恢复、文档清理）；ADR-014 属于 v1.0。
+审批 schema、恢复、文档清理）；ADR-014（B1 预配置 DSH 发行包）属于 v1.0。
 
 ---
 
@@ -413,5 +413,5 @@ ADR-004，未定之前 C1/D1 不应动工。
 - 工作分解与验收：`plans/mvp-plan.md`；客户端：`plans/client-plan.md`；平台 handoff：
   `08-integration.md`。
 - 未决/已定架构决策：`adr/architecture-decisions.md`，登记册在 `docs/README.md` §3。
-- v1.0 桌面发行版：`design/desktop-distribution.md`（ADR-014）；不阻塞 v0.1。
+- v1.0 桌面发行版：`design/desktop-distribution.md`（ADR-014，B1）；不阻塞 v0.1。
 - 与代码冲突时：先核实当前行为，再修正错误的一方；不要凭记忆描述现状。

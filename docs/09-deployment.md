@@ -1,6 +1,6 @@
 # 09 — 部署与运行
 
-> 状态：2026-11-20。本文说明依赖、安装、运行、配置、检查与故障处理。它是
+> 状态：2026-11-21。本文说明依赖、安装、运行、配置、检查与故障处理。它是
 > [`../README.md`](../README.md) 快速开始的展开版；实现状态以 README 的 **Status**
 > 段为准。产品方向见 [`00-product-direction.md`](00-product-direction.md)；技术基线见
 > [`01-system-architecture.md`](01-system-architecture.md)；平台 handoff 见
@@ -161,8 +161,8 @@ push/PR 的 diff 还要通过 `git diff --check`（尾随空白与冲突标记�
 上跑 `--dump-config`，确认 bundle 行能合成。该矩阵不覆盖云电脑插件，也不发真实
 Rayrun 调用；实时集成测试需要真实 Rayrun 凭据，绝不在 CI 运行。发布与发布自动化
 尚不存在；release checklist 见 [`plans/mvp-plan.md`](plans/mvp-plan.md) §12。v1.0
-桌面发行版的 A/B/C 方案见
-[`design/desktop-distribution.md`](design/desktop-distribution.md)。
+桌面发行版采用 B1 预配置 DSH 发行包（bootstrap 安装器），B2 整包更新是升级路径；
+见 [`design/desktop-distribution.md`](design/desktop-distribution.md)。
 
 ---
 

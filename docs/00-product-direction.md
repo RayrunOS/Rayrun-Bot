@@ -1,6 +1,6 @@
 # 00 — 产品方向：定位与 v0.1 范围
 
-> 状态：2026-11-20。本文是**产品层的唯一真相源**：卖给谁、解决什么问题、v0.1 做什么、怎么算做完。
+> 状态：2026-11-21。本文是**产品层的唯一真相源**：卖给谁、解决什么问题、v0.1 做什么、怎么算做完。
 > 实现状态与进度只看 [`../README.md`](../README.md) 的 **Status** 段；本文不复制状态。
 > 技术方案见 [`01-system-architecture.md`](01-system-architecture.md)；工作分解与验收见
 > [`plans/mvp-plan.md`](plans/mvp-plan.md)；未决架构决策见
@@ -191,14 +191,14 @@ v0.1 的完成标准是 [`plans/mvp-plan.md`](plans/mvp-plan.md) §2 的 A1–A1
 | --- | --- | --- |
 | v0.1 | 闭环保通 | 双插件、一台电脑、bot 注册表、续接、审批、成本栏、打包与 A1–A12 |
 | v0.2 | 手机上也能批 | 用户自己的 IM bot token（Telegram / Feishu）；无项目方中继；浏览器路径保持可用 |
-| v1.0 | 桌面发行版 | 默认复用 DSH 官方桌面 + 首启安装两个插件；只有“必须单一签名更新单元”时才做自定义 DSH 桌面发行版；自建薄壳为 fallback。设计见 [桌面发行版](design/desktop-distribution.md)（ADR-014） |
+| v1.0 | 桌面发行版 | 预配置 DSH 发行包（B1）：安装器装好官方 DSH 和两个插件，打开即用；B2 自定义整包更新是升级路径；薄壳不做。设计见 [桌面发行版](design/desktop-distribution.md)（ADR-014） |
 | 不计划 | 见 [`plans/roadmap.md`](plans/roadmap.md) “Not planned” | 多租户 SaaS、托管账号、团队/RBAC、市场、移动 App、provider 抽象、转售计费、多区域/SLA |
 
 v0.1 的估算与排序见 [`plans/mvp-plan.md`](plans/mvp-plan.md)；里程碑摘要见
-[`plans/roadmap.md`](plans/roadmap.md)。估时是工程判断，不是承诺。v1.0 的桌面
-发行版是 A/B/C 三选一（A 默认：官方 DSH 桌面 + 首启装插件；B：自定义 DSH 桌面
-发行版；C：自建薄壳 fallback），见 [桌面发行版](design/desktop-distribution.md) 和
-[ADR-014](adr/architecture-decisions.md#adr-014)；它是 Proposed，不是 v0.1 承诺。
+[`plans/roadmap.md`](plans/roadmap.md)。估时是工程判断，不是承诺。v1.0 的桌面发行版
+已定为 **B1：预配置 DSH 发行包（bootstrap 安装器）**；B2 自定义整包更新是升级路径，
+薄壳不做，见 [桌面发行版](design/desktop-distribution.md) 和
+[ADR-014](adr/architecture-decisions.md#adr-014)。它不是 v0.1 承诺。
 
 ---
 
@@ -216,6 +216,7 @@ v0.1 的估算与排序见 [`plans/mvp-plan.md`](plans/mvp-plan.md)；里程碑�
 | D8 | v0.1 是 DSH 插件 + `dsh web` | 不重写聊天；桌面壳是 v1.0 的可选赌注 |
 | D9 | v0.1 只接 Rayrun + DeepSeek | 一个后端做透，不提前做 provider 抽象 |
 | D10 | 不做 bot/skill 市场 | 先把运行、审批和成本跑通，不引入双边市场 |
+| D11 | v1.0 走 B1 预配置 DSH 发行包 | 用户下载即带好两个插件；DSH 保持官方 updater，B2 只在必须整包签名时升级 |
 
 ---
 
@@ -227,8 +228,6 @@ v0.1 的估算与排序见 [`plans/mvp-plan.md`](plans/mvp-plan.md)；里程碑�
 - **routines / scheduler 进不进 v0.1？** 架构层写了 scheduler，MVP 计划标 P1，需统一（ADR-009）。
 - **“合上笔记本”期间哪些工作继续、计费怎么处理？** 后台审批 30 分钟过期，本地 idle stop 不在运行（ADR-006）。
 - **desktop / takeover 的安全路径是什么？** public 端口不能当产品面板（ADR-008）。
-- **v1.0 桌面发行版选 A 还是 B？** 默认 A（官方 DSH 桌面 + 首启装插件）；只有
-  “必须单一签名更新单元”时才做 B（ADR-014）。
 - **IM 审批何时做？** v0.2，用户自己的 bot token，无项目方中继。
 - **per-bot 成本归因是否进 v0.1？** MVP 计划标 P1。
 

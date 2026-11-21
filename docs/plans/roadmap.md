@@ -1,11 +1,11 @@
 # Roadmap
 
-*Status: 2026-11-11. Pre-alpha bootstrap. Two separate projects: the
+*Status: 2026-11-21. Pre-alpha. Two separate projects: the
 cloud-computer plugin `RayrunOS/dsh-rayrun-computer` stays its own project and is
 consumed as a dependency. The milestones below come from the product research
-that shaped this repository; they are direction, not promises. Nothing on the
-v0.1 list is built in this repository yet — the bot half does not exist. Dates
-are omitted on purpose.*
+that shaped this repository; they are direction, not promises. The v0.1 client
+shell and health route exist; the persisted bot layer, sessions, remote
+approvals and routines do not. Dates are omitted on purpose.*
 
 ## Where we are (M0 — bootstrap)
 
@@ -90,28 +90,37 @@ Exit criteria:
   project server;
 - the browser path keeps working if IM is not configured.
 
-## v1.0 — optional desktop shell and stability
+## v1.0 — preconfigured DSH distribution and stability
 
-Goal: only if evidence says a standalone app is needed, reuse the official DSH
-desktop, or wrap `dsh web` in a thin shell as a fallback; never rewrite the chat
-UI. The research view is that the plugin
-plus `dsh web` is the v0.1/v0.2 form and a desktop app is a later bet, worth
-1–2 weeks of wrapping rather than a new client. The official DSH desktop already
-ships a signed update unit for the shell and its bundled dsh runtime; external
-plugins are installed and updated separately.
+Goal: ship B1, a Rayrun-branded installer that installs official DSH and both
+plugins into the desktop profile, so the user opens DSH with Bots ready and no
+manual plugin step. DSH keeps its official updater; plugins update through our
+signed manifest/bootstrap. B2, a custom DSH desktop build with one signed update
+unit, is the upgrade path if profile persistence, full branding or analytics make
+B1 insufficient. No thin shell; never rewrite the chat UI.
 
 Also in scope for a stable v1.0, as capacity allows:
 
 - a documented version compatibility matrix (DSH × cloud image × packages);
 - release and install polish (package manager installs, provenance, an update
-  story); the v1.0 desktop distribution decision is in
-  [desktop distribution](../design/desktop-distribution.md) (ADR-014): reuse
-  the official DSH desktop and install the plugins once by default, or build a
-  custom DSH desktop distribution when one signed update unit is required;
+  story); the v1.0 distribution is B1, described in
+  [desktop distribution](../design/desktop-distribution.md) (ADR-014);
+- spike D-S1a before building the installer: profile persistence across a DSH
+  update, installer redistribution terms, unattended/offline install and
+  rollback, uninstall, and analytics (checklist in the design doc §5.7). The
+  2026-11-21 Rayrun web-profile run covers plugin install/compose/render,
+  removal, offline tarball install, corrupt-package fail-stop and profile
+  persistence across a DSH update; `profiles/desktop`, the installer, rollback,
+  app uninstall, redistribution and analytics still need the official
+  Windows/macOS desktop (design doc §5.8);
 - public, dated status docs that match the shipped code.
 
 Exit criteria:
 
+- a clean machine goes from the installer to Bots setup without a manual plugin
+  step;
+- a DSH update preserves or repairs the plugin profile, and plugin updates verify
+  signatures, stage atomically and roll back on failure;
 - the shell adds only packaging and OS integration; the UI is DSH's;
 - a user can uninstall cleanly and revoke access at the provider;
 - the docs' status claims are checked against the release, not aspirational.

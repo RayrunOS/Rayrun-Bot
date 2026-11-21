@@ -27,7 +27,7 @@
 | [ADR-011](#adr-011) | 审批 schema 与 canonical action hash | Proposed | canonical JSON、完整 decision 字段、本地重算 hash | E2–E6, C-S6 |
 | [ADR-012](#adr-012) | 恢复与运行语义 | Proposed | 补字段、时钟规则、限流与审计语义 | C8, D4, E5–E7, A8, A9 |
 | [ADR-013](#adr-013) | 文档清理 | Proposed | 与相关决策同批修正下文列出的矛盾 | docs |
-| [ADR-014](#adr-014) | 桌面发行版与更新单元 | Proposed（v1.0） | 默认官方 DSH 桌面 + 首启装插件；单一更新单元才做自定义发行版；薄壳 fallback | v1.0, 09-deployment |
+| [ADR-014](#adr-014) | 桌面发行版与更新单元 | Accepted（2026-11-21，B1） | v1.0 采用预配置 DSH 发行包（bootstrap 安装器）；B2 整包更新是升级路径；薄壳不做 | v1.0, 09-deployment |
 | [ADR-015](#adr-015) | 云端 bot runtime 层 | Proposed（v0.1） | 用户云电脑内的 supervisor；queue/session/DSH/事件/恢复 | C1–C9, D1–D5, E1–E7 |
 | [ADR-016](#adr-016) | 本地 bot 控制面 | Proposed（v0.1） | DSH host + 插件 host half；token/审批/成本/依赖；不做托管服务 | A2/A3, B1–B4, E3/E4, G1/G2 |
 
@@ -454,7 +454,7 @@ untrusted”；[客户端计划](../plans/client-plan.md) C-S6。
 <a id="adr-014"></a>
 ### ADR-014 — 桌面发行版与更新单元
 
-**状态：** Proposed（v1.0）.
+**状态：** Accepted（2026-11-21，B1）.
 
 **问题。** 是否把 DSH、两个插件和首启向导打包成一个桌面 App？如果打包，更新单元
 是什么？
@@ -473,33 +473,49 @@ untrusted”；[客户端计划](../plans/client-plan.md) C-S6。
 
 **问题。** 如果壳、DSH、两个插件各自更新，会出现版本错配；本地 DSH 与云端镜像的
 DSH 版本也可能不一致。用户要的是“打开即用”，但 DSH 官方签名的更新单元**不包含**
-external plugins。要预装插件或把它们放进同一个更新单元，必须定制 DSH 桌面发行版，
+external plugins。要预装插件或把它们放进同一个更新单元，必须自己控制安装/分发层，
 或接受首启安装/单独更新。
 
 **选项。**
 
-1. **A. 官方 DSH 桌面 + 首启安装两个插件（默认）**：DSH 用官方 updater；插件用
+1. **A. 官方 DSH 桌面 + 首启安装两个插件（开发路径）**：DSH 用官方 updater；插件用
    plugin manager/market 单独更新；首启装一次插件。成本最低，不是单一更新单元。
-2. **B. 自定义 DSH 桌面发行版**：从 MIT 源码构建，定制品牌/签名/更新 feed，把两个
+2. **B1. 预配置 DSH 发行包**：自己的安装器装好官方 DSH，再把两个插件写进 desktop
+   profile；DSH 保持官方 updater，插件由我们的签名 manifest/bootstrap 更新。打开
+   即用，但不是单一更新单元。
+3. **B2. 自定义 DSH 桌面发行版**：从 MIT 源码构建，定制品牌/签名/更新 feed，把两个
    插件加入 official bundle list 或预置 profile；DSH + 插件整包更新。真正“打开即
    用”，但维护成本最高。
-3. **C. 自建薄壳**：重复 DSH desktop 已有的 host/updater；只在 DSH 桌面无法满足硬
-   需求时作 fallback。
+4. **C. 自建薄壳**：重复 DSH desktop 已有的 host/updater；只在 DSH 桌面无法满足硬
+   需求时考虑，当前不做。
 
-**建议。** 默认 **A**。只有“必须一个签名更新单元、且用户不能做插件安装步骤”是硬
-需求时才做 **B**。**C** 作为 fallback，不和 B 同时做。
+**决策（2026-11-21）。** v1.0 采用 **B1：预配置 DSH 发行包（bootstrap 安装器）**。
+用户下载一个 Rayrun 品牌的安装器；安装器安装或检测官方 DSH，然后把
+`dsh-rayrun-bots` 和 `dsh-rayrun-computer` 的发布包装进
+`$DSH_HOME/profiles/desktop`，打开后 Bots 已就绪，不需要手动装插件。
 
-- A：写清首启安装（plugin index / CLI）、插件更新、DSH 升级后的兼容检查，以及
-  DSH analytics 的声明。
-- B：先做 spike D-S1：用 DSH 桌面源码构建自定义品牌、签名和更新 feed，预置 bundle，
-  关闭/声明 analytics，验证 DSH + 插件整包更新与回滚。
-- 两者都必须：更新默认“提示 + 用户确认”，签名 manifest，失败即停并回滚，版本矩阵
-  包含本地 DSH 与云端镜像 DSH。
+- DSH 本身保持官方构建和官方 updater；我们只定制安装/分发层，不 fork DSH core。
+- 插件更新由我们自己的签名 manifest 或安装器在版本变化时重跑 bootstrap 负责；
+  不是单一签名更新单元。
+- **B2（自定义 DSH 桌面发行版）** 保留为升级路径：只有“必须单一签名更新单元 /
+  完整 Rayrun 品牌 / DSH analytics 或更新 feed 不可接受”成为硬需求时才做。
+- **A** 仍用于开发和早期试用（用户自己的 DSH 手动装插件）；**C** 不做。
 
-设计细节见 [桌面发行版设计](../design/desktop-distribution.md)。
+B1 必须先跑 spike **D-S1a**，验证：
+
+- DSH 升级是否保留 `$DSH_HOME/profiles/desktop` 和已装插件；不保留时 bootstrap 能否
+  幂等修复；
+- 官方安装器/二进制的再分发条款与 “DeepSeek Harness” 商标使用；
+- 两个插件能否无人值守、离线安装，失败时回滚且不留半装状态；
+- 卸载/升级后的 profile、token 和 workspace 数据处置；
+- DSH desktop analytics 能否声明或关闭；B1 继承 DSH 的 analytics，B2 必须关闭/替换。
+
+两者都必须：更新默认“提示 + 用户确认”，签名 manifest，失败即停并回滚，版本矩阵
+包含本地 DSH、两个插件与云端镜像 DSH。设计细节和 D-S1a 清单见
+[桌面发行版设计](../design/desktop-distribution.md)。
 
 **影响。** v1.0 范围、[部署](../09-deployment.md)、[产品方向](../00-product-direction.md)
-§8、[集成](../08-integration.md) 的镜像版本；不阻塞 v0.1。B 还需要 DSH 桌面构建/
+§8、[集成](../08-integration.md) 的镜像版本；不阻塞 v0.1。B2 仍需 DSH 桌面构建/
 签名/更新源与 analytics 配置的确认。
 
 **证据。** DSH `apps/desktop/README.md`、`packages/util/official-bundles/README.md`、
@@ -606,8 +622,9 @@ token）；provider 抽象（v0.1 不做）。
 5. **ADR-007 spike。** M2 前必须拿到 session、常驻 bot runtime 和凭据注入的证据。
 6. **ADR-006、ADR-008、ADR-009 并行。** 它们是范围/产品决策，不是代码阻塞。
 7. **ADR-010 与 ADR-013 作为清理。** 在客户端接 host 之前对齐 RPC 契约和文档。
-8. **ADR-014 是 v1.0 的前置。** 先确认 A/B：默认 A（官方 DSH 桌面 + 首启装插件）；
-   只有必须单一签名更新单元时才做 B，并先跑 spike D-S1。不在 v0.1 做桌面发行版。
+8. **ADR-014 定为 B1。** v1.0 做预配置 DSH 发行包（bootstrap 安装器）；B2 整包更新
+   是升级路径，C 不做。先跑 spike D-S1a 验证 profile 保留、再分发条款、离线安装/
+   回滚、卸载与 analytics。不在 v0.1 做桌面发行版。
 
 B1（`bot.json` schema）可以在 ADR-002 与 ADR-011 定下字段和所有权后开始；不要先
 finalize 一个会被所有权模型推翻的 schema。
