@@ -97,6 +97,18 @@ jobs:
           dsh --profile ci --dump-config > "$RUNNER_TEMP/composed-config.yml"
           grep -A1 '^- id: rayrun-bots$' "$RUNNER_TEMP/composed-config.yml" \
             | grep -q '^  name: dsh-rayrun-bots$'
+      - name: Install the packed tarball into a second profile and compose it
+        env:
+          DSH_HOME: ${{ runner.temp }}/dsh-home
+        run: |
+          export PATH="$RUNNER_TEMP/dsh/node_modules/.bin:$PATH"
+          npm pack "$GITHUB_WORKSPACE/packages/dsh-rayrun-bots" --pack-destination "$RUNNER_TEMP"
+          TARBALL=$(ls "$RUNNER_TEMP"/dsh-rayrun-bots-*.tgz | head -1)
+          test -n "$TARBALL"
+          dsh plugin --profile ci-pack add "$TARBALL"
+          dsh --profile ci-pack --dump-config > "$RUNNER_TEMP/composed-pack.yml"
+          grep -A1 '^- id: rayrun-bots$' "$RUNNER_TEMP/composed-pack.yml" \
+            | grep -q '^  name: dsh-rayrun-bots$'
 
   deploy:
     name: deploy to Rayrun sandbox

@@ -1,0 +1,64 @@
+# 版本矩阵
+
+> 状态：2026-11-22。本文记录 DSH、云电脑依赖 `dsh-rayrun-computer` 与 Rayrun Bot
+> 包的兼容范围，以及**实际验证过**的组合。它不承诺未测试的组合；实现状态仍以
+> [`../README.md`](../README.md) 的 **Status** 段为准。
+> 依赖边界见 [`08-integration.md`](08-integration.md)；验证环境缺口见
+> [`10-rayrun-verification.md`](10-rayrun-verification.md)。
+
+## 1. 声明范围
+
+| 组件 | 声明 | 来源 |
+| --- | --- | --- |
+| DeepSeek Harness | `>=0.2.0-rc.2 <0.3.0` | `packages/dsh-rayrun-bots/package.json` 的 `engines.dsh` |
+| `dsh-rayrun-computer` | `>=1.0.0 <2.0.0` | `packages/dsh-rayrun-bots/lib/dependency.js` |
+| Node | `>=24` | `engines.node` |
+| Rayrun Bot | `0.1.0-alpha.0` | `package.json` |
+
+DSH `0.2.2-rc.5` 会读取并强制执行 `engines.dsh`：超出范围的插件行在合成时被禁用；
+旧运行时忽略该字段。`dsh-rayrun-computer` 的版本由 host 在启动时读取，缺失或不在
+1.x 时分别返回 `E_DEP_MISSING` / `E_DEP_VERSION`。
+
+## 2. 已验证组合
+
+| DSH | 依赖 | Rayrun Bot | Node | 验证内容 | 证据 |
+| --- | --- | --- | --- | --- | --- |
+| `0.2.0-rc.2`（Rayrun 镜像 `deepseek-harness@1`） | `1.0.0` | `0.1.0-alpha.0` | 24.22.0 | 两插件安装、bundle 合成、Bots/云电脑页面渲染、health、同源 POST 拒绝 | [`10-rayrun-verification.md`](10-rayrun-verification.md) §3.1 |
+| `0.2.1-rc.5` | 未安装 | `0.1.0-alpha.0` | 24 | 只安装 Bots 包并合成配置；未启动 web、未调用云电脑插件 | `.github/workflows/checks.yml` 的 `dsh-plugin` job |
+| `0.2.2-rc.5` | 未安装 | `0.1.0-alpha.0` | 24 / 26 | 只安装 Bots 包并合成配置 | 同上 |
+| `0.2.2-rc.5` | 未安装 | `0.1.0-alpha.0` | 24 | 从 `npm pack` 的 tarball 安装并合成配置（15 个文件） | [`10-rayrun-verification.md`](10-rayrun-verification.md) §3.1（2026-11-22） |
+| `0.2.2-rc.5` | `1.0.0` | `0.1.0-alpha.0` | 24 | 本机页面层 setup / Open / Stop / roster；依赖 RPC | [`10-rayrun-verification.md`](10-rayrun-verification.md) §3.1 |
+| `0.2.2-rc.5` | `1.0.0` | `0.1.0-alpha.0` | 24 + Rayrun 沙盒 | 云端 ingress、`dsh web` 部署与 token URL | [`09-deployment.md`](09-deployment.md)、[`10-rayrun-verification.md`](10-rayrun-verification.md) §3.1 |
+
+“未安装”表示该 CI 矩阵只验证 Bots 包本身能安装和合成，不验证依赖或云端行为。
+
+## 3. 安装与打包检查
+
+包尚未发布到 npm；今天从 checkout 或本地 tarball 安装：
+
+```bash
+# checkout
+dsh plugin --profile web add /absolute/path/to/packages/dsh-rayrun-bots
+
+# tarball（发布产物的内容）
+npm pack ./packages/dsh-rayrun-bots --pack-destination /tmp
+dsh plugin --profile web add /tmp/dsh-rayrun-bots-0.1.0-alpha.0.tgz
+```
+
+`node packages/dsh-rayrun-bots/test/package-contents.mjs` 用
+`npm pack --dry-run --json` 校验 tarball 内容：host half、client half、locale、
+`cordis.patch.yml`、`lib/*.js`、`icon.svg`、README 和 LICENSE 必须在；`test/`、
+`docs/`、`tools/`、`node_modules/`、`.env` 和 `.tgz` 不得进入。
+
+发布前仍需决定 npm 归属与发布账号（[`plans/mvp-plan.md`](plans/mvp-plan.md) §11
+第 5 项），并配置 OIDC trusted publishing。在这之前不要创建会发布的 CI job。
+
+## 4. 未验证
+
+- 官方 DSH 桌面（Electron）的创建、安装器、更新、卸载与再分发（R-G001）；
+- `dsh-rayrun-computer` 上 npm 与“一次安装带两个包”的依赖路径（S6）；
+- DSH `0.2.2-rc.5` 的 subprocess/terminal 完整安装路径（R-G005）；
+- 镜像 DSH `0.2.0-rc.2` 与本机/桌面 `0.2.2-rc.5` 的功能一致性（R-G007）；
+- 从 npm 安装 Rayrun Bot（包尚未发布）。
+
+新增验证后更新本表；不要把未测试的组合写成已支持。

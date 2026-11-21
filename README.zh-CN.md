@@ -120,7 +120,7 @@ Rayrun Bot/
 ├── tools/update-poc/            # 更新内核原型；不进入插件包
 ├── tools/rayrun-deploy/         # CI 部署 helper 与契约测试；不进入插件包
 └── packages/
-    └── dsh-rayrun-bots/         # health 路由 + v0.1 客户端界面、locale、测试
+    └── dsh-rayrun-bots/         # health 路由、Bot 名册、客户端界面、locale、测试
 ```
 
 云电脑插件（`dsh-rayrun-computer`）不在这个树里：它是**独立项目**，作为依赖被复用——同一个 DSH profile 里两个插件，一个产品。仓库和产品都叫 **Rayrun Bot**；插件包保留 `dsh-` 前缀，这是 DSH 插件生态的命名习惯。README 是产品页，细节在 `docs/`。深入阅读：[文档索引](docs/README.md)、[产品方向](docs/00-product-direction.md)、[系统架构](docs/01-system-architecture.md)、[Bot 模型](docs/02-bot-model.md)、[客户端设计](docs/03-client-design.md)、[云端 bot runtime](docs/04-cloud-host.md)、[审批](docs/05-approvals.md)、[本地状态](docs/06-local-state.md)、[安全](docs/07-security.md)、[集成](docs/08-integration.md)、[部署](docs/09-deployment.md)、[计划](docs/plans/mvp-plan.md)、[架构决策](docs/adr/architecture-decisions.md)、[FAQ](docs/faq.md)。两份 README 必须在同一个 commit 里更新——英文版为准。
@@ -135,19 +135,20 @@ dsh plugin --profile web add /absolute/path/to/package
 # 之后重启 DSH；页面启动时会加载新的 Client 半区
 ```
 
-- 检查：对 `packages/dsh-rayrun-bots/index.js` 和 `client.js` 做 `node --check`，然后跑 `node packages/dsh-rayrun-bots/test/manifest-check.mjs`、`locale-audit.mjs`、`rpc-contract.mjs`、`client-contract.mjs`，以及 `node tools/rayrun-deploy/test/contract.mjs`。
-- CI：同一组检查在 Node 24 和 26 上运行；push/PR 的 diff 必须通过 `git diff --check`；另有独立 job 把包装进临时 DSH profile，并在 DSH `0.2.1-rc.5` 和 `0.2.2-rc.5` 上合成 profile 配置（`.github/workflows/checks.yml`）。该 job 不测试云电脑插件、不启动 Web App，也不发 Rayrun 调用。另有一个 opt-in 的 `deploy` job：在 push 到 main（或手动触发）、配置了 `RAYRUN_TOKEN`/`RAYRUN_SANDBOX_ID` 且 `packages/dsh-rayrun-bots/**` 有变更时，打包插件、装进沙盒的 DSH web profile、在公网 6080 ingress 上重启 `dsh web`，并把带 token 的 URL 写到 `/workspace/dsh-web-url.txt`（mode 600）。URL 和 token 都不打印；用 `node tools/rayrun-deploy/fetch-url.mjs` 取链接。机器 Stopped 时会被 start（计费）。
+- 检查：对 `packages/dsh-rayrun-bots/index.js` 和 `client.js` 做 `node --check`，然后跑 `packages/dsh-rayrun-bots/test/*.mjs`（manifest、locale、RPC、client、bot schema、名册、tarball 内容），以及 `node tools/rayrun-deploy/test/contract.mjs`。
+- 兼容性：[docs/version-matrix.md](docs/version-matrix.md) 记录实际验证过的 DSH × `dsh-rayrun-computer` × Rayrun Bot 组合；未测试的组合不作承诺。
+- CI：同一组检查在 Node 24 和 26 上运行；push/PR 的 diff 必须通过 `git diff --check`；另有独立 job 把包从 checkout 和打包后的 tarball 装进临时 DSH profile，并在 DSH `0.2.1-rc.5` 和 `0.2.2-rc.5` 上合成 profile 配置（`.github/workflows/checks.yml`）。该 job 不测试云电脑插件、不启动 Web App，也不发 Rayrun 调用。另有一个 opt-in 的 `deploy` job：在 push 到 main（或手动触发）、配置了 `RAYRUN_TOKEN`/`RAYRUN_SANDBOX_ID` 且 `packages/dsh-rayrun-bots/**` 有变更时，打包插件、装进沙盒的 DSH web profile、在公网 6080 ingress 上重启 `dsh web`，并把带 token 的 URL 写到 `/workspace/dsh-web-url.txt`（mode 600）。URL 和 token 都不打印；用 `node tools/rayrun-deploy/fetch-url.mjs` 取链接。机器 Stopped 时会被 start（计费）。
 - 实时集成测试仍需真实 Rayrun 凭据，永远不在 CI 里跑。`deploy` job 是唯一使用真实 Rayrun token 的 CI 路径；它是维护者部署，不是测试，PR/fork 永远不运行。
 - 改任何东西之前先读 [`CLAUDE.md`](CLAUDE.md) 和 [`CONTRIBUTING.md`](CONTRIBUTING.md)。提交信息用英文，前缀 `feat:`、`fix:`、`chore:`、`docs:`。
 
 ## 状态
 
-*截至 2026-11-21。*
+*截至 2026-11-22。*
 
 | | |
 | --- | --- |
 | **今天可用**（独立项目，我们的依赖） | 7 个 `rayrun_*` 工具、noVNC 桌面、按会话的云/本地路由、双端哈希校验的 workspace 同步、任务委托、worker 投影、可选空闲停机。已在 DeepSeek Harness `0.2.1-rc.5` 上验证。 |
-| **本仓库** | README、docs、issue/PR 模板、agent 规则、依赖边界，以及 `dsh-rayrun-bots`：一条 health 路由、一份持久化的本机 Bot 名册（`bots.*` RPC，原子写 `bot.json`），以及 v0.1 客户端界面（五个画面，名册驱动的聊天列表，内存里的对话预览，同源读取 host 状态，setup 的 Rayrun token 桥接，setup 的云电脑创建，以及经云电脑插件 RPC 的 Open / Take over），带普通 Node 检查、以检查为主的 CI workflow（Node 24/26 加 DSH profile 安装冒烟），以及可选的 main-only Rayrun 部署 job。还没有云端 Bot runtime，也没有可发布版本。 |
+| **本仓库** | README、docs、issue/PR 模板、agent 规则、依赖边界，以及 `dsh-rayrun-bots`：一条 health 路由、一份持久化的本机 Bot 名册（`bots.*` RPC，原子写 `bot.json`），以及 v0.1 客户端界面（五个画面，名册驱动的聊天列表，内存里的对话预览，同源读取 host 状态，setup 的 Rayrun token 桥接，setup 的云电脑创建，以及经云电脑插件 RPC 的 Open / Take over），带普通 Node 检查（含 tarball 内容）、以检查为主的 CI workflow（Node 24/26，并从 checkout 和打包后的 tarball 各做一次 DSH profile 安装冒烟）、[版本矩阵](docs/version-matrix.md)，以及可选的 main-only Rayrun 部署 job。还没有云端 Bot runtime，也没有可发布版本。 |
 | **尚未构建** | 页面层的云电脑创建验证、Bot↔session 映射、机器上的常驻 DSH host、能拦住 worker 的远程审批（阻塞于 Rayrun host/agent 隔离；ADR-001）、真正会跑的 routines 与触发器、按 Bot 的花费归因、IM 通道、两插件安装路径（依赖声明与版本检查）、npm 包以及发布用的 CI 路径。 |
 | **平台缺口** | host/agent 权限隔离与 host-only 审批端点（ADR-001）、安全入向网络（今天 token ingress 不可用，只有 `public` 能用）、空闲自动停、spend cap、动态调整资源、session 续跑契约。完整清单在 [docs/08-integration.md](docs/08-integration.md) §3 与 [docs/01-system-architecture.md](docs/01-system-architecture.md)。 |
 

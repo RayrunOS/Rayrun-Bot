@@ -16,6 +16,7 @@
 | [`07-security.md`](07-security.md) | 安全目标与威胁模型 |
 | [`08-integration.md`](08-integration.md) | 依赖契约与 Rayrun 平台需求 |
 | [`09-deployment.md`](09-deployment.md) | 安装、运行、配置与故障处理 |
+| [`version-matrix.md`](version-matrix.md) | DSH × 依赖 × Rayrun Bot 的兼容范围与已验证组合 |
 | [`11-dsh-rayrun-computer-issues.md`](11-dsh-rayrun-computer-issues.md) | `dsh-rayrun-computer` 的契约、错误、API 与安全问题登记 |
 | [`plans/mvp-plan.md`](plans/mvp-plan.md) | v0.1 范围、验收任务、工作分解 |
 | [`adr/architecture-decisions.md`](adr/architecture-decisions.md) | 未决架构决策与 ADR 登记 |
@@ -32,7 +33,7 @@
 | 计划与验收 | [MVP 计划](plans/mvp-plan.md)、[客户端计划](plans/client-plan.md) | v0.1 工作分解、客户端交付 |
 | 平台集成 | [集成与平台需求](08-integration.md)、[dsh-rayrun-computer 问题登记](11-dsh-rayrun-computer-issues.md) | 依赖契约、平台能力与优先级；依赖自身问题的证据、workaround 与上游修复方向 |
 | 验证与测试 | [Rayrun 验证与缺口](10-rayrun-verification.md) | 测试资源政策、Rayrun 验证路径、缺口登记 |
-| 部署与操作 | [部署与运行](09-deployment.md) | 安装、配置、检查、故障处理 |
+| 部署与操作 | [部署与运行](09-deployment.md)、[版本矩阵](version-matrix.md) | 安装、配置、检查、故障处理；DSH × 依赖 × 包的已验证组合 |
 | 调研 | [灵感](research/inspiration.md) | Grok Bot 等参考；不是真相源 |
 | 决策 | [架构决策](adr/architecture-decisions.md) | [ADR-001–ADR-017](#3-adr-登记册)；只有 Decided 才算最终 |
 

@@ -167,6 +167,11 @@
   返回 `roster-test`；刷新页面后名册仍在、样例未回来；随后用同源 `bots.delete` 清理。
   roster 路径不读 Rayrun token；该测试 profile 里已有连接，页面同时显示余额，但未做
   机器操作。
+- 打包产物安装（2026-11-22，本机 DSH `0.2.2-rc.5`）：`npm pack` 生成 15 个文件的
+  tarball（host/client、locale、`lib/*.js`、bundle patch、icon、README、LICENSE；
+  54.6 kB），`test/`、`docs/`、`tools/` 未进入；`dsh plugin --profile ci-pack add
+  <tgz>` 成功，`--dump-config` 合成 `- id: rayrun-bots` / `name:
+  dsh-rayrun-bots`。
 
 > 前三条是通过本机 Node 直接 import `dsh-rayrun-computer@1.0.0` 的 `lib/rayrun.js`
 > 验证的，调用的是插件页面使用的同一组函数；第四条是在本机 DSH web 页面里用

@@ -130,6 +130,7 @@ node packages/dsh-rayrun-bots/test/locale-audit.mjs
 node packages/dsh-rayrun-bots/test/rpc-contract.mjs
 node packages/dsh-rayrun-bots/test/client-contract.mjs
 node packages/dsh-rayrun-bots/test/bot-store.mjs
+node packages/dsh-rayrun-bots/test/package-contents.mjs
 node tools/update-poc/test/update.mjs
 node tools/rayrun-deploy/test/contract.mjs
 ```
@@ -164,6 +165,7 @@ node tools/rayrun-deploy/test/contract.mjs
 | `node packages/dsh-rayrun-bots/test/rpc-contract.mjs` | RPC 信封、同源门、体积上限 |
 | `node packages/dsh-rayrun-bots/test/client-contract.mjs` | 客户端文案、无外部请求、无占位符 |
 | `node packages/dsh-rayrun-bots/test/bot-store.mjs` | 持久 roster：校验、原子写、创建、更新、删除 |
+| `node packages/dsh-rayrun-bots/test/package-contents.mjs` | npm tarball 内容：host/client/locale/lib/bundle 与排除项 |
 | `node tools/update-poc/test/update.mjs` | 更新内核原型：签名、哈希、版本、原子切换、回滚 |
 | `node tools/rayrun-deploy/test/contract.mjs` | Rayrun 部署契约：main-only、secret 来源、URL 不打印 |
 | `dsh plugin --profile web add <绝对路径>` | 从 checkout 载入 DSH profile；改 client half 后需重启 DSH |

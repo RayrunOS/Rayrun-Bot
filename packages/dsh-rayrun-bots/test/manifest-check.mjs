@@ -20,6 +20,7 @@ if (pkg.dsh?.bundle?.patch !== './cordis.patch.yml') errors.push('dsh.bundle.pat
 if (!Array.isArray(pkg.dsh?.client?.inject) || pkg.dsh.client.inject.length === 0) {
   errors.push('dsh.client.inject must list at least one client UI module')
 }
+if (pkg.license !== 'MIT') errors.push('license must be MIT')
 if (pkg.engines?.node !== '>=24') errors.push('engines.node must be >=24')
 // DSH 0.2.2-rc.5's compatibility preflight reads engines.dsh and denies the row
 // when the running runtime does not satisfy the range.
@@ -27,7 +28,7 @@ if (pkg.engines?.dsh !== '>=0.2.0-rc.2 <0.3.0') {
   errors.push(`engines.dsh must be >=0.2.0-rc.2 <0.3.0 (got ${JSON.stringify(pkg.engines?.dsh)})`)
 }
 
-const requiredFiles = ['index.js', 'client.js', 'cordis.patch.yml', 'README.md', 'lib/bot-schema.js', 'lib/dependency.js', 'lib/errors.js', 'lib/rpc.js', 'locale/en.json', 'locale/zh.json', 'icon.svg']
+const requiredFiles = ['index.js', 'client.js', 'cordis.patch.yml', 'README.md', 'LICENSE', 'lib/bot-schema.js', 'lib/bots.js', 'lib/dependency.js', 'lib/errors.js', 'lib/local-store.js', 'lib/rpc.js', 'locale/en.json', 'locale/zh.json', 'icon.svg']
 
 function covered(entry, file) {
   if (entry === file) return true

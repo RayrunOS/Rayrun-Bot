@@ -1,6 +1,6 @@
 # 09 — 部署与运行
 
-> 状态：2026-11-21。本文说明依赖、安装、运行、配置、检查与故障处理。它是
+> 状态：2026-11-22。本文说明依赖、安装、运行、配置、检查与故障处理。它是
 > [`../README.md`](../README.md) 快速开始的展开版；实现状态以 README 的 **Status**
 > 段为准。产品方向见 [`00-product-direction.md`](00-product-direction.md)；技术基线见
 > [`01-system-architecture.md`](01-system-architecture.md)；平台 handoff 见
@@ -22,7 +22,7 @@
 
 | 需要 | 为什么 | 状态 |
 | --- | --- | --- |
-| [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) | 运行时；桌面 App 或 `dsh web` | 云电脑包在 `0.2.1-rc.5` 验证；设计基线 `0.2.2-rc.1`，复验进行中 |
+| [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) | 运行时；桌面 App 或 `dsh web` | `0.2.0-rc.2` / `0.2.2-rc.5` 已验证；组合见[版本矩阵](version-matrix.md) |
 | [`dsh-rayrun-computer`](https://github.com/RayrunOS/dsh-rayrun-computer) | 云电脑层；独立项目，必需依赖 | 未上 npm；从 checkout 安装 |
 | [Rayrun](https://rayrunos.com/) 账号 | 提供云电脑；按秒计费 | 必需；用户直接付 Rayrun |
 | DeepSeek API key | 机器内 agent 的模型调用 | 必需；key 与模型账单属于用户 |
@@ -84,8 +84,22 @@ dsh plugin --profile web add "<packages/dsh-rayrun-bots 的绝对路径>"
 本地 roster 已持久化；session 映射、审批执行、routines 与成本栏尚未构建（审批执行
 等待平台权限隔离，ADR-001）；状态以 README 为准。
 
+**从 tarball 安装**（发布产物的内容）：
+
+```bash
+npm pack ./packages/dsh-rayrun-bots --pack-destination /tmp
+dsh plugin --profile web add /tmp/dsh-rayrun-bots-0.1.0-alpha.0.tgz
+```
+
+`node packages/dsh-rayrun-bots/test/package-contents.mjs` 用
+`npm pack --dry-run` 校验 tarball 只包含 host half、client half、locale、bundle
+patch、`lib/*.js`、图标、README 和 LICENSE；CI 会把打出的 tarball 装进第二个 profile
+并合成配置。兼容组合见[版本矩阵](version-matrix.md)。
+
 **一次安装**：Rayrun Bot 的 bundle 拟声明 `dsh-rayrun-computer` 为依赖，让一次安装
-带两个插件。这是 W0 spike S6，**未验证**；在那之前按上面的两装路径。
+带两个插件。这是 W0 spike S6，**未验证**；在那之前按上面的两装路径。npm 归属与发布
+账号仍未定（[`plans/mvp-plan.md`](plans/mvp-plan.md) §11 第 5 项），所以现在没有
+发布 job。
 
 ---
 

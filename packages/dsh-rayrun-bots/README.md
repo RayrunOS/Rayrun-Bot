@@ -75,7 +75,9 @@ compatibility check reads that range: an out-of-range install is refused and the
 profile is restored, and an incompatible row is disabled at composition. Older
 runtimes that ignore `engines.dsh` still load the bundle. The range covers the verified runtimes: `0.2.0-rc.2` (the Rayrun
 cloud image), `0.2.2-rc.5`, and `0.2.1-rc.5` from the CI matrix. It is not a claim
-that every feature works on every version; the host half is still health-only.
+that every feature works on every version; see the repository's
+[version matrix](../../docs/version-matrix.md) for the combinations actually
+verified.
 
 ## Install from a checkout
 
@@ -88,6 +90,17 @@ The cloud-computer dependency (`dsh-rayrun-computer`) is **not declared as a
 package dependency yet**: whether one bundle can declare it so one install brings
 both is spike S6. Until then a user installs both plugins separately; the host
 detects the installed version at runtime and reports it through health.
+
+Install the packed artifact instead of the checkout:
+
+```bash
+npm pack ./packages/dsh-rayrun-bots --pack-destination /tmp
+dsh plugin --profile web add /tmp/dsh-rayrun-bots-0.1.0-alpha.0.tgz
+```
+
+`test/package-contents.mjs` checks the tarball with `npm pack --dry-run`: the
+host half, client half, locale, bundle patch, `lib/*.js`, icon, README and
+LICENSE must ship; tests, docs, tools and environment files must not.
 
 ## Checks
 
@@ -102,6 +115,7 @@ node test/rpc-contract.mjs
 node test/client-contract.mjs
 node test/bot-schema.mjs
 node test/bot-store.mjs
+node test/package-contents.mjs
 ```
 
 The same commands run in the repository's checks-only CI workflow on push and
