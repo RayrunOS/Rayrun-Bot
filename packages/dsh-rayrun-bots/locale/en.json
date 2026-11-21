@@ -94,6 +94,7 @@
     "onComputer": "On the computer · {where}",
     "desktopLater": "The desktop opens in the cloud-computer plugin. This page can't open it yet.",
     "noMachine": "No cloud computer yet. Create one in the cloud-computer plugin.",
+    "noMachineShort": "No computer",
     "connectFirst": "Connect Rayrun first (Settings → Set up).",
     "popupBlocked": "Allow pop-ups for this page to open the desktop.",
     "starting": "Starting the computer…",
@@ -123,6 +124,7 @@
   "usage": {
     "balanceLine": "Balance {balance} · {hours} machine-hours",
     "weekLine": "This week {spend} · idle stop {idle}",
+    "liveLine": "Live from your Rayrun account · idle stop {idle}",
     "sampleBalance": "¥41.20",
     "sampleHours": "38.4",
     "sampleSpend": "¥6.80"

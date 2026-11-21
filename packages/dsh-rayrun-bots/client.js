@@ -120,6 +120,7 @@ window.__ModuleLoader__.load({
     "onComputer": "On the computer · {where}",
     "desktopLater": "The desktop opens in the cloud-computer plugin. This page can't open it yet.",
     "noMachine": "No cloud computer yet. Create one in the cloud-computer plugin.",
+    "noMachineShort": "No computer",
     "connectFirst": "Connect Rayrun first (Settings → Set up).",
     "popupBlocked": "Allow pop-ups for this page to open the desktop.",
     "starting": "Starting the computer…",
@@ -149,6 +150,7 @@ window.__ModuleLoader__.load({
   "usage": {
     "balanceLine": "Balance {balance} · {hours} machine-hours",
     "weekLine": "This week {spend} · idle stop {idle}",
+    "liveLine": "Live from your Rayrun account · idle stop {idle}",
     "sampleBalance": "¥41.20",
     "sampleHours": "38.4",
     "sampleSpend": "¥6.80"
@@ -442,6 +444,7 @@ window.__ModuleLoader__.load({
     "onComputer": "电脑上 · {where}",
     "desktopLater": "桌面在云电脑插件里。这一页还打不开它。",
     "noMachine": "还没有云电脑。在云电脑插件里创建一台。",
+    "noMachineShort": "还没有电脑",
     "connectFirst": "先连接 Rayrun（设置 → 首次设置）。",
     "popupBlocked": "允许此页面弹窗，才能打开桌面。",
     "starting": "正在启动云电脑…",
@@ -471,6 +474,7 @@ window.__ModuleLoader__.load({
   "usage": {
     "balanceLine": "余额 {balance} · {hours} 机时",
     "weekLine": "本周 {spend} · 空闲停机 {idle}",
+    "liveLine": "来自你的 Rayrun 账号 · 空闲停机 {idle}",
     "sampleBalance": "¥41.20",
     "sampleHours": "38.4",
     "sampleSpend": "¥6.80"
@@ -675,6 +679,10 @@ window.__ModuleLoader__.load({
     const pickMachine = (machines) => machines.find((item) => item.name === DEFAULT_COMPUTER)
       || machines.find((item) => item.remote_desktop && item.desktop_url)
       || machines[0]
+    const machineStatus = (status) => status === 'Running' ? 'live'
+      : status === 'Starting' || status === 'Stopping' ? 'reconnecting'
+        : status === 'Stopped' || status === 'Paused' ? 'sleeping'
+          : 'unreachable'
     const MARK_PATHS = [
       'M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 1.71l3 1.8a2 2 0 0 0 2.06 0L12 19v-5.5l-5-3-4.03 2.42Z',
       'm7 16.5-4.74-2.85',
@@ -1174,6 +1182,9 @@ window.__ModuleLoader__.load({
         selectedId: 'nora',
         tab: 'activity',
         computer: COMPUTER_PREVIEW,
+        realOverview: null,
+        realMachine: null,
+        realError: '',
         searchOpen: false,
         search: '',
         composer: '',
@@ -1529,6 +1540,28 @@ window.__ModuleLoader__.load({
 
       const patch = (partial) => setState((current) => ({ ...current, ...partial }))
 
+      useEffect(() => {
+        if (state.screen !== 'chat') return undefined
+        let cancelled = false
+        void (async () => {
+          try {
+            const overview = await rayRpc('overview')
+            if (cancelled) return
+            const machines = Array.isArray(overview.machines) ? overview.machines : []
+            patch({ realOverview: overview, realMachine: pickMachine(machines) || null, realError: '' })
+          } catch (error) {
+            if (!cancelled) patch({ realError: String(error?.message ?? error) })
+          }
+        })()
+        return () => {
+          cancelled = true
+        }
+      }, [state.screen])
+
+      const realConfigured = state.realOverview?.connection?.configured === true
+      const realBalanceCents = Number(state.realOverview?.balance?.balance_cents)
+      const realBalance = Number.isFinite(realBalanceCents) ? realBalanceCents / 100 : NaN
+
       const openScreen = (screen) => patch({ screen, flash: null, searchOpen: false })
 
       const selectBot = (id) => {
@@ -1692,7 +1725,9 @@ window.__ModuleLoader__.load({
             return
           }
           const machines = Array.isArray(overview.machines) ? overview.machines : []
-          let machine = pickMachine(machines)
+          const selectedMachine = pickMachine(machines)
+          patch({ realOverview: overview, realMachine: selectedMachine || null, realError: '' })
+          let machine = selectedMachine
           if (!machine) {
             win.close()
             flash(t('computer.noMachine'))
@@ -1715,6 +1750,7 @@ window.__ModuleLoader__.load({
             flash(t('computer.startTimeout'))
             return
           }
+          patch({ realMachine: machine })
           await rayRpc('machine.desktopRepair', { id: machine.id }).catch(() => {})
           if (!machine.desktop_url) {
             win.close()
@@ -1736,10 +1772,10 @@ window.__ModuleLoader__.load({
       }
 
       const catalog = lang === 'zh' ? ZH : EN
-      const balance = moneyNumber(t('usage.sampleBalance'))
+      const balance = Number.isFinite(realBalance) ? realBalance : moneyNumber(t('usage.sampleBalance'))
       const threshold = moneyNumber(state.settings.lowBalance)
       const low = LOW_BALANCE_PREVIEW
-        || (Number.isFinite(balance) && Number.isFinite(threshold) && balance < threshold)
+        || (realConfigured && Number.isFinite(realBalance) && Number.isFinite(threshold) && realBalance < threshold)
 
       const query = state.search.trim().toLowerCase()
       const rows = state.bots.filter((bot) => {
@@ -1790,6 +1826,8 @@ window.__ModuleLoader__.load({
             selected,
             searchRef,
             low,
+            connected: realConfigured,
+            balance: realConfigured ? balanceText(state.realOverview?.balance) : null,
             onSearchToggle: () => patch({ searchOpen: !state.searchOpen, search: state.searchOpen ? '' : state.search }),
             onSearch: (search) => patch({ search }),
             onSelect: selectBot,
@@ -1807,6 +1845,11 @@ window.__ModuleLoader__.load({
             tab: state.tab,
             onTab: (tab) => patch({ tab }),
             computer: state.computer,
+            machine: state.realMachine,
+            configured: realConfigured,
+            overview: state.realOverview,
+            usageError: state.realError,
+            usagePreview: LOW_BALANCE_PREVIEW,
             low,
             idle: idleLabel(t, state.settings.idle),
             onToggleRoutine: (index) => updateBot(selected.id, (bot) => ({
@@ -1844,7 +1887,7 @@ window.__ModuleLoader__.load({
       )
     }
 
-    function ChatList({ t, state, rows, selected, searchRef, low, onSearchToggle, onSearch, onSelect, onNew, onSettings, onSetup }) {
+    function ChatList({ t, state, rows, selected, searchRef, low, connected, balance, onSearchToggle, onSearch, onSelect, onNew, onSettings, onSetup }) {
       const userName = t('sample.user.name')
       return h(
         'aside',
@@ -1939,7 +1982,7 @@ window.__ModuleLoader__.load({
                 title: t('setup.title'),
               },
               low ? h('span', { className: 'rb-dot rb-needs', 'aria-hidden': 'true' }) : null,
-              t('sample.user.foot', { balance: t('usage.sampleBalance') }),
+              connected ? t('sample.user.foot', { balance }) : t('setup.notConnected'),
               low ? h('span', { className: 'rb-sr' }, t('cost.lowShort')) : null),
             ),
           ),
@@ -2113,7 +2156,7 @@ window.__ModuleLoader__.load({
       )
     }
 
-    function Details({ t, catalog, bot, tab, onTab, computer, low, idle, onToggleRoutine, onComputer }) {
+    function Details({ t, catalog, bot, tab, onTab, computer, machine, configured, overview, usageError, usagePreview, low, idle, onToggleRoutine, onComputer }) {
       const name = botName(bot, t)
       const job = botJob(bot, t)
       const count = (n) => (n ? h('span', { className: 'rb-count' }, String(n)) : null)
@@ -2123,6 +2166,8 @@ window.__ModuleLoader__.load({
         ['week', 'library.week'],
         ['older', 'library.older'],
       ]
+      const computerStatus = computer || (machine ? machineStatus(machine.status) : 'offline')
+      const computerName = machine?.name ?? (computer ? t('sample.computerName') : '—')
       return h(
         'aside',
         { className: 'rb-detail', 'aria-label': name },
@@ -2131,7 +2176,7 @@ window.__ModuleLoader__.load({
           { className: 'rb-profile' },
           h(Avatar, { size: 'big', name }),
           h('div', { className: 'rb-name' }, name),
-          h('div', { className: 'rb-sub' }, t('details.jobComputer', { job, computer: t('sample.computerName') || SAMPLE_COMPUTER })),
+          h('div', { className: 'rb-sub' }, t('details.jobComputer', { job, computer: computerName })),
         ),
         h(
           'div',
@@ -2172,8 +2217,8 @@ window.__ModuleLoader__.load({
               )
             }) : h(EmptyBlock, { name: 'routines', title: t('routine.empty'), hint: t('routine.emptyHint') }),
           ),
-          h(ComputerBlock, { t, status: computer, onComputer }),
-          h(UsageBlock, { t, catalog, idle, low }),
+          h(ComputerBlock, { t, status: computerStatus, name: computerName, configured, onComputer }),
+          h(UsageBlock, { t, catalog, idle, low, overview, configured, error: usageError, preview: usagePreview }),
         ) : h(
           'div',
           { className: 'rb-sections' },
@@ -2196,15 +2241,16 @@ window.__ModuleLoader__.load({
       )
     }
 
-    function ComputerBlock({ t, status, onComputer }) {
+    function ComputerBlock({ t, status, name, configured, onComputer }) {
       const label = status === 'live' ? t('computer.live')
         : status === 'sleeping' ? t('computer.sleeping')
         : status === 'unreachable' ? t('computer.unreachable')
-        : status ? t('computer.reconnecting')
+        : status === 'reconnecting' ? t('computer.reconnecting')
+        : configured ? t('computer.noMachineShort')
         : t('setup.notConnected')
       const dot = status === 'live' ? 'rb-working'
         : status === 'unreachable' ? 'rb-danger'
-        : status === 'sleeping' || !status ? ''
+        : status === 'sleeping' || status === 'offline' ? ''
         : 'rb-needs'
       return h(
         'section',
@@ -2219,7 +2265,7 @@ window.__ModuleLoader__.load({
             h(
               'div',
               null,
-              h('div', { className: 'rb-nm' }, t('sample.computerName')),
+              h('div', { className: 'rb-nm' }, name),
               h(
                 'div',
                 { className: `rb-st rb-st-${status}` },
@@ -2239,20 +2285,48 @@ window.__ModuleLoader__.load({
       )
     }
 
-    function UsageBlock({ t, catalog, idle, low }) {
-      const balance = t('usage.sampleBalance')
-      const hours = t('usage.sampleHours')
-      const spend = t('usage.sampleSpend')
+    function UsageBlock({ t, catalog, idle, low, overview, configured, error, preview }) {
+      if (configured) {
+        const balance = balanceText(overview?.balance)
+        const hours = Number(overview?.usage?.vm_hours)
+        return h(
+          'section',
+          { className: 'rb-sec' },
+          h('h3', null, t('details.usage')),
+          h(
+            'div',
+            { className: 'rb-usage', 'data-low': low ? 'true' : 'false' },
+            h('span', { className: low ? 'rb-usage-low' : '' }, lineParts(lookup(catalog, 'usage.balanceLine'), { balance, hours: Number.isFinite(hours) ? hours.toFixed(1) : '—' }, new Set(['balance']))),
+            h('span', null, t('usage.liveLine', { idle })),
+            low ? h('span', { className: 'rb-low' }, t('cost.low')) : null,
+          ),
+        )
+      }
+      if (preview) {
+        const balance = t('usage.sampleBalance')
+        const hours = t('usage.sampleHours')
+        const spend = t('usage.sampleSpend')
+        return h(
+          'section',
+          { className: 'rb-sec' },
+          h('h3', null, t('details.usage')),
+          h(
+            'div',
+            { className: 'rb-usage', 'data-low': low ? 'true' : 'false' },
+            h('span', { className: low ? 'rb-usage-low' : '' }, lineParts(lookup(catalog, 'usage.balanceLine'), { balance, hours }, new Set(['balance']))),
+            h('span', null, lineParts(lookup(catalog, 'usage.weekLine'), { spend, idle }, new Set(['spend']))),
+            low ? h('span', { className: 'rb-low' }, t('cost.low')) : null,
+          ),
+        )
+      }
       return h(
         'section',
         { className: 'rb-sec' },
         h('h3', null, t('details.usage')),
         h(
           'div',
-          { className: 'rb-usage', 'data-low': low ? 'true' : 'false' },
-          h('span', { className: low ? 'rb-usage-low' : '' }, lineParts(lookup(catalog, 'usage.balanceLine'), { balance, hours }, new Set(['balance']))),
-          h('span', null, lineParts(lookup(catalog, 'usage.weekLine'), { spend, idle }, new Set(['spend']))),
-          low ? h('span', { className: 'rb-low' }, t('cost.low')) : null,
+          { className: 'rb-usage', 'data-low': 'false' },
+          h('span', null, error ? t('settings.usageFailed', { message: error }) : t('settings.usageConnect')),
         ),
       )
     }

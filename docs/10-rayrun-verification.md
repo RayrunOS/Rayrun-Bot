@@ -131,7 +131,11 @@
   4 machines`；云电脑步骤采用已有 `rayrun-bot-test`（未创建新机器）；点击 `Open` 后
   启动机器、打开 desktop 新窗口，并显示 `Desktop password` 提示条（136 字符，截图前
   已把密码替换为圆点）；测试后机器 `stop` 回 Stopped，未 destroy。DSH 首次运行的
-  `Preview Notice` 需要先点掉，这是 DSH 自己的弹窗，不是 Bots 的。
+  `Preview Notice` / `Get started` 弹窗需要先点掉，这是 DSH 自己的弹窗，不是 Bots 的。
+- 详情面板真实数据（2026-11-21，同一本机 DSH 页面）：连接后显示 `rayrun-bot-test` /
+  `sleeping`、`Balance ¥27.42 · 231.3 machine-hours`、底部 `Rayrun connected · ¥27.42`；
+  在 setup 里连接后关闭向导，详情无需刷新即更新。登出 Rayrun 后显示 `—` /
+  `Not connected`、`Connect Rayrun to see usage.`、底部 `Not connected`。
 
 > 前三条是通过本机 Node 直接 import `dsh-rayrun-computer@1.0.0` 的 `lib/rayrun.js`
 > 验证的，调用的是插件页面使用的同一组函数；第四条是在本机 DSH web 页面里用

@@ -104,6 +104,7 @@ const required = [
   'computer.takeOver',
   'computer.open',
   'computer.noMachine',
+  'computer.noMachineShort',
   'computer.connectFirst',
   'computer.popupBlocked',
   'computer.starting',
@@ -117,6 +118,7 @@ const required = [
   'computer.copied',
   'computer.copyFailed',
   'computer.close',
+  'usage.liveLine',
   'preview.badge',
   'setup.computerTitle',
   'setup.computerExisting',
@@ -172,6 +174,9 @@ assert.match(client, /machine\.create/)
 assert.match(client, /machines\.find\(\(item\) => item\.name === name\)/)
 assert.match(client, /const pickMachine =/)
 assert.match(client, /item\.remote_desktop && item\.desktop_url/)
+assert.match(client, /machineStatus\(machine\.status\)/)
+assert.match(client, /realOverview/)
+assert.match(client, /realMachine/)
 assert.match(client, /modelKey/)
 assert.match(client, /disabled: machineBusy \|\| !computerName\.trim\(\)/)
 assert.equal(client.includes('setup.keySave'), false)
