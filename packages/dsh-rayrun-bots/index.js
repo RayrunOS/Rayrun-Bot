@@ -6,13 +6,15 @@
  * renders the v0.1 shell from in-memory preview data and calls the GET health
  * action for its host status; no other action is wired.
  *
- * POST is same-origin gated: a browser `Origin` that does not match the `Host`
- * the request reached is refused. GET is read-only. The route never touches
- * credentials: today it only reports that the bundle is loaded. When the bot
- * layer lands, the Rayrun token stays in the Harness vault on this side and
- * never reaches the page.
+ * The health action also reports the installed `dsh-rayrun-computer` version
+ * (ok / missing / incompatible / unknown) by reading the profile's package
+ * metadata. POST is same-origin gated: a browser `Origin` that does not match
+ * the `Host` the request reached is refused. GET is read-only. The route never
+ * touches credentials: when the bot layer lands, the Rayrun token stays in the
+ * Harness vault on this side and never reaches the page.
  */
 import { readFileSync } from 'node:fs'
+import { checkDependency } from './lib/dependency.js'
 import { ERROR_CODES } from './lib/errors.js'
 import { readJsonBody, sendError, sendJson } from './lib/rpc.js'
 
@@ -30,8 +32,18 @@ const VERSION = (() => {
   }
 })()
 
-function health() {
-  return { ok: true, plugin: name, version: VERSION, ready: false }
+function health(dependency) {
+  return { ok: true, plugin: name, version: VERSION, ready: false, dependency }
+}
+
+/** The active profile directory, when the host runs inside a DSH profile. */
+function profileDirectory(ctx) {
+  try {
+    const profile = ctx.get?.('profileContext')
+    return typeof profile?.dir === 'string' ? profile.dir : undefined
+  } catch {
+    return undefined
+  }
 }
 
 /**
@@ -64,6 +76,7 @@ function sameOrigin(req, webServer) {
 
 export function apply(ctx) {
   ctx.logger?.info?.(`dsh-rayrun-bots: host half loaded (${VERSION})`)
+  const hostHealth = () => health(checkDependency(profileDirectory(ctx)))
 
   ctx.inject(['webServer'], (child) => {
     child.effect(() =>
@@ -87,7 +100,7 @@ export function apply(ctx) {
             if (method === 'GET') {
               const action = url.searchParams.get('action') ?? 'health'
               if (action === 'health') {
-                sendJson(res, 200, health())
+                sendJson(res, 200, hostHealth())
                 return
               }
               sendError(res, 404, ERROR_CODES.internal, `Unknown action: ${action}`)
@@ -97,7 +110,7 @@ export function apply(ctx) {
             if (method === 'POST') {
               const payload = await readJsonBody(req, MAX_BODY)
               if (payload?.action === 'health') {
-                sendJson(res, 200, health())
+                sendJson(res, 200, hostHealth())
                 return
               }
               sendError(res, 404, ERROR_CODES.internal, 'Unknown action.')

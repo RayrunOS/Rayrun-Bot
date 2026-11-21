@@ -75,9 +75,9 @@ Bot 的定义是**用户意图**，运行态（session、memory、queue）在云
 | `deletedAt` | ISO string? | **建议**用 tombstone 表达删除；见 ADR-012 |
 
 **拒绝规则**：未知字段、错误类型、非法 `id`、超长指令、无效 avatar 一律拒绝，返回
-稳定错误码和一句可执行提示。B1 需要一个 `E_BOT_INVALID`；当前
-[`lib/errors.js`](../packages/dsh-rayrun-bots/lib/errors.js) 和 MVP 错误表没有这个码，
-需要一起补。
+稳定错误码和一句可执行提示。`E_BOT_INVALID` 已在
+[`lib/errors.js`](../packages/dsh-rayrun-bots/lib/errors.js) 与
+[`lib/bot-schema.js`](../packages/dsh-rayrun-bots/lib/bot-schema.js) 落地。
 
 ### 2.3 `id` 与显示名
 
@@ -171,7 +171,7 @@ v0.1 不提供“复制 bot”“模板市场”“bot 间 handoff”；这些�
 | `bot.json` 的权威写者是谁？ | B1–B4、创建/编辑/删除 | ADR-002 |
 | 删除用 tombstone 还是直接移除？ | 恢复、id 复用、session 混淆 | ADR-012 |
 | `skills` 的 schema 与加载方式 | B1、DSH 集成 | 待定；v0.1 只存名字 |
-| 非法定义返回哪个错误码？ | B1、客户端错误文案 | 建议 `E_BOT_INVALID` |
+| 非法定义返回哪个错误码？ | B1、客户端错误文案 | 已定：`E_BOT_INVALID` |
 | 头像是否允许非 monogram？ | UI、schema | v0.1 只 monogram；上传/生成不在范围 |
 
 ---

@@ -209,10 +209,15 @@ window.__ModuleLoader__.load({
     "hostChecking": "Checking…",
     "hostLoaded": "Loaded · v{version} · bot layer not ready",
     "hostReady": "Ready · v{version}",
+    "hostDepMissing": "Cloud-computer plugin missing — install dsh-rayrun-computer, then restart DSH.",
+    "hostDepVersion": "Cloud-computer plugin {version} is not supported (need {required}).",
     "retry": "Retry",
     "plugin": "Cloud-computer plugin",
     "pluginHint": "dsh-rayrun-computer v1.0.0",
     "pluginOk": "OK",
+    "pluginMissing": "Missing",
+    "pluginIncompatible": "Incompatible",
+    "pluginUnknown": "Unknown",
     "idle": "Idle stop",
     "idleHint": "Stop the computer when idle. Never destroy it.",
     "idle15": "15 minutes",
@@ -487,10 +492,15 @@ window.__ModuleLoader__.load({
     "hostChecking": "检查中…",
     "hostLoaded": "已加载 · v{version} · Bot 层尚未就绪",
     "hostReady": "已就绪 · v{version}",
+    "hostDepMissing": "缺少云电脑插件 — 安装 dsh-rayrun-computer 后重启 DSH。",
+    "hostDepVersion": "云电脑插件 {version} 不受支持（需要 {required}）。",
     "retry": "重试",
     "plugin": "云电脑插件",
     "pluginHint": "dsh-rayrun-computer v1.0.0",
     "pluginOk": "正常",
+    "pluginMissing": "缺失",
+    "pluginIncompatible": "不兼容",
+    "pluginUnknown": "未知",
     "idle": "空闲停机",
     "idleHint": "空闲时停止电脑，绝不销毁。",
     "idle15": "15 分钟",
@@ -1378,7 +1388,7 @@ window.__ModuleLoader__.load({
             if (!response.ok) throw new Error(`health ${response.status}`)
             const body = await response.json()
             if (!body || body.ok !== true || body.plugin !== 'rayrun-bots') throw new Error('bad health envelope')
-            setHost({ status: 'loaded', version: String(body.version ?? ''), ready: body.ready === true })
+            setHost({ status: 'loaded', version: String(body.version ?? ''), ready: body.ready === true, dependency: body.dependency ?? null })
           } catch (error) {
             if (error?.name === 'AbortError') return
             setHost({ status: 'down' })
@@ -2042,6 +2052,22 @@ window.__ModuleLoader__.load({
 
     function HostStatus({ t, host, onRetry }) {
       if (host.status === 'loaded') {
+        if (host.dependency?.status === 'missing') {
+          return h(
+            'span',
+            { className: 'rb-status', 'data-host': 'missing' },
+            h('span', { className: 'rb-dot rb-danger', 'aria-hidden': 'true' }),
+            t('settings.hostDepMissing'),
+          )
+        }
+        if (host.dependency?.status === 'incompatible') {
+          return h(
+            'span',
+            { className: 'rb-status', 'data-host': 'incompatible' },
+            h('span', { className: 'rb-dot rb-danger', 'aria-hidden': 'true' }),
+            t('settings.hostDepVersion', { version: host.dependency.version ?? '?', required: host.dependency.required ?? '' }),
+          )
+        }
         return h(
           'span',
           { className: 'rb-status', 'data-host': 'loaded' },
@@ -2343,7 +2369,23 @@ window.__ModuleLoader__.load({
             'div',
             { className: 'rb-srow' },
             h('div', { className: 'rb-l' }, t('settings.plugin'), h('small', null, t('settings.pluginHint'))),
-            h('span', { className: 'rb-status' }, h('span', { className: 'rb-dot rb-working', 'aria-hidden': 'true' }), t('settings.pluginOk')),
+            h(
+              'span',
+              { className: 'rb-status' },
+              h('span', {
+                className: host.status === 'loaded' && (host.dependency?.status === 'missing' || host.dependency?.status === 'incompatible') ? 'rb-dot rb-danger' : 'rb-dot rb-working',
+                'aria-hidden': 'true',
+              }),
+              t(
+                host.status !== 'loaded'
+                  ? 'settings.pluginUnknown'
+                  : host.dependency?.status === 'missing'
+                    ? 'settings.pluginMissing'
+                    : host.dependency?.status === 'incompatible'
+                      ? 'settings.pluginIncompatible'
+                      : 'settings.pluginOk',
+              ),
+            ),
           ),
           h(
             'div',

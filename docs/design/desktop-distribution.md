@@ -260,8 +260,10 @@ Desktop 包是 `0.2.2-rc.5`，而本仓库记录的本地基线是 `0.2.2-rc.1`�
 6. **npm 全局安装会跳过 install scripts。** 安装 `0.2.2-rc.5` 时 npm 未运行
    `dsh-subprocess-local`、`node-pty`、`koffi`、`protobufjs` 的脚本；Web UI 与
    plugin manager 可用，但 terminal/子进程路径未验证。
-7. **版本契约缺失。** 两个插件的 `package.json` 都没有 `engines.dsh`；仓库 CI 的
-   DSH 矩阵只覆盖 `dsh-rayrun-bots`，不覆盖 `dsh-rayrun-computer`。
+7. **版本契约。** `dsh-rayrun-bots` 已声明 `engines.dsh: >=0.2.0-rc.2 <0.3.0`，
+   DSH `0.2.2-rc.5` 的兼容性检查（安装时拒绝 + 组合预检）会强制执行；
+   `dsh-rayrun-computer` 的 `package.json` 仍未声明 `engines.dsh`，仓库 CI 的
+   DSH 矩阵也只覆盖 `dsh-rayrun-bots`。
 
 **复现要点**
 

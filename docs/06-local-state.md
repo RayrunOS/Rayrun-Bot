@@ -50,9 +50,9 @@ packages/dsh-rayrun-bots/
 ├── lib/
 │   ├── rpc.js            # 信封、origin 校验、大小限制
 │   ├── bots.js           # registry CRUD（计划）
-│   ├── bot-schema.js     # bot.json 校验/默认值/迁移（计划）
+│   ├── bot-schema.js     # bot.json 校验/默认值（迁移计划）
 │   ├── local-store.js    # 状态目录、原子写、锁（计划）
-│   ├── dependency.js     # 依赖检测、版本检查、能力调用（计划）
+│   ├── dependency.js     # 依赖检测、版本检查（能力调用计划）
 │   ├── queue.js          # 本地队列视图（计划）
 │   ├── approvals.js      # 审批状态机（计划）
 │   ├── setup.js          # onboarding 状态（计划）

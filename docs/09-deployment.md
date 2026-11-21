@@ -158,7 +158,9 @@ CI（`.github/workflows/checks.yml`）在 push/PR 上、Node 24 和 26 上跑语
 所有 `test/*.mjs`，以及 `tools/update-poc` 的更新内核测试；有可比较的提交时，
 push/PR 的 diff 还要通过 `git diff --check`（尾随空白与冲突标记）。另有 DSH 兼容
 矩阵：把 `dsh-rayrun-bots` 装进临时 profile，并在 DSH `0.2.1-rc.5` 和 `0.2.2-rc.5`
-上跑 `--dump-config`，确认 bundle 行能合成。该矩阵不覆盖云电脑插件，也不发真实
+上跑 `--dump-config`，确认 bundle 行能合成。该包声明
+`engines.dsh: >=0.2.0-rc.2 <0.3.0`；DSH `0.2.2-rc.5` 的兼容性检查会在安装时拒绝
+不兼容的包并恢复 profile，组合预检也会禁用不兼容的 row。该矩阵不覆盖云电脑插件，也不发真实
 Rayrun 调用；实时集成测试需要真实 Rayrun 凭据，绝不在 CI 运行。发布与发布自动化
 尚不存在；release checklist 见 [`plans/mvp-plan.md`](plans/mvp-plan.md) §12。v1.0
 桌面发行版采用 B1 预配置 DSH 发行包（bootstrap 安装器），B2 整包更新是升级路径；

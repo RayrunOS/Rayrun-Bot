@@ -8,7 +8,10 @@
  *   node test/rpc-contract.mjs
  */
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { randomUUID } from 'node:crypto'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
 import { Readable } from 'node:stream'
 import { apply } from '../index.js'
 
@@ -16,9 +19,10 @@ const NAME = 'rayrun-bots'
 const ROUTE = '/plugins/rayrun-bots'
 const MAX_BODY = 64 * 1024
 const VERSION = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version
+const DEPENDENCY_UNKNOWN = { name: 'dsh-rayrun-computer', required: '>=1.0.0 <2.0.0', version: null, status: 'unknown', code: null }
 
 /** Mount the host half on a fake context and return the registered route. */
-function hostFor({ origin = 'http://127.0.0.1:59999' } = {}) {
+function hostFor({ origin = 'http://127.0.0.1:59999', profileDir } = {}) {
   const routes = []
   const child = {
     effect(fn) {
@@ -35,6 +39,9 @@ function hostFor({ origin = 'http://127.0.0.1:59999' } = {}) {
   }
   const ctx = {
     logger: { info() {} },
+    get(name) {
+      return name === 'profileContext' && profileDir !== undefined ? { dir: profileDir } : undefined
+    },
     inject(deps, callback) {
       if (Array.isArray(deps) && deps.includes('webServer')) callback(child)
       return () => {}
@@ -88,14 +95,38 @@ check('GET health reports the loaded bundle, uncached and without secrets', asyn
   assert.equal(reply.status, 200)
   assert.match(reply.headers['Content-Type'], /^application\/json/)
   assert.equal(reply.headers['Cache-Control'], 'no-store')
-  assert.deepEqual(reply.json, { ok: true, plugin: NAME, version: VERSION, ready: false })
+  assert.deepEqual(reply.json, { ok: true, plugin: NAME, version: VERSION, ready: false, dependency: DEPENDENCY_UNKNOWN })
   assert.doesNotMatch(reply.text, /Bearer\s|RAYRUN_TOKEN|sk-[A-Za-z0-9]{16,}/)
 })
 
 check('POST health answers the same envelope', async () => {
   const reply = await request(hostFor().handler, { action: 'health' })
   assert.equal(reply.status, 200)
-  assert.deepEqual(reply.json, { ok: true, plugin: NAME, version: VERSION, ready: false })
+  assert.deepEqual(reply.json, { ok: true, plugin: NAME, version: VERSION, ready: false, dependency: DEPENDENCY_UNKNOWN })
+})
+
+check('health reports a missing cloud-computer dependency', async () => {
+  const profileDir = path.join(tmpdir(), `rayrun-bots-missing-${randomUUID()}`)
+  const reply = await request(hostFor({ profileDir }).handler, { method: 'GET', action: 'health' })
+  assert.equal(reply.status, 200)
+  assert.equal(reply.json.dependency.status, 'missing')
+  assert.equal(reply.json.dependency.code, 'E_DEP_MISSING')
+})
+
+check('health reports an installed 1.x cloud-computer dependency', async () => {
+  const profileDir = mkdtempSync(path.join(tmpdir(), 'rayrun-bots-profile-'))
+  const packageDir = path.join(profileDir, 'node_modules', 'dsh-rayrun-computer')
+  mkdirSync(packageDir, { recursive: true })
+  writeFileSync(path.join(packageDir, 'package.json'), JSON.stringify({ name: 'dsh-rayrun-computer', version: '1.0.0' }))
+  try {
+    const reply = await request(hostFor({ profileDir }).handler, { method: 'GET', action: 'health' })
+    assert.equal(reply.status, 200)
+    assert.equal(reply.json.dependency.status, 'ok')
+    assert.equal(reply.json.dependency.version, '1.0.0')
+    assert.equal(reply.json.dependency.code, null)
+  } finally {
+    rmSync(profileDir, { recursive: true, force: true })
+  }
 })
 
 check('unknown actions are refused on GET and POST', async () => {

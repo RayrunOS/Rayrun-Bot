@@ -7,9 +7,11 @@ action. The screens are an in-memory preview. There is no bot layer yet.
 ## What it does today
 
 - Host half: `GET /plugins/rayrun-bots?action=health` returns
-  `{ ok: true, plugin: "rayrun-bots", version, ready: false }`. `POST` is
-  same-origin gated: a browser `Origin` that does not match the request `Host`
-  is refused with 403. No credentials are touched.
+  `{ ok: true, plugin: "rayrun-bots", version, ready: false, dependency }`.
+  `dependency` reports `dsh-rayrun-computer` as `ok`, `missing` (`E_DEP_MISSING`),
+  `incompatible` (`E_DEP_VERSION`), or `unknown` when no profile context exists.
+  `POST` is same-origin gated: a browser `Origin` that does not match the request
+  `Host` is refused with 403. No credentials are touched.
 - Client half: a `Bots` sidebar entry and the three-column shell from
   [docs/design/ui-design.md](../../docs/design/ui-design.md) — chat list, conversation,
   details (Activity / Library), new bot, the four-step setup wizard, and
@@ -23,6 +25,15 @@ Not built yet: a real bot roster, bot↔session mapping, remote approvals, routi
 that run, the adapter to `dsh-rayrun-computer`, and the npm release path. See the
 repo-level [MVP plan](../../docs/plans/mvp-plan.md) and [client plan](../../docs/plans/client-plan.md).
 
+## DSH compatibility
+
+`package.json` declares `engines.dsh: >=0.2.0-rc.2 <0.3.0`. DSH `0.2.2-rc.5`'s
+compatibility check reads that range: an out-of-range install is refused and the
+profile is restored, and an incompatible row is disabled at composition. Older
+runtimes that ignore `engines.dsh` still load the bundle. The range covers the verified runtimes: `0.2.0-rc.2` (the Rayrun
+cloud image), `0.2.2-rc.5`, and `0.2.1-rc.5` from the CI matrix. It is not a claim
+that every feature works on every version; the host half is still health-only.
+
 ## Install from a checkout
 
 Install this directory into the current DSH profile: **Plugins → Add plugin** and
@@ -30,9 +41,10 @@ point it at `packages/dsh-rayrun-bots`, or use the `plugin_manager`
 `install_bundle` action with the package's absolute path. Refresh the DSH page;
 the client half loads when the page starts.
 
-The cloud-computer dependency (`dsh-rayrun-computer`) is **not declared yet**:
-whether one bundle can declare it so one install brings both is spike S6. Until
-then a user installs both plugins separately.
+The cloud-computer dependency (`dsh-rayrun-computer`) is **not declared as a
+package dependency yet**: whether one bundle can declare it so one install brings
+both is spike S6. Until then a user installs both plugins separately; the host
+detects the installed version at runtime and reports it through health.
 
 ## Checks
 
@@ -61,6 +73,8 @@ package.json       # name, exports, dsh.bundle + dsh.client
 cordis.patch.yml   # the bundle row (id rayrun-bots -> package dsh-rayrun-bots)
 index.js           # host half: same-origin RPC route, health action only
 client.js          # client half: v0.1 shell (in-memory preview)
+lib/bot-schema.js  # bot.json validation, defaults and creation
+lib/dependency.js  # dsh-rayrun-computer detection and version check
 lib/errors.js      # stable error codes (shared with docs/plans/mvp-plan.md §4.3)
 lib/rpc.js         # JSON responses and request-body parsing
 locale/en.json     # source copy
