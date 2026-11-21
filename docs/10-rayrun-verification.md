@@ -63,7 +63,11 @@
    安装；
 3. 启动 `dsh web`，用沙箱内 Chrome + CDP 渲染 Bots/云电脑页面并调用 health；
 4. 需要公开 UI 时发布 ingress（`public`），DSH 自己的 token 是唯一门禁；
-5. 验证结束 `POST /stop`，不 destroy，记录 vm-hours。
+5. 验证结束 `POST /stop`，不 destroy，记录 vm-hours；
+6. 页面层成功路径：在本机 `npm install @deepseek-ai/dsh@0.2.2-rc.5`（npmmirror）+
+   pnpm，把两个插件装进临时 profile，启动本机 `dsh --profile …`，用
+   Firefox/geckodriver 驱动。真实 token 只写入本机 DSH vault，不进入 Rayrun 沙箱。
+   这是页面层测试的 workaround：真实 token 不能进沙箱，而页面必须在 host 上跑。
 
 具体命令和结果见
 [`design/desktop-distribution.md`](design/desktop-distribution.md) §5.8。
@@ -122,13 +126,21 @@
   `ensureModelCredential` 成功，`machine.create` 创建 `rayrun-bot-test`（2 vCPU /
   2048 MB / remote desktop），返回 Running，desktop URL 200，password 非空；测试后
   `stop` 回 Stopped，未 destroy。
+- Bots 页面层成功路径（2026-11-21，本机 DSH web `0.2.2-rc.5` + Firefox/geckodriver）：
+  setup 的 Rayrun 步骤用真实 token 连接成功，显示 `Connected · balance ¥27.44 ·
+  4 machines`；云电脑步骤采用已有 `rayrun-bot-test`（未创建新机器）；点击 `Open` 后
+  启动机器、打开 desktop 新窗口，并显示 `Desktop password` 提示条（136 字符，截图前
+  已把密码替换为圆点）；测试后机器 `stop` 回 Stopped，未 destroy。DSH 首次运行的
+  `Preview Notice` 需要先点掉，这是 DSH 自己的弹窗，不是 Bots 的。
 
-> 以上三条是通过本机 Node 直接 import `dsh-rayrun-computer@1.0.0` 的
-> `lib/rayrun.js` 验证的，调用的是插件页面使用的同一组函数；没有启动 DSH web/页面。
-> 复现：从 1.0.0 tarball 解包，`createRayrun({ token })`，按
-> `overview` → `machineAction` → `machine` → `repairDesktop` → `desktopPassword`
-> 调用；创建用 `ensureModelCredential` → `createMachine`。token 和 model key 只在本机
-> 读取，不打印，不上传沙箱。页面层的按钮、弹窗和密码提示条仍未验证（见 §4）。
+> 前三条是通过本机 Node 直接 import `dsh-rayrun-computer@1.0.0` 的 `lib/rayrun.js`
+> 验证的，调用的是插件页面使用的同一组函数；第四条是在本机 DSH web 页面里用
+> Firefox/geckodriver 验证的。复现：从 1.0.0 tarball 解包，`createRayrun({ token })`，
+> 按 `overview` → `machineAction` → `machine` → `repairDesktop` → `desktopPassword`
+> 调用；创建用 `ensureModelCredential` → `createMachine`。页面层用
+> `@deepseek-ai/dsh@0.2.2-rc.5`（npmmirror）+ 两个插件安装到临时 profile，token 只写入
+> 本机 DSH vault。所有 key 只在本机读取，不打印，不上传沙箱。页面层的创建按钮仍未
+> 验证（见 §4）。
 
 ---
 
@@ -138,12 +150,9 @@
 - `profiles/desktop` 的创建、插件写入和 Electron 启动；
 - 在 Rayrun 云端沙箱内放真实 token 并直接操作云电脑（出于安全刻意不做；本轮在本机
   依赖库验证，token 未进入沙箱）；
-- Bots 页面内的 `Open` / `Take over` 成功路径：依赖层的 start/repair/desktop_url/
-  password 已验证；页面层的按钮点击、弹窗、密码提示条仍待真实 DSH 页面手工验证；
-- Bots 页面内的云电脑创建成功路径：依赖层的 `ensureModelCredential` + `machine.create`
-  已验证；页面层的按钮、已有机器采用、Continue 仍待真实 DSH 页面手工验证；
-- Bots 页面内的 setup Rayrun 连接成功路径：依赖层 `overview` 已用真实 token 验证；
-  页面层的粘贴/Connect/余额显示仍待真实 DSH 页面手工验证；
+- Bots 页面内的云电脑**创建按钮**成功路径：依赖层的 `ensureModelCredential` +
+  `machine.create` 已验证；页面层的已有机器采用和 Continue 已验证，但创建按钮本身未在
+  页面层点击（账号有多台已有机器，setup 会采用），需要在没有现有机器的账号上补验；
 - bot 会话、审批往返、远程审批、队列与恢复；
 - DeepSeek 模型调用（本轮只创建了 model credential，没有发模型请求）；
 - 零余额宽限/force-destroy 行为（R-G009，不做破坏性验证）；
