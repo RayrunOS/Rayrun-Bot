@@ -4,7 +4,7 @@ English | [简体中文](README.zh-CN.md)
 
 Rayrun Bot gives the bots in [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) a name, a body and a home. A bot is not a chat session: it has a name, instructions, memory and a schedule, and it lives on your own [Rayrun](https://rayrunos.com/) cloud computer — a Linux machine you can watch and take over — while thinking with your own DeepSeek API key. Nothing is hosted by us: the compute is on your Rayrun account, the model bill is yours, and the approval prompt is the contract. This repository is where that product is built.
 
-> **Status (November 2026).** Pre-alpha. The cloud-computer plugin this project builds on is a separate project at [RayrunOS/dsh-rayrun-computer](https://github.com/RayrunOS/dsh-rayrun-computer); Rayrun Bot adds the bot layer on top of it, and that layer is what this repository is building. `packages/dsh-rayrun-bots` loads as a bundle. Its client half renders the v0.1 shell (chat list, conversation, details, new bot, setup, settings) as an in-memory preview. The host half still only answers a health check. There is no persisted roster, no remote approvals, and no release yet.
+> **Status (November 2026).** Pre-alpha. The cloud-computer plugin this project builds on is a separate project at [RayrunOS/dsh-rayrun-computer](https://github.com/RayrunOS/dsh-rayrun-computer); Rayrun Bot adds the bot layer on top of it, and that layer is what this repository is building. `packages/dsh-rayrun-bots` loads as a bundle. Its client half renders the v0.1 shell (chat list, conversation, details, new bot, setup, settings) as an in-memory preview and calls the host's same-origin health action for its status. The host half still only answers a health check. There is no persisted roster, no remote approvals, and no release yet.
 
 ## How it works
 
@@ -141,12 +141,12 @@ dsh plugin --profile web add /absolute/path/to/package
 
 ## Status
 
-*As of 2026-11-13.*
+*As of 2026-11-21.*
 
 | | |
 | --- | --- |
 | **Works today** (separate project, our dependency) | Seven `rayrun_*` tools, noVNC desktop, per-session cloud/local routing, hash-verified workspace sync, task delegation, worker projection, optional idle stop. Verified on DeepSeek Harness `0.2.1-rc.5`. |
-| **This repository** | README, docs, issue and PR templates, agent rules, the dependency boundary, and `dsh-rayrun-bots`: a health route plus the v0.1 client shell (five screens, in-memory preview), with plain-Node checks and a checks-only CI workflow (Node 24/26 plus a DSH profile-install smoke). No persisted bot layer and no publishable release yet. |
+| **This repository** | README, docs, issue and PR templates, agent rules, the dependency boundary, and `dsh-rayrun-bots`: a health route plus the v0.1 client shell (five screens, in-memory preview, same-origin host status), with plain-Node checks and a checks-only CI workflow (Node 24/26 plus a DSH profile-install smoke). No persisted bot layer and no publishable release yet. |
 | **Not built yet** | Bot roster and bot↔session mapping, a persistent DSH host on the machine, remote approvals that gate a worker, routines that actually run, live usage from the account, IM channel, the two-plugin install path (dependency declaration and version check), npm packages and the release/publish CI path. |
 | **Platform gaps** | Safe inbound networking (today the token ingress is unusable and only `public` works), idle auto-stop, a spend cap, the session-resume contract. The full list is in [docs/01-system-architecture.md](docs/01-system-architecture.md). |
 

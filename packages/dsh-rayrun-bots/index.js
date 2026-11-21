@@ -3,8 +3,8 @@
  *
  * One same-origin RPC route with a health action. Bots, sessions, approvals
  * and the adapter to dsh-rayrun-computer are not built yet. The client half
- * renders the v0.1 shell from in-memory preview data and does not call this
- * route.
+ * renders the v0.1 shell from in-memory preview data and calls the GET health
+ * action for its host status; no other action is wired.
  *
  * POST is same-origin gated: a browser `Origin` that does not match the `Host`
  * the request reached is refused. GET is read-only. The route never touches

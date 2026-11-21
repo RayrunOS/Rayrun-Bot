@@ -70,17 +70,17 @@
 
 ## 4. RPC 契约
 
-客户端调用 `/plugins/<bundle-id>/rpc` 的同源、origin 校验、大小限制的 JSON 接口；
-host adapter 持有 Rayrun token 与文件邮箱。**当前代码与计划的路由/信封尚未统一**：
-已实现的是 `/plugins/rayrun-bots` + `GET ?action=health` 或 POST `{ action }`，文档曾写
-`/plugins/<id>/rpc` + `{ action, payload }`。接线前必须按 ADR-010 定一个契约并同步
-代码、测试和文档。
+客户端通过同源 JSON 请求与 host half 通信；host adapter 持有 Rayrun token 与文件邮箱。
+当前唯一接好的动作是 host 健康检查：`GET /plugins/rayrun-bots?action=health`，请求带
+`credentials: same-origin`、`cache: no-store`，不携带 token；响应是扁平的
+`{ ok, plugin, version, ready }`。其余动作仍是计划；接线前必须按 ADR-010 定一个统一的
+路由/信封（文档曾写 `/plugins/<id>/rpc` + `{ action, payload }`）并同步代码、测试和文档。
 
 动作分组（草案）：
 
 | 组 | 动作 |
 | --- | --- |
-| health | `setup.status`、`dependency.health` |
+| health | `health`（已实现并被客户端调用）；`setup.status`、`dependency.health`（草案） |
 | setup | `setup.rayrun.loginStatus`、`setup.key.status`、`setup.computer.ensure` |
 | bots | `bots.list`、`bots.get`、`bots.create`、`bots.update`、`bots.delete`、`bots.start`、`bots.stop` |
 | sessions | `session.history`、`session.send`、`session.subscribe` |

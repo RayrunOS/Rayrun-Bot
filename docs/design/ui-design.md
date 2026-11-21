@@ -141,13 +141,17 @@ is focused when the form opens. Defaults come from
 Four thin steps on the same light canvas: Dependency · Rayrun · DeepSeek key ·
 First bot. Current step shows one paragraph and its inputs; `Continue` is
 disabled until the step passes; `Skip for now` leaves the setup row in place.
+The dependency step also shows the Rayrun Bot host's same-origin health status
+(`Checking…` / `Loaded · v…` / `Not responding` with Retry); this does not check
+the cloud-computer plugin.
 
 ### 2.6 Settings
 
-Reached from the footer gear: Account (Rayrun connection, dependency health),
-Usage, Notifications, Appearance/language. A Back control returns to the
-conversation; Escape does the same. Plain rows with hairline separators; no stat
-cards.
+Reached from the footer gear: Account (Rayrun connection, Rayrun Bot host
+health, dependency health), Usage, Notifications, Appearance/language. The host
+row shows the same-origin health state and offers Retry when the host does not
+answer. A Back control returns to the conversation; Escape does the same. Plain
+rows with hairline separators; no stat cards.
 
 ### 2.7 Approvals (inline only)
 

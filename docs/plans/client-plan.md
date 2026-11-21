@@ -45,9 +45,12 @@ spike C-S5.
 The client talks to `/plugins/<bundle-id>/rpc` (same-origin, origin-checked,
 size-limited, JSON). The host adapter owns the Rayrun token and the file mailbox.
 
+Implemented today: `GET /plugins/rayrun-bots?action=health`, called by the client
+for its host status. The table below is the draft for the remaining actions.
+
 | Group | Actions (draft) |
 | --- | --- |
-| health | `setup.status`, `dependency.health` (installed version, compatible) |
+| health | `health` (implemented); `setup.status`, `dependency.health` (installed version, compatible) |
 | setup | `setup.rayrun.loginStatus`, `setup.key.status`, `setup.computer.ensure` |
 | bots | `bots.list`, `bots.get`, `bots.create`, `bots.update`, `bots.delete`, `bots.start`, `bots.stop` |
 | sessions | `session.history`, `session.send`, `session.subscribe` (stream) |

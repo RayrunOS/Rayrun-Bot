@@ -15,8 +15,9 @@ action. The screens are an in-memory preview. There is no bot layer yet.
   details (Activity / Library), new bot, the four-step setup wizard, and
   settings. Sample bots, messages, receipts, and the approval card live in the
   page only. Deny / Allow once, creating a bot, the wizard, and settings update
-  that in-memory state. The page does not call the host, and it does not keep a
-  Rayrun token or a DeepSeek key.
+  that in-memory state. The page calls the same-origin health action for its
+  host status; everything else stays in the page. It does not keep a Rayrun
+  token or a DeepSeek key.
 
 Not built yet: a real bot roster, bot↔session mapping, remote approvals, routines
 that run, the adapter to `dsh-rayrun-computer`, and the npm release path. See the

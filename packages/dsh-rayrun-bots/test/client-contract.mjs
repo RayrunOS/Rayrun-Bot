@@ -4,7 +4,8 @@
  * The page is one file, so the locale catalogs are embedded next to
  * locale/en.json and locale/zh.json. This check keeps those copies identical,
  * requires the v0.1 copy deck, and refuses a client that still shows the A1
- * placeholder or reaches off the machine.
+ * placeholder or reaches off the machine. The one allowed request is the
+ * same-origin host health check.
  *
  *   node test/client-contract.mjs
  */
@@ -105,6 +106,12 @@ const required = [
   'notice.sleeping',
   'cost.low',
   'cost.lowShort',
+  'settings.host',
+  'settings.hostHint',
+  'settings.hostChecking',
+  'settings.hostLoaded',
+  'settings.hostReady',
+  'settings.retry',
   'error.hostDown',
   'persona.template',
 ]
@@ -124,7 +131,19 @@ assert.equal(client.includes('The bot layer is under construction'), false)
 assert.equal(client.includes('A1 skeleton'), false)
 assert.match(client, /M2\.97 12\.92A2 2 0 0 0 2 14\.63/)
 assert.match(client, /stroke: '#003d9b'/)
-assert.equal(client.includes('fetch('), false)
+assert.equal((client.match(/fetch\(/g) || []).length, 1)
+assert.match(client, /fetch\('\/plugins\/rayrun-bots\?action=health'/)
+assert.match(client, /mode: 'same-origin'/)
+assert.match(client, /credentials: 'same-origin'/)
+assert.match(client, /cache: 'no-store'/)
+assert.match(client, /signal: controller\.signal/)
+assert.match(client, /AbortController/)
+assert.match(client, /body\.plugin !== 'rayrun-bots'/)
+assert.match(client, /if \(!response\.ok\) throw/)
+assert.match(client, /const body = await response\.json\(\)/)
+assert.match(client, /version: String\(body\.version \?\? ''\), ready: body\.ready === true/)
+assert.equal(client.includes("method: 'POST'"), false)
+assert.doesNotMatch(client, /Authorization|Bearer\s/)
 assert.equal(client.includes('localStorage'), false)
 assert.equal(client.includes('sessionStorage'), false)
 assert.equal(/console\.(log|debug|info|warn|error)\(/.test(client), false)
@@ -190,9 +209,15 @@ assert.match(client, /const composerRef = useRef\(null\)/)
 assert.match(client, /composerRef\.current\?\.focus\(\)/)
 assert.match(client, /function Conversation\(\{ t, state, bot, composerRef,/)
 assert.match(client, /ref: composerRef/)
-assert.match(client, /function SettingsScreen\(\{ t, state, onTab, onChange, onClose, onSetup \}\)/)
+assert.match(client, /function SettingsScreen\(\{ t, state, host, onRetryHost, onTab, onChange, onClose, onSetup \}\)/)
 assert.equal(client.includes('rb-btn rb-ghost rb-back'), true)
 assert.equal(client.includes("'aria-label': t('setup.back')"), true)
+assert.match(client, /function HostStatus/)
+assert.equal(client.includes("'data-host': 'checking'"), true)
+assert.equal(client.includes("'data-host': 'loaded'"), true)
+assert.equal(client.includes("'data-host': 'down'"), true)
+assert.match(client, /settings\.hostLoaded/)
+assert.match(client, /settings\.retry/)
 assert.match(client, /function tickApprovals/)
 assert.match(client, /setInterval\(\(\) => setState\(tickApprovals\), 60 \* 1000\)/)
 assert.match(client, /state: 'expired', expiresMin: 0/)

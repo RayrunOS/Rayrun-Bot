@@ -204,6 +204,12 @@ window.__ModuleLoader__.load({
     "rayrunAccount": "Rayrun account",
     "rayrunHint": "Token stays in the DSH vault · host side only",
     "connected": "Connected",
+    "host": "Rayrun Bot host",
+    "hostHint": "Same-origin health check. No Rayrun token or DeepSeek key.",
+    "hostChecking": "Checking…",
+    "hostLoaded": "Loaded · v{version} · bot layer not ready",
+    "hostReady": "Ready · v{version}",
+    "retry": "Retry",
     "plugin": "Cloud-computer plugin",
     "pluginHint": "dsh-rayrun-computer v1.0.0",
     "pluginOk": "OK",
@@ -476,6 +482,12 @@ window.__ModuleLoader__.load({
     "rayrunAccount": "Rayrun 账号",
     "rayrunHint": "token 存在 DSH 凭证库 · 只在 Host 侧",
     "connected": "已连接",
+    "host": "Rayrun Bot host",
+    "hostHint": "同源健康检查，不携带 Rayrun token 或 DeepSeek key。",
+    "hostChecking": "检查中…",
+    "hostLoaded": "已加载 · v{version} · Bot 层尚未就绪",
+    "hostReady": "已就绪 · v{version}",
+    "retry": "重试",
     "plugin": "云电脑插件",
     "pluginHint": "dsh-rayrun-computer v1.0.0",
     "pluginOk": "正常",
@@ -772,6 +784,7 @@ window.__ModuleLoader__.load({
 .rb-srow .rb-l small { color: #8a93a3; font-size: 11px; }
 .rb-srow select, .rb-srow input { background: #fff; border: 1px solid #e4e8f0; border-radius: 8px; color: #0f172a; font-size: 12.5px; padding: 5px 8px; }
 .rb-status { display: flex; align-items: center; gap: 6px; color: #5b6472; font-size: 11.5px; border: 0; background: transparent; padding: 0; }
+.rb-status .rb-retry { padding: 2px 8px; font-size: 11px; }
 .rb-center-empty { margin: auto; max-width: 420px; text-align: center; display: grid; gap: 8px; justify-items: center; padding: 48px 24px; }
 .rb-center-empty h2 { margin: 0; font-size: 18px; font-weight: 650; }
 .rb-center-empty p { margin: 0; color: #5b6472; font-size: 13px; }
@@ -1305,6 +1318,8 @@ window.__ModuleLoader__.load({
 
     function BotsApp({ ctx }) {
       const [state, setState] = useState(createState)
+      const [host, setHost] = useState({ status: 'checking' })
+      const [hostAttempt, setHostAttempt] = useState(0)
       const dshLang = useDshLang(ctx)
       const lang = resolveLang(dshLang, state.settings.lang)
       const t = makeT(lang === 'zh' ? ZH : EN)
@@ -1346,6 +1361,32 @@ window.__ModuleLoader__.load({
         composerRef.current?.focus()
         setState((current) => ({ ...current, focusComposer: false }))
       }, [state.focusComposer, state.screen])
+
+      useEffect(() => {
+        const controller = new AbortController()
+        const run = async () => {
+          setHost({ status: 'checking' })
+          try {
+            const response = await fetch('/plugins/rayrun-bots?action=health', {
+              method: 'GET',
+              mode: 'same-origin',
+              credentials: 'same-origin',
+              cache: 'no-store',
+              headers: { Accept: 'application/json' },
+              signal: controller.signal,
+            })
+            if (!response.ok) throw new Error(`health ${response.status}`)
+            const body = await response.json()
+            if (!body || body.ok !== true || body.plugin !== 'rayrun-bots') throw new Error('bad health envelope')
+            setHost({ status: 'loaded', version: String(body.version ?? ''), ready: body.ready === true })
+          } catch (error) {
+            if (error?.name === 'AbortError') return
+            setHost({ status: 'down' })
+          }
+        }
+        run()
+        return () => controller.abort()
+      }, [hostAttempt])
 
       const selected = state.bots.find((bot) => bot.id === state.selectedId) || state.bots[0] || null
       const listOn = width >= 900 || state.forceList
@@ -1535,6 +1576,8 @@ window.__ModuleLoader__.load({
         catalog,
         width,
         composerRef,
+        host,
+        onRetryHost: () => setHostAttempt((n) => n + 1),
         onToggleList: () => patch({ forceList: !state.forceList }),
         onToggleDetail: () => patch({ forceDetail: !state.forceDetail }),
       })
@@ -1997,6 +2040,32 @@ window.__ModuleLoader__.load({
       )
     }
 
+    function HostStatus({ t, host, onRetry }) {
+      if (host.status === 'loaded') {
+        return h(
+          'span',
+          { className: 'rb-status', 'data-host': 'loaded' },
+          h('span', { className: 'rb-dot rb-working', 'aria-hidden': 'true' }),
+          t(host.ready ? 'settings.hostReady' : 'settings.hostLoaded', { version: host.version }),
+        )
+      }
+      if (host.status === 'down') {
+        return h(
+          'span',
+          { className: 'rb-status', 'data-host': 'down' },
+          h('span', { className: 'rb-dot rb-danger', 'aria-hidden': 'true' }),
+          t('error.hostDown'),
+          h('button', { type: 'button', className: 'rb-btn rb-ghost rb-retry', onClick: onRetry }, t('settings.retry')),
+        )
+      }
+      return h(
+        'span',
+        { className: 'rb-status', 'data-host': 'checking' },
+        h('span', { className: 'rb-dot', 'aria-hidden': 'true' }),
+        t('settings.hostChecking'),
+      )
+    }
+
     function renderCenter(ctx) {
       const { state, t, selected, width } = ctx
       if (state.screen === 'newbot') return h(NewBotScreen, { t, onCancel: () => ctx.onScreen('chat'), onCreate: ctx.onCreate })
@@ -2005,6 +2074,8 @@ window.__ModuleLoader__.load({
           t,
           step: state.setupStep,
           flash: state.flash,
+          host: ctx.host,
+          onRetryHost: ctx.onRetryHost,
           onStep: ctx.onSetupStep,
           onClose: () => ctx.onScreen('chat'),
           onCreate: ctx.onCreate,
@@ -2015,6 +2086,8 @@ window.__ModuleLoader__.load({
         return h(SettingsScreen, {
           t,
           state,
+          host: ctx.host,
+          onRetryHost: ctx.onRetryHost,
           onTab: ctx.onSettingsTab,
           onChange: ctx.onSettings,
           onClose: () => ctx.onScreen('chat'),
@@ -2080,7 +2153,7 @@ window.__ModuleLoader__.load({
       )
     }
 
-    function SetupScreen({ t, step, flash, onStep, onClose, onCreate, onFlash }) {
+    function SetupScreen({ t, step, flash, host, onRetryHost, onStep, onClose, onCreate, onFlash }) {
       const [name, setName] = useState(() => t('newBot.defaultName'))
       const [job, setJob] = useState(() => t('newBot.defaultJob'))
       const [instructions, setInstructions] = useState('')
@@ -2136,6 +2209,12 @@ window.__ModuleLoader__.load({
               h('h2', null, t('setup.dependencyTitle')),
               h('p', { className: 'rb-say' }, t('setup.dependencyBody')),
               h('div', { className: 'rb-faint' }, t('setup.dependencyStatus')),
+              h(
+                'div',
+                { className: 'rb-line', style: { marginTop: 10 } },
+                h('span', { className: 'rb-faint' }, t('settings.host')),
+                h(HostStatus, { t, host, onRetry: onRetryHost }),
+              ),
             ) : null,
             step === 1 ? h(
               'div',
@@ -2208,7 +2287,7 @@ window.__ModuleLoader__.load({
       )
     }
 
-    function SettingsScreen({ t, state, onTab, onChange, onClose, onSetup }) {
+    function SettingsScreen({ t, state, host, onRetryHost, onTab, onChange, onClose, onSetup }) {
       const shownLang = state.settings.lang || (lookup(ZH, 'settings.title') === t('settings.title') ? 'zh' : 'en')
       const scrollTo = (id) => {
         onTab(id)
@@ -2253,6 +2332,12 @@ window.__ModuleLoader__.load({
               h('span', { className: 'rb-dot rb-working', 'aria-hidden': 'true' }),
               t('settings.connected'),
             ),
+          ),
+          h(
+            'div',
+            { className: 'rb-srow' },
+            h('div', { className: 'rb-l' }, t('settings.host'), h('small', null, t('settings.hostHint'))),
+            h(HostStatus, { t, host, onRetry: onRetryHost }),
           ),
           h(
             'div',
