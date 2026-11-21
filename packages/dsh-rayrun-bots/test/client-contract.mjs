@@ -118,10 +118,23 @@ const required = [
   'computer.copyFailed',
   'computer.close',
   'preview.badge',
+  'setup.computerTitle',
+  'setup.computerExisting',
+  'setup.computerNeedsRayrun',
+  'setup.computerLoadFailed',
+  'setup.computerCreate',
+  'setup.computerCreated',
+  'setup.computerCreateFailed',
+  'setup.computerCost',
   'notice.recovering',
   'notice.sleeping',
   'cost.low',
   'cost.lowShort',
+  'settings.setup',
+  'settings.usageHint',
+  'settings.usageLine',
+  'settings.usageConnect',
+  'settings.usageFailed',
   'settings.host',
   'settings.hostHint',
   'settings.hostChecking',
@@ -139,6 +152,7 @@ assert.equal(zh.approval.warning, '这会把数据发到你的电脑之外，且
 assert.equal(zh.sample.nora.user, '总结上周的 PR，并起草每周摘要。发布前等我确认。')
 assert.equal(zh.notice.reconnecting, '电脑正在重连… 5 秒后重试')
 assert.equal(zh.setup.useToken, '使用 API Token')
+assert.equal(zh.setup.steps.key, '云电脑')
 assert.equal(zh.setup.connectedShort, '已连接')
 assert.equal(zh.newBot.title, '新建 Bot')
 assert.equal(zh.settings.title, '设置')
@@ -154,6 +168,13 @@ assert.match(client, /fetch\('\/plugins\/rayrun\/rpc', \{[\s\S]*?method: 'POST'/
 assert.match(client, /machine\.password/)
 assert.match(client, /overview\.connection\?\.configured !== true/)
 assert.match(client, /machine\.desktopRepair/)
+assert.match(client, /machine\.create/)
+assert.match(client, /machines\.find\(\(item\) => item\.name === name\)/)
+assert.match(client, /modelKey/)
+assert.match(client, /disabled: machineBusy \|\| !computerName\.trim\(\)/)
+assert.equal(client.includes('setup.keySave'), false)
+assert.equal(client.includes('setup.keyIgnored'), false)
+assert.equal(client.includes('settings.connected'), false)
 assert.match(client, /desktop_url/)
 assert.match(client, /window\.open\(/)
 assert.match(client, /mode: 'same-origin'/)
@@ -214,7 +235,8 @@ assert.equal(client.includes("'data-low': low ? 'true' : 'false'"), true)
 assert.equal(client.includes('rb-usage-low'), true)
 assert.match(client, /function Notice/)
 assert.match(client, /notice\.sleeping/)
-assert.match(client, /computer === 'live'\) return null/)
+assert.match(client, /!computer \|\| computer === 'live'\) return null/)
+assert.match(client, /PREVIEW\.get\('computer'\)\s*: null/)
 assert.match(client, /rb-danger/)
 assert.match(client, /function ChatList\(\{ t, state, rows, selected, searchRef, low,/)
 assert.match(client, /low \? 'rb-textbtn rb-textbtn-low' : 'rb-textbtn'/)

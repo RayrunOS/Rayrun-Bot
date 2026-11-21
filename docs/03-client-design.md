@@ -127,10 +127,19 @@ attention、snippet 与时间。chat 来源没有 TTL，显示 `waits for you`�
 
 ## 6. 首次设置与失败状态
 
-**向导四步**：依赖检查 → Rayrun 连接（API token）→ DeepSeek key → 电脑 + 第一个 bot。
+**向导四步**：依赖检查 → Rayrun 连接（API token）→ 云电脑 → 第一个 bot。
 依赖步骤显示 host 检测到的插件版本；Rayrun 步骤把粘贴的 token 交给云电脑插件的
 `connection.save`，再用 `overview` 显示真实余额/机器数；失败显示一句可执行错误。用户
-密码/微信登录仍在云电脑插件里，尚未在 Bots 内暴露；DeepSeek key 步骤仍是预览。
+密码/微信登录仍在云电脑插件里，尚未在 Bots 内暴露。
+
+**云电脑步骤**：先用 `overview` 查找已有机器；有则直接采用并显示名称，Bots 不修改它的
+设置或模型凭据。没有机器时，用户填写名称和可选的 DeepSeek key，点“创建云电脑”调用
+`machine.create`，规格取插件的 `defaults`（默认 `deepseek-harness@1`、2 vCPU、至少 2 GB、
+远程桌面）。key 只作为 `modelKey` 交给云电脑插件存成机器凭据，不进入 Bots 的 host 状态，
+成功后清空输入。按钮文案明确说明这是 Rayrun 账号上的计费机器，且 Bots 永不销毁它；
+未连接时按钮不可用，失败显示一句可执行错误。创建成功路径尚未在 Rayrun 沙箱验证，见
+[`10-rayrun-verification.md`](10-rayrun-verification.md) §4。
+
 每一步显示内联状态和“去修复”的链接；全部就绪时可跳过；依赖缺失或版本不匹配要给一句
 可执行的安装提示，不崩溃。
 
@@ -156,6 +165,7 @@ attention、snippet 与时间。chat 来源没有 TTL，显示 `waits for you`�
 - Rayrun 拒绝 token（401；setup 显示“检查 token 后重试”）
 - 没有 DeepSeek key（`E_KEY_REQUIRED`）
 - 电脑停止/忙碌（`E_MACHINE_STOPPED` / `E_MACHINE_BUSY`）
+- 云电脑创建失败或超时（显示 Rayrun 返回的原因）
 - bot runtime 恢复中（`E_HOST_DOWN`）
 - 审批过期/重放/未知（`E_APPROVAL_*`）
 - 余额低（`E_BALANCE_LOW`）

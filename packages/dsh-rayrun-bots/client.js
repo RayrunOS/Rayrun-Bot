@@ -22,7 +22,7 @@ window.__ModuleLoader__.load({
     const LOW_BALANCE_PREVIEW = PREVIEW.get('low-balance') === '1'
     const COMPUTER_PREVIEW = ['live', 'reconnecting', 'sleeping', 'unreachable'].includes(PREVIEW.get('computer'))
       ? PREVIEW.get('computer')
-      : 'reconnecting'
+      : null
 
     const EN = {
   "meta": {
@@ -188,7 +188,7 @@ window.__ModuleLoader__.load({
     "steps": {
       "dependency": "Dependency",
       "rayrun": "Rayrun",
-      "key": "DeepSeek key",
+      "key": "Computer",
       "bot": "First bot"
     },
     "dependencyTitle": "Cloud-computer plugin",
@@ -211,11 +211,21 @@ window.__ModuleLoader__.load({
     "tokenRejected": "Rayrun rejected this API token. Check the token and try again.",
     "connect": "Connect",
     "accountLine": "Account: — · Balance: —",
-    "keyTitle": "DeepSeek key",
-    "keyBody": "Rayrun injects the key into the agent process. It does not go into the workspace, and this page never stores it.",
-    "keyPlaceholder": "…or paste a DeepSeek API key",
-    "keySave": "Save",
-    "keyIgnored": "That key was not saved. This page never keeps a DeepSeek key.",
+    "computerTitle": "Cloud computer",
+    "computerBody": "Bots creates one cloud computer on your Rayrun account. It is billable while it runs. The DeepSeek key becomes its model credential and does not go into the workspace.",
+    "computerExisting": "Using your existing computer · {name}",
+    "computerExistingHint": "The cloud-computer plugin owns this machine's settings and model credential.",
+    "computerNeedsRayrun": "Connect Rayrun on the previous step before creating a computer.",
+    "computerChecking": "Checking your Rayrun computers…",
+    "computerLoadFailed": "Could not read your Rayrun computers: {message}",
+    "computerName": "Computer name",
+    "computerKeyPlaceholder": "Paste a DeepSeek API key (optional)",
+    "computerKeyHint": "Optional if this machine already has a DeepSeek credential.",
+    "computerCreate": "Create cloud computer",
+    "computerCreating": "Creating… about 15 seconds",
+    "computerCreated": "Created · {name}",
+    "computerCreateFailed": "Could not create the computer: {message}",
+    "computerCost": "Creates a billable machine on your Rayrun account. Bots never destroys it.",
     "botTitle": "First bot",
     "botBody": "Give it a name and one job. It is added to this page only, not to a cloud computer."
   },
@@ -228,7 +238,7 @@ window.__ModuleLoader__.load({
     "appearance": "Appearance",
     "rayrunAccount": "Rayrun account",
     "rayrunHint": "Token stays in the DSH vault · host side only",
-    "connected": "Connected",
+    "setup": "Set up",
     "host": "Rayrun Bot host",
     "hostHint": "Same-origin health check. No Rayrun token or DeepSeek key.",
     "hostChecking": "Checking…",
@@ -243,6 +253,10 @@ window.__ModuleLoader__.load({
     "pluginMissing": "Missing",
     "pluginIncompatible": "Incompatible",
     "pluginUnknown": "Unknown",
+    "usageHint": "From your Rayrun account. Same-origin RPC; no token in the page.",
+    "usageLine": "Balance {balance} · {hours} machine-hours · {machines} machines",
+    "usageConnect": "Connect Rayrun to see usage.",
+    "usageFailed": "Could not read usage: {message}",
     "idle": "Idle stop",
     "idleHint": "Stop the computer when idle. Never destroy it.",
     "idle15": "15 minutes",
@@ -496,7 +510,7 @@ window.__ModuleLoader__.load({
     "steps": {
       "dependency": "依赖",
       "rayrun": "Rayrun",
-      "key": "DeepSeek key",
+      "key": "云电脑",
       "bot": "第一个 Bot"
     },
     "dependencyTitle": "检查云电脑插件",
@@ -519,11 +533,21 @@ window.__ModuleLoader__.load({
     "tokenRejected": "Rayrun 拒绝了这个 API token。检查后重试。",
     "connect": "连接",
     "accountLine": "账号：— · 余额：—",
-    "keyTitle": "DeepSeek key",
-    "keyBody": "key 由 Rayrun 注入到 agent 进程，不会进入工作区。这一页不保存 key。",
-    "keyPlaceholder": "…或粘贴 DeepSeek API key",
-    "keySave": "保存",
-    "keyIgnored": "没有保存这个 key。这一页不留存 DeepSeek key。",
+    "computerTitle": "云电脑",
+    "computerBody": "Bots 会在你的 Rayrun 账号上创建一台云电脑。运行期间会计费。DeepSeek key 会成为它的模型凭据，不会进入工作区。",
+    "computerExisting": "使用已有云电脑 · {name}",
+    "computerExistingHint": "这台机器的设置和模型凭据由云电脑插件管理。",
+    "computerNeedsRayrun": "先在上一页连接 Rayrun，才能创建云电脑。",
+    "computerChecking": "正在检查你的 Rayrun 云电脑…",
+    "computerLoadFailed": "读取 Rayrun 云电脑失败：{message}",
+    "computerName": "云电脑名称",
+    "computerKeyPlaceholder": "粘贴 DeepSeek API key（可选）",
+    "computerKeyHint": "如果这台机器已有 DeepSeek 凭据，可以留空。",
+    "computerCreate": "创建云电脑",
+    "computerCreating": "创建中…约 15 秒",
+    "computerCreated": "已创建 · {name}",
+    "computerCreateFailed": "创建云电脑失败：{message}",
+    "computerCost": "会在你的 Rayrun 账号上创建一台计费机器。Bots 永不销毁它。",
     "botTitle": "第一个 Bot",
     "botBody": "给它一个名字和一项职责。它只加到这一页，不会出现在云电脑上。"
   },
@@ -536,7 +560,7 @@ window.__ModuleLoader__.load({
     "appearance": "外观",
     "rayrunAccount": "Rayrun 账号",
     "rayrunHint": "token 存在 DSH 凭证库 · 只在 Host 侧",
-    "connected": "已连接",
+    "setup": "首次设置",
     "host": "Rayrun Bot host",
     "hostHint": "同源健康检查，不携带 Rayrun token 或 DeepSeek key。",
     "hostChecking": "检查中…",
@@ -551,6 +575,10 @@ window.__ModuleLoader__.load({
     "pluginMissing": "缺失",
     "pluginIncompatible": "不兼容",
     "pluginUnknown": "未知",
+    "usageHint": "来自你的 Rayrun 账号。同源 RPC；页面不持有 token。",
+    "usageLine": "余额 {balance} · {hours} 机时 · {machines} 台云电脑",
+    "usageConnect": "连接 Rayrun 后显示用量。",
+    "usageFailed": "读取用量失败：{message}",
     "idle": "空闲停机",
     "idleHint": "空闲时停止电脑，绝不销毁。",
     "idle15": "15 分钟",
@@ -643,6 +671,7 @@ window.__ModuleLoader__.load({
 
     const PANEL_ID = 'rayrun-bots'
     const SAMPLE_COMPUTER = 'dsh-workspace'
+    const DEFAULT_COMPUTER = 'rayrun-bot'
     const MARK_PATHS = [
       'M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 1.71l3 1.8a2 2 0 0 0 2.06 0L12 19v-5.5l-5-3-4.03 2.42Z',
       'm7 16.5-4.74-2.85',
@@ -1973,7 +2002,7 @@ window.__ModuleLoader__.load({
           flash,
         )
       }
-      if (computer === 'live') return null
+      if (!computer || computer === 'live') return null
       const sleeping = computer === 'sleeping'
       const unreachable = computer === 'unreachable'
       return h(
@@ -2168,10 +2197,11 @@ window.__ModuleLoader__.load({
       const label = status === 'live' ? t('computer.live')
         : status === 'sleeping' ? t('computer.sleeping')
         : status === 'unreachable' ? t('computer.unreachable')
-        : t('computer.reconnecting')
+        : status ? t('computer.reconnecting')
+        : t('setup.notConnected')
       const dot = status === 'live' ? 'rb-working'
         : status === 'unreachable' ? 'rb-danger'
-        : status === 'sleeping' ? ''
+        : status === 'sleeping' || !status ? ''
         : 'rb-needs'
       return h(
         'section',
@@ -2362,6 +2392,11 @@ window.__ModuleLoader__.load({
       const [tokenBusy, setTokenBusy] = useState(false)
       const [tokenError, setTokenError] = useState('')
       const [connection, setConnection] = useState(null)
+      const [machine, setMachine] = useState(null)
+      const [machineLoading, setMachineLoading] = useState(false)
+      const [machineBusy, setMachineBusy] = useState(false)
+      const [machineError, setMachineError] = useState('')
+      const [computerName, setComputerName] = useState(DEFAULT_COMPUTER)
       const steps = [
         ['dependency', 'setup.steps.dependency'],
         ['rayrun', 'setup.steps.rayrun'],
@@ -2376,13 +2411,38 @@ window.__ModuleLoader__.load({
           : dependency?.status === 'incompatible'
             ? t('setup.dependencyIncompatible', { version: dependency.version ?? '?', required: dependency.required ?? '' })
             : t('setup.dependencyStatus')
+      const configured = connection?.connection?.configured === true
       const canContinue = step === 0
         ? dependency?.status === 'ok'
         : step === 1
-          ? Boolean(connection)
-          : step === 3
-            ? Boolean(name.trim())
-            : false
+          ? configured
+          : step === 2
+            ? Boolean(machine)
+            : step === 3
+              ? Boolean(name.trim())
+              : false
+      useEffect(() => {
+        if (step !== 2) return undefined
+        let cancelled = false
+        setMachineLoading(true)
+        setMachineError('')
+        void (async () => {
+          try {
+            const overview = await rayRpc('overview')
+            if (cancelled) return
+            setConnection(overview)
+            const machines = Array.isArray(overview.machines) ? overview.machines : []
+            setMachine(machines.find((item) => item.name === DEFAULT_COMPUTER) || machines[0] || null)
+          } catch (error) {
+            if (!cancelled) setMachineError(t('setup.computerLoadFailed', { message: String(error?.message ?? error) }))
+          } finally {
+            if (!cancelled) setMachineLoading(false)
+          }
+        })()
+        return () => {
+          cancelled = true
+        }
+      }, [step])
       const back = () => {
         if (step === 0) onClose()
         else onStep(step - 1)
@@ -2399,9 +2459,47 @@ window.__ModuleLoader__.load({
         }
         onCreate({ name, job, instructions })
       }
-      const forget = (ref, key) => {
-        if (ref.current) ref.current.value = ''
-        onFlash(t(key))
+      const createComputer = async () => {
+        const name = computerName.trim()
+        const key = keyRef.current?.value.trim() ?? ''
+        setMachineBusy(true)
+        setMachineError('')
+        try {
+          const overview = await rayRpc('overview')
+          if (overview.connection?.configured !== true) {
+            setConnection(overview)
+            setMachineError(t('setup.computerNeedsRayrun'))
+            return
+          }
+          const machines = Array.isArray(overview.machines) ? overview.machines : []
+          const existing = machines.find((item) => item.name === name) || machines[0]
+          if (existing) {
+            setConnection(overview)
+            setMachine(existing)
+            onFlash(t('setup.computerExisting', { name: existing.name ?? existing.id ?? '—' }))
+            return
+          }
+          const defaults = overview.defaults ?? {}
+          const result = await rayRpc('machine.create', {
+            name,
+            agent: defaults.agent || 'deepseek-harness@1',
+            cpu_cores: Number(defaults.cpu_cores) || 2,
+            memory_mb: Math.max(2048, Number(defaults.memory_mb) || 2048),
+            remote_desktop: true,
+            ...(key ? { modelKey: key } : {}),
+          })
+          if (keyRef.current) keyRef.current.value = ''
+          setConnection({ ...overview, machines: [result.machine, ...(Array.isArray(overview.machines) ? overview.machines : [])] })
+          setMachine(result.machine)
+          onFlash(t('setup.computerCreated', { name: result.machine?.name ?? name }))
+        } catch (error) {
+          const detail = String(error?.message ?? error)
+          setMachineError(/token_required|unauthorized/i.test(detail)
+            ? t('setup.computerNeedsRayrun')
+            : t('setup.computerCreateFailed', { message: detail }))
+        } finally {
+          setMachineBusy(false)
+        }
       }
       const connectToken = async () => {
         const token = tokenRef.current?.value.trim() ?? ''
@@ -2476,7 +2574,7 @@ window.__ModuleLoader__.load({
                     onFlash(t('setup.tokenHint'))
                   },
                 }, t('setup.useToken')),
-                h('span', { className: 'rb-faint' }, connection ? t('setup.connectedShort') : t('setup.notConnected')),
+                h('span', { className: 'rb-faint' }, configured ? t('setup.connectedShort') : t('setup.notConnected')),
               ),
               h(
                 'div',
@@ -2496,7 +2594,7 @@ window.__ModuleLoader__.load({
               h(
                 'div',
                 { className: 'rb-faint', style: { marginTop: 10 } },
-                connection
+                configured
                   ? t('setup.connected', { balance: balanceText(connection.balance), machines: connection.machines.length })
                   : t('setup.accountLine'),
               ),
@@ -2504,22 +2602,58 @@ window.__ModuleLoader__.load({
             step === 2 ? h(
               'div',
               null,
-              h('h2', null, t('setup.keyTitle')),
-              h('p', { className: 'rb-say' }, t('setup.keyBody')),
-              h(
+              h('h2', null, t('setup.computerTitle')),
+              h('p', { className: 'rb-say' }, t('setup.computerBody')),
+              machineLoading ? h('p', { className: 'rb-faint' }, t('setup.computerChecking')) : null,
+              !machineLoading && machine ? h(
                 'div',
-                { className: 'rb-line' },
-                h('input', {
-                  ref: keyRef,
-                  className: 'rb-field',
-                  type: 'password',
-                  autoComplete: 'off',
-                  spellCheck: false,
-                  placeholder: t('setup.keyPlaceholder'),
-                  'aria-label': t('setup.keyPlaceholder'),
-                }),
-                h('button', { type: 'button', className: 'rb-btn', onClick: () => forget(keyRef, 'setup.keyIgnored') }, t('setup.keySave')),
-              ),
+                null,
+                h('p', { className: 'rb-say' }, t('setup.computerExisting', { name: machine.name ?? machine.id ?? '—' })),
+                h('p', { className: 'rb-faint' }, t('setup.computerExistingHint')),
+              ) : null,
+              !machineLoading && !machine && !configured ? h('p', { className: 'rb-say', role: 'status' }, t('setup.computerNeedsRayrun')) : null,
+              !machineLoading && !machine && configured ? h(
+                'div',
+                null,
+                h(
+                  'div',
+                  { className: 'rb-line' },
+                  h('input', {
+                    className: 'rb-field',
+                    value: computerName,
+                    maxLength: 64,
+                    placeholder: t('setup.computerName'),
+                    'aria-label': t('setup.computerName'),
+                    onChange: (event) => setComputerName(event.target.value),
+                  }),
+                ),
+                h(
+                  'div',
+                  { className: 'rb-line', style: { marginTop: 9 } },
+                  h('input', {
+                    ref: keyRef,
+                    className: 'rb-field',
+                    type: 'password',
+                    autoComplete: 'off',
+                    spellCheck: false,
+                    placeholder: t('setup.computerKeyPlaceholder'),
+                    'aria-label': t('setup.computerKeyPlaceholder'),
+                  }),
+                ),
+                h('p', { className: 'rb-faint' }, t('setup.computerKeyHint')),
+                h(
+                  'div',
+                  { className: 'rb-line', style: { marginTop: 10 } },
+                  h('button', {
+                    type: 'button',
+                    className: 'rb-btn rb-primary',
+                    disabled: machineBusy || !computerName.trim(),
+                    onClick: createComputer,
+                  }, machineBusy ? t('setup.computerCreating') : t('setup.computerCreate')),
+                ),
+                h('p', { className: 'rb-faint' }, t('setup.computerCost')),
+              ) : null,
+              machineError ? h('p', { className: 'rb-say', role: 'alert', style: { color: '#b45309' } }, machineError) : null,
             ) : null,
             step === 3 ? h(
               'div',
@@ -2547,6 +2681,38 @@ window.__ModuleLoader__.load({
 
     function SettingsScreen({ t, state, host, onRetryHost, onTab, onChange, onClose, onSetup }) {
       const shownLang = state.settings.lang || (lookup(ZH, 'settings.title') === t('settings.title') ? 'zh' : 'en')
+      const [usage, setUsage] = useState(null)
+      const [usageLoading, setUsageLoading] = useState(true)
+      const [usageError, setUsageError] = useState('')
+      useEffect(() => {
+        let cancelled = false
+        void (async () => {
+          try {
+            const overview = await rayRpc('overview')
+            if (!cancelled) setUsage(overview)
+          } catch (error) {
+            if (!cancelled) setUsageError(String(error?.message ?? error))
+          } finally {
+            if (!cancelled) setUsageLoading(false)
+          }
+        })()
+        return () => {
+          cancelled = true
+        }
+      }, [])
+      const usageConfigured = usage?.connection?.configured === true
+      const usageHours = Number(usage?.usage?.vm_hours)
+      const usageLine = usageLoading
+        ? t('settings.hostChecking')
+        : usageError
+          ? t('settings.usageFailed', { message: usageError })
+          : usageConfigured
+            ? t('settings.usageLine', {
+                balance: balanceText(usage.balance),
+                hours: Number.isFinite(usageHours) ? usageHours.toFixed(1) : '—',
+                machines: Array.isArray(usage.machines) ? usage.machines.length : 0,
+              })
+            : t('settings.usageConnect')
       const scrollTo = (id) => {
         onTab(id)
         const reduce = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -2587,8 +2753,8 @@ window.__ModuleLoader__.load({
             h(
               'button',
               { type: 'button', className: 'rb-status', onClick: onSetup },
-              h('span', { className: 'rb-dot rb-working', 'aria-hidden': 'true' }),
-              t('settings.connected'),
+              h('span', { className: 'rb-dot', 'aria-hidden': 'true' }),
+              t('settings.setup'),
             ),
           ),
           h(
@@ -2622,6 +2788,20 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { id: 'rb-settings-usage', className: 'rb-srow' },
+            h('div', { className: 'rb-l' }, t('settings.usage'), h('small', null, t('settings.usageHint'))),
+            h(
+              'span',
+              { className: 'rb-status' },
+              h('span', {
+                className: usageError ? 'rb-dot rb-danger' : usageLoading || !usageConfigured ? 'rb-dot' : 'rb-dot rb-working',
+                'aria-hidden': 'true',
+              }),
+              usageLine,
+            ),
+          ),
+          h(
+            'div',
+            { className: 'rb-srow' },
             h('div', { className: 'rb-l' }, t('settings.idle'), h('small', null, t('settings.idleHint'))),
             h(
               'select',

@@ -21,6 +21,12 @@ action. The screens are an in-memory preview. There is no bot layer yet.
   sidebar and bottom bar; there is no in-product return to the Harness shell
   (ADR-017). The setup Rayrun step calls the cloud-computer plugin's
   same-origin RPC with a pasted token and shows the real balance/machine count.
+  The computer step calls `overview` and adopts an existing machine, or calls
+  `machine.create` with the plugin's defaults; a pasted DeepSeek key is passed as
+  `modelKey` and becomes the machine's Rayrun credential, then the input is
+  cleared. The step says the machine is billable, and the button is disabled
+  until Rayrun is connected. Creating a machine for real has not been run
+  because a real token is not placed in the sandbox.
   `Open` / `Take over` on the computer card uses the same RPC to start or resume
   the machine, wait for `Running`, repair the desktop service, read `desktop_url` and the desktop password,
   then open the desktop in a new tab and show the password in a dismissible
@@ -28,11 +34,13 @@ action. The screens are an in-memory preview. There is no bot layer yet.
   actionable line when Rayrun is not connected, there is no machine, the popup
   is blocked, the machine does not start in time, or it has no desktop. The
   success path against a real machine has not been run in the Rayrun sandbox.
-  The rest stays in the page, and the client keeps neither the token nor a
-  DeepSeek key.
+  The Settings Usage row reads the real balance, machine-hours and machine count
+  through the same RPC; without a connection it says so instead of showing sample
+  numbers. The rest stays in the page, and the client keeps neither the token nor
+  a DeepSeek key.
 
-Not built yet: the DeepSeek-key and computer-creation setup steps, a verified
-`Open` success path, a real bot roster, bot↔session mapping, remote approvals,
+Not built yet: a verified computer-creation success path, a verified `Open`
+success path, a real bot roster, bot↔session mapping, remote approvals,
 routines that run, and the npm release path. See the
 repo-level [MVP plan](../../docs/plans/mvp-plan.md) and [client plan](../../docs/plans/client-plan.md).
 

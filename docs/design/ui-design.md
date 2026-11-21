@@ -127,7 +127,8 @@ Profile header (avatar, name, `job · computer`), then `Activity | Library` tabs
   the rows. v0.1 ships at most one routine (P1); the other rows illustrate the
   shape.
 - **Computer** — a compact row near the bottom, like the reference: name and
-  state (`live` / `reconnecting…` / `sleeping` / `unreachable`) on the left with
+  state (`live` / `reconnecting…` / `sleeping` / `unreachable`; `Not connected`
+  when Rayrun is not configured) on the left with
   a colored dot (green / amber / gray / red), a small 44×30 screen thumbnail on
   the right, and `Open` / `Take over` right-aligned below. No large preview in
   v0.1; Open starts or resumes the machine through the dependency's same-origin
@@ -157,7 +158,7 @@ is focused when the form opens. Defaults come from
 
 ### 2.5 Setup
 
-Four thin steps on the same light canvas: Dependency · Rayrun · DeepSeek key ·
+Four thin steps on the same light canvas: Dependency · Rayrun · Computer ·
 First bot. Current step shows one paragraph and its inputs; `Continue` enables
 when the current step passes; `Skip for now` leaves the setup row in place. The
 dependency step shows the installed cloud-computer plugin version
@@ -165,16 +166,22 @@ dependency step shows the installed cloud-computer plugin version
 (`Checking…` / `Loaded · v…` / `Not responding` with Retry). The Rayrun step
 sends a pasted API token to the cloud-computer plugin's same-origin RPC and
 shows the real balance and machine count; a rejected token gets one actionable
-line. The DeepSeek key and first-bot steps remain preview-only.
+line. The computer step adopts an existing machine or creates one through the
+plugin, with an optional DeepSeek key passed as its model credential; it says
+the machine is billable and that Bots never destroys it. The first-bot step
+remains preview-only.
 
 ### 2.6 Settings
 
 Reached from the footer gear: Account (Rayrun connection, Rayrun Bot host
 health, dependency health), Usage, Notifications, Appearance/language. The host
 row shows the same-origin health state and offers Retry when the host does not
-answer. A Back control returns to the conversation; Escape does the same. There
-is no in-product control that returns to the DSH shell (ADR-017). Plain rows
-with hairline separators; no stat cards.
+answer. Usage reads the cloud-computer plugin's `overview` through the same-origin
+RPC: it shows balance, machine-hours and machine count when connected, and
+`Connect Rayrun to see usage.` when not; the token is never in the page. A Back
+control returns to the conversation; Escape does the same. There is no in-product
+control that returns to the DSH shell (ADR-017). Plain rows with hairline
+separators; no stat cards.
 
 ### 2.7 Approvals (inline only)
 

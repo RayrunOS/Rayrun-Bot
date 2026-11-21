@@ -104,6 +104,12 @@
   `ok: true` 和 `connection.configured: false`，客户端检查该字段后显示
   `Connect Rayrun first`；合成点击触发弹窗拦截时显示 `Allow pop-ups…`。两次都没有调用
   启动或密码动作，也没有把真实 token 写进页面或沙箱。
+- Bots setup 云电脑步骤负向路径（2026-11-21）：未连接 Rayrun 时进入云电脑步骤，
+  `overview` 返回 `connection.configured: false`，界面显示先连接提示，创建按钮不出现，
+  `Continue` 禁用；没有创建机器，也没有写入任何凭据。
+- Bots 未连接状态的界面（2026-11-21）：详情电脑块显示 `Not connected`（中性点），聊天
+  底部不再显示 `Computer reconnecting…`；Settings 的 Usage 行调 `overview` 并显示
+  `Connect Rayrun to see usage.`，不显示样本余额。
 
 ---
 
@@ -116,6 +122,9 @@
 - Bots `Open` / `Take over` 成功路径：真实 token、真实 Running 机器、`desktop_url`、
   `machine.password`、桌面新标签和密码提示条；沙箱只验了未连接/弹窗拦截/无机器等负向
   状态，成功路径需要在本地 DSH 用真实 token 和机器手工验证；
+- Bots setup 的云电脑创建成功路径：真实 token + `machine.create`（计费动作），包括采用
+  已有机器、把 DeepSeek key 作为 `modelKey`、创建后清空输入；沙箱只验了未连接/禁用
+  状态，成功路径需要在本地 DSH 用真实 token 手工验证；
 - Bots setup 的真实 Rayrun 连接成功路径：云端沙箱只用假 token 验了 401；真实 token
   不进入云端沙箱，需要在本地 DSH 用真实 token 手工验证；
 - bot 会话、审批往返、远程审批、队列与恢复；
