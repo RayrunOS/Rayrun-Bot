@@ -278,7 +278,7 @@ window.__ModuleLoader__.load({
     "notify": "Notifications",
     "notifyHint": "Notify when a bot finishes or needs you.",
     "language": "Language",
-    "languageHint": "English or 简体中文",
+    "languageHint": "Chinese is primary; English is available.",
     "langEn": "English",
     "langZh": "简体中文"
   },
@@ -611,7 +611,7 @@ window.__ModuleLoader__.load({
     "notify": "通知",
     "notifyHint": "Bot 完成或等你处理时通知。",
     "language": "语言",
-    "languageHint": "English 或 简体中文",
+    "languageHint": "以简体中文为主，可切换 English。",
     "langEn": "English",
     "langZh": "简体中文"
   },
@@ -1303,7 +1303,7 @@ window.__ModuleLoader__.load({
       const locale = ctx?.get?.('locale') ?? ctx?.locale
       const read = () => {
         try {
-          return String(locale?.getLocale?.()?.id ?? '')
+          return String(locale?.getLocale?.()?.active ?? '')
         } catch {
           return ''
         }
@@ -1317,10 +1317,12 @@ window.__ModuleLoader__.load({
     }
 
     function resolveLang(dshId, override) {
-      const id = String(override || dshId || '').toLowerCase()
+      const chosen = String(override || '').toLowerCase()
+      if (chosen === 'zh' || chosen === 'en') return chosen
+      const id = String(dshId || '').toLowerCase()
       if (id.startsWith('zh')) return 'zh'
       if (id.startsWith('en')) return 'en'
-      return 'en'
+      return 'zh'
     }
 
     function useContainerWidth(ref) {
@@ -1839,6 +1841,7 @@ window.__ModuleLoader__.load({
       const center = renderCenter({
         state,
         t,
+        lang,
         selected,
         low,
         onComposer: (composer) => patch({ composer }),
@@ -1850,7 +1853,23 @@ window.__ModuleLoader__.load({
         onScreen: openScreen,
         onSetupStep: (setupStep) => patch({ setupStep }),
         onFlash: flash,
-        onSettings: (partial) => setState((current) => ({ ...current, settings: { ...current.settings, ...partial } })),
+        onSettings: (partial) => {
+          let next = partial
+          if (partial?.lang === 'zh' || partial?.lang === 'en') {
+            try {
+              const locale = ctx?.get?.('locale') ?? ctx?.locale
+              if (typeof locale?.setLocale === 'function') {
+                locale.setLocale(partial.lang)
+                // DSH owns the persisted preference; follow it instead of
+                // pinning a session-only override.
+                next = { ...partial, lang: null }
+              }
+            } catch {
+              // Keep the in-memory language when DSH cannot persist the choice.
+            }
+          }
+          setState((current) => ({ ...current, settings: { ...current.settings, ...next } }))
+        },
         onSettingsTab: (settingsTab) => patch({ settingsTab }),
         catalog,
         width,
@@ -2468,6 +2487,7 @@ window.__ModuleLoader__.load({
       if (state.screen === 'settings') {
         return h(SettingsScreen, {
           t,
+          lang: ctx.lang,
           state,
           host: ctx.host,
           onRetryHost: ctx.onRetryHost,
@@ -2831,8 +2851,8 @@ window.__ModuleLoader__.load({
       )
     }
 
-    function SettingsScreen({ t, state, host, onRetryHost, onTab, onChange, onClose, onSetup }) {
-      const shownLang = state.settings.lang || (lookup(ZH, 'settings.title') === t('settings.title') ? 'zh' : 'en')
+    function SettingsScreen({ t, lang, state, host, onRetryHost, onTab, onChange, onClose, onSetup }) {
+      const shownLang = state.settings.lang || lang || 'zh'
       const [usage, setUsage] = useState(null)
       const [usageLoading, setUsageLoading] = useState(true)
       const [usageError, setUsageError] = useState('')
@@ -3000,8 +3020,8 @@ window.__ModuleLoader__.load({
                 'aria-label': t('settings.language'),
                 onChange: (event) => onChange({ lang: event.target.value }),
               },
-              h('option', { value: 'en' }, t('settings.langEn')),
               h('option', { value: 'zh' }, t('settings.langZh')),
+              h('option', { value: 'en' }, t('settings.langEn')),
             ),
           ),
         ),
@@ -3031,7 +3051,7 @@ window.__ModuleLoader__.load({
     }
 
     return {
-      inject: ['slots'],
+      inject: ['slots', 'locale'],
       apply(ctx) {
         ctx.slots.inject('sidebar.panellist', () =>
           ctx.slots.register(
@@ -3041,7 +3061,7 @@ window.__ModuleLoader__.load({
               order: 30,
               label: () => {
                 try {
-                  const id = String((ctx.get?.('locale') ?? ctx.locale)?.getLocale?.()?.id ?? '')
+                  const id = String((ctx.get?.('locale') ?? ctx.locale)?.getLocale?.()?.active ?? '')
                   return id.toLowerCase().startsWith('zh') ? ZH.panel.label : EN.panel.label
                 } catch {
                   return 'Bots'

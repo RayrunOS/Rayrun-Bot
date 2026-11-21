@@ -252,7 +252,7 @@
     "notify": "Notifications",
     "notifyHint": "Notify when a bot finishes or needs you.",
     "language": "Language",
-    "languageHint": "English or 简体中文",
+    "languageHint": "Chinese is primary; English is available.",
     "langEn": "English",
     "langZh": "简体中文"
   },

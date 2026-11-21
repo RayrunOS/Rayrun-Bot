@@ -6,7 +6,7 @@ markdown conversation in the middle, a per-bot details panel on the right — in
 the visual language of rayrunos.com: white canvas, navy primary buttons, blue accents, hairline borders. Approvals are inline cards, not a separate
 inbox. The clickable reference is [`docs/mockups/index.html`](../mockups/index.html);
 append `#library`, `#newbot`, `#setup` or `#settings` to the URL for the other
-screens. The mockups render the **zh-CN** locale; English copy in §5 is the source and ships alongside (`locale/en.json`, `locale/zh.json`); the default language follows DSH. Related: [client-plan.md](../plans/client-plan.md) (surfaces, RPC),
+screens. The mockups render the **zh-CN** locale; English copy in §5 is the source and ships alongside (`locale/en.json`, `locale/zh.json`). Chinese is the primary UI language: the client follows the DSH locale when it is Chinese or English, falls back to Chinese for anything else, and the Settings language row writes the choice back to DSH. Related: [client-plan.md](../plans/client-plan.md) (surfaces, RPC),
 [mvp-plan.md](../plans/mvp-plan.md) (approval semantics), [bot-persona.md](bot-persona.md)
 (names, voice), [local-file-design.md](../06-local-state.md) (state).*
 
@@ -34,8 +34,10 @@ Rendered previews: [conversation](../mockups/conversation.png) · [library](../m
    dots. Rayrun's mark is the only brand color.
 7. **Honest states.** Reconnecting, couldn't reach, expired, missing dependency,
    low balance: one short line and one action. No fake success.
-8. **English source, zh mirror; keyboard-first.** Strings in `locale/en.json` /
-   `locale/zh.json`; Enter sends, Escape closes, focus always visible.
+8. **Chinese primary, English alongside; keyboard-first.** Strings in
+   `locale/en.json` / `locale/zh.json`; the UI falls back to Chinese, and the
+   Settings language row persists the choice through DSH. Enter sends, Escape
+   closes, focus always visible.
 
 ## 1. App shell
 
@@ -178,7 +180,9 @@ remains preview-only.
 Reached from the footer gear: Account (Rayrun connection, Rayrun Bot host
 health, dependency health), Usage, Notifications, Appearance/language. The host
 row shows the same-origin health state and offers Retry when the host does not
-answer. Usage reads the cloud-computer plugin's `overview` through the same-origin
+answer. The language row offers 简体中文 and English, Chinese first; selecting
+one writes `locale.preference` through DSH so the choice survives a reload.
+Usage reads the cloud-computer plugin's `overview` through the same-origin
 RPC: it shows balance, machine-hours and machine count when connected, and
 `Connect Rayrun to see usage.` when not; the token is never in the page. A Back
 control returns to the conversation; Escape does the same. There is no in-product

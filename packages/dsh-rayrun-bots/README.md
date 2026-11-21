@@ -46,8 +46,10 @@ action. The screens are an in-memory preview. There is no bot layer yet.
   through the same RPC; without a connection it says so instead of showing sample
   numbers. The details panel's computer and usage blocks use the same overview
   data: real machine name/status, balance and machine-hours when connected, and
-  an explicit Not connected / connect prompt when not. The rest stays in the
-  page, and the client keeps neither the token nor a DeepSeek key.
+  an explicit Not connected / connect prompt when not. The copy ships in Chinese
+  and English, Chinese primary and following the DSH language; the Settings
+  language row writes the choice back to DSH so it survives a reload. The rest
+  stays in the page, and the client keeps neither the token nor a DeepSeek key.
 
 Not built yet: a Bots-page-level verified computer-creation success path, a real
 bot roster, bot↔session mapping, remote approvals, routines that run, and the

@@ -139,6 +139,19 @@
 - Stop 页面层路径（2026-11-21，同一本机 DSH 页面）：Open 后机器 Running、状态 `live`，
   详情出现 `Stop`；确认后 `machine.action stop` → 轮询到 Stopped，状态 `sleeping`，
   flash `Computer stopped.`；测试后机器 Stopped，未 destroy。
+- Bots 双语与 DSH locale 联动（2026-11-21，本机 DSH web `0.2.2-rc.5` + Firefox/
+  geckodriver）：Bots Settings 选简体中文后 `locale.preference: zh` 写入 profile
+  patch，刷新与重启 DSH 后保持；切到 English 后 Bots 文案与 DSH 壳一起变英文，切回
+  中文后仍为中文。修复 client half 两处：声明 `inject: ['slots', 'locale']`，并从
+  `getLocale().active` 读取活动语言（DSH 快照没有 `.id` 字段）。云电脑插件自己的页面
+  仍固定中文，已登记 RC-015。
+- Rayrun 公网 ingress 页面（2026-11-21，复用 `dsh-desktop-build`，未新建机器）：沙箱内
+  安装 DSH `0.2.2-rc.5` + 两个插件的当前工作树 tarball，`dsh web --host 10.42.0.142
+  --port 6080 --trusted-host <ingress-host> --public-url https://<ingress-host>`；
+  停掉 `rayrun-desktop` 腾出 6080。带 token 访问 `https://6080-<sandbox-id>.rayrunos.com`
+  返回 303 换 cookie，再得到 200 DSH shell，Firefox 渲染 Bots 中文界面。沙箱内不保存
+  Rayrun token，因此 Bots 显示“未连接”；验证后只 stop，不 destroy。该入口是 public、
+  RCE 级，仅临时使用。
 
 > 前三条是通过本机 Node 直接 import `dsh-rayrun-computer@1.0.0` 的 `lib/rayrun.js`
 > 验证的，调用的是插件页面使用的同一组函数；第四条是在本机 DSH web 页面里用

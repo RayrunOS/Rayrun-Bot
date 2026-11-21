@@ -55,6 +55,7 @@
 | RC-012 | 2026-11-21 | Low | 契约 | RPC surface 没有机器可读的 schema 或版本；action 名称和返回形状靠源码/文档约定。证据：`index.js` action switch；本仓库 `lib/dependency.js` 只检查包 semver。 | 依赖升级可能静默改形状；Bots 的 contract 测试只能测自己的假设。 | Open；上游应发布 action/schema 版本或 JSON schema；Bots 在版本检查之外加形状探测。 |
 | RC-013 | 2026-11-21 | Low | 契约 | `machine.desktopRepair` 返回 exec 输出而不是更新后的 machine；调用方要再 `machine.get`。证据：`index.js` 返回 `{ ok: true, result }`。 | Bots Open 多一次往返；当前 repair 不改 `desktop_url`，所以用旧对象未出错。 | Open；Bots 可按需 refetch。上游应返回 machine 或文档说明需要 refetch。 |
 | RC-014 | 2026-11-21 | Medium | 隐私/契约 | `ensureModelCredential` 用本机 hostname 生成 credential 名称（`dsh-model-<hostname>`）。证据：`lib/rayrun.js` 的 `modelCredentialName()` 调 `hostname()`；2026-11-21 真实测试返回的名称含本机主机名（本文不记录具体值）。 | Rayrun 账号会看到本机主机标识；换机器会生成新 credential，产生重复；Bots 无法给用户稳定、友好的凭据名。 | Open；上游应接受调用方提供的显示名或用稳定标签；Bots 目前不能改名。 |
+| RC-015 | 2026-11-21 | Medium | i18n/契约 | 云电脑插件的 client half 读 `locale.getLocale()?.id`，但 DSH 0.2.2-rc.5 的 locale 快照字段是 `active`；该插件的 client 导出还只有 `inject: ['slots']`，没有注入 `locale`。证据：`client.js` 的 `useT()` / `english()` 读 `.id`；本机 DSH web 把语言切到 English 后，DSH 壳和 Bots 变英文，云电脑侧栏与页面仍为中文。 | 云电脑插件自己的界面无法跟随 DSH 语言；产品的双语只覆盖 Bots 部分。Workaround：Bots 自己声明 `inject: ['slots', 'locale']` 并读 `.active`；不改依赖。 | Open；上游应读 `.active` 并注入 `locale`。 |
 
 ## 4. 按设计/非问题
 
