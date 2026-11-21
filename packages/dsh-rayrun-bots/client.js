@@ -672,6 +672,9 @@ window.__ModuleLoader__.load({
     const PANEL_ID = 'rayrun-bots'
     const SAMPLE_COMPUTER = 'dsh-workspace'
     const DEFAULT_COMPUTER = 'rayrun-bot'
+    const pickMachine = (machines) => machines.find((item) => item.name === DEFAULT_COMPUTER)
+      || machines.find((item) => item.remote_desktop && item.desktop_url)
+      || machines[0]
     const MARK_PATHS = [
       'M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 1.71l3 1.8a2 2 0 0 0 2.06 0L12 19v-5.5l-5-3-4.03 2.42Z',
       'm7 16.5-4.74-2.85',
@@ -1689,7 +1692,7 @@ window.__ModuleLoader__.load({
             return
           }
           const machines = Array.isArray(overview.machines) ? overview.machines : []
-          let machine = machines.find((item) => item.name === SAMPLE_COMPUTER) || machines[0]
+          let machine = pickMachine(machines)
           if (!machine) {
             win.close()
             flash(t('computer.noMachine'))
@@ -2432,7 +2435,7 @@ window.__ModuleLoader__.load({
             if (cancelled) return
             setConnection(overview)
             const machines = Array.isArray(overview.machines) ? overview.machines : []
-            setMachine(machines.find((item) => item.name === DEFAULT_COMPUTER) || machines[0] || null)
+            setMachine(pickMachine(machines) || null)
           } catch (error) {
             if (!cancelled) setMachineError(t('setup.computerLoadFailed', { message: String(error?.message ?? error) }))
           } finally {
@@ -2472,7 +2475,7 @@ window.__ModuleLoader__.load({
             return
           }
           const machines = Array.isArray(overview.machines) ? overview.machines : []
-          const existing = machines.find((item) => item.name === name) || machines[0]
+          const existing = machines.find((item) => item.name === name) || pickMachine(machines)
           if (existing) {
             setConnection(overview)
             setMachine(existing)
@@ -2514,7 +2517,6 @@ window.__ModuleLoader__.load({
           const overview = await rayRpc('overview')
           if (tokenRef.current) tokenRef.current.value = ''
           setConnection(overview)
-          onFlash(t('setup.connected', { balance: balanceText(overview.balance), machines: overview.machines.length }))
         } catch (error) {
           const detail = String(error?.message ?? error)
           setTokenError(/unauthorized/i.test(detail)
