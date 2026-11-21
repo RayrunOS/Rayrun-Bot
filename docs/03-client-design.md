@@ -156,6 +156,11 @@ attention、snippet 与时间。chat 来源没有 TTL，显示 `waits for you`�
 验证（启动、desktop 新窗口、密码提示条；token 未进入沙箱），见
 [`10-rayrun-verification.md`](10-rayrun-verification.md) §3.1。
 
+机器 Running 时详情块显示 `Stop`。点击后先显示“停止云电脑？正在运行的工作会暂停。”，
+确认后调用 `machine.action`（`verb: "stop"`），轮询 `machine.get` 到 Stopped，显示
+“云电脑已停止。”；超时或失败各一句可执行提示。Bots 永不调用 `destroy`。页面层
+Open → live → Stop → sleeping 已在同一本机 DSH 页面验证。
+
 **详情面板的真实数据**：Rayrun 连接成功后，电脑块显示云电脑插件 `overview` 里的真实
 机器名与状态（Running → live，Starting/Stopping → reconnecting，Stopped/Paused →
 sleeping），用量块显示真实余额与机时；未连接时显示 `—` / `Not connected` 和

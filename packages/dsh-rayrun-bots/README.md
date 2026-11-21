@@ -39,7 +39,9 @@ action. The screens are an in-memory preview. There is no bot layer yet.
   is blocked, the machine does not start in time, or it has no desktop. The
   start/repair/desktop/password path was run locally against a real machine, and
   the Bots page Open flow was run in a local DSH page (desktop window and
-  password toast).
+  password toast). When the machine is running, `Stop` asks for inline
+  confirmation, calls `machine.action` with `stop`, polls to Stopped, and never
+  destroys; the page-level Open to Stop path was also run in the local page.
   The Settings Usage row reads the real balance, machine-hours and machine count
   through the same RPC; without a connection it says so instead of showing sample
   numbers. The details panel's computer and usage blocks use the same overview

@@ -105,12 +105,21 @@ const required = [
   'computer.open',
   'computer.noMachine',
   'computer.noMachineShort',
+  'computer.stop',
+  'computer.stopConfirm',
+  'computer.stopConfirmAction',
+  'computer.cancel',
+  'computer.stopping',
+  'computer.stopped',
+  'computer.stopTimeout',
+  'computer.stopFailed',
   'computer.connectFirst',
   'computer.popupBlocked',
   'computer.starting',
   'computer.startTimeout',
   'computer.noDesktop',
   'computer.openFailed',
+  'computer.opened',
   'computer.passwordTitle',
   'computer.passwordBody',
   'computer.passwordEmpty',
@@ -170,6 +179,8 @@ assert.match(client, /fetch\('\/plugins\/rayrun\/rpc', \{[\s\S]*?method: 'POST'/
 assert.match(client, /machine\.password/)
 assert.match(client, /overview\.connection\?\.configured !== true/)
 assert.match(client, /machine\.desktopRepair/)
+assert.match(client, /verb: 'stop'/)
+assert.equal(client.includes("'destroy'"), false)
 assert.match(client, /machine\.create/)
 assert.match(client, /machines\.find\(\(item\) => item\.name === name\)/)
 assert.match(client, /const pickMachine =/)

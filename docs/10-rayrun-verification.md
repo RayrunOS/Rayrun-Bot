@@ -136,6 +136,9 @@
   `sleeping`、`Balance ¥27.42 · 231.3 machine-hours`、底部 `Rayrun connected · ¥27.42`；
   在 setup 里连接后关闭向导，详情无需刷新即更新。登出 Rayrun 后显示 `—` /
   `Not connected`、`Connect Rayrun to see usage.`、底部 `Not connected`。
+- Stop 页面层路径（2026-11-21，同一本机 DSH 页面）：Open 后机器 Running、状态 `live`，
+  详情出现 `Stop`；确认后 `machine.action stop` → 轮询到 Stopped，状态 `sleeping`，
+  flash `Computer stopped.`；测试后机器 Stopped，未 destroy。
 
 > 前三条是通过本机 Node 直接 import `dsh-rayrun-computer@1.0.0` 的 `lib/rayrun.js`
 > 验证的，调用的是插件页面使用的同一组函数；第四条是在本机 DSH web 页面里用

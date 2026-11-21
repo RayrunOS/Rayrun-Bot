@@ -121,12 +121,21 @@ window.__ModuleLoader__.load({
     "desktopLater": "The desktop opens in the cloud-computer plugin. This page can't open it yet.",
     "noMachine": "No cloud computer yet. Create one in the cloud-computer plugin.",
     "noMachineShort": "No computer",
+    "stop": "Stop",
+    "stopConfirm": "Stop the computer? Running work will pause.",
+    "stopConfirmAction": "Stop computer",
+    "cancel": "Cancel",
+    "stopping": "Stopping…",
+    "stopped": "Computer stopped.",
+    "stopTimeout": "The computer is still stopping.",
+    "stopFailed": "Could not stop the computer: {message}",
     "connectFirst": "Connect Rayrun first (Settings → Set up).",
     "popupBlocked": "Allow pop-ups for this page to open the desktop.",
     "starting": "Starting the computer…",
     "startTimeout": "The computer did not start in time.",
     "noDesktop": "This computer has no remote desktop.",
     "openFailed": "Could not open the computer: {message}",
+    "opened": "Computer opened in a new tab.",
     "passwordTitle": "Desktop password",
     "passwordBody": "Use this password on the desktop page.",
     "passwordEmpty": "No desktop password found.",
@@ -445,12 +454,21 @@ window.__ModuleLoader__.load({
     "desktopLater": "桌面在云电脑插件里。这一页还打不开它。",
     "noMachine": "还没有云电脑。在云电脑插件里创建一台。",
     "noMachineShort": "还没有电脑",
+    "stop": "停止",
+    "stopConfirm": "停止云电脑？正在运行的工作会暂停。",
+    "stopConfirmAction": "停止电脑",
+    "cancel": "取消",
+    "stopping": "正在停止…",
+    "stopped": "云电脑已停止。",
+    "stopTimeout": "云电脑仍在停止中。",
+    "stopFailed": "停止云电脑失败：{message}",
     "connectFirst": "先连接 Rayrun（设置 → 首次设置）。",
     "popupBlocked": "允许此页面弹窗，才能打开桌面。",
     "starting": "正在启动云电脑…",
     "startTimeout": "云电脑没有在预期时间内启动。",
     "noDesktop": "这台云电脑没有远程桌面。",
     "openFailed": "打开云电脑失败：{message}",
+    "opened": "云电脑已在新标签打开。",
     "passwordTitle": "桌面密码",
     "passwordBody": "在桌面页面输入这个密码。",
     "passwordEmpty": "没有读到桌面密码。",
@@ -826,6 +844,7 @@ window.__ModuleLoader__.load({
 .rb-computer .rb-st.rb-st-live { color: #15803d; }
 .rb-computer .rb-st.rb-st-reconnecting { color: #b45309; }
 .rb-computer .rb-st.rb-st-sleeping { color: #8a93a3; }
+.rb-computer .rb-st.rb-st-offline { color: #8a93a3; }
 .rb-computer .rb-st.rb-st-unreachable { color: #b42318; }
 .rb-sections { padding: 14px 16px 24px; display: grid; gap: 20px; }
 .rb-sec h3 { margin: 0 0 8px; color: #8a93a3; font-size: 10px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
@@ -850,6 +869,8 @@ window.__ModuleLoader__.load({
 .rb-thumb::before { content: ""; position: absolute; inset: 18% 46% 18% 8%; background: #14285a; border-radius: 2px; }
 .rb-thumb::after { content: ""; position: absolute; inset: 28% 8% 22% 58%; background: #22407f; border-radius: 2px; }
 .rb-comp-acts { display: flex; justify-content: flex-end; gap: 6px; }
+.rb-stop-confirm { padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; }
+.rb-stop-confirm p { margin: 0 0 6px; font-size: 11.5px; color: #5b6472; }
 .rb-comp-acts .rb-btn { padding: 4px 9px; font-size: 11px; }
 .rb-usage { color: #5b6472; font-size: 12px; display: grid; gap: 3px; }
 .rb-usage b { color: #0f172a; font-weight: 600; }
@@ -1762,12 +1783,42 @@ window.__ModuleLoader__.load({
           const secret = [result.stdout, result.stderr].filter(Boolean).join('\n').trim()
           if (!win.closed) win.location = machine.desktop_url
           setDesktop({ password: secret, copied: false })
+          flash(t('computer.opened'))
         } catch (error) {
           win.close()
           const detail = String(error?.message ?? error)
           flash(/token_required|unauthorized/i.test(detail)
             ? t('computer.connectFirst')
             : t('computer.openFailed', { message: detail }))
+        }
+      }
+
+      const stopComputer = async () => {
+        const machine = state.realMachine
+        if (!machine?.id) {
+          flash(t('computer.noMachineShort'))
+          return
+        }
+        if (machine.status !== 'Running') return
+        try {
+          flash(t('computer.stopping'))
+          const result = await rayRpc('machine.action', { id: machine.id, verb: 'stop' })
+          let next = result?.machine ?? machine
+          for (let i = 0; i < 20; i += 1) {
+            await new Promise((resolve) => setTimeout(resolve, 1500))
+            next = (await rayRpc('machine.get', { id: machine.id })).machine ?? next
+            if (next?.status !== 'Running' && next?.status !== 'Stopping') break
+          }
+          patch({ realMachine: next })
+          const overview = await rayRpc('overview').catch(() => null)
+          if (overview) patch({ realOverview: overview })
+          if (next?.status === 'Running' || next?.status === 'Stopping') flash(t('computer.stopTimeout'))
+          else flash(t('computer.stopped'))
+        } catch (error) {
+          const detail = String(error?.message ?? error)
+          flash(/token_required|unauthorized/i.test(detail)
+            ? t('computer.connectFirst')
+            : t('computer.stopFailed', { message: detail }))
         }
       }
 
@@ -1857,6 +1908,7 @@ window.__ModuleLoader__.load({
               routines: bot.routines.map((routine, routineIndex) => (routineIndex === index ? { ...routine, on: !routine.on } : routine)),
             })),
             onComputer: openComputer,
+            onStop: stopComputer,
           }) : null,
         ),
         desktop ? h(
@@ -2156,7 +2208,7 @@ window.__ModuleLoader__.load({
       )
     }
 
-    function Details({ t, catalog, bot, tab, onTab, computer, machine, configured, overview, usageError, usagePreview, low, idle, onToggleRoutine, onComputer }) {
+    function Details({ t, catalog, bot, tab, onTab, computer, machine, configured, overview, usageError, usagePreview, low, idle, onToggleRoutine, onComputer, onStop }) {
       const name = botName(bot, t)
       const job = botJob(bot, t)
       const count = (n) => (n ? h('span', { className: 'rb-count' }, String(n)) : null)
@@ -2217,7 +2269,7 @@ window.__ModuleLoader__.load({
               )
             }) : h(EmptyBlock, { name: 'routines', title: t('routine.empty'), hint: t('routine.emptyHint') }),
           ),
-          h(ComputerBlock, { t, status: computerStatus, name: computerName, configured, onComputer }),
+          h(ComputerBlock, { t, status: computerStatus, name: computerName, configured, onComputer, onStop }),
           h(UsageBlock, { t, catalog, idle, low, overview, configured, error: usageError, preview: usagePreview }),
         ) : h(
           'div',
@@ -2241,7 +2293,12 @@ window.__ModuleLoader__.load({
       )
     }
 
-    function ComputerBlock({ t, status, name, configured, onComputer }) {
+    function ComputerBlock({ t, status, name, configured, onComputer, onStop }) {
+      const [confirming, setConfirming] = useState(false)
+      useEffect(() => {
+        if (status !== 'live') setConfirming(false)
+      }, [status])
+      const canStop = status === 'live' && Boolean(onStop)
       const label = status === 'live' ? t('computer.live')
         : status === 'sleeping' ? t('computer.sleeping')
         : status === 'unreachable' ? t('computer.unreachable')
@@ -2280,7 +2337,26 @@ window.__ModuleLoader__.load({
             { className: 'rb-comp-acts' },
             h('button', { type: 'button', className: 'rb-btn', onClick: onComputer }, t('computer.open')),
             h('button', { type: 'button', className: 'rb-btn', onClick: onComputer }, t('computer.takeOver')),
+            canStop ? h('button', { type: 'button', className: 'rb-btn', onClick: () => setConfirming(true) }, t('computer.stop')) : null,
           ),
+          canStop && confirming ? h(
+            'div',
+            { className: 'rb-stop-confirm', role: 'status' },
+            h('p', null, t('computer.stopConfirm')),
+            h(
+              'div',
+              { className: 'rb-line' },
+              h('button', {
+                type: 'button',
+                className: 'rb-btn',
+                onClick: () => {
+                  setConfirming(false)
+                  onStop()
+                },
+              }, t('computer.stopConfirmAction')),
+              h('button', { type: 'button', className: 'rb-btn rb-ghost', onClick: () => setConfirming(false) }, t('computer.cancel')),
+            ),
+          ) : null,
         ),
       )
     }

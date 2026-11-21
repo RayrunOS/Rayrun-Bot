@@ -130,13 +130,15 @@ Profile header (avatar, name, `job · computer`), then `Activity | Library` tabs
   state (`live` / `reconnecting…` / `sleeping` / `unreachable`; `Not connected`
   when Rayrun is not configured) on the left with
   a colored dot (green / amber / gray / red), a small 44×30 screen thumbnail on
-  the right, and `Open` / `Take over` right-aligned below. No large preview in
-  v0.1; Open starts or resumes the machine through the dependency's same-origin
-  RPC, waits for `Running`, repairs the desktop service, opens `desktop_url` in
-  a new tab, and shows the
-  desktop password in a dismissible toast. Take over currently runs the same
-  path. Each failure gets one line: not connected, no machine, popup blocked,
-  start timeout, or no desktop. Preview the states with
+  the right, and `Open` / `Take over` / `Stop` right-aligned below. Stop appears
+  only while the machine is live. No large preview in v0.1; Open starts or
+  resumes the machine through the dependency's same-origin RPC, waits for
+  `Running`, repairs the desktop service, opens `desktop_url` in a new tab, and
+  shows the desktop password in a dismissible toast. Take over currently runs
+  the same path. Stop asks for inline confirmation, calls `machine.action` with
+  `stop`, and never destroys. Each failure gets one line: not connected, no
+  machine, popup blocked, start timeout, no desktop, stop timeout, or stop
+  failure. Preview the states with
   `?computer=live|reconnecting|sleeping|unreachable`.
 - **Usage** — balance, machine-hours, this week's spend, idle-stop policy. The
   balance turns amber and a low-balance line appears below the threshold;
