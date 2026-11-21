@@ -203,4 +203,5 @@ SSO/SAML/SCIM、组织 RBAC、审计导出/SIEM、DPA 与数据驻留、marketpl
 - [`04-cloud-host.md`](04-cloud-host.md)
 - [`05-approvals.md`](05-approvals.md)
 - [`06-local-state.md`](06-local-state.md)
+- [`10-rayrun-verification.md`](10-rayrun-verification.md)（验证/测试缺口登记）
 - [`adr/architecture-decisions.md`](adr/architecture-decisions.md)

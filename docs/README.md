@@ -30,11 +30,12 @@
 | 客户端与设计 | [客户端设计](03-client-design.md)、[UI 设计](design/ui-design.md)、[Bot 人格](design/bot-persona.md)、[桌面发行版](design/desktop-distribution.md)、[mockups](mockups) | 表面、RPC、视觉规范、bot 身份、v1.0 桌面 B1/B2 方案 |
 | 计划与验收 | [MVP 计划](plans/mvp-plan.md)、[客户端计划](plans/client-plan.md) | v0.1 工作分解、客户端交付 |
 | 平台集成 | [集成与平台需求](08-integration.md) | 依赖契约、平台能力与优先级 |
+| 验证与测试 | [Rayrun 验证与缺口](10-rayrun-verification.md) | 测试资源政策、Rayrun 验证路径、缺口登记 |
 | 部署与操作 | [部署与运行](09-deployment.md) | 安装、配置、检查、故障处理 |
 | 调研 | [灵感](research/inspiration.md) | Grok Bot 等参考；不是真相源 |
 | 决策 | [架构决策](adr/architecture-decisions.md) | [ADR-001–ADR-016](#3-adr-登记册)；只有 Decided 才算最终 |
 
-`00`–`09` 是编号顶层文档；`plans/`、`adr/`、`design/`、`research/` 放细节，
+`00`–`10` 是编号顶层文档；`plans/`、`adr/`、`design/`、`research/` 放细节，
 `mockups/` 放视觉素材。`00`/`01` 分别是产品与技术的第一真相源；其余编号文档是
 各自领域的规范，状态仍回 README。
 
