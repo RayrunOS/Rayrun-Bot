@@ -1,6 +1,6 @@
 # 08 — 集成与平台需求
 
-> 状态：2026-11-20。本文定义与 `dsh-rayrun-computer` 的依赖边界，以及 Rayrun 平台
+> 状态：2026-11-21。本文定义与 `dsh-rayrun-computer` 的依赖边界，以及 Rayrun 平台
 > 需要补的能力和优先级。技术基线见 [`01-system-architecture.md`](01-system-architecture.md)；
 > 云端 bot runtime 见 [`04-cloud-host.md`](04-cloud-host.md)；未决决策见
 > [`adr/architecture-decisions.md`](adr/architecture-decisions.md)。
@@ -123,6 +123,42 @@ at-least-once、有限流。
 
 回退：上面的文件邮箱。
 
+### 4.3 动态调整资源（P1）
+
+今天：`dsh-rayrun-computer@1.0.0` 只在创建时设置 `cpu_cores` / `memory_mb`
+（`POST /v1/sandboxes`）；`machine.action` 只有 start/stop/pause/resume/rename。
+2026-11-21 对公开 API 的探测没有找到调整入口：`PATCH` / `PUT /v1/sandboxes/{id}`、
+`POST /v1/sandboxes/{id}/resize`、`POST /v1/sandboxes/{id}/update`、
+`PUT` / `PATCH /v1/sandboxes/{id}/spec`、`GET /v1/sandboxes/{id}/resources` 都返回
+404。控制台是否另有入口需要 Rayrun 确认。
+
+需要：对已有沙盒调整 vCPU / memory，保留 `/workspace`、rootfs 和已安装的
+DSH/profile/插件；至少支持 stop → resize → start，最好支持运行中调整。调整后
+`GET /v1/sandboxes/{id}` 立即反映新规格；计费从调整时刻按新规格计算。异步时返回
+job/status，不靠调用方轮询猜测。
+
+为什么：一台电脑由一个人的所有 bot 共享，负载会变。没有 resize 时，省成本只能
+新建一台目标规格的机器并重装，丢失已安装状态；规格选大了只能一直付费，选小了
+只能重建。这是“用户付费、用户所有”下的成本控制要求。
+
+回退：创建时选对规格；需要变更时新建机器，重新安装 DSH/profile/插件。不得为了
+省成本自动 destroy 旧机器。
+
+期望形状：
+
+```http
+PATCH /v1/sandboxes/{id}
+{ "cpu_cores": 2, "memory_mb": 4096 }
+```
+
+或等价的 `POST /v1/sandboxes/{id}/resize`；接受 stopped 状态；返回 machine 或 job。
+约束：remote desktop 至少 2048 MB；保留磁盘；不改变 sandbox id；文档化升降配的
+最小/最大规格和计费规则。
+
+验收：一台 2C/4G 沙盒 stop 后改成 4C/16G，start 后 `GET` 返回 4/16384，`/workspace`
+里的文件和已安装 DSH/profile 仍在；再改回 2C/4G，sandbox id 不变；账单按新规格计费。
+插件侧随后加 `machine.resize` RPC/tool，Bots 的机器卡提供带确认的规格调整（计费）。
+
 ---
 
 ## 5. v0.2 / beta
@@ -167,6 +203,7 @@ SSO/SAML/SCIM、组织 RBAC、审计导出/SIEM、DPA 与数据驻留、marketpl
 | 2. 余额宽限 / 护栏 | v0.1 | 风险接受并警告 |
 | 3. 文件通道语义 | v0.1 | 否（有 workaround） |
 | 4. 出站控制通道 | v0.1 质量 | 否（轮询） |
+| 5. 动态调整资源（resize） | v0.1 质量 | 否（创建时选规格） |
 | 安全入站 | v0.2 | 否 |
 | Scoped credentials | v0.2 | 否 |
 | secret/生命周期/usage/queue/image | beta | 否 |
@@ -198,6 +235,7 @@ SSO/SAML/SCIM、组织 RBAC、审计导出/SIEM、DPA 与数据驻留、marketpl
 | 常驻 bot runtime 的凭据注入 | “合上笔记本” | ADR-007 |
 | 文件通道的双写/CAS | 队列与审批 | ADR-003 |
 | 安全入站 | desktop/手机审批 | v0.2 平台需求 |
+| 已有沙盒的 resize API | 成本与规格调整 | 待 Rayrun 确认；没有时新建机器 |
 | 版本矩阵与一次安装 | 发布路径 | S6 + Release |
 
 ---

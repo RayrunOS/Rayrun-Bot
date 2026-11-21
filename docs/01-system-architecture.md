@@ -376,6 +376,8 @@ tombstone，action hash 的 canonicalization 未定义；见 ADR-011/012。
 - 余额宽限与 spend 护栏：余额耗尽今天会 force-destroy 机器和磁盘；
 - 安全的入站网络：token ingress 不可用，只有 `public`；
 - idle auto-stop 或 wake-on-request；
+- 动态调整资源：已有沙盒的 vCPU/memory 调整，保留磁盘和已安装状态；今天只能在
+  创建时选规格；
 - 运行期 egress 更新、通用 secret injection、per-sandbox usage、镜像/DSH 版本对齐。
 
 **依赖边界**：`dsh-rayrun-computer` 永远是独立项目；需要它改行为 → 去它的仓库，
