@@ -94,6 +94,7 @@ const required = [
   'details.computer',
   'details.usage',
   'routine.emptyHint',
+  'routine.paused',
   'library.emptyHint',
   'computer.live',
   'computer.reconnecting',
@@ -192,5 +193,16 @@ assert.match(client, /ref: composerRef/)
 assert.match(client, /function SettingsScreen\(\{ t, state, onTab, onChange, onClose, onSetup \}\)/)
 assert.equal(client.includes('rb-btn rb-ghost rb-back'), true)
 assert.equal(client.includes("'aria-label': t('setup.back')"), true)
+assert.match(client, /function tickApprovals/)
+assert.match(client, /setInterval\(\(\) => setState\(tickApprovals\), 60 \* 1000\)/)
+assert.match(client, /state: 'expired', expiresMin: 0/)
+assert.match(client, /bot\.attention === 'needs' && !stillPending/)
+assert.match(client, /snippetKey: botExpired && !stillPending \? 'approval\.expired'/)
+assert.match(client, /time: botExpired && !stillPending \? clock\(\) : bot\.time/)
+assert.match(client, /Number\.isFinite\(approval\.expiresMin\)/)
+assert.match(client, /const routinesPaused = bot\.routines\.length > 0 && bot\.routines\.every\(\(routine\) => !routine\.on\)/)
+assert.equal(client.includes("'data-paused': 'true'"), true)
+assert.match(client, /t\('routine\.paused'\)/)
+assert.match(client, /rb-paused/)
 
 console.log('client contract ok')

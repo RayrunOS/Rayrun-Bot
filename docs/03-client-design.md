@@ -115,6 +115,10 @@ bot 的安全边界。
 页内预览：发送消息后先显示 working row；约 1.2 秒后出现模拟回复和 pending 审批卡，
 不调用 host，也不发送任何东西。对话在发送、回复和切换 bot 时滚动到最新一条。
 
+带 `expiresMin` 的后台审批每分钟递减一次；归零后转为 expired、去掉动作，并同步列表的
+attention、snippet 与时间。chat 来源没有 TTL，显示 `waits for you`。预览里的后台审批从
+1 分钟开始，便于看到过期。
+
 ---
 
 ## 6. 首次设置与失败状态

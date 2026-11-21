@@ -76,6 +76,7 @@
   "routine": {
     "empty": "No routines yet.",
     "emptyHint": "Routines run on a schedule and stop for approval before acting outside your computer.",
+    "paused": "All routines are paused.",
     "on": "on",
     "off": "off"
   },

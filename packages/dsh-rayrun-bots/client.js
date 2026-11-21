@@ -102,6 +102,7 @@ window.__ModuleLoader__.load({
   "routine": {
     "empty": "No routines yet.",
     "emptyHint": "Routines run on a schedule and stop for approval before acting outside your computer.",
+    "paused": "All routines are paused.",
     "on": "on",
     "off": "off"
   },
@@ -373,6 +374,7 @@ window.__ModuleLoader__.load({
   "routine": {
     "empty": "还没有日程。",
     "emptyHint": "日程按计划运行；在电脑之外执行动作前会停下来等审批。",
+    "paused": "所有日程都已暂停。",
     "on": "开",
     "off": "关"
   },
@@ -716,6 +718,7 @@ window.__ModuleLoader__.load({
 .rb-act { background: #fff; border: 1px solid #e4e8f0; border-radius: 10px; padding: 10px 12px; display: grid; gap: 4px; margin-bottom: 7px; }
 .rb-act .rb-t { font-size: 12px; font-weight: 600; display: flex; justify-content: space-between; gap: 8px; }
 .rb-ok { color: #15803d; font-weight: 500; font-size: 11px; white-space: nowrap; }
+.rb-paused { color: #8a93a3; font-size: 11px; margin: 0 0 4px; }
 .rb-routine { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 7px 0; border-bottom: 1px solid #eef1f6; }
 .rb-routine:last-child { border-bottom: 0; }
 .rb-routine .rb-t { font-size: 12px; }
@@ -941,7 +944,6 @@ window.__ModuleLoader__.load({
               titleKey: 'sample.nora.approvalTitle',
               metaKey: 'sample.nora.approvalMeta',
               state: 'pending',
-              expiresMin: 28,
               origin: 'chat',
               target: 'Feishu #weekly',
               risk: ['outside', 'irreversible'],
@@ -993,8 +995,8 @@ window.__ModuleLoader__.load({
               titleKey: 'sample.eli.approvalTitle',
               metaKey: 'sample.eli.approvalMeta',
               state: 'pending',
-              expiresMin: 27,
-              origin: 'chat',
+              expiresMin: 1,
+              origin: 'background',
               target: 'Feishu #weekly',
               risk: ['outside', 'irreversible'],
             },
@@ -1050,6 +1052,40 @@ window.__ModuleLoader__.load({
         },
         bots: FIRST_RUN_PREVIEW ? [] : seedBots(),
       }
+    }
+
+    function tickApprovals(state) {
+      let changed = false
+      const bots = state.bots.map((bot) => {
+        let botChanged = false
+        let botExpired = false
+        const approvals = {}
+        for (const [id, approval] of Object.entries(bot.approvals)) {
+          if (approval.state !== 'pending' || !Number.isFinite(approval.expiresMin)) {
+            approvals[id] = approval
+            continue
+          }
+          const next = approval.expiresMin - 1
+          approvals[id] = next <= 0
+            ? { ...approval, state: 'expired', expiresMin: 0 }
+            : { ...approval, expiresMin: next }
+          botChanged = true
+          if (next <= 0) botExpired = true
+        }
+        if (!botChanged) return bot
+        changed = true
+        const stillPending = Object.values(approvals).some((approval) => approval.state === 'pending')
+        return {
+          ...bot,
+          approvals,
+          attention: bot.attention === 'needs' && !stillPending ? null : bot.attention,
+          snippet: botExpired && !stillPending ? null : bot.snippet,
+          snippetKey: botExpired && !stillPending ? 'approval.expired' : bot.snippetKey,
+          time: botExpired && !stillPending ? clock() : bot.time,
+          timeKey: botExpired && !stillPending ? null : bot.timeKey,
+        }
+      })
+      return changed ? { ...state, bots } : state
     }
 
     function botName(bot, t) {
@@ -1294,6 +1330,11 @@ window.__ModuleLoader__.load({
       useEffect(() => () => {
         for (const timer of replyTimers.current.values()) clearTimeout(timer)
         replyTimers.current.clear()
+      }, [])
+
+      useEffect(() => {
+        const timer = setInterval(() => setState(tickApprovals), 60 * 1000)
+        return () => clearInterval(timer)
       }, [])
 
       useEffect(() => {
@@ -1817,6 +1858,7 @@ window.__ModuleLoader__.load({
       const name = botName(bot, t)
       const job = botJob(bot, t)
       const count = (n) => (n ? h('span', { className: 'rb-count' }, String(n)) : null)
+      const routinesPaused = bot.routines.length > 0 && bot.routines.every((routine) => !routine.on)
       const groups = [
         ['today', 'library.today'],
         ['week', 'library.week'],
@@ -1856,6 +1898,7 @@ window.__ModuleLoader__.load({
             'section',
             { className: 'rb-sec' },
             h('h3', null, t('details.upcoming'), count(bot.routines.length)),
+            routinesPaused ? h('div', { className: 'rb-paused', 'data-paused': 'true', role: 'status' }, t('routine.paused')) : null,
             bot.routines.length ? bot.routines.map((routine, index) => {
               const title = t(routine.titleKey)
               return h(

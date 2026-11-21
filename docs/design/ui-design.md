@@ -109,7 +109,9 @@ Profile header (avatar, name, `job · computer`), then `Activity | Library` tabs
 - **Recent** — receipts: task title, state (`ready` / `waiting` / `done`), time,
   artifact count and today's spend. A receipt is the "report back" surface.
 - **Upcoming** — routines: one row per routine with title, schedule and a toggle.
-  v0.1 ships at most one routine (P1); the other rows illustrate the shape.
+  When every routine is off, a quiet `All routines are paused` line appears above
+  the rows. v0.1 ships at most one routine (P1); the other rows illustrate the
+  shape.
 - **Computer** — a compact row near the bottom, like the reference: name and
   state (`live` / `reconnecting…` / `sleeping` / `unreachable`) on the left with
   a colored dot (green / amber / gray / red), a small 44×30 screen thumbnail on
@@ -155,9 +157,12 @@ page in v0.1** — the earlier inbox is dropped to match the reference; the stor
 and RPC still expose the same list for future views.
 
 Pending cards show `expires in N min` for background work (or `waits for you`
-for chat-started work) plus `Deny` / `Allow once`. Expired cards are muted, show
-`Expired — the bot did not act`, and have no actions. Answered cards keep the
-local-only result line and no actions.
+for chat-started work) plus `Deny` / `Allow once`. The background TTL decreases
+once a minute; at zero the card becomes expired, loses its actions, and the
+chat-list dot, snippet and time follow. Chat-started cards have no TTL. Expired cards
+are muted, show `Expired — the bot did not act`, and have no actions. Answered
+cards keep the local-only result line and no actions. The preview's background
+card starts at one minute so the transition is observable.
 
 ## 3. Alignment with Grok Bot
 
@@ -223,6 +228,7 @@ Two anchors: the reference screenshot decides the layout (three columns, chat-li
 | `draft.discard` | Discard | 丢弃 |
 | `details.recent` | Recent | 最近 |
 | `details.upcoming` | Upcoming | 即将进行 |
+| `routine.paused` | All routines are paused. | 所有日程都已暂停。 |
 | `details.computer` | Computer | 电脑 |
 | `details.usage` | Usage | 用量 |
 | `computer.live` | live | 在线 |
