@@ -21,11 +21,15 @@
 
 ## 1. 定位
 
-客户端是 **DSH 插件**，不是独立应用：
+客户端运行时是 **DSH 插件**；产品表面是 **Bots**（ADR-017）：
 
-- 复用 DSH 的壳、聊天、设置、locale 和插件机制；不重写聊天 UI。
-- 只通过同源 RPC 与我们的 host half 通信；不直接访问 Rayrun API，不持有 Rayrun
-  token 或 DeepSeek key。
+- 打开 DSH 后客户端自动激活 Bots；Bots 全屏覆盖 DSH 侧栏和底栏，Rayrun Bot 是品牌，
+  DSH 是宿主。不 fork、不重写 DSH core。
+- 复用 DSH 的壳、聊天、设置、locale 和插件机制；不重写聊天 UI。Bots 内不提供返回
+  DSH 的入口；Plugins、云电脑、Workspaces 等流程需要由 Bots 接管（尚未实现）。
+- 只通过同源 RPC 通信：host health 走我们的 host half；Rayrun 连接和云电脑打开走
+  `dsh-rayrun-computer` 的同源 RPC。客户端不直接访问 Rayrun API，也不在自己的状态里
+  保存 Rayrun token 或 DeepSeek key。
 - 收集用户决定（批准/拒绝、创建/编辑 bot）并转发；服务端权威，客户端只做只读缓存。
 - v0.1 只发 `dsh web`（浏览器或桌面壳）；独立桌面应用是 v1.0 的可选赌注。
 
@@ -39,7 +43,7 @@
 | 对话 | 中栏 | markdown 消息、日期分隔、内联审批/收据卡、composer | P0 |
 | Bot 详情 | 右栏 | 名字/职责、Activity / Library、receipts、routines、电脑摘要、用量 | P0 |
 | 内联审批卡 | 对话内 | 动作、风险、来源、TTL；Deny / Allow once；列表 attention 点 | P0 |
-| 首次设置向导 | 独立页 | 依赖检查 → Rayrun 登录 → DeepSeek key → 电脑 + 第一个 bot | P0 |
+| 首次设置向导 | 独立页 | 依赖检查 → Rayrun 连接（API token）→ DeepSeek key → 电脑 + 第一个 bot | P0 |
 | 用量块 | 详情 + 列表底部 | 余额、机器小时、本周花费、idle-stop 策略、低余额提示 | P0 |
 | 设置 | 独立页 | 默认模型、预算阈值、通知、语言 | P1 |
 | 电脑视图 | 深链 | 打开独立云电脑插件的 desktop 页面；不重建 noVNC | P0（路径见 ADR-008） |
@@ -123,9 +127,21 @@ attention、snippet 与时间。chat 来源没有 TTL，显示 `waits for you`�
 
 ## 6. 首次设置与失败状态
 
-**向导四步**：依赖检查 → Rayrun 登录 → DeepSeek key → 电脑 + 第一个 bot。每一步显示
-内联状态和“去修复”的链接；全部就绪时可跳过。依赖缺失或版本不匹配要给一句可执行的
-安装提示，不崩溃。
+**向导四步**：依赖检查 → Rayrun 连接（API token）→ DeepSeek key → 电脑 + 第一个 bot。
+依赖步骤显示 host 检测到的插件版本；Rayrun 步骤把粘贴的 token 交给云电脑插件的
+`connection.save`，再用 `overview` 显示真实余额/机器数；失败显示一句可执行错误。用户
+密码/微信登录仍在云电脑插件里，尚未在 Bots 内暴露；DeepSeek key 步骤仍是预览。
+每一步显示内联状态和“去修复”的链接；全部就绪时可跳过；依赖缺失或版本不匹配要给一句
+可执行的安装提示，不崩溃。
+
+**打开云电脑**：详情面板的 `Open` / `Take over` 调云电脑插件的 `overview`、
+`machine.action`（start/resume）、`machine.get` 轮询、`machine.desktopRepair` 和
+`machine.password`。连接未配置时
+提示先连接（`computer.connectFirst`）；没有机器、弹窗被拦截、启动超时、没有 desktop
+时各自一句可执行提示。成功时在新标签打开 `desktop_url`，密码只保存在页面状态里，用
+可关闭的提示条显示。两个按钮当前调用同一路径，`Take over` 的共享控制语义尚未实现。
+成功路径尚未在 Rayrun 沙箱用真实 token 和真实机器验证，见
+[`10-rayrun-verification.md`](10-rayrun-verification.md) §4。
 
 **空 roster**：列表和中心区显示 `No bots yet` + `Create bot`；新建 bot 后进入空对话
 欢迎态并聚焦 composer，details 面板的 Recent / Upcoming / Library 显示空态和一句内容
@@ -137,6 +153,7 @@ attention、snippet 与时间。chat 来源没有 TTL，显示 `waits for you`�
 
 - 依赖缺失/过旧（`E_DEP_MISSING` / `E_DEP_VERSION`）
 - 没有 Rayrun token（`E_TOKEN_REQUIRED`）
+- Rayrun 拒绝 token（401；setup 显示“检查 token 后重试”）
 - 没有 DeepSeek key（`E_KEY_REQUIRED`）
 - 电脑停止/忙碌（`E_MACHINE_STOPPED` / `E_MACHINE_BUSY`）
 - bot runtime 恢复中（`E_HOST_DOWN`）

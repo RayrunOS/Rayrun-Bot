@@ -4,8 +4,8 @@
  * The page is one file, so the locale catalogs are embedded next to
  * locale/en.json and locale/zh.json. This check keeps those copies identical,
  * requires the v0.1 copy deck, and refuses a client that still shows the A1
- * placeholder or reaches off the machine. The one allowed request is the
- * same-origin host health check.
+ * placeholder or reaches off the machine. The only requests are the same-origin
+ * host health check and the cloud-computer plugin's same-origin RPC.
  *
  *   node test/client-contract.mjs
  */
@@ -102,6 +102,22 @@ const required = [
   'computer.sleeping',
   'computer.unreachable',
   'computer.takeOver',
+  'computer.open',
+  'computer.noMachine',
+  'computer.connectFirst',
+  'computer.popupBlocked',
+  'computer.starting',
+  'computer.startTimeout',
+  'computer.noDesktop',
+  'computer.openFailed',
+  'computer.passwordTitle',
+  'computer.passwordBody',
+  'computer.passwordEmpty',
+  'computer.copy',
+  'computer.copied',
+  'computer.copyFailed',
+  'computer.close',
+  'preview.badge',
   'notice.recovering',
   'notice.sleeping',
   'cost.low',
@@ -122,7 +138,8 @@ assert.equal(zh.approval.deny, '拒绝')
 assert.equal(zh.approval.warning, '这会把数据发到你的电脑之外，且无法撤销。')
 assert.equal(zh.sample.nora.user, '总结上周的 PR，并起草每周摘要。发布前等我确认。')
 assert.equal(zh.notice.reconnecting, '电脑正在重连… 5 秒后重试')
-assert.equal(zh.setup.signIn, '用 Rayrun 登录')
+assert.equal(zh.setup.useToken, '使用 API Token')
+assert.equal(zh.setup.connectedShort, '已连接')
 assert.equal(zh.newBot.title, '新建 Bot')
 assert.equal(zh.settings.title, '设置')
 assert.equal(en.newBot.defaultJob, zh.newBot.defaultJob)
@@ -131,8 +148,14 @@ assert.equal(client.includes('The bot layer is under construction'), false)
 assert.equal(client.includes('A1 skeleton'), false)
 assert.match(client, /M2\.97 12\.92A2 2 0 0 0 2 14\.63/)
 assert.match(client, /stroke: '#003d9b'/)
-assert.equal((client.match(/fetch\(/g) || []).length, 1)
+assert.equal((client.match(/fetch\(/g) || []).length, 2)
 assert.match(client, /fetch\('\/plugins\/rayrun-bots\?action=health'/)
+assert.match(client, /fetch\('\/plugins\/rayrun\/rpc', \{[\s\S]*?method: 'POST'/)
+assert.match(client, /machine\.password/)
+assert.match(client, /overview\.connection\?\.configured !== true/)
+assert.match(client, /machine\.desktopRepair/)
+assert.match(client, /desktop_url/)
+assert.match(client, /window\.open\(/)
 assert.match(client, /mode: 'same-origin'/)
 assert.match(client, /credentials: 'same-origin'/)
 assert.match(client, /cache: 'no-store'/)
@@ -142,7 +165,6 @@ assert.match(client, /body\.plugin !== 'rayrun-bots'/)
 assert.match(client, /if \(!response\.ok\) throw/)
 assert.match(client, /const body = await response\.json\(\)/)
 assert.match(client, /version: String\(body\.version \?\? ''\), ready: body\.ready === true/)
-assert.equal(client.includes("method: 'POST'"), false)
 assert.doesNotMatch(client, /Authorization|Bearer\s/)
 assert.equal(client.includes('localStorage'), false)
 assert.equal(client.includes('sessionStorage'), false)
@@ -210,6 +232,11 @@ assert.match(client, /composerRef\.current\?\.focus\(\)/)
 assert.match(client, /function Conversation\(\{ t, state, bot, composerRef,/)
 assert.match(client, /ref: composerRef/)
 assert.match(client, /function SettingsScreen\(\{ t, state, host, onRetryHost, onTab, onChange, onClose, onSetup \}\)/)
+assert.match(client, /position: fixed; inset: var\(--dsh-frame-chrome-top, 0px\) 0 0 0; z-index: 10;/)
+assert.equal(client.includes('backToDsh'), false)
+assert.match(client, /child\.layout\.selectPanel\(PANEL_ID\)/)
+assert.match(client, /document\.title = 'Rayrun Bot'/)
+assert.match(client, /className: 'rb-preview-pill'/)
 assert.equal(client.includes('rb-btn rb-ghost rb-back'), true)
 assert.equal(client.includes("'aria-label': t('setup.back')"), true)
 assert.match(client, /function HostStatus/)

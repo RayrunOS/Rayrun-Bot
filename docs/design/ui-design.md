@@ -1,6 +1,6 @@
 # UI design — v0.1
 
-*Status: 2026-11-21 (rev 5). The client copies the layout of Grok Bot's desktop
+*Status: 2026-11-21 (rev 6). The client copies the layout of Grok Bot's desktop
 app as seen in the reference screenshot the user shared — one chat-list column, a
 markdown conversation in the middle, a per-bot details panel on the right — in a
 the visual language of rayrunos.com: white canvas, navy primary buttons, blue accents, hairline borders. Approvals are inline cards, not a separate
@@ -64,11 +64,25 @@ Rendered previews: [conversation](../mockups/conversation.png) · [library](../m
 Column widths: 296 px / flexible / 328 px. The details column collapses below
 1120 px; the chat list collapses below 900 px.
 
+### 1.1 Standalone Bots view
+
+The client activates Bots on load (`ctx.layout.selectPanel('rayrun-bots')`), so
+entry lands on the product surface; the page title becomes `Rayrun Bot`. While
+the Bots main panel is active, the client renders `.rb-frame` as a fixed
+full-viewport layer (`position: fixed; inset: var(--dsh-frame-chrome-top, 0) 0 0 0;
+z-index: 10`). It covers the DSH sidebar and bottom bar, so the Rayrun Bot roster
+is the leftmost column. DSH overlays (modals, z-index 20) stay above it. The Bots
+view is the only product surface: there is no in-product Back to Harness control.
+DSH remains the host; setup, Plugins, 云电脑 and Workspaces must be owned by Bots
+(not implemented yet). Because the v0.1 surface is an in-memory preview, the
+brand row carries a visible `Preview` pill; it goes away when real data replaces
+the sample.
+
 ## 2. Screens
 
 ### 2.1 Chat list
 
-- Top row: Rayrun mark and wordmark, search, `+` (new bot).
+- Top row: Rayrun mark and wordmark, `Preview` pill, search, `+` (new bot).
 - Current bot block: 52 px avatar, name, `job · state`.
 - Rows: 34 px avatar, name, one-line latest snippet, time; a 6 px dot marks
   needs attention (amber), unread (blue) or working (green). Opening a row marks
@@ -116,8 +130,13 @@ Profile header (avatar, name, `job · computer`), then `Activity | Library` tabs
   state (`live` / `reconnecting…` / `sleeping` / `unreachable`) on the left with
   a colored dot (green / amber / gray / red), a small 44×30 screen thumbnail on
   the right, and `Open` / `Take over` right-aligned below. No large preview in
-  v0.1; the live view opens the dependency's desktop page. Preview the states
-  with `?computer=live|reconnecting|sleeping|unreachable`.
+  v0.1; Open starts or resumes the machine through the dependency's same-origin
+  RPC, waits for `Running`, repairs the desktop service, opens `desktop_url` in
+  a new tab, and shows the
+  desktop password in a dismissible toast. Take over currently runs the same
+  path. Each failure gets one line: not connected, no machine, popup blocked,
+  start timeout, or no desktop. Preview the states with
+  `?computer=live|reconnecting|sleeping|unreachable`.
 - **Usage** — balance, machine-hours, this week's spend, idle-stop policy. The
   balance turns amber and a low-balance line appears below the threshold;
   preview it with `?low-balance=1`.
@@ -139,19 +158,23 @@ is focused when the form opens. Defaults come from
 ### 2.5 Setup
 
 Four thin steps on the same light canvas: Dependency · Rayrun · DeepSeek key ·
-First bot. Current step shows one paragraph and its inputs; `Continue` is
-disabled until the step passes; `Skip for now` leaves the setup row in place.
-The dependency step also shows the Rayrun Bot host's same-origin health status
-(`Checking…` / `Loaded · v…` / `Not responding` with Retry); this does not check
-the cloud-computer plugin.
+First bot. Current step shows one paragraph and its inputs; `Continue` enables
+when the current step passes; `Skip for now` leaves the setup row in place. The
+dependency step shows the installed cloud-computer plugin version
+(`Installed · v…` / missing / incompatible) and the Rayrun Bot host health
+(`Checking…` / `Loaded · v…` / `Not responding` with Retry). The Rayrun step
+sends a pasted API token to the cloud-computer plugin's same-origin RPC and
+shows the real balance and machine count; a rejected token gets one actionable
+line. The DeepSeek key and first-bot steps remain preview-only.
 
 ### 2.6 Settings
 
 Reached from the footer gear: Account (Rayrun connection, Rayrun Bot host
 health, dependency health), Usage, Notifications, Appearance/language. The host
 row shows the same-origin health state and offers Retry when the host does not
-answer. A Back control returns to the conversation; Escape does the same. Plain
-rows with hairline separators; no stat cards.
+answer. A Back control returns to the conversation; Escape does the same. There
+is no in-product control that returns to the DSH shell (ADR-017). Plain rows
+with hairline separators; no stat cards.
 
 ### 2.7 Approvals (inline only)
 

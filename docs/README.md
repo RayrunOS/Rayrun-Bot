@@ -33,7 +33,7 @@
 | 验证与测试 | [Rayrun 验证与缺口](10-rayrun-verification.md) | 测试资源政策、Rayrun 验证路径、缺口登记 |
 | 部署与操作 | [部署与运行](09-deployment.md) | 安装、配置、检查、故障处理 |
 | 调研 | [灵感](research/inspiration.md) | Grok Bot 等参考；不是真相源 |
-| 决策 | [架构决策](adr/architecture-decisions.md) | [ADR-001–ADR-016](#3-adr-登记册)；只有 Decided 才算最终 |
+| 决策 | [架构决策](adr/architecture-decisions.md) | [ADR-001–ADR-017](#3-adr-登记册)；只有 Decided 才算最终 |
 
 `00`–`10` 是编号顶层文档；`plans/`、`adr/`、`design/`、`research/` 放细节，
 `mockups/` 放视觉素材。`00`/`01` 分别是产品与技术的第一真相源；其余编号文档是
@@ -43,7 +43,7 @@
 
 > 状态只取 `Proposed` / `Decided`；`Open` 表示还没有提案。本表只登记，决策细节、
 > 证据和修订以 [architecture-decisions.md](adr/architecture-decisions.md) 为准。
-> **下一个可用编号：ADR-017。** 编号一旦占用不再复用。
+> **下一个可用编号：ADR-018。** 编号一旦占用不再复用。
 
 | 编号 | 标题 | 状态 | 文件 |
 | --- | --- | --- | --- |
@@ -63,6 +63,7 @@
 | ADR-014 | 桌面发行版与更新单元 | Accepted（2026-11-21，B1） | [architecture-decisions.md](adr/architecture-decisions.md#adr-014) |
 | ADR-015 | 云端 bot runtime 层 | Proposed（v0.1） | [architecture-decisions.md](adr/architecture-decisions.md#adr-015) |
 | ADR-016 | 本地 bot 控制面 | Proposed（v0.1） | [architecture-decisions.md](adr/architecture-decisions.md#adr-016) |
+| ADR-017 | Bots 作为默认产品表面 | Accepted（2026-11-21） | [architecture-decisions.md](adr/architecture-decisions.md#adr-017) |
 
 **先定 ADR-015/016，再定 ADR-001/002。** 前者决定控制面/执行面的分层与权威，后者
 决定审批的信任边界和产物所有权；在它们定下来之前，C/E 工作流不应动工。ADR-014
@@ -77,7 +78,7 @@
 | [MVP 计划](plans/mvp-plan.md) | A1–A12 验收、B/C/D/E 工作流 | §2、§5、§6 |
 | [客户端计划](plans/client-plan.md) | C-S1–C-S6 spike 与客户端接线 | Week 0、Delivery waves |
 | [集成与平台需求](08-integration.md) | 会话/常驻 runtime、余额护栏 | §3 |
-| [架构决策](adr/architecture-decisions.md) | ADR-001–ADR-016 | 本文 §3 |
+| [架构决策](adr/architecture-decisions.md) | ADR-001–ADR-017 | 本文 §3 |
 
 ## 5. 文档约定
 

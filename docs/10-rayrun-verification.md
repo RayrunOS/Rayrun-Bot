@@ -50,6 +50,9 @@
   其他端口可用 `PUT /v1/sandboxes/{id}/ingress/{port}` 发布。
 - **生命周期**：`stop` 保盘、`start` 恢复；停止后进程不存活，`/workspace` 和
   rootfs overlay 保留。**`destroy` 不可逆，测试中不使用。**
+- **Egress**：验证 Bots setup 的 Rayrun 连接时，沙箱 egress 要包含
+  `api.rayrunos.com`；否则云电脑插件显示 `fetch failed`，无法区分网络失败和 token
+  被拒。
 
 已跑通的验证路径：
 
@@ -96,7 +99,11 @@
 - DSH `0.2.0-rc.2 → 0.2.2-rc.5` 后 profile 与插件保留；
 - 沙箱 stop → start 后 profile 与插件保留；
 - egress 关闭时用本地 tarball 安装；损坏 tarball 失败且不留半装；
-- 插件 remove/re-add 与 bundle 行同步。
+- 插件 remove/re-add 与 bundle 行同步；
+- Bots `Open` 负向路径（2026-11-21）：未配置 Rayrun 时云电脑插件的 `overview` 仍返回
+  `ok: true` 和 `connection.configured: false`，客户端检查该字段后显示
+  `Connect Rayrun first`；合成点击触发弹窗拦截时显示 `Allow pop-ups…`。两次都没有调用
+  启动或密码动作，也没有把真实 token 写进页面或沙箱。
 
 ---
 
@@ -106,6 +113,11 @@
 - `profiles/desktop` 的创建、插件写入和 Electron 启动；
 - 把 Rayrun token 放进沙箱后做真实云电脑操作（出于安全刻意没做；产品里 token
   只应在本地 host）；
+- Bots `Open` / `Take over` 成功路径：真实 token、真实 Running 机器、`desktop_url`、
+  `machine.password`、桌面新标签和密码提示条；沙箱只验了未连接/弹窗拦截/无机器等负向
+  状态，成功路径需要在本地 DSH 用真实 token 和机器手工验证；
+- Bots setup 的真实 Rayrun 连接成功路径：云端沙箱只用假 token 验了 401；真实 token
+  不进入云端沙箱，需要在本地 DSH 用真实 token 手工验证；
 - bot 会话、审批往返、远程审批、队列与恢复；
 - DeepSeek 模型调用（测试没有 DeepSeek key）；
 - 零余额宽限/force-destroy 行为（R-G009，不做破坏性验证）；

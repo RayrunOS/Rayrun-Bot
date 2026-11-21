@@ -217,6 +217,7 @@ v0.1 的估算与排序见 [`plans/mvp-plan.md`](plans/mvp-plan.md)；里程碑�
 | D9 | v0.1 只接 Rayrun + DeepSeek | 一个后端做透，不提前做 provider 抽象 |
 | D10 | 不做 bot/skill 市场 | 先把运行、审批和成本跑通，不引入双边市场 |
 | D11 | v1.0 走 B1 预配置 DSH 发行包 | 用户下载即带好两个插件；DSH 保持官方 updater，B2 只在必须整包签名时升级 |
+| D12 | Bots 是默认产品表面 | Rayrun Bot 品牌；打开即进入 Bots，DSH 是宿主；Bots 内不返回 DSH（ADR-017） |
 
 ---
 

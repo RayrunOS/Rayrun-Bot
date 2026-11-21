@@ -33,6 +33,9 @@ window.__ModuleLoader__.load({
     "label": "Bots"
   },
   "brand": "Rayrun Bot",
+  "preview": {
+    "badge": "Preview"
+  },
   "chat": {
     "working": "Working…",
     "simulatedReply": "Done. This reply is simulated in the preview; the approval below is also local.",
@@ -115,7 +118,21 @@ window.__ModuleLoader__.load({
     "open": "Open",
     "view": "View",
     "onComputer": "On the computer · {where}",
-    "desktopLater": "The desktop opens in the cloud-computer plugin. This page can't open it yet."
+    "desktopLater": "The desktop opens in the cloud-computer plugin. This page can't open it yet.",
+    "noMachine": "No cloud computer yet. Create one in the cloud-computer plugin.",
+    "connectFirst": "Connect Rayrun first (Settings → Set up).",
+    "popupBlocked": "Allow pop-ups for this page to open the desktop.",
+    "starting": "Starting the computer…",
+    "startTimeout": "The computer did not start in time.",
+    "noDesktop": "This computer has no remote desktop.",
+    "openFailed": "Could not open the computer: {message}",
+    "passwordTitle": "Desktop password",
+    "passwordBody": "Use this password on the desktop page.",
+    "passwordEmpty": "No desktop password found.",
+    "copy": "Copy",
+    "copied": "Copied",
+    "copyFailed": "Copy failed. Select the password manually.",
+    "close": "Close"
   },
   "notice": {
     "recovering": "The bot host is restarting. This conversation resumes on its own.",
@@ -175,17 +192,25 @@ window.__ModuleLoader__.load({
       "bot": "First bot"
     },
     "dependencyTitle": "Cloud-computer plugin",
-    "dependencyBody": "Cloud computers come from the separate dsh-rayrun-computer plugin. This page cannot see whether it is installed.",
+    "dependencyBody": "Cloud computers come from the separate dsh-rayrun-computer plugin. The host checks whether it is installed; fix it and restart DSH before connecting Rayrun.",
     "dependencyStatus": "Not checked",
+    "dependencyOk": "Installed · v{version}",
+    "dependencyMissing": "Missing — install dsh-rayrun-computer, then restart DSH.",
+    "dependencyIncompatible": "Not supported · {version} (need {required}).",
     "rayrunTitle": "Connect Rayrun",
-    "rayrunBody": "The cloud computer is provided by Rayrun. Sign in with your own account. The token stays in the DSH vault.",
-    "signIn": "Sign in with Rayrun",
+    "rayrunBody": "The cloud computer is provided by Rayrun. Paste a Rayrun API token; the cloud-computer plugin stores it in the DSH vault.",
     "notConnected": "Not connected",
-    "tokenPlaceholder": "…or paste a Rayrun API token",
+    "tokenPlaceholder": "Paste a Rayrun API token",
+    "useToken": "Use API token",
+    "tokenHint": "Paste a Rayrun API token from the console. The cloud-computer plugin stores it in the DSH vault.",
+    "tokenRequired": "Paste a Rayrun API token first.",
+    "connecting": "Connecting…",
+    "connected": "Connected · balance {balance} · {machines} machines",
+    "connectedShort": "Connected",
+    "connectFailed": "Could not connect: {message}",
+    "tokenRejected": "Rayrun rejected this API token. Check the token and try again.",
     "connect": "Connect",
     "accountLine": "Account: — · Balance: —",
-    "signInLater": "Sign-in lives in the cloud-computer plugin. This page can't start it, and it does not store a token.",
-    "tokenIgnored": "That token was not saved. This page never keeps it, and the bot host cannot store one yet.",
     "keyTitle": "DeepSeek key",
     "keyBody": "Rayrun injects the key into the agent process. It does not go into the workspace, and this page never stores it.",
     "keyPlaceholder": "…or paste a DeepSeek API key",
@@ -316,6 +341,9 @@ window.__ModuleLoader__.load({
     "label": "Bots"
   },
   "brand": "Rayrun Bot",
+  "preview": {
+    "badge": "预览"
+  },
   "chat": {
     "working": "正在处理…",
     "simulatedReply": "完成。这是预览里的模拟回复；下面的审批也只在本页。",
@@ -398,7 +426,21 @@ window.__ModuleLoader__.load({
     "open": "打开",
     "view": "查看",
     "onComputer": "电脑上 · {where}",
-    "desktopLater": "桌面在云电脑插件里。这一页还打不开它。"
+    "desktopLater": "桌面在云电脑插件里。这一页还打不开它。",
+    "noMachine": "还没有云电脑。在云电脑插件里创建一台。",
+    "connectFirst": "先连接 Rayrun（设置 → 首次设置）。",
+    "popupBlocked": "允许此页面弹窗，才能打开桌面。",
+    "starting": "正在启动云电脑…",
+    "startTimeout": "云电脑没有在预期时间内启动。",
+    "noDesktop": "这台云电脑没有远程桌面。",
+    "openFailed": "打开云电脑失败：{message}",
+    "passwordTitle": "桌面密码",
+    "passwordBody": "在桌面页面输入这个密码。",
+    "passwordEmpty": "没有读到桌面密码。",
+    "copy": "复制",
+    "copied": "已复制",
+    "copyFailed": "复制失败，请手动选中密码。",
+    "close": "关闭"
   },
   "notice": {
     "recovering": "Bot host 正在重启，这个会话会自动恢复。",
@@ -458,17 +500,25 @@ window.__ModuleLoader__.load({
       "bot": "第一个 Bot"
     },
     "dependencyTitle": "检查云电脑插件",
-    "dependencyBody": "云电脑由单独的 dsh-rayrun-computer 插件提供。这一页还不能检查它是否已安装。",
+    "dependencyBody": "云电脑由单独的 dsh-rayrun-computer 插件提供。Host 会检查它是否已安装；修好并重启 DSH 后再连接 Rayrun。",
     "dependencyStatus": "未检查",
+    "dependencyOk": "已安装 · v{version}",
+    "dependencyMissing": "缺失 — 安装 dsh-rayrun-computer 后重启 DSH。",
+    "dependencyIncompatible": "不受支持 · {version}（需要 {required}）。",
     "rayrunTitle": "连接 Rayrun",
-    "rayrunBody": "云电脑由 Rayrun 提供。用你自己的账号登录，token 只存在 DSH 凭证库里。",
-    "signIn": "用 Rayrun 登录",
+    "rayrunBody": "云电脑由 Rayrun 提供。粘贴 Rayrun API token；云电脑插件会把它存进 DSH 凭证库。",
     "notConnected": "未连接",
-    "tokenPlaceholder": "…或粘贴 Rayrun API token",
+    "tokenPlaceholder": "粘贴 Rayrun API token",
+    "useToken": "使用 API Token",
+    "tokenHint": "从 Rayrun 控制台粘贴 API token；云电脑插件会把它存进 DSH 凭证库。",
+    "tokenRequired": "请先粘贴 Rayrun API token。",
+    "connecting": "连接中…",
+    "connected": "已连接 · 余额 {balance} · {machines} 台云电脑",
+    "connectedShort": "已连接",
+    "connectFailed": "连接失败：{message}",
+    "tokenRejected": "Rayrun 拒绝了这个 API token。检查后重试。",
     "connect": "连接",
     "accountLine": "账号：— · 余额：—",
-    "signInLater": "登录在云电脑插件里完成。这一页不能替你开始，也不会保存 token。",
-    "tokenIgnored": "没有保存这个 token。这一页不留存它，Bot host 也还不能代存。",
     "keyTitle": "DeepSeek key",
     "keyBody": "key 由 Rayrun 注入到 agent 进程，不会进入工作区。这一页不保存 key。",
     "keyPlaceholder": "…或粘贴 DeepSeek API key",
@@ -618,7 +668,7 @@ window.__ModuleLoader__.load({
 
     const CSS = `
 .rb-frame, .rb-frame *, .rb-frame *::before, .rb-frame *::after { box-sizing: border-box; }
-.rb-frame { height: 100%; min-height: 680px; display: flex; flex-direction: column; background: #fff; color: #0f172a; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif; font-size: 14px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+.rb-frame { position: fixed; inset: var(--dsh-frame-chrome-top, 0px) 0 0 0; z-index: 10; min-height: 0; display: flex; flex-direction: column; overflow: hidden; background: #fff; color: #0f172a; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif; font-size: 14px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
 .rb-frame button, .rb-frame input, .rb-frame textarea, .rb-frame select { font: inherit; color: inherit; }
 .rb-frame button.rb-icon { color: #5b6472; }
 .rb-frame button.rb-send { color: #fff; }
@@ -633,10 +683,16 @@ window.__ModuleLoader__.load({
 .rb-frame ::-webkit-scrollbar { width: 9px; }
 .rb-frame ::-webkit-scrollbar-thumb { background: #d5dbe6; border-radius: 5px; }
 .rb-app { flex: 1; min-height: 0; display: grid; overflow: hidden; }
+.rb-desktop-toast { position: fixed; right: 20px; bottom: 20px; z-index: 30; width: min(360px, calc(100vw - 40px)); background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 12px 32px rgba(15, 23, 42, 0.16); padding: 14px 16px; }
+.rb-desktop-toast h3 { margin: 0 0 4px; font-size: 13px; font-weight: 650; color: #0e2050; }
+.rb-desktop-toast p { margin: 0 0 8px; font-size: 12px; color: #64748b; }
+.rb-desktop-toast code { display: block; padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; font-size: 13px; word-break: break-all; }
+.rb-desktop-toast .rb-line { display: flex; gap: 8px; margin-top: 10px; }
 .rb-sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 .rb-list { background: #f7f8fa; border-right: 1px solid #eef1f6; display: flex; flex-direction: column; min-height: 0; min-width: 0; }
 .rb-list-top { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px 8px; gap: 8px; }
 .rb-brand { display: flex; align-items: center; gap: 8px; color: #0e2050; font-weight: 650; font-size: 13px; min-width: 0; }
+.rb-preview-pill { padding: 1px 7px; border: 1px solid #d8e3f5; border-radius: 999px; background: #eef4ff; color: #1d4ed8; font-size: 10.5px; font-weight: 600; line-height: 1.7; letter-spacing: .02em; }
 .rb-mark { flex: none; }
 .rb-tools { display: flex; gap: 4px; }
 .rb-icon { width: 28px; height: 28px; border: 0; border-radius: 8px; background: transparent; color: #5b6472; display: grid; place-items: center; padding: 0; }
@@ -834,6 +890,35 @@ window.__ModuleLoader__.load({
     function moneyNumber(value) {
       const n = Number(String(value ?? '').replace(/[^\d.]/g, ''))
       return Number.isFinite(n) ? n : NaN
+    }
+
+    /** Same-origin call into the cloud-computer plugin; the token never enters this plugin. */
+    async function rayRpc(action, payload = {}) {
+      const res = await fetch('/plugins/rayrun/rpc', {
+        method: 'POST',
+        mode: 'same-origin',
+        credentials: 'same-origin',
+        cache: 'no-store',
+        headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, ...payload }),
+      })
+      let body = null
+      try { body = await res.json() } catch { body = null }
+      if (!res.ok || body?.ok !== true) {
+        const error = body?.error
+        const code = typeof error === 'string' ? error : error?.code ?? `http_${res.status}`
+        const message = error && typeof error === 'object' && error.message
+          ? error.message
+          : `Rayrun RPC failed (${res.status}).`
+        throw new Error(`${code}: ${message}`)
+      }
+      return body
+    }
+
+    function balanceText(balance) {
+      const cents = Number(balance?.balance_cents)
+      if (!Number.isFinite(cents)) return '—'
+      return `${balance?.currency === 'USD' ? '$' : '¥'}${(cents / 100).toFixed(2)}`
     }
 
     function monogram(name) {
@@ -1064,7 +1149,7 @@ window.__ModuleLoader__.load({
         live: '',
         focusComposer: false,
         settingsTab: 'account',
-        setupStep: 1,
+        setupStep: 0,
         forceList: false,
         forceDetail: false,
         settings: {
@@ -1330,8 +1415,15 @@ window.__ModuleLoader__.load({
       const [state, setState] = useState(createState)
       const [host, setHost] = useState({ status: 'checking' })
       const [hostAttempt, setHostAttempt] = useState(0)
+      const [desktop, setDesktop] = useState(null)
       const dshLang = useDshLang(ctx)
       const lang = resolveLang(dshLang, state.settings.lang)
+
+      useEffect(() => {
+        const previous = document.title
+        document.title = 'Rayrun Bot'
+        return () => { document.title = previous }
+      }, [])
       const t = makeT(lang === 'zh' ? ZH : EN)
       const frameRef = useRef(null)
       const searchRef = useRef(null)
@@ -1553,6 +1645,64 @@ window.__ModuleLoader__.load({
 
       const flash = (text) => patch({ flash: text, live: text })
 
+      const openComputer = async () => {
+        const win = window.open('', '_blank')
+        if (!win) {
+          flash(t('computer.popupBlocked'))
+          return
+        }
+        win.opener = null
+        try {
+          const overview = await rayRpc('overview')
+          if (overview.connection?.configured !== true) {
+            win.close()
+            flash(t('computer.connectFirst'))
+            return
+          }
+          const machines = Array.isArray(overview.machines) ? overview.machines : []
+          let machine = machines.find((item) => item.name === SAMPLE_COMPUTER) || machines[0]
+          if (!machine) {
+            win.close()
+            flash(t('computer.noMachine'))
+            return
+          }
+          if (machine.status !== 'Running') {
+            flash(t('computer.starting'))
+            await rayRpc('machine.action', {
+              id: machine.id,
+              verb: machine.status === 'Paused' ? 'resume' : 'start',
+            })
+            for (let i = 0; i < 40; i += 1) {
+              await new Promise((resolve) => setTimeout(resolve, 1500))
+              machine = (await rayRpc('machine.get', { id: machine.id })).machine
+              if (machine?.status === 'Running') break
+            }
+          }
+          if (machine?.status !== 'Running') {
+            win.close()
+            flash(t('computer.startTimeout'))
+            return
+          }
+          await rayRpc('machine.desktopRepair', { id: machine.id }).catch(() => {})
+          if (!machine.desktop_url) {
+            win.close()
+            flash(t('computer.noDesktop'))
+            return
+          }
+          const password = await rayRpc('machine.password', { id: machine.id })
+          const result = password.result ?? {}
+          const secret = [result.stdout, result.stderr].filter(Boolean).join('\n').trim()
+          if (!win.closed) win.location = machine.desktop_url
+          setDesktop({ password: secret, copied: false })
+        } catch (error) {
+          win.close()
+          const detail = String(error?.message ?? error)
+          flash(/token_required|unauthorized/i.test(detail)
+            ? t('computer.connectFirst')
+            : t('computer.openFailed', { message: detail }))
+        }
+      }
+
       const catalog = lang === 'zh' ? ZH : EN
       const balance = moneyNumber(t('usage.sampleBalance'))
       const threshold = moneyNumber(state.settings.lowBalance)
@@ -1614,7 +1764,7 @@ window.__ModuleLoader__.load({
             onNew: () => openScreen('newbot'),
             onSettings: () => openScreen('settings'),
             onSetup: () => {
-              patch({ screen: 'setup', setupStep: 1, flash: null, searchOpen: false })
+              patch({ screen: 'setup', setupStep: 0, flash: null, searchOpen: false })
             },
           }) : null,
           center,
@@ -1631,9 +1781,34 @@ window.__ModuleLoader__.load({
               ...bot,
               routines: bot.routines.map((routine, routineIndex) => (routineIndex === index ? { ...routine, on: !routine.on } : routine)),
             })),
-            onComputer: () => flash(t('computer.desktopLater')),
+            onComputer: openComputer,
           }) : null,
         ),
+        desktop ? h(
+          'div',
+          { className: 'rb-desktop-toast', role: 'status' },
+          h('h3', null, t('computer.passwordTitle')),
+          h('p', null, t('computer.passwordBody')),
+          h('code', null, desktop.password || t('computer.passwordEmpty')),
+          h(
+            'div',
+            { className: 'rb-line' },
+            h('button', {
+              type: 'button',
+              className: 'rb-btn',
+              disabled: !desktop.password,
+              onClick: async () => {
+                try {
+                  await navigator.clipboard.writeText(desktop.password)
+                  setDesktop({ ...desktop, copied: true })
+                } catch {
+                  flash(t('computer.copyFailed'))
+                }
+              },
+            }, desktop.copied ? t('computer.copied') : t('computer.copy')),
+            h('button', { type: 'button', className: 'rb-btn rb-ghost', onClick: () => setDesktop(null) }, t('computer.close')),
+          ),
+        ) : null,
       )
     }
 
@@ -1645,7 +1820,7 @@ window.__ModuleLoader__.load({
         h(
           'div',
           { className: 'rb-list-top' },
-          h('div', { className: 'rb-brand' }, h(Mark), h('span', null, t('brand'))),
+          h('div', { className: 'rb-brand' }, h(Mark), h('span', null, t('brand')), h('span', { className: 'rb-preview-pill' }, t('preview.badge'))),
           h(
             'div',
             { className: 'rb-tools' },
@@ -1679,17 +1854,16 @@ window.__ModuleLoader__.load({
         h(
           'div',
           { className: 'rb-chats' },
-          rows.length ? rows.map((bot, index) => {
+          rows.length ? rows.map((bot) => {
             const name = botName(bot, t)
             const snippet = botSnippet(bot, t)
             const attention = attentionText(bot, t)
-            const active = state.screen === 'chat' && index === 0
             return h(
               'button',
               {
                 type: 'button',
                 key: bot.id,
-                className: active ? 'rb-row rb-active' : 'rb-row',
+                className: 'rb-row',
                 onClick: () => onSelect(bot.id),
                 'aria-label': attention ? `${name}. ${snippet}. ${attention}` : `${name}. ${snippet}`,
               },
@@ -2118,7 +2292,7 @@ window.__ModuleLoader__.load({
           onChange: ctx.onSettings,
           onClose: () => ctx.onScreen('chat'),
           onSetup: () => {
-            ctx.onSetupStep(1)
+            ctx.onSetupStep(0)
             ctx.onScreen('setup')
           },
         })
@@ -2185,13 +2359,30 @@ window.__ModuleLoader__.load({
       const [instructions, setInstructions] = useState('')
       const tokenRef = useRef(null)
       const keyRef = useRef(null)
+      const [tokenBusy, setTokenBusy] = useState(false)
+      const [tokenError, setTokenError] = useState('')
+      const [connection, setConnection] = useState(null)
       const steps = [
         ['dependency', 'setup.steps.dependency'],
         ['rayrun', 'setup.steps.rayrun'],
         ['key', 'setup.steps.key'],
         ['bot', 'setup.steps.bot'],
       ]
-      const canContinue = step === 3 && Boolean(name.trim())
+      const dependency = host.status === 'loaded' ? host.dependency : null
+      const dependencyLine = dependency?.status === 'ok'
+        ? t('setup.dependencyOk', { version: dependency.version ?? '?' })
+        : dependency?.status === 'missing'
+          ? t('setup.dependencyMissing')
+          : dependency?.status === 'incompatible'
+            ? t('setup.dependencyIncompatible', { version: dependency.version ?? '?', required: dependency.required ?? '' })
+            : t('setup.dependencyStatus')
+      const canContinue = step === 0
+        ? dependency?.status === 'ok'
+        : step === 1
+          ? Boolean(connection)
+          : step === 3
+            ? Boolean(name.trim())
+            : false
       const back = () => {
         if (step === 0) onClose()
         else onStep(step - 1)
@@ -2202,11 +2393,38 @@ window.__ModuleLoader__.load({
       }
       const next = () => {
         if (!canContinue) return
+        if (step < 3) {
+          onStep(step + 1)
+          return
+        }
         onCreate({ name, job, instructions })
       }
       const forget = (ref, key) => {
         if (ref.current) ref.current.value = ''
         onFlash(t(key))
+      }
+      const connectToken = async () => {
+        const token = tokenRef.current?.value.trim() ?? ''
+        if (!token) {
+          setTokenError(t('setup.tokenRequired'))
+          return
+        }
+        setTokenBusy(true)
+        setTokenError('')
+        try {
+          await rayRpc('connection.save', { token })
+          const overview = await rayRpc('overview')
+          if (tokenRef.current) tokenRef.current.value = ''
+          setConnection(overview)
+          onFlash(t('setup.connected', { balance: balanceText(overview.balance), machines: overview.machines.length }))
+        } catch (error) {
+          const detail = String(error?.message ?? error)
+          setTokenError(/unauthorized/i.test(detail)
+            ? t('setup.tokenRejected')
+            : t('setup.connectFailed', { message: detail }))
+        } finally {
+          setTokenBusy(false)
+        }
       }
       return h(
         'main',
@@ -2234,7 +2452,7 @@ window.__ModuleLoader__.load({
               null,
               h('h2', null, t('setup.dependencyTitle')),
               h('p', { className: 'rb-say' }, t('setup.dependencyBody')),
-              h('div', { className: 'rb-faint' }, t('setup.dependencyStatus')),
+              h('div', { className: 'rb-faint' }, dependencyLine),
               h(
                 'div',
                 { className: 'rb-line', style: { marginTop: 10 } },
@@ -2250,8 +2468,15 @@ window.__ModuleLoader__.load({
               h(
                 'div',
                 { className: 'rb-line' },
-                h('button', { type: 'button', className: 'rb-btn rb-primary', onClick: () => onFlash(t('setup.signInLater')) }, t('setup.signIn')),
-                h('span', { className: 'rb-faint' }, t('setup.notConnected')),
+                h('button', {
+                  type: 'button',
+                  className: 'rb-btn rb-primary',
+                  onClick: () => {
+                    tokenRef.current?.focus()
+                    onFlash(t('setup.tokenHint'))
+                  },
+                }, t('setup.useToken')),
+                h('span', { className: 'rb-faint' }, connection ? t('setup.connectedShort') : t('setup.notConnected')),
               ),
               h(
                 'div',
@@ -2265,9 +2490,16 @@ window.__ModuleLoader__.load({
                   placeholder: t('setup.tokenPlaceholder'),
                   'aria-label': t('setup.tokenPlaceholder'),
                 }),
-                h('button', { type: 'button', className: 'rb-btn', onClick: () => forget(tokenRef, 'setup.tokenIgnored') }, t('setup.connect')),
+                h('button', { type: 'button', className: 'rb-btn', disabled: tokenBusy, onClick: connectToken }, tokenBusy ? t('setup.connecting') : t('setup.connect')),
               ),
-              h('div', { className: 'rb-faint', style: { marginTop: 10 } }, t('setup.accountLine')),
+              tokenError ? h('p', { className: 'rb-say', role: 'alert', style: { color: '#b45309' } }, tokenError) : null,
+              h(
+                'div',
+                { className: 'rb-faint', style: { marginTop: 10 } },
+                connection
+                  ? t('setup.connected', { balance: balanceText(connection.balance), machines: connection.machines.length })
+                  : t('setup.accountLine'),
+              ),
             ) : null,
             step === 2 ? h(
               'div',
@@ -2487,15 +2719,25 @@ window.__ModuleLoader__.load({
             PanelIcon,
           ),
         )
-        ctx.slots.inject('main', () =>
-          ctx.slots.register(
+        ctx.slots.inject('main', () => {
+          const dispose = ctx.slots.register(
             {
               name: 'main',
               key: PANEL_ID,
             },
             () => h(BotsApp, { ctx }),
-          ),
-        )
+          )
+          // Bots is the product surface: activate it on entry when DSH exposes
+          // the layout service. Without that service, stay on the DSH page.
+          ctx.inject?.(['layout'], (child) => {
+            try {
+              child.layout.selectPanel(PANEL_ID)
+            } catch (error) {
+              ctx.logger?.warn?.(`dsh-rayrun-bots: could not activate Bots: ${String(error?.message ?? error)}`)
+            }
+          })
+          return dispose
+        })
       },
     }
   },

@@ -30,6 +30,7 @@
 | [ADR-014](#adr-014) | 桌面发行版与更新单元 | Accepted（2026-11-21，B1） | v1.0 采用预配置 DSH 发行包（bootstrap 安装器）；B2 整包更新是升级路径；薄壳不做 | v1.0, 09-deployment |
 | [ADR-015](#adr-015) | 云端 bot runtime 层 | Proposed（v0.1） | 用户云电脑内的 supervisor；queue/session/DSH/事件/恢复 | C1–C9, D1–D5, E1–E7 |
 | [ADR-016](#adr-016) | 本地 bot 控制面 | Proposed（v0.1） | DSH host + 插件 host half；token/审批/成本/依赖；不做托管服务 | A2/A3, B1–B4, E3/E4, G1/G2 |
+| [ADR-017](#adr-017) | Bots 作为默认产品表面 | Accepted（2026-11-21） | Rayrun Bot 品牌；加载即激活 Bots；DSH 是宿主，Bots 内不返回 DSH | v0.1, v1.0 |
 
 ## P0 — bot runtime 与审批动工前必须定
 
@@ -610,6 +611,45 @@ token）；provider 抽象（v0.1 不做）。
 **证据。** [`01-system-architecture.md`](../01-system-architecture.md) §3.1；
 [`05-approvals.md`](../05-approvals.md)；[`08-integration.md`](../08-integration.md)；
 [`00-product-direction.md`](../00-product-direction.md) §1。
+
+<a id="adr-017"></a>
+### ADR-017 — Bots 作为默认产品表面
+
+**状态：** Accepted（2026-11-21，产品决策）.
+
+**问题。** 客户端的运行时是 DSH 插件，但产品品牌和默认入口是什么？Bots 只是 DSH
+里的一个 panel，还是用户打开后直接进入的产品表面？
+
+**选项。**
+
+1. **Panel**：保留 DSH 侧栏和默认对话；Bots 通过侧栏入口打开。最贴近“薄插件”，
+   但品牌弱，用户先看到的是 DeepSeek Harness。
+2. **Bots 默认表面（选中）**：Rayrun Bot 是品牌，Bots 是默认表面；客户端加载后自动
+   `layout.selectPanel('rayrun-bots')`，全屏覆盖 DSH 外壳；DSH 是宿主，Bots 内不提供
+   返回 Harness 的入口。
+3. **B2 品牌发行版**：从 DSH 源码构建完整品牌发行版，维护成本最高，只在 B1 不足时做。
+
+**决策（2026-11-21）。** 采用 2：**Bots 是 Rayrun Bot 的默认产品表面**。打开 DSH
+web/桌面壳时，插件加载后自动激活 Bots；Bots 全屏覆盖 DSH 侧栏和底栏，Rayrun Bot 的
+roster 是最左列。DSH 仍是宿主和运行时，不是被 fork/重写的客户端。**Bots 内不提供
+返回 DSH 的入口**；Plugins、云电脑、Workspaces 等流程需要由 Bots 自己接管（尚未
+实现），在接管前它们是已知缺口，而不是隐藏入口。
+
+**后果。**
+
+- 品牌：Rayrun Bot 是产品名，Bots 是默认表面；Bots 激活时页面标题为 Rayrun Bot。
+- 导航：默认入口即 Bots；Bots 是唯一产品表面，没有 in-product 退出；DSH 的 setup/
+  Plugins/云电脑 入口必须由 Bots 接管。
+- 依赖：Bots 仍通过 DSH 插件机制运行；不修改 DSH core，不做 B2。
+- 未闭合：setup/Plugins/云电脑 的入口、DSH key 引导归属、无障碍 inert/焦点、
+  DSH 版本矩阵；见 2026-11-21 UX/产品审核与
+  [`10-rayrun-verification.md`](../10-rayrun-verification.md)。
+- B1：预配置 DSH 发行包可以直接打开 Bots；B2 仍只在品牌/单一更新单元成为硬需求时做。
+
+**证据。** 2026-11-21 产品决策（形成自己的品牌、进去即激活 Bots、品牌立场是 Bots）；
+2026-11-21 UX/产品独立审核；[`design/ui-design.md`](../design/ui-design.md) §1.1；
+`packages/dsh-rayrun-bots/client.js` 的 `selectPanel(PANEL_ID)` 与全屏 `.rb-frame`；
+[`10-rayrun-verification.md`](../10-rayrun-verification.md) R-G001/R-G008。
 
 ## 建议顺序
 
