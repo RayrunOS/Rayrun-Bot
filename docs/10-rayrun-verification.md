@@ -12,6 +12,7 @@
 | --- | --- |
 | [`08-integration.md`](08-integration.md) | 平台能力需求、优先级与 handoff |
 | [`09-deployment.md`](09-deployment.md) | 安装、运行、配置与故障处理 |
+| [`11-dsh-rayrun-computer-issues.md`](11-dsh-rayrun-computer-issues.md) | `dsh-rayrun-computer` 自身的问题登记；修复去上游 |
 | [`design/desktop-distribution.md`](design/desktop-distribution.md) | D-S1a 清单与 2026-11-21 实测记录（§5.8） |
 | [`plans/mvp-plan.md`](plans/mvp-plan.md) | v0.1 验收任务与测试证据要求（§2、§7） |
 | [`../README.md`](../README.md) | 产品状态；本文不复制状态 |
@@ -150,6 +151,7 @@
 
 - [`08-integration.md`](08-integration.md)
 - [`09-deployment.md`](09-deployment.md)
+- [`11-dsh-rayrun-computer-issues.md`](11-dsh-rayrun-computer-issues.md)
 - [`design/desktop-distribution.md`](design/desktop-distribution.md) §5.8
 - [`plans/mvp-plan.md`](plans/mvp-plan.md) §7
 - [`../README.md`](../README.md) Status

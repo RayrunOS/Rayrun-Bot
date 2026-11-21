@@ -14,6 +14,7 @@
 | [`04-cloud-host.md`](04-cloud-host.md) | 云端 bot runtime 如何使用这些能力 |
 | [`05-approvals.md`](05-approvals.md) | 文件控制通道的审批部分 |
 | [`06-local-state.md`](06-local-state.md) | 本地/机器文件布局 |
+| [`11-dsh-rayrun-computer-issues.md`](11-dsh-rayrun-computer-issues.md) | 依赖自身的问题登记；本文只列需求，不重复具体问题 |
 | [`adr/architecture-decisions.md`](adr/architecture-decisions.md) | ADR-003（控制通道）、ADR-004（依赖契约）、ADR-007（常驻 bot runtime） |
 
 ---
@@ -33,6 +34,10 @@
 
 **版本检查**：host 启动时记录依赖版本；缺失/过旧返回 `E_DEP_MISSING` /
 `E_DEP_VERSION`，并给一句可执行的安装提示。不要静默降级。
+
+依赖自身在集成中暴露的问题（契约、错误文案、API 缺口、安全边界）登记在
+[`11-dsh-rayrun-computer-issues.md`](11-dsh-rayrun-computer-issues.md)；本文只描述
+“需要它具备什么能力”，不重复问题证据。
 
 ---
 
