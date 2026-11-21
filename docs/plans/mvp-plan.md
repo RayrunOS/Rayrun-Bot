@@ -198,7 +198,7 @@ Estimates include tests; "Done when" is the evidence, not a code-complete claim.
 | A1 | Scaffold `packages/dsh-rayrun-bots` | package.json (`dsh.bundle` + `dsh.client.inject`), `cordis.patch.yml`, `index.js`, `client.js`, `lib/`, `locale/en+zh`, `test/` | — | 2 | bundle loads in a profile and renders an empty page |
 | A2 | Dependency declaration + version check | dependency range, `E_DEP_MISSING`/`E_DEP_VERSION` copy | A1 | 1 | fresh profile without the dependency shows the action, not a crash |
 | A3 | Host RPC route + envelope + limits | `/plugins/<id>/rpc`, `{ok,data}` / `{ok:false,code,message}`, 64 KB body cap | A1 | 1 | contract tests for success and every error code |
-| A4 | CI | `node --check`, `node test/*.mjs`, locale audit | A1 | 1 | a failing test turns CI red |
+| A4 | CI | `node --check`, `node test/*.mjs`, locale audit, `git diff --check`, Node × DSH profile-install smoke | A1 | 1 | a failing test or DSH install turns CI red |
 | A5 | npm publish flow | tarball check, bootstrap token → OIDC trusted publishing | A4 | 1 | dry run lists host/client/locale/bundle files |
 | A6 | Version matrix | DSH × `dsh-rayrun-computer` × Rayrun Bot table | A2 | 0.5 | table committed and linked from README |
 | A7 | Package docs | package README with install path and limits | A5 | 0.5 | a fresh user can install from the tarball |

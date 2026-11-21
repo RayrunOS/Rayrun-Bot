@@ -7,17 +7,43 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: checks-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   checks:
-    name: checks
+    name: checks (node ${{ matrix.node }})
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['24', '26']
     steps:
       - name: Check out
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: ${{ matrix.node }}
+      - name: Check the pushed diff for whitespace and conflict markers
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BEFORE_SHA: ${{ github.event.before }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            git diff --check "$PR_BASE_SHA...$PR_HEAD_SHA"
+          elif [ -z "$BEFORE_SHA" ] || [ "$BEFORE_SHA" = "0000000000000000000000000000000000000000" ]; then
+            echo "New branch: no earlier commit to compare."
+          else
+            git diff --check "$BEFORE_SHA" "$HEAD_SHA"
+          fi
       - name: Syntax-check the plugin halves
         run: |
           node --check packages/dsh-rayrun-bots/index.js
@@ -30,3 +56,40 @@ jobs:
           done
       - name: Run the update prototype checks
         run: node tools/update-poc/test/update.mjs
+
+  dsh-plugin:
+    name: dsh ${{ matrix.dsh }} (node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - node: '24'
+            dsh: '0.2.1-rc.5'
+          - node: '24'
+            dsh: '0.2.2-rc.5'
+          - node: '26'
+            dsh: '0.2.2-rc.5'
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Install DSH and pnpm in a temporary prefix
+        run: |
+          npm install --prefix "$RUNNER_TEMP/dsh" --no-save --no-package-lock \
+            --no-audit --no-fund \
+            "@deepseek-ai/dsh@${{ matrix.dsh }}" "pnpm@10.34.9"
+      - name: Install the plugin into a throwaway profile and compose it
+        env:
+          DSH_HOME: ${{ runner.temp }}/dsh-home
+        run: |
+          export PATH="$RUNNER_TEMP/dsh/node_modules/.bin:$PATH"
+          dsh --version
+          dsh plugin --profile ci add "$GITHUB_WORKSPACE/packages/dsh-rayrun-bots"
+          dsh --profile ci --dump-config > "$RUNNER_TEMP/composed-config.yml"
+          grep -A1 '^- id: rayrun-bots$' "$RUNNER_TEMP/composed-config.yml" \
+            | grep -q '^  name: dsh-rayrun-bots$'

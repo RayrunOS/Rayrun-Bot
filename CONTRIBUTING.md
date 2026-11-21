@@ -38,9 +38,11 @@ There is no build step. Each package carries plain-Node checks under its own
 - `node packages/dsh-rayrun-bots/test/rpc-contract.mjs`
 - `node packages/dsh-rayrun-bots/test/client-contract.mjs`
 
-The same checks run in CI (`.github/workflows/checks.yml`) on push and pull
-requests. Live integration tests need real Rayrun credentials and never run in
-CI. Do not assume a check that is not documented here.
+The same checks run in CI (`.github/workflows/checks.yml`) on Node 24 and 26.
+CI also runs `git diff --check` on the pushed diff, and installs the package
+into a throwaway DSH profile against pinned DSH `0.2.1-rc.5` and `0.2.2-rc.5`.
+Live integration tests need real Rayrun credentials and never run in CI. Do not
+assume a check that is not documented here.
 
 ## Code of conduct
 

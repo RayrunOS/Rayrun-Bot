@@ -47,8 +47,11 @@ node test/client-contract.mjs
 ```
 
 The same commands run in the repository's checks-only CI workflow on push and
-pull requests: [`.github/workflows/checks.yml`](../../.github/workflows/checks.yml).
-Live integration tests need real Rayrun credentials and never run in CI.
+pull requests, on Node 24 and 26: [`.github/workflows/checks.yml`](../../.github/workflows/checks.yml).
+CI also installs this package into a throwaway DSH profile and composes its
+config against DSH `0.2.1-rc.5` and `0.2.2-rc.5`; it does not start the web app,
+test the cloud-computer plugin, or make Rayrun calls. Live integration tests
+need real Rayrun credentials and never run in CI.
 
 ## Layout
 

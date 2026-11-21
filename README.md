@@ -134,7 +134,8 @@ dsh plugin --profile web add /absolute/path/to/package
 # restart DSH afterwards; the page loads the new client half on start
 ```
 
-- Checks: `node --check` on `packages/dsh-rayrun-bots/index.js` and `client.js`, then `node packages/dsh-rayrun-bots/test/manifest-check.mjs`, `locale-audit.mjs`, `rpc-contract.mjs`, and `client-contract.mjs`; the same checks run in CI on push and pull requests (`.github/workflows/checks.yml`).
+- Checks: `node --check` on `packages/dsh-rayrun-bots/index.js` and `client.js`, then `node packages/dsh-rayrun-bots/test/manifest-check.mjs`, `locale-audit.mjs`, `rpc-contract.mjs`, and `client-contract.mjs`.
+- CI: those checks run on Node 24 and 26, the pushed diff must pass `git diff --check`, and a separate job installs the package into a throwaway DSH profile and composes its config against DSH `0.2.1-rc.5` and `0.2.2-rc.5` (`.github/workflows/checks.yml`). That job does not test the cloud-computer plugin, start the web app, or make Rayrun calls.
 - Live integration tests need real Rayrun credentials and never run in CI.
 - Read [`CLAUDE.md`](CLAUDE.md) and [`CONTRIBUTING.md`](CONTRIBUTING.md) before changing anything. Commit messages are in English with `feat:`, `fix:`, `chore:` or `docs:` prefixes.
 
@@ -145,7 +146,7 @@ dsh plugin --profile web add /absolute/path/to/package
 | | |
 | --- | --- |
 | **Works today** (separate project, our dependency) | Seven `rayrun_*` tools, noVNC desktop, per-session cloud/local routing, hash-verified workspace sync, task delegation, worker projection, optional idle stop. Verified on DeepSeek Harness `0.2.1-rc.5`. |
-| **This repository** | README, docs, issue and PR templates, agent rules, the dependency boundary, and `dsh-rayrun-bots`: a health route plus the v0.1 client shell (five screens, in-memory preview), with plain-Node checks and a checks-only CI workflow. No persisted bot layer and no publishable release yet. |
+| **This repository** | README, docs, issue and PR templates, agent rules, the dependency boundary, and `dsh-rayrun-bots`: a health route plus the v0.1 client shell (five screens, in-memory preview), with plain-Node checks and a checks-only CI workflow (Node 24/26 plus a DSH profile-install smoke). No persisted bot layer and no publishable release yet. |
 | **Not built yet** | Bot roster and bot↔session mapping, a persistent DSH host on the machine, remote approvals that gate a worker, routines that actually run, live usage from the account, IM channel, the two-plugin install path (dependency declaration and version check), npm packages and the release/publish CI path. |
 | **Platform gaps** | Safe inbound networking (today the token ingress is unusable and only `public` works), idle auto-stop, a spend cap, the session-resume contract. The full list is in [docs/01-system-architecture.md](docs/01-system-architecture.md). |
 
