@@ -58,6 +58,9 @@ manual rows are recorded as a screen capture plus the log files.
 | A11 | Security regression | repo, logs and workspace scan clean of tokens and keys; no public ingress; approval negative tests green; dependency version check enforced |
 | A12 | Release | README/quickstart three-minute path verified on a clean machine; npm tarball contains host half, client half, locale and bundle patch; CI green |
 
+A6/A7 are blocked on the platform ask in [08 §3.3](../08-integration.md)
+(ADR-001); they remain sign-off criteria.
+
 Alpha gate after A1–A12: 10–20 seed users; first-bot success ≥ 80 %; week-2
 retention ≥ 40 %; zero billing complaints. These are signals, not ship gates.
 
@@ -71,7 +74,7 @@ In — P0 unless marked P1:
 | Chat list, conversation and per-bot details panel | Grok Bot three-column shell; reuse DSH chat where the API allows |
 | Bot↔session mapping | persisted on the machine, mirrored locally |
 | Cloud bot runtime: queue, inbox/outbox, watchdog | one agent task at a time |
-| Fail-closed approval gate | TTL 30 min, replay protection, audit line |
+| Fail-closed approval gate | TTL 30 min, replay protection, audit line; blocked on ADR-001 platform isolation |
 | Inline approval cards | cards in the conversation; a dot in the chat list marks attention |
 | Cloud-computer dependency integration | dependency declaration, version check, missing-plugin error |
 | Cost bar: balance and machine hours | per-bot attribution is P1 |
@@ -103,10 +106,13 @@ The local (plugin-side) file layout is specified in
 4. **Persistent host on the machine**: a small Node supervisor, shipped by the
    existing worker projection, runs the queue and the DSH sessions; a local
    watchdog restarts it through `exec`.
-5. **Approval bridge v0.1 is a file mailbox**, not an HTTP callback: request and
-   decision JSON files carry a nonce, bot id, action hash and TTL; the local host
-   polls every 3 s, shows the card, uploads the decision. Missing, expired,
-   replayed or wrong-bot responses are denied and logged.
+5. **Approval execution waits for platform isolation (ADR-001, decided
+   2026-11-21).** Proposal and audit files may still be the transport, but the
+   authorization boundary must be where the agent cannot write. Until Rayrun
+   provides host/agent permission isolation and a host-only approval endpoint
+   ([08-integration.md](../08-integration.md) §3.3), E1–E7 and A6/A7 are blocked
+   and no approval execution code ships. The file mailbox is not an
+   authorization path.
 6. **Session strategy is decided by spike S1**: preferred long-lived DSH process
    on the machine; fallback per-turn headless with a session id; last resort
    transcript replay.
@@ -240,6 +246,10 @@ Estimates include tests; "Done when" is the evidence, not a code-complete claim.
 
 ### E. Approvals
 
+**Blocked (ADR-001, 2026-11-21).** E1–E7 wait for Rayrun host/agent permission
+isolation and a host-only approval endpoint ([08 §3.3](../08-integration.md)).
+Do not implement the file-mailbox execution path before that lands.
+
 | ID | Task | Deliverable | Depends | Est | Done when |
 | --- | --- | --- | --- | --- | --- |
 | E1 | Gate API | `requestApproval(action)` blocks before the side effect | C4 | 1.5 | gated step never runs early |
@@ -290,7 +300,7 @@ calendar effort; one engineer should plan for 10–12 weeks.
 | M0 | W0 (3 d) | spikes S1–S6, platform questions sent | decisions recorded, go/no-go | written decision log |
 | M1 | W1 | A1–A3, B1–B3, F1, G1 | roster read-only from stub data | empty→stub chat list in the panel |
 | M2 | W2 | C1–C5, B4, D1–D2, F2 | a bot replies end to end | create bot, send task, get reply |
-| M3 | W3 | E1–E4, D3, F3, G2–G3 | approval loop works | gated action → card → approve → continue |
+| M3 | W3 | E1–E4, D3, F3, G2–G3 (E blocked on ADR-001 platform isolation) | approval loop works | gated action → card → approve → continue |
 | M4 | W4 | E5–E7, D4–D5, C6–C8, F4–F5 | resume and recovery pass | close laptop, reopen, still working |
 | M5 | W5 | C9, G4–G6, F6, H1–H4 | A1–A12 pass on a clean machine | acceptance run recorded |
 | Alpha | W6–W7 | H6, fixes | alpha gate | 10–20 users on the loop |
@@ -315,9 +325,11 @@ host stream and the same exit criteria.
 ## 8. Platform dependencies
 
 MVP blockers from [platform-asks.md](../08-integration.md): the session/long-lived
-runtime contract (#1) and balance grace (#2). Everything else has a workaround:
-file-mailbox polling for control, local watchdog for restart, account token in the
-vault, no inbound networking, two-install path if S6 fails.
+runtime contract (#1), balance grace (#2), and host/agent permission isolation
+plus a host-only approval endpoint (#3.3, ADR-001). Everything else has a
+workaround: file-mailbox polling for control, local watchdog for restart, account
+token in the vault, no inbound networking, two-install path if S6 fails.
+Approvals have no execution workaround under ADR-001.
 
 ## 9. Risks
 

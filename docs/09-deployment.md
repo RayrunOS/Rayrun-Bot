@@ -81,7 +81,8 @@ dsh plugin --profile web add "<packages/dsh-rayrun-bots 的绝对路径>"
 
 安装后打开 **Bots** 会看到 v0.1 客户端壳：聊天列表、对话、详情、新建 bot、设置向导、
 设置。**这些是页内内存预览**：创建 bot 不会落到云电脑，Allow once 不会发给 worker。
-bot 层（roster、session 映射、审批、routines、成本栏）尚未构建；状态以 README 为准。
+本地 roster 已持久化；session 映射、审批执行、routines 与成本栏尚未构建（审批执行
+等待平台权限隔离，ADR-001）；状态以 README 为准。
 
 **一次安装**：Rayrun Bot 的 bundle 拟声明 `dsh-rayrun-computer` 为依赖，让一次安装
 带两个插件。这是 W0 spike S6，**未验证**；在那之前按上面的两装路径。

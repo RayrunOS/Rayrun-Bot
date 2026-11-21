@@ -114,11 +114,15 @@ including disks — so watch the balance as a data-loss risk, not just a cost.
 
 ## Are approvals working?
 
-Not on the cloud path. The design contract is fail-closed (timeout or unknown
-means no), and the approval UI inside DSH exists, but the cloud worker profile
-currently runs with `approval: never` because there is nobody to ask on a
-headless machine. That is the biggest gap and the first thing v0.1 must fix; a
-cloud bot is unsupervised until it is.
+Not on the cloud path, and not until the platform can isolate the approver. The
+design contract is fail-closed (timeout or unknown means no), and the approval
+cards inside DSH exist as a preview, but the cloud worker profile currently runs
+with `approval: never` because there is nobody to ask on a headless machine. A
+file mailbox inside the agent's writable workspace could be read and self-approved
+by a compromised bot, so ADR-001 (2026-11-21) decided to wait for Rayrun to provide
+host/agent permission isolation and a host-only approval endpoint. Until that
+lands, approval execution is not implemented, the preview authorizes nothing, and
+a cloud bot is unsupervised.
 
 ## Can I self-host?
 

@@ -221,12 +221,13 @@ billing。token 只在本地控制面使用；云端 agent 只拿模型 key，�
 
 因此：
 
-- **在 ADR-001 定下执行点之前，审批是“用户同意/审计”，不能当成对被控 bot 的安全
-  边界。**
-- 推荐把受控动作放到凭据所在的一侧执行（本地控制面或平台），或由平台提供
-  host/agent 权限隔离；若都做不到，必须改安全页的措辞并警告。
-- 这条与 [`07-security.md`](07-security.md) “The model is untrusted” 和
-  [`adr/architecture-decisions.md`](adr/architecture-decisions.md) ADR-001 一致。
+- **ADR-001 已定（2026-11-21，选项 2）：审批执行点必须是平台提供的 host/agent
+  权限隔离。** 平台提供隔离与审批端点之前，不实现审批执行；文件邮箱只能传提案与
+  审计，不能授权。
+- 平台提供之前，审批仍只是“用户同意/审计”，不能当成对被控 bot 的安全边界，也不能
+  声称它阻止了被攻陷的 bot。
+- 平台需求见 [`08-integration.md`](08-integration.md) §3.3；这与
+  [`07-security.md`](07-security.md) “The model is untrusted” 一致。
 
 ### 4.4 其他边界
 
@@ -314,7 +315,8 @@ tombstone，action hash 的 canonicalization 未定义；见 ADR-011/012。
 3. 用户 Deny / Allow once；决定写回 `res-<id>.json`（或由本地/平台执行，见 ADR-001）。
 4. 执行方校验 id、botId、nonce、actionHash；任何不匹配、过期、重放、错 bot 都拒绝。
 5. 后台卡 30 分钟过期即拒绝；chat 卡不设计时，一直等待。
-6. **当前文件邮箱可被 root agent 伪造；ADR-001 定下执行点前，这条路径不是安全边界。**
+6. **当前文件邮箱可被 root agent 伪造；ADR-001 已定（平台权限隔离），平台提供隔离前
+   这条路径不是安全边界，也不实现执行。**
 7. 副作用执行后的崩溃/重试语义未定；ADR-005 要求 `actionId` + 执行日志 + 幂等/重试
    规则。
 
@@ -364,13 +366,15 @@ tombstone，action hash 的 canonicalization 未定义；见 ADR-011/012。
 
 - 云电脑插件的 adapter：能力调用、版本检查、缺失时的清晰错误；
 - bot 注册表、roster UI、bot↔session 持久化；
-- DSH 审批 seam → 浏览器卡的审批路由（IM 后续）；
+- DSH 审批 seam → 浏览器卡的提案/卡片路由（执行点等平台隔离；IM 后续）；
 - routines/trigger 在 DSH scheduling 上的接线；
 - 成本栏与诚实的状态报告；
 - 打包、测试和文档。
 
 **平台必须补**（细节与优先级见 [`08-integration.md`](08-integration.md)）：
 
+- host/agent 权限隔离与 host-only 审批端点：审批执行点的前提（ADR-001，已定）；
+  平台提供前不实现审批执行；
 - session 与常驻 runtime 契约：能否按 id 创建/续接 session，受监督进程如何跨
   stop/start 存活，是否有 startup hook；
 - 余额宽限与 spend 护栏：余额耗尽今天会 force-destroy 机器和磁盘；
@@ -390,14 +394,15 @@ ADR-004，未定之前 C1/D1 不应动工。
 
 完整的决策、选项和建议见
 [`adr/architecture-decisions.md`](adr/architecture-decisions.md)；登记册见
-[`docs/README.md`](README.md) §3。先定 **ADR-015/016**（控制面/执行面），再定
-**ADR-001/002**（审批/所有权）。C/E 动工前必须先定：
+[`docs/README.md`](README.md) §3。**ADR-001 已定**（平台权限隔离）；审批实现等待
+[`08-integration.md`](08-integration.md) §3.3 的平台能力。ADR-015/016（控制面/执行面）
+与 ADR-002（所有权）仍是相应工作的门槛：
 
 | 编号 | 决策 | 为什么阻塞 |
 | --- | --- | --- |
 | ADR-015 | 云端 bot runtime 层 | 决定执行面落点 |
 | ADR-016 | 本地 bot 控制面 | 决定控制面权威 |
-| ADR-001 | 审批在哪里执行 | 决定审批是安全边界还是用户同意 |
+| ADR-001 | 审批在哪里执行 | 已定（平台权限隔离）；平台提供前不实现 |
 | ADR-002 | 所有权矩阵与单写者规则 | 决定 `bot.json`、队列、审批谁写 |
 | ADR-003 | 文件控制通道协议 | 决定队列/状态怎么交换，避免双写丢更新 |
 | ADR-004 | 与 `dsh-rayrun-computer` 的契约 | 决定 bot runtime 能否调用云能力 |

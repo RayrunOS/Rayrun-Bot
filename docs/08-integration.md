@@ -98,6 +98,34 @@ hook，都没有文档。
 期望形状：`balance.low` / `sandbox.suspended` 事件、destroy 前宽限期、每机器 budget
 字段。
 
+### 3.3 Host/agent 权限隔离与审批端点（P0，ADR-001）
+
+今天：云镜像以 root 运行，worker profile 是 `danger-full-access`；host 与 agent 同
+用户、同工作区、同凭据面。任何放在 `/workspace/.rayrun/.../approvals/` 的文件邮箱都
+能被 agent 读写；agent 可以读 nonce/id 并写一个匹配的 decision 自批。唯一文件名、
+tmp+rename 和 checksum 只防半写，不防伪造。
+
+需要：
+
+1. 每沙盒一个 host runtime 身份（不同 UID 或 mount namespace），agent 不能读写 host
+   的状态、队列、审批目录和密钥；
+2. 平台审批端点或 host-only 通道：人类决定只进入隔离侧，agent 只能提交提案；
+3. 受控动作需要的凭据只在 host 侧可用，agent 不可读。
+
+为什么：ADR-001（2026-11-21）选择平台权限隔离。没有它，审批只能是“用户同意/审计”，
+被 prompt injection 或攻陷的 bot 可以自批；我们不把这种回退当成 v0.1 的审批执行。
+
+回退：不实现审批执行；云端 bot 继续 `approval: never`，客户端审批卡保持预览。状态
+文档必须继续写明审批未工作，不能声称它阻止了被攻陷的 bot。
+
+期望形状：host runtime 以独立身份启动；平台提供 host-only 的审批/决定 API；agent
+进程无法读取 host 状态目录或凭据；决定带 id、botId、actionId、nonce、actionHash 和
+TTL（schema 见 ADR-011）。
+
+验收：从 agent 进程读写 host 审批目录和凭据失败；agent 伪造的 decision 被执行方拒绝
+并记录；用户决定经平台端点到达 host；超时/未知状态拒绝。证据记录在
+[`10-rayrun-verification.md`](10-rayrun-verification.md) 或平台答复记录中。
+
 ---
 
 ## 4. v0.1 质量项
@@ -112,7 +140,8 @@ hook，都没有文档。
 为什么：读到半写的审批文件是正确性 bug；轮询有请求预算。
 
 回退：唯一文件名、write-then-rename、payload 内 checksum。**注意 checksum 只防损坏，
-不防伪造**；见 [`05-approvals.md`](05-approvals.md) ADR-001。
+不防伪造**；ADR-001 已定（平台权限隔离），文件邮箱不是授权边界，见
+[`05-approvals.md`](05-approvals.md) §2。
 
 ### 4.2 出站控制通道（P1，推荐）
 
@@ -201,6 +230,7 @@ SSO/SAML/SCIM、组织 RBAC、审计导出/SIEM、DPA 与数据驻留、marketpl
 | --- | --- | --- |
 | 1. session + 常驻 runtime 契约 | v0.1 | 需要确认 |
 | 2. 余额宽限 / 护栏 | v0.1 | 风险接受并警告 |
+| host/agent 权限隔离 + 审批端点（§3.3） | v0.1 | 是（ADR-001；平台提供前审批不实现） |
 | 3. 文件通道语义 | v0.1 | 否（有 workaround） |
 | 4. 出站控制通道 | v0.1 质量 | 否（轮询） |
 | 5. 动态调整资源（resize） | v0.1 质量 | 否（创建时选规格） |
@@ -234,6 +264,7 @@ SSO/SAML/SCIM、组织 RBAC、审计导出/SIEM、DPA 与数据驻留、marketpl
 | 依赖接口 / worker projection | C1/D1 能否开工 | ADR-004 |
 | 常驻 bot runtime 的凭据注入 | “合上笔记本” | ADR-007 |
 | 文件通道的双写/CAS | 队列与审批 | ADR-003 |
+| 审批执行点 | E1–E7、A6/A7 | ADR-001：已定（平台权限隔离）；需求见 §3.3 |
 | 安全入站 | desktop/手机审批 | v0.2 平台需求 |
 | 已有沙盒的 resize API | 成本与规格调整 | 待 Rayrun 确认；没有时新建机器 |
 | 版本矩阵与一次安装 | 发布路径 | S6 + Release |

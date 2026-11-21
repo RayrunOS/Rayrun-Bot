@@ -14,7 +14,7 @@
 
 | 编号 | 决策 | 状态 | 建议 | 阻塞 |
 | --- | --- | --- | --- | --- |
-| [ADR-001](#adr-001) | 审批在哪里执行 | Proposed | 在凭据所在的一侧执行受控动作；把平台权限隔离作为平台需求 | C4, E1–E7, A6, A7 |
+| [ADR-001](#adr-001) | 审批在哪里执行 | Decided（2026-11-21，平台权限隔离） | 平台提供 host/agent 隔离与审批端点；此前不实现审批执行 | C4, E1–E7, A6, A7 |
 | [ADR-002](#adr-002) | 所有权矩阵与单写者规则 | Proposed | 每个文件一个写者；本地负责意图，云端负责运行态；公布矩阵 | B1–B4, C3, C8, E2–E4 |
 | [ADR-003](#adr-003) | 基于 Rayrun 文件 API 的控制通道协议 | Proposed | 拆分 inbox/state；每项一个文件；不做共享 JSONL 追加 | C3, C5, C8 |
 | [ADR-004](#adr-004) | 与 `dsh-rayrun-computer` 的契约 | Proposed | 在依赖仓库写能力/版本契约；不复制 token | A2, C1–C5, D1, G1 |
@@ -37,7 +37,7 @@
 <a id="adr-001"></a>
 ### ADR-001 — 审批在哪里执行？
 
-**状态：** Proposed.
+**状态：** Decided（2026-11-21，选项 2：平台权限隔离）.
 
 **问题。** 在 bot 以 root、`danger-full-access` 运行于云电脑内的前提下，由哪个组件可信地执行审批？
 
@@ -69,7 +69,20 @@ JSON 写回。请求带 nonce、bot id、action hash 和 TTL；bot runtime 读�
 归到选项 2，或从 v0.1 移除。对凭据必须留在云端的动作，把选项 2 加进平台需求。只有
 两者都不可行时才用选项 3，并且改安全页而不是改代码。
 
-**影响。** 改变审批桥、E1–E7、安全页和平台需求。任何审批代码动工前应先定这一项。
+**决定（2026-11-21）。** 选 **选项 2：平台权限隔离**。平台提供 host/agent 权限隔离
+（不同 UID 或 mount namespace）和 host-only 的审批端点之前：
+
+- **不实现审批执行路径**，E1–E7、A6/A7 暂停；平台需求登记在
+  [`08-integration.md`](../08-integration.md) §3.3；
+- 文件邮箱可以继续作为提案/卡片/审计的传输，但**不是授权边界**；
+- 客户端审批卡保持预览，不声称审批已工作；
+- 评审建议的选项 1（用户侧执行）仍是长期方向；本次不选它，是因为 v0.1 还没有定义
+  本地执行器与凭据路径；
+- 同意型回退（选项 3）不作为 v0.1 的审批执行方式。
+
+**影响。** E1–E7、A6/A7 阻塞于平台能力；安全页继续声明“审批不是安全边界”，直到平台
+隔离可用。ADR-011（schema/hash）与 ADR-012（恢复/限流）仍是 Proposed，恢复审批工作
+时先定。
 
 **证据。** [MVP 计划](../plans/mvp-plan.md) §4.1(5)、§4.3；[安全](../07-security.md) “The model
 is untrusted” 与 “What is not protected”；[系统架构](../01-system-architecture.md) “Approval
@@ -559,7 +572,7 @@ host 或 Rayrun adapter：
   单写者 ADR-003）。
 - **向下**：DSH agent sessions/profile、workspace、模型调用。
 - **信任**：与 agent 同机、root/`danger-full-access`，**不是安全边界**；审批执行点
-  按 ADR-001。
+  见 ADR-001（已定：平台权限隔离；平台提供前不实现）。
 - **生命周期**：由平台 worker projection 或本地 watchdog 启动；心跳写
   `host/state.json`；版本进入版本矩阵。
 - **不调用 Rayrun API 的账号 token**；由依赖的 worker projection ship/启动；平台
@@ -605,8 +618,8 @@ half，不是项目方托管服务。
 **替代方案。** 项目方托管控制面（违反不变量 3/4）；纯云端控制（丢失本地权威/
 token）；provider 抽象（v0.1 不做）。
 
-**影响。** A2/A3、B1–B4、E3/E4、G1/G2；ADR-002/004/010。审批执行点仍由 ADR-001
-决定。
+**影响。** A2/A3、B1–B4、E3/E4、G1/G2；ADR-002/004/010。审批执行点由 ADR-001 决定
+（已定：平台权限隔离；平台提供前不实现）。
 
 **证据。** [`01-system-architecture.md`](../01-system-architecture.md) §3.1；
 [`05-approvals.md`](../05-approvals.md)；[`08-integration.md`](../08-integration.md)；

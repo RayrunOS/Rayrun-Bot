@@ -59,8 +59,9 @@ DSH agent sessions（bot）
 | 心跳、恢复、事件 outbox | 模型 key 存储（由平台注入） |
 | 审批**提案**、执行日志（ADR-005） | 多 bot 之间的安全隔离 |
 
-它与 agent 同机、以 root/`danger-full-access` 运行，**不是安全边界**；审批执行点
-由 ADR-001 决定。
+它与 agent 同机、以 root/`danger-full-access` 运行，**不是安全边界**；ADR-001 已定
+为平台权限隔离，平台提供隔离前不实现审批执行（[`08-integration.md`](08-integration.md)
+§3.3）。
 
 ---
 
@@ -82,7 +83,8 @@ DSH agent sessions（bot）
 - **不把 Rayrun token 放进云电脑**：本地控制面通过 Rayrun API 写文件/读文件；bot runtime
   只使用模型 key 与本地文件。它如何被启动/监督，取决于平台与依赖契约。
 - **权限现实**：agent 以 root、`danger-full-access` 运行；host 与 agent 在同一台机器
-  上没有强隔离。审批不是安全边界，见 [`05-approvals.md`](05-approvals.md) ADR-001。
+  上没有强隔离。ADR-001 已定（平台权限隔离）；平台提供隔离前审批不实现，也不是安全
+  边界。
 
 ---
 

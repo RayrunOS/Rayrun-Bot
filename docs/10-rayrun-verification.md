@@ -188,7 +188,8 @@
 - Bots 页面内的云电脑**创建按钮**成功路径：依赖层的 `ensureModelCredential` +
   `machine.create` 已验证；页面层的已有机器采用和 Continue 已验证，但创建按钮本身未在
   页面层点击（账号有多台已有机器，setup 会采用），需要在没有现有机器的账号上补验；
-- bot 会话、审批往返、远程审批、队列与恢复；
+- bot 会话、审批往返、远程审批、队列与恢复；审批执行等待平台权限隔离（ADR-001，
+  [`08-integration.md`](08-integration.md) §3.3），在平台提供前不做往返验证；
 - DeepSeek 模型调用（本轮只创建了 model credential，没有发模型请求）；
 - 零余额宽限/force-destroy 行为（R-G009，不做破坏性验证）；
 - 在 Rayrun 上构建自定义 Dockerfile 镜像（R-G013）。

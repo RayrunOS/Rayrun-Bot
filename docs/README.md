@@ -48,7 +48,7 @@
 
 | 编号 | 标题 | 状态 | 文件 |
 | --- | --- | --- | --- |
-| ADR-001 | 审批在哪里执行 | Proposed | [architecture-decisions.md](adr/architecture-decisions.md#adr-001) |
+| ADR-001 | 审批在哪里执行 | Decided（2026-11-21，平台权限隔离） | [architecture-decisions.md](adr/architecture-decisions.md#adr-001) |
 | ADR-002 | 所有权矩阵与单写者规则 | Proposed | [architecture-decisions.md](adr/architecture-decisions.md#adr-002) |
 | ADR-003 | 基于 Rayrun 文件 API 的控制通道协议 | Proposed | [architecture-decisions.md](adr/architecture-decisions.md#adr-003) |
 | ADR-004 | 与 `dsh-rayrun-computer` 的契约 | Proposed | [architecture-decisions.md](adr/architecture-decisions.md#adr-004) |
@@ -66,9 +66,9 @@
 | ADR-016 | 本地 bot 控制面 | Proposed（v0.1） | [architecture-decisions.md](adr/architecture-decisions.md#adr-016) |
 | ADR-017 | Bots 作为默认产品表面 | Accepted（2026-11-21） | [architecture-decisions.md](adr/architecture-decisions.md#adr-017) |
 
-**先定 ADR-015/016，再定 ADR-001/002。** 前者决定控制面/执行面的分层与权威，后者
-决定审批的信任边界和产物所有权；在它们定下来之前，C/E 工作流不应动工。ADR-014
-已定为 B1，属于 v1.0，不阻塞 v0.1。
+**ADR-001 已定（平台权限隔离）；审批实现等待 08 §3.3 的平台能力。** ADR-015/016、
+ADR-002 等仍决定控制面/执行面的分层与产物所有权，未定前相应 C/E 工作流不动工。
+ADR-014 已定为 B1，属于 v1.0，不阻塞 v0.1。
 
 ## 4. 进行中的计划
 

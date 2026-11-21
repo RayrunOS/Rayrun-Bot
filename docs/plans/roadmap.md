@@ -41,7 +41,9 @@ Scope:
   prompt" with a supervised host, so a bot can keep working after the laptop
   closes. The session-resume contract with Rayrun is the first spike.
 - **Fail-closed approvals.** DSH approval seam → host half → browser card →
-  decision written back. Timeout, unknown or closed panel means deny.
+  decision written back. Timeout, unknown or closed panel means deny. Execution
+  waits for platform host/agent isolation (ADR-001); until then the file mailbox
+  is not an authorization boundary.
 - **Routines, minimal (P1; decision open, ADR-009).** A scheduled prompt that
   wakes a bot; no marketplace of triggers.
 - **Cost bar.** Machine hours and balance visible; idle stop remains a plugin
@@ -150,6 +152,8 @@ two confirmed; the rest are v0.2/beta:
 
 - the session and long-lived-runtime contract (whether a session id can be
   created or continued, and how a supervised process survives a restart);
+- host/agent permission isolation and a host-only approval endpoint (ADR-001:
+  the approval execution point; without it v0.1 has no approval execution);
 - balance grace and guardrails (today the only lifetime cap stops; exhaustion
   force-destroys machines and disks);
 - safe inbound networking with auth (today the token ingress is unusable and

@@ -174,7 +174,7 @@ v0.1 的完成标准是 [`plans/mvp-plan.md`](plans/mvp-plan.md) §2 的 A1–A1
 | 假设 | 为什么重要 | 如果不成立 |
 | --- | --- | --- |
 | 平台能提供 session / 常驻 runtime 契约 | “合上笔记本”和“续接”是核心卖点 | 回退到逐次 headless + transcript replay，并明确 UX/成本降级（ADR-007） |
-| 审批执行点在 agent 写不到的地方 | “失败即拒绝”才是安全边界，而不只是 UX | 审批降级为“用户同意/审计”，或需要平台权限隔离（ADR-001） |
+| 审批执行点在 agent 写不到的地方 | “失败即拒绝”才是安全边界，而不只是 UX | 已选平台权限隔离（ADR-001）；平台提供前 v0.1 不带审批执行，只保留同意/审计 |
 | 余额护栏可用 | 余额耗尽会 force-destroy 机器与磁盘，是数据丢失风险 | 只能本地预警 + idle stop，无法阻止平台销毁（平台需求 #2） |
 | 常开成本可接受 | 一人一台 2 vCPU / 2 GiB 约 ¥57.6/月（写入时的量级） | idle stop、max lifetime 或云端自停策略；产品页必须说清代价（ADR-006） |
 | DSH 客户端 API 能表达产品 | 复用聊天与审批 UI 决定客户端成本 | 自建 inbox + transcript/composer，或收窄 MVP（client-plan C-S2/C-S3） |
@@ -225,7 +225,8 @@ v0.1 的估算与排序见 [`plans/mvp-plan.md`](plans/mvp-plan.md)；里程碑�
 
 这些会改变产品范围或承诺；未决细节见 [`adr/architecture-decisions.md`](adr/architecture-decisions.md)：
 
-- **审批是安全边界还是用户同意？** 取决于执行点放在哪一侧（ADR-001）。
+- **审批是安全边界还是用户同意？** 已定：平台权限隔离（ADR-001）；平台提供前不实现
+  审批执行，审批保持“用户同意/审计”。
 - **routines / scheduler 进不进 v0.1？** 架构层写了 scheduler，MVP 计划标 P1，需统一（ADR-009）。
 - **“合上笔记本”期间哪些工作继续、计费怎么处理？** 后台审批 30 分钟过期，本地 idle stop 不在运行（ADR-006）。
 - **desktop / takeover 的安全路径是什么？** public 端口不能当产品面板（ADR-008）。
@@ -239,6 +240,6 @@ v0.1 的估算与排序见 [`plans/mvp-plan.md`](plans/mvp-plan.md)；里程碑�
 - 产品方向以本文为准；实现状态以 [`../README.md`](../README.md) 为准。
 - 技术基线以 [`01-system-architecture.md`](01-system-architecture.md) 为准。
 - 工作分解与验收以 [`plans/mvp-plan.md`](plans/mvp-plan.md) 为准。
-- 架构决策以 [`adr/architecture-decisions.md`](adr/architecture-decisions.md) 为准；ADR-001 与
-  ADR-002 是 C/E 动工前的门槛。
+- 架构决策以 [`adr/architecture-decisions.md`](adr/architecture-decisions.md) 为准；ADR-001
+  已定（平台权限隔离），ADR-002 等仍是 C/E 相应工作的门槛。
 - 用户短答见 [`faq.md`](faq.md)；操作步骤见 [`09-deployment.md`](09-deployment.md)。
