@@ -19,6 +19,10 @@ window.__ModuleLoader__.load({
     const FIRST_RUN_PREVIEW = new URLSearchParams(window.location.search).get('first-run') === '1'
 
     const EN = {
+  "meta": {
+    "title": "Rayrun Bot",
+    "description": "Adds a Bots entry and the v0.1 three-column shell: chat list, conversation with approval cards, details, setup and settings. Everything on the page is an in-memory preview; no machine and no credential are used."
+  },
   "panel": {
     "label": "Bots"
   },
@@ -281,6 +285,10 @@ window.__ModuleLoader__.load({
   }
 }
     const ZH = {
+  "meta": {
+    "title": "Rayrun Bot",
+    "description": "在侧边栏加入 Bots 入口和 v0.1 三栏界面：会话列表、带审批卡的对话、详情面板、初始化与设置。页面内容全部是内存预览，不连接机器，也不使用凭据。"
+  },
   "panel": {
     "label": "Bots"
   },

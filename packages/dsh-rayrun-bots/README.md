@@ -24,11 +24,10 @@ repo-level [MVP plan](../../docs/plans/mvp-plan.md) and [client plan](../../docs
 
 ## Install from a checkout
 
-```bash
-# from the repository root
-dsh plugin --profile web add "<absolute path to packages/dsh-rayrun-bots>"
-# restart DSH; the client half loads when the page starts
-```
+Install this directory into the current DSH profile: **Plugins → Add plugin** and
+point it at `packages/dsh-rayrun-bots`, or use the `plugin_manager`
+`install_bundle` action with the package's absolute path. Refresh the DSH page;
+the client half loads when the page starts.
 
 The cloud-computer dependency (`dsh-rayrun-computer`) is **not declared yet**:
 whether one bundle can declare it so one install brings both is spike S6. Until
@@ -62,6 +61,7 @@ lib/errors.js      # stable error codes (shared with docs/plans/mvp-plan.md §4.
 lib/rpc.js         # JSON responses and request-body parsing
 locale/en.json     # source copy
 locale/zh.json     # mirror; keys must match
+icon.svg           # plugin icon (Rayrun blue, monitor mark)
 test/              # plain-Node checks, no framework
 ```
 

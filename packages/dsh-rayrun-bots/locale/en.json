@@ -1,4 +1,8 @@
 {
+  "meta": {
+    "title": "Rayrun Bot",
+    "description": "Adds a Bots entry and the v0.1 three-column shell: chat list, conversation with approval cards, details, setup and settings. Everything on the page is an in-memory preview; no machine and no credential are used."
+  },
   "panel": {
     "label": "Bots"
   },

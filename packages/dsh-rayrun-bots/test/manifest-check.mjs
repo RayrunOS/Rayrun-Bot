@@ -15,12 +15,13 @@ if (pkg.name !== 'dsh-rayrun-bots') errors.push(`package name is ${pkg.name}`)
 if (pkg.type !== 'module') errors.push('package must be ESM (type: module)')
 if (pkg.exports?.['.'] !== './index.js') errors.push('exports["."] must point at index.js')
 if (pkg.exports?.['./client'] !== './client.js') errors.push('exports["./client"] must point at client.js')
+if (pkg.exports?.['./icon'] !== './icon.svg') errors.push('exports["./icon"] must point at icon.svg')
 if (pkg.dsh?.bundle?.patch !== './cordis.patch.yml') errors.push('dsh.bundle.patch must be ./cordis.patch.yml')
 if (!Array.isArray(pkg.dsh?.client?.inject) || pkg.dsh.client.inject.length === 0) {
   errors.push('dsh.client.inject must list at least one client UI module')
 }
 
-const requiredFiles = ['index.js', 'client.js', 'cordis.patch.yml', 'README.md', 'lib/errors.js', 'lib/rpc.js', 'locale/en.json', 'locale/zh.json']
+const requiredFiles = ['index.js', 'client.js', 'cordis.patch.yml', 'README.md', 'lib/errors.js', 'lib/rpc.js', 'locale/en.json', 'locale/zh.json', 'icon.svg']
 
 function covered(entry, file) {
   if (entry === file) return true
@@ -43,6 +44,10 @@ if (!host.includes("export const name = 'rayrun-bots'")) errors.push('host half 
 const client = read('client.js')
 if (!client.includes("id: 'dsh-rayrun-bots'")) errors.push('client half must register id dsh-rayrun-bots')
 if (!client.includes("name: 'sidebar.panellist'")) errors.push('client half must register a sidebar panel')
+
+const icon = read('icon.svg')
+if (!icon.trimStart().startsWith('<svg')) errors.push('icon.svg must be an SVG document')
+if (Buffer.byteLength(icon) > 256 * 1024) errors.push('icon.svg exceeds the 256 KiB plugin icon limit')
 
 if (errors.length) {
   console.error('manifest check failed:')
