@@ -62,7 +62,7 @@ session/transcript，以及按轮次的 runtime（依赖 1.1+ 用 detached
   执行仍按 ADR-001 关闭。
 - Detached runtime 由 `test/rayrun-detached-runtime.mjs`（5 项）和
   `test/session-runtime.mjs`（跨 runner 恢复、队列排空）覆盖；依赖 1.1.0
-  （`feat/host-dsh-rpc`，已推送，未合并/发布）的 `dsh.start/status/result` 页面路径
+  （main `720f30a`，未发布 npm）的 `dsh.start/status/result` 页面路径
   已在本机验证：Bots 页发送
   后 task id 落入 `session.json`，关闭页面并 kill 本地 DSH，等待后重启同一
   `DSH_HOME`，新 host 恢复 poll、收取 `reply.md`（`DETACHED_OK`），session 回到
