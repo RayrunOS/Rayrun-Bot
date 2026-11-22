@@ -41,9 +41,8 @@
 - `docs/README.md` — 文档索引、分类与 ADR 登记册。
 - `docs/12-status.md` — 实现状态的唯一事实源。
 - `docs/` — 编号顶层文档：00-product-direction、01-system-architecture、02-bot-model、03-client-design、04-cloud-host、05-approvals、06-local-state、07-security、08-integration、09-deployment、10-rayrun-verification、11-dsh-rayrun-computer-issues、12-status、faq；子目录：`adr/`（ADR 登记）、`plans/`（MVP/客户端/路线图）、`design/`（UI/人格）、`research/`（调研）、`mockups/`（视觉素材）。
-- `packages/dsh-rayrun-bots/` — 目前唯一的包：host half（`index.js`）、client half（`client.js`）、`lib/`、`locale/en.json` + `zh.json`、`test/`、`cordis.patch.yml`、包 `README.md`、`package.json`。
+- `packages/dsh-rayrun-bots/` — 目前唯一的包：host half（`index.js`）、client half（`client.js`）、`lib/`、`cloud-host/`（随包交付的云 host 资产：queue/DSH agent）、`locale/en.json` + `zh.json`、`test/`、`cordis.patch.yml`、包 `README.md`、`package.json`。
 - `tools/update-poc/` — 更新内核原型（签名 manifest、校验、暂存、原子切换、回滚）；不进入插件运行时，也不进 npm 包。
-- `tools/cloud-host-poc/` — 云 bot host 原型（平台 runtimes 下的 queue/transcript/outbox/heartbeat；可选 DSH headless agent 与 session id）；明确标记的 POC，不进入插件运行时，也不进 npm 包。
 - `tools/rayrun-deploy/` — CI 部署 helper（`fetch-url.mjs`）与部署契约测试；不进入插件运行时，也不进 npm 包。
 - 根 `package.json` — 私有 workspace 根；无依赖、无构建步骤。
 - `.github/workflows/checks.yml` — push/PR 的 checks CI，以及 main-only 的可选 Rayrun deploy job。
@@ -138,13 +137,14 @@ node packages/dsh-rayrun-bots/test/rayrun-runtime.mjs
 node packages/dsh-rayrun-bots/test/rayrun-detached-runtime.mjs
 node packages/dsh-rayrun-bots/test/runtime-rpc.mjs
 node packages/dsh-rayrun-bots/test/cloud-host-runtime.mjs
+node packages/dsh-rayrun-bots/test/host-projection.mjs
+node packages/dsh-rayrun-bots/test/cloud-host.mjs
+node packages/dsh-rayrun-bots/test/cloud-host-dsh-agent.mjs
 node packages/dsh-rayrun-bots/test/bot-workspace.mjs
 node packages/dsh-rayrun-bots/test/dependency.mjs
 node packages/dsh-rayrun-bots/test/approvals.mjs
 node packages/dsh-rayrun-bots/test/package-contents.mjs
 node tools/update-poc/test/update.mjs
-node tools/cloud-host-poc/test/host.mjs
-node tools/cloud-host-poc/test/dsh-agent.mjs
 node tools/rayrun-deploy/test/contract.mjs
 ```
 
@@ -182,14 +182,15 @@ node tools/rayrun-deploy/test/contract.mjs
 | `node packages/dsh-rayrun-bots/test/rayrun-runtime.mjs` | `rayrun_agent` adapter：prompt、机器选择、失败映射、拒绝自动建机器 |
 | `node packages/dsh-rayrun-bots/test/rayrun-detached-runtime.mjs` | `dsh.start/status/result` adapter：workspace、task id、reply.md、错误映射 |
 | `node packages/dsh-rayrun-bots/test/runtime-rpc.mjs` | 依赖 1.2+ `runtime.*` host RPC client：动作、无 token、创建语义、错误映射 |
-| `node packages/dsh-rayrun-bots/test/cloud-host-runtime.mjs` | 云 host runtime adapter：机器启动、runtime ensure、inbox/outbox、错误关闭 |
+| `node packages/dsh-rayrun-bots/test/cloud-host-runtime.mjs` | 云 host runtime adapter：机器启动、runtime ensure、projection、inbox/outbox、错误关闭 |
+| `node packages/dsh-rayrun-bots/test/host-projection.mjs` | host 资产 SHA-256 manifest、上传/回读校验、缓存、失败关闭 |
+| `node packages/dsh-rayrun-bots/test/cloud-host.mjs` | 云 host：队列、transcript、outbox、恢复、去重、日志脱敏 |
+| `node packages/dsh-rayrun-bots/test/cloud-host-dsh-agent.mjs` | 云 host DSH agent：profile bootstrap、headless JSON、session id、错误脱敏 |
 | `node packages/dsh-rayrun-bots/test/bot-workspace.mjs` | 每 bot 的本地 git checkout：幂等、非 git 失败关闭 |
 | `node packages/dsh-rayrun-bots/test/dependency.mjs` | 依赖检测与 1.1+ detached 版本门 |
 | `node packages/dsh-rayrun-bots/test/approvals.mjs` | 审批协议：schema、canonical hash、TTL、幂等/重放、审计 |
 | `node packages/dsh-rayrun-bots/test/package-contents.mjs` | npm tarball 内容：host/client/locale/lib/bundle 与排除项 |
 | `node tools/update-poc/test/update.mjs` | 更新内核原型：签名、哈希、版本、原子切换、回滚 |
-| `node tools/cloud-host-poc/test/host.mjs` | 云 bot host 原型：队列、transcript、outbox、恢复、去重、日志脱敏 |
-| `node tools/cloud-host-poc/test/dsh-agent.mjs` | 云 bot host DSH agent：profile bootstrap、headless JSON、session id、错误脱敏 |
 | `node tools/rayrun-deploy/test/contract.mjs` | Rayrun 部署契约：main-only、secret 来源、URL 不打印 |
 | `dsh plugin --profile web add <绝对路径>` | 从 checkout 载入 DSH profile；改 client half 后需重启 DSH |
 | `git log --oneline` | 查看提交历史 |

@@ -9,7 +9,7 @@ import {
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { createDshAgent } from '../lib/dsh-agent.mjs'
+import { createDshAgent } from '../cloud-host/lib/dsh-agent.mjs'
 
 const roots = []
 const checks = []

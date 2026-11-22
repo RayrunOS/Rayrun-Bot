@@ -18,6 +18,7 @@ import { createHash, randomUUID } from 'node:crypto'
 import path from 'node:path'
 import { assertBotId } from './bot-schema.js'
 import { ERROR_CODES } from './errors.js'
+import { HOST_ASSET_VERSION, projectHost } from './host-projection.js'
 import { buildPrompt } from './rayrun-runtime.js'
 import { createRayrunRpc, rayrunFailure } from './rayrun-rpc.js'
 import { createRuntimeRpc } from './runtime-rpc.js'
@@ -25,7 +26,6 @@ import { RUNTIME_CONTRACT_VERSION } from './runtime.js'
 
 const TASK_TIMEOUT_SECONDS = 900
 const RUNTIME_MAX_NAME = 64
-const HOST_SCRIPT = '/workspace/.rayrun/bin/host.mjs'
 const HOST_PROFILE = 'bot'
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -76,7 +76,7 @@ export function createCloudHostRuntime({
   getTools,
   fetchImpl = globalThis.fetch,
   supported = true,
-  hostScript = HOST_SCRIPT,
+  hostScript = null,
   profile = HOST_PROFILE,
   credentials = [],
   machine: pinnedMachine,
@@ -121,10 +121,10 @@ export function createCloudHostRuntime({
     throw rayrunFailure(ERROR_CODES.machineStopped, 'The cloud computer did not start in time; no turn was sent.')
   }
 
-  function spec(botId) {
+  function spec(botId, script) {
     const root = `/workspace/.rayrun/bots/${botId}`
     return {
-      argv: ['node', hostScript],
+      argv: ['node', script],
       workdir: '/workspace',
       env: {
         PATH: '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',
@@ -145,12 +145,12 @@ export function createCloudHostRuntime({
     }
   }
 
-  async function ensureHost(machine, botId) {
+  async function ensureHost(machine, botId, script) {
     const ref = machine.name || machine.id
     const name = hostRuntimeName(botId)
     let current = (await runtimeRpc.get(ref, name)).runtime
     if (!current) {
-      await runtimeRpc.put(ref, name, spec(botId))
+      await runtimeRpc.put(ref, name, spec(botId, script))
       current = (await runtimeRpc.get(ref, name)).runtime
     }
     if (current?.state !== 'running') {
@@ -177,7 +177,7 @@ export function createCloudHostRuntime({
     }
   }
 
-  async function writeTask(sandbox, relative, task) {
+  async function writeFile(sandbox, relative, text) {
     const tool = filesTool()
     if (tool === undefined) {
       throw rayrunFailure(ERROR_CODES.runtimeUnavailable, 'dsh-rayrun-computer is missing the rayrun_files tool; no turn was sent.')
@@ -186,7 +186,7 @@ export function createCloudHostRuntime({
       action: 'upload',
       sandbox,
       path: relative,
-      text: JSON.stringify(task),
+      text,
     }, { signal: AbortSignal.timeout(60_000) })
   }
 
@@ -233,18 +233,28 @@ export function createCloudHostRuntime({
     async start({ bot, text, history = [], messageSeq, botId, stateRoot } = {}) {
       if (typeof botId !== 'string' || botId === '') throw rayrunFailure(ERROR_CODES.runtimeUnavailable, 'botId is required.')
       const machine = await ensureMachine()
-      const host = await ensureHost(machine, botId)
+      const sandbox = machine.name || machine.id
+      let script = hostScript
+      if (script === null) {
+        const projected = await projectHost({
+          read: (relative) => readFile(sandbox, relative),
+          write: (relative, value) => writeFile(sandbox, relative, value),
+          version: HOST_ASSET_VERSION,
+        })
+        script = projected.script
+      }
+      const host = await ensureHost(machine, botId, script)
       await waitHostReady(host.ref, botId)
       const taskId = `task-${randomUUID()}`
       const paths = filePaths(botId, taskId)
       const prompt = buildPrompt({ bot, text, history, messageSeq })
       const startedAt = new Date().toISOString()
-      await writeTask(host.ref, paths.inbox, {
+      await writeFile(host.ref, paths.inbox, JSON.stringify({
         schema: 1,
         id: taskId,
         text: prompt,
         at: startedAt,
-      })
+      }))
       return {
         taskId,
         sandbox: machine.name || machine.id,

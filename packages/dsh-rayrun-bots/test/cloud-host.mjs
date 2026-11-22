@@ -9,7 +9,7 @@ import {
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { createCloudHost } from '../lib/host.mjs'
+import { createCloudHost } from '../cloud-host/lib/host.mjs'
 
 const checks = []
 const roots = []

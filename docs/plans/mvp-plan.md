@@ -216,7 +216,7 @@ spike S6 决定。
 `4709ac0`），待部署。C2/C6 应改为向 `/v1/sandboxes/{id}/runtimes` 注册受监督进程
 （`restart=always`、`autostart`、`keep_alive`），不再依赖本地 `exec` watchdog；C1 仍需
 把 host 代码送进镜像。D1 的 session 由 host 自己写 `/workspace`，平台不提供 session
-对象。最小 host 原型已在 `tools/cloud-host-poc/` POC 通过 queue/autostart/SIGKILL，尚未进入核心包。审批隔离
+对象。host 资产已在 `cloud-host/`；projection 路径待页面 E2E。审批隔离
 不在首版；见 [`../08-integration.md`](../08-integration.md) §3.1/§3.3。
 
 ### D. Session（会话）

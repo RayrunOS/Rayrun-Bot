@@ -92,7 +92,7 @@
 5. **Bot↔session 映射。** bot 是持久对象：名字、指令、skills、memory 目录和 session
    id 在机器上。映射必须存在 supervisor 内存之外；平台不提供 session 对象，session
    的 create/continue 由 bot host 在 `/workspace` 内实现。2026-11-22 dev 验证了镜像
-   DSH 0.2.0-rc.2 的 headless `--session-id` 可跨进程续接，host POC 已跑通两轮；
+   DSH 0.2.0-rc.2 的 headless `--session-id` 可跨进程续接，host 资产已跑通两轮；
    核心 host 尚未进入包，生产未部署。
 6. **审批通道。** 受控动作走 DSH 审批 seam → bot runtime 提案 → 本地控制面卡片 →
    决定写回；执行点见 ADR-001。失败即拒绝；浏览器先做，IM 是 v0.2。当前文件邮箱的

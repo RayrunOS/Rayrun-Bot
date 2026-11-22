@@ -14,7 +14,7 @@ const checks = []
 const check = (name, fn) => checks.push({ name, fn })
 const roots = []
 
-function setup({ machineStatus = 'Running', runtime: existing = null, withTool = true } = {}) {
+function setup({ machineStatus = 'Running', runtime: existing = null, withTool = true, project = false } = {}) {
   const root = mkdtempSync(path.join(tmpdir(), 'rayrun-cloud-host-runtime-'))
   roots.push(root)
   const calls = []
@@ -74,7 +74,7 @@ function setup({ machineStatus = 'Running', runtime: existing = null, withTool =
     getTools: () => (withTool ? { get: (name) => (name === 'rayrun_files' ? tool : undefined) } : { get: () => undefined }),
     machine: 'box',
     credentials: ['deepseek-flash'],
-    hostScript: '/workspace/.rayrun/bin/host.mjs',
+    ...(project ? {} : { hostScript: '/workspace/.rayrun/bin/host.mjs' }),
   })
   return { root, runtime, state, calls, uploads, files, machineStatus }
 }
@@ -114,6 +114,14 @@ check('start uploads one task and returns a detached record', async () => {
   assert.equal(spec.env.DSH_BOT_ROOT, `/workspace/.rayrun/bots/${bot.id}`)
   assert.equal(spec.env.BOT_ID, bot.id)
   assert.equal(hostRuntimeName(bot.id), 'bot-host-echo-bot')
+})
+
+check('projects the host assets before starting when no override is set', async () => {
+  const { root, runtime, uploads, state } = setup({ project: true })
+  await runtime.start({ bot, text: 'hello', messageSeq: 1, botId: bot.id, stateRoot: root })
+  const hostUploads = uploads.filter((item) => String(item.path).startsWith('.rayrun/host/'))
+  assert.ok(hostUploads.length >= 4)
+  assert.equal(state.puts[0].spec.argv[1], '/workspace/.rayrun/host/0.1.0-alpha.0/host.mjs')
 })
 
 check('status stays running until the outbox exists, then collect returns the reply', async () => {

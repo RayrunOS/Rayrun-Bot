@@ -21,6 +21,7 @@
     "client.js",
     "cordis.patch.yml",
     "lib/*.js",
+    "cloud-host/**",
     "locale/*.json",
     "icon.svg",
     "README.md",

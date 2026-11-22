@@ -126,7 +126,7 @@ profile 持久化、完整品牌化或 analytics 让 B1 不够时才作为升级
 
 - R-G008 常驻 runtime：平台 runtimes API 已实现并本机 dev 全量验收通过（`rayrun-bot-gaps`，
   `4709ac0`），待生产部署；session 由 bot host 写 `/workspace`，bot 侧
-  host/session 尚未进入核心包（`tools/cloud-host-poc` POC 已通过 queue/autostart/SIGKILL）；
+  host 资产已进包（`cloud-host/`）；projection 路径待页面 E2E；
 - host/agent 权限隔离与 host-only 审批端点（ADR-001：审批执行点）。平台答复
   （2026-11-22）：同沙箱不可行，平台端点非首版；host/agent 分域路径需要本项目新
   ADR；在此之前没有审批执行；

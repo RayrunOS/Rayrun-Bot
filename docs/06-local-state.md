@@ -56,14 +56,25 @@ packages/dsh-rayrun-bots/
 │   ├── local-store.js    # 状态目录、原子写（锁待建）
 │   ├── dependency.js     # 依赖检测、版本检查（能力调用计划）
 │   ├── sessions.js       # 本地 session 队列 + transcript
-│   ├── runtime.js        # 单轮 runtime 契约；默认失败关闭
+│   ├── runtime.js        # 单轮/detached runtime 契约；默认失败关闭
+│   ├── rayrun-rpc.js     # 同源依赖 RPC 调用器
+│   ├── runtime-rpc.js    # 依赖 1.2+ runtime.* client
 │   ├── rayrun-runtime.js # 依赖 rayrun_agent 的 runtime adapter
+│   ├── rayrun-detached-runtime.js # dsh.start/status/result adapter
+│   ├── cloud-host-runtime.js # 常驻 host adapter（runtime.* + rayrun_files）
+│   ├── host-projection.js # host 资产 SHA-256 manifest/上传/校验
+│   ├── bot-workspace.js  # 每 bot 本地 git checkout
 │   ├── queue.js          # 本地队列视图（计划）
 │   ├── approvals.js      # 审批 request/decision、action hash、TTL、审计
 │   ├── setup.js          # onboarding 状态（计划）
 │   ├── cost.js           # 余额/机器小时（计划）
 │   ├── errors.js         # 稳定错误码
 │   └── log.js            # 脱敏 JSONL 日志（计划）
+├── cloud-host/
+│   ├── host.mjs          # 随包交付的云 host 入口（projection 到机器）
+│   └── lib/
+│       ├── host.mjs      # queue/transcript/outbox/session id
+│       └── dsh-agent.mjs # headless DSH + --session-id
 ├── test/
 │   └── *.mjs             # 纯 Node 测试
 └── client/               # 仅当 C-S1 证明相对模块加载可行
@@ -72,7 +83,7 @@ packages/dsh-rayrun-bots/
 规则：
 
 - `package.json` 的 `files` 必须包含 `index.js`、`client.js`、`cordis.patch.yml`、
-  `lib/*.js`、`locale/*.json` 和 `README.md`；漏一个 host 模块就是坏安装。
+  `lib/*.js`、`cloud-host/**`、`locale/*.json` 和 `README.md`；漏一个 host 模块就是坏安装。
 - `client.js` 在 v0.1 是**单文件**；DSH 以 client module 加载，无构建步骤。只有
   C-S1 证明相对 import 可用后，才拆 `client/`。
 - 依赖方向单向：`index.js` → `lib/*`；`client.js` 自包含；`lib/` 不 import client。

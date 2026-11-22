@@ -157,7 +157,6 @@ patch、`lib/*.js`、图标、README 和 LICENSE；CI 会把打出的 tarball �
   config:
     cloudHost:
       enabled: true
-      hostScript: /workspace/.rayrun/bin/host.mjs
       credentials: ['deepseek-flash']
       profile: bot
 ```
@@ -165,16 +164,19 @@ patch、`lib/*.js`、图标、README 和 LICENSE；CI 会把打出的 tarball �
 | 键 | 默认 | 含义 |
 | --- | --- | --- |
 | `enabled` | 未启用 | 启用后使用常驻 host adapter；`false` 回退 per-turn detached/agent |
-| `hostScript` | `/workspace/.rayrun/bin/host.mjs` | 机器上的 host 入口；目前需手工/镜像提供 |
+| `hostScript` | 无（自动 projection） | 覆盖投影后的 host 入口；正常不需要设置 |
 | `credentials` | `[]` | 传给 runtime spec 的沙箱凭证**名**，不是值 |
 | `profile` | `bot` | host 内 DSH 使用的 profile，由 host 从 headless 模板创建 |
 | `machine` | 自动选择 | 固定机器名/id；仍要求机器已存在 |
 
-要求依赖 1.2+（`runtime.*`）和 `rayrun_files` 工具；host 入口目前来自
-`tools/cloud-host-poc`（POC，不随包发布）。adapter 先解析已有机器，机器不存在时
-拒绝；由于 `rayrun_files` 会按依赖的 `autoCreate` 处理缺失机器，Bots 用 profile
-建议把云电脑行设为 `autoCreate: false`。每个 bot 一个 `bot-host-<botId>` runtime；
-2026-11-23 页面 E2E 已通过（`HOST_E2E_OK`）；尚未做多 bot 单 host 或镜像交付。状态以 [`12-status.md`](12-status.md) 为准。
+要求依赖 1.2+（`runtime.*`）和 `rayrun_files` 工具。host 资产随本包发布在
+`cloud-host/`；adapter 启动前用 `lib/host-projection.js` 上传到
+`/workspace/.rayrun/host/<package version>/`，校验 SHA-256 manifest，再注册 runtime。
+adapter 先解析已有机器，机器不存在时拒绝；由于 `rayrun_files` 会按依赖的
+`autoCreate` 处理缺失机器，Bots 用 profile 建议把云电脑行设为 `autoCreate: false`。
+每个 bot 一个 `bot-host-<botId>` runtime；2026-11-23 手动机器路径的页面 E2E 已通过
+（`HOST_E2E_OK`）；projection 路径的页面 E2E 待补；多 bot 单 host 与生产镜像未做。
+状态以 [`12-status.md`](12-status.md) 为准。
 
 **永远不要把 Rayrun token 或模型 key 写进会提交的配置文件。**
 
