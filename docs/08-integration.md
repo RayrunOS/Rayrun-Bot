@@ -284,7 +284,7 @@ SSO/SAML/SCIM、组织 RBAC、审计导出/SIEM、DPA 与数据驻留、marketpl
 
 | 需求 | 需要时间 | 今天阻塞发布？ |
 | --- | --- | --- |
-| 1. session + 常驻 runtime 契约 | v0.1 | 平台侧已实现并本机 dev 全量验收；待生产部署；bot 侧 host/session 未实现 |
+| 1. session + 常驻 runtime 契约 | v0.1 | 平台侧已实现并本机 dev 全量验收；待生产部署；bot 侧 host/session 已有 dev 预览（多 bot live E2E 通过），生产镜像未交付 |
 | 2. 余额宽限 / 护栏 | v0.1 | 风险接受并警告 |
 | host/agent 权限隔离 + 审批端点（§3.3） | v0.1 | 是（ADR-001；平台提供前审批不实现） |
 | 3. 文件通道语义 | v0.1 | 否（有 workaround） |

@@ -12,12 +12,13 @@ Pre-alpha。没有可发布版本。本项目依赖的云电脑插件
 [`RayrunOS/dsh-rayrun-computer`](https://github.com/RayrunOS/dsh-rayrun-computer)
 是独立、可用的项目；本仓库的 bot 层已有可加载的插件壳、持久化本地名册、本地
 session/transcript，以及按轮次的 runtime（依赖 1.1+ 用 detached
-`dsh.start/status/result`，1.0.x 用 `rayrun_agent`），但没有常驻云端 bot host
-（supervisor/boot hook）、bot↔云端 session 映射、审批执行、会运行的 routines 和
-发布路径。平台侧 R-G008 runtimes API 已实现并本机 dev 全量验收通过
+`dsh.start/status/result`，1.0.x 用 `rayrun_agent`）；常驻云端 bot host 已有预览实现
+（runtimes + projection + 每 bot session 映射），但仍没有审批执行、会运行的 routines
+和发布路径。平台侧 R-G008 runtimes API 已实现并本机 dev 全量验收通过
 （`rayrun-bot-gaps`，`4709ac0`，2026-11-22），但生产未部署；bot 侧常驻 host 的本地
 transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；host 资产已随包
-发布（`cloud-host/`），projection 页面 E2E 已通过（2026-11-23）；镜像与生产交付未做。
+发布（`cloud-host/`），projection 页面 E2E 已通过，多 bot 单 host 页面 E2E 也已通过
+（2026-11-23）；镜像与生产交付未做。
 
 ## 2. 依赖项目今天可用
 
@@ -40,11 +41,11 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
 | Bots 表面 | Client half 打开即进入 Bots，渲染 v0.1 壳：聊天列表、对话、详情、新建 bot、设置向导、设置页；中英双语，以中文为主并跟随 DSH 语言。 |
 | 对话与审批 | 客户端对话对真实名册 bot 读取并发送 `session.send/history/status`；示例 bot 仍走页内预览。审批卡和设置仍是**页内内存预览**，Deny / Allow once 不会发给 worker。 |
 | 本地名册 | Host half 持久化已校验的 bot 名册到 `$DSH_HOME/state/rayrun-bot/`，原子写入；聊天列表有名册时读取真实名册，新建 bot 会写回 host。 |
-| Session 与 transcript | Host half 持久化每 bot 的 `session.json` + `transcript.jsonl`，提供 `session.send/history/status`；队列单飞、失败脱敏、host 重启后普通 running turn 标为 interrupted。依赖 1.1+ 时使用 detached `dsh.start/status/result`：每 turn 一个 task id、每 bot 一个本地 git checkout、`reply.md` 收取，task id 持久化，host 重启后恢复 poll；页面关闭 + 本地 DSH 重启后继续，以及机器 stop/start 后的第二轮续接（A8），已在本机 DSH + 已有 Rayrun 机器验证（2026-11-22）；1.0.x 回退单轮 `rayrun_agent`。没有常驻云端 bot host。单轮真实一轮已在本机 DSH + 已有 Rayrun 机器验证（2026-11-22）；示例 bot 仍是预览。 |
+| Session 与 transcript | Host half 持久化每 bot 的 `session.json` + `transcript.jsonl`，提供 `session.send/history/status`；队列单飞、失败脱敏、host 重启后普通 running turn 标为 interrupted。依赖 1.1+ 时使用 detached `dsh.start/status/result`：每 turn 一个 task id、每 bot 一个本地 git checkout、`reply.md` 收取，task id 持久化，host 重启后恢复 poll；页面关闭 + 本地 DSH 重启后继续，以及机器 stop/start 后的第二轮续接（A8），已在本机 DSH + 已有 Rayrun 机器验证（2026-11-22）；1.0.x 回退单轮 `rayrun_agent`。常驻 `cloudHost` host 是预览、默认关闭；2026-11-23 多 bot 单 host 页面 E2E 已通过，生产镜像/部署未交付。单轮真实一轮已在本机 DSH + 已有 Rayrun 机器验证（2026-11-22）；示例 bot 仍是预览。 |
 | setup | Rayrun 步骤经云电脑插件的同源 RPC 接收粘贴的 token；云电脑步骤采用已有机器或经同一 RPC 创建第一台机器。 |
 | 电脑卡片 | Open / Take over 经同一 RPC 启动或恢复机器、等待 `Running`、修复桌面服务并打开 `desktop_url`；Stop 在确认后停止，永不 destroy。 |
 | 用量 | 详情面板的电脑块和用量块，以及 Settings 的用量行，读取真实机器状态、余额与机时。 |
-| 测试 | Host/client 名册接线、session/transcript、`rayrun_agent`/detached adapter、per-bot workspace 与审批协议由普通 Node 契约测试覆盖；客户端 session 失败路径、单轮真实一轮、页面关闭 + host 重启后的 detached 收取，以及机器 stop/start 后的第二轮续接另有本机页面 smoke。包清单、locale、RPC、客户端、名册、session、runtime、workspace、审批和 tarball 内容都有检查；cloud host 7 项、DSH agent 4 项、host projection 5 项、runtime.* client 5 项、cloud host runtime adapter 8 项纯 Node 检查，runtime.* client 与 cloud host 另有 dev live 联调，cloudHost adapter 另有页面 E2E（手动与自动 projection）。 |
+| 测试 | Host/client 名册接线、session/transcript、`rayrun_agent`/detached adapter、per-bot workspace 与审批协议由普通 Node 契约测试覆盖；客户端 session 失败路径、单轮真实一轮、页面关闭 + host 重启后的 detached 收取，以及机器 stop/start 后的第二轮续接另有本机页面 smoke。包清单、locale、RPC、客户端、名册、session、runtime、workspace、审批和 tarball 内容都有检查；cloud host 7 项、DSH agent 4 项、host projection 5 项、runtime.* client 5 项、cloud host runtime adapter 8 项纯 Node 检查，runtime.* client 与 cloud host 另有 dev live 联调，cloudHost adapter 另有页面 E2E（手动、自动 projection 与多 bot 单 host）。 |
 | 远程审批 | 协议后端（request/decision schema、canonical actionHash、TTL、幂等/重放/错 bot 负向测试、审计、`approvals.list/get/decide`）已实现；**执行仍暂停**，等待平台权限隔离与 host-only 审批端点（ADR-001，2026-11-21 定），`decide` 只返回 `execution.available: false`。客户端审批卡仍是预览；`rayrun_agent` adapter 不拦截外部动作，prompt 指引不是安全边界。 |
 | 发布 | 没有可发布版本；npm 发布路径不存在。 |
 
@@ -87,7 +88,10 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
   `session.*`；fake 测试 8/8（机器 start/resume、runtime 复用、projection、并发 bot 共享 setup、无机器/无文件工具失败
   关闭）。多 bot host 单进程/全局串行队列/每 bot session 的 fake 测试 7/7；此前页面
   E2E 用 per-bot runtime（`bot-host-cloud-host`）通过 `HOST_E2E_OK`；多 bot 单 host
-  的 live 页面 E2E 待补。host
+  的 dev live 页面 E2E 已于 2026-11-23 通过：受 scoped token（仅见私有
+  `deepseek-flash`，`/tokens` 403）显式创建的 `rayrun-bot-scoped` 上，两个 bot 共用
+  唯一 `bot-host`（pid 636），分别回复 `MULTI_A_OK`/`MULTI_B_OK`，host state 中
+  session id 不同、queueDepth 0。host
   资产已随包发布；projection 页面 E2E 已通过（2026-11-23）。
 - 依赖 1.2.0 的 `runtime.*` host RPC 已合入 main（`fe965c1`，CI
   45041519563 在 Node 22/24 全绿；未发布 npm）：`runtime.put/list/get/start/stop/restart/delete`，sandbox 必须已存在，
@@ -112,15 +116,14 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
 - 页面层云电脑创建按钮的补验。
 - 真实失败与恢复的 Rayrun 验证（失败路径已有本机 smoke）；同一 host 不重启的连续
   两轮未单独测试。
-- 常驻云端 bot runtime 与 bot↔云端 session 映射：平台 R-G008 runtimes API 已实现并
-  本机 dev 全量验收通过（`rayrun-bot-gaps`，`4709ac0`，2026-11-22：runtime 启动、凭证
-  注入、sandbox stop/start autostart、SIGKILL 重启、删除；keep_alive 与 daemon 重启
-  保留；旧镜像 `ci@1` 负测 409 `guestd_outdated`）；生产未部署；本地 transport
-  adapter（`lib/cloud-host-runtime.js`）已在包内预览并通过页面 E2E；host 资产已随包
-  发布，projection 页面 E2E 已通过（2026-11-23）；镜像/生产交付未做。依赖 1.2.0 `runtime.*` client
-  （`lib/runtime-rpc.js`）已过 fake 测试和 dev live 联调，并已接 cloud host
-  adapter；adapter 页面 E2E 已通过。镜像/生产尚未交付。生产部署需授权。
-- 机器上常驻的 DSH host。
+- 常驻云端 bot runtime 的生产镜像与部署：平台 R-G008 runtimes API 已实现并本机 dev
+  全量验收通过（`rayrun-bot-gaps`，`4709ac0`，2026-11-22：runtime 启动、凭证注入、
+  sandbox stop/start autostart、SIGKILL 重启、删除；keep_alive 与 daemon 重启保留；
+  旧镜像 `ci@1` 负测 409 `guestd_outdated`）；本地 transport adapter
+  （`lib/cloud-host-runtime.js`）、随包 host 资产、自动 projection 与多 bot 单 host
+  已在 dev 页面 E2E 通过（2026-11-23）；生产未部署，镜像/生产交付未做。依赖 1.2.0
+  `runtime.*` client（`lib/runtime-rpc.js`）已过 fake 测试和 dev live 联调。生产部署
+  需授权。
 - 能拦住 worker 的远程审批执行（协议后端已有；执行阻塞于 Rayrun host/agent
   权限隔离；ADR-001）。
 - 真正会运行的 routines 与触发器。
@@ -141,7 +144,8 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
   沙箱内不可行；平台端点为非首版（设计 1 周 + 实现 2–4 周）。可选的 host/agent 分域
   路径需要本项目新 ADR；在那之前审批执行保持关闭。
 - R-G008 常驻 runtime：平台实现本机 dev 全量验收通过（`rayrun-bot-gaps`，`4709ac0`），
-  旧镜像 409 已验证；待生产部署；bot 侧 host/session 未实现。
+  旧镜像 409 已验证；待生产部署；bot 侧 host/session 已在 dev 预览实现并通过多 bot
+  live E2E（2026-11-23），生产镜像未交付。
 - 安全入向网络（今天 token ingress 不可用，只有 `public` 可用）。
 - 空闲自动停机、spend cap、动态调整资源、运行期 egress 更新。
 

@@ -281,6 +281,18 @@
   上传到 `/workspace/.rayrun/host/0.1.0-alpha.0/`，校验 SHA-256 manifest 后注册
   `bot-host-cloud-host-proj`（running，pid 634）；DSH 回复 `HOST_E2E_OK`；session
   `idle`。测试后 runtime 删除、机器 stop，未 destroy；dev token 已撤销。
+- 多 bot 单 host + scoped token/private credential 页面 E2E（2026-11-23，本机 DSH
+  `0.2.2-rc.5`，依赖 main `fe965c1`，Bots `0.1.0-alpha.0` 自动 projection，dev）：
+  用 scoped token（`/credentials` 只返回私有 `deepseek-flash`，`/tokens` 返回 403
+  `insufficient_scope`）显式创建并固定 `rayrun-bot-scoped`
+  （`01a20410-12f3-7004-9e7d-5cf7e6563e5b`，`dsh-bot-devcheck@1`，绑定
+  `deepseek-flash`）；未让 bot adapter 自动创建机器。页面创建 `multi-a`/`multi-b`
+  并同时发送；adapter 只注册一个 `bot-host`（running，pid 636），host 全局串行、
+  每 bot 独立 DSH session；回复 `MULTI_A_OK`/`MULTI_B_OK`，host state 中两个
+  session id 不同（`session-5a9f7837-…`/`session-5eb77773-…`），queueDepth 0、
+  processed 2。测试后 runtime 删除、机器 stop（Stopped，runtimes 空），未 destroy；
+  scoped token 已撤销（旧 token 401），临时 token 文件已清理；`rayrun-bot-scoped`
+  保持 Stopped，销毁需用户明确授权。
 - 打包产物安装（2026-11-22，本机 DSH `0.2.2-rc.5`；本地打包检查）：`npm pack` 生成
   15 个文件的 tarball（host/client、locale、`lib/*.js`、bundle patch、icon、README、
   LICENSE；54.6 kB），`test/`、`docs/`、`tools/` 未进入；`dsh plugin --profile

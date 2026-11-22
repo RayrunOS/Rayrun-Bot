@@ -386,7 +386,8 @@ tombstone，action hash 的 canonicalization 未定义；见 ADR-011/012。
   平台答复（2026-11-22）：同沙箱内不可行，平台端点设计 1 周 + 实现 2–4 周、非首版；
   可选的 host/agent 分域路径需要本项目新 ADR。平台提供前不实现审批执行；
 - R-G008 常驻 runtime：平台 runtimes API 已实现并本机 dev 全量验收通过（`rayrun-bot-gaps`，
-  `4709ac0`），待生产部署；bot 侧 host/session 未实现；
+  `4709ac0`），待生产部署；bot 侧 host/session 已在 dev 预览实现并通过多 bot live
+  E2E（2026-11-23），生产镜像未交付；
 - 余额宽限与 spend 护栏：余额耗尽今天会 force-destroy 机器和磁盘；
 - 安全的入站网络：token ingress 不可用，只有 `public`；
 - idle auto-stop 或 wake-on-request；

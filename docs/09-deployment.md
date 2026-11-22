@@ -87,14 +87,17 @@ roster 和每 bot 的 `session.json` / `transcript.jsonl` 已持久化，host ha
 依赖 1.1+ 时，adapter 用 detached `dsh.start/status/result` 把一轮 turn 发给已有的
 云电脑（没有机器时拒绝自动创建）；1.0.x 回退单轮 `rayrun_agent`；两者都不可用时
 `session.send` 返回 `E_RUNTIME_UNAVAILABLE`。依赖 1.2+ 另有 host-side `runtime.*`
-client（`lib/runtime-rpc.js`），供常驻 bot host 使用，尚未接入 session path。发送一轮会让依赖启动已停止/暂停的机器，
+client（`lib/runtime-rpc.js`），cloudHost 预览用它在机器上注册常驻 `bot-host`；
+默认关闭，启用后 `session.*` 走该 adapter（多 bot 单 host 已 dev E2E 通过），未启用
+时仍走 detached/agent。发送一轮会让依赖启动已停止/暂停的机器，
 可能产生机时费用。真实一轮（单轮 adapter）、detached 的页面关闭 + 本地 DSH 重启后
 继续，以及机器 stop/start 后的第二轮续接（A8），已在本机页面 + 已有 Rayrun 机器验证
 （2026-11-22）。host half 还提供
 `approvals.list/get/decide`；协议只记录请求/决定与审计，`decide` 返回
 `execution.available:false`，不执行动作，审批卡仍是页内预览。setup 的 Rayrun/电脑
-步骤，以及详情和 Settings 的用量读取，会真正调用云电脑插件。bot↔云端 session
-映射、审批执行、routines 与独立成本栏尚未构建（审批执行等待平台权限隔离，
+步骤，以及详情和 Settings 的用量读取，会真正调用云电脑插件。常驻 host 的
+bot↔云端 session 映射已有 dev 预览（多 bot 单 host E2E 通过），但生产镜像/部署未
+交付；审批执行、routines 与独立成本栏尚未构建（审批执行等待平台权限隔离，
 ADR-001）；`rayrun_agent` adapter 不拦截外部动作，prompt 里的“先询问”只是指引。
 状态以 [`12-status.md`](12-status.md) 为准。
 
@@ -175,7 +178,8 @@ patch、`lib/*.js`、图标、README 和 LICENSE；CI 会把打出的 tarball �
 adapter 先解析已有机器，机器不存在时拒绝；由于 `rayrun_files` 会按依赖的
 `autoCreate` 处理缺失机器，Bots 用 profile 建议把云电脑行设为 `autoCreate: false`。
 一台机器一个 `bot-host` runtime，内部是全局串行队列，每个 bot 独立 transcript/session；2026-11-23 手动机器路径的页面 E2E 已通过
-（`HOST_E2E_OK`）；自动 projection 页面 E2E 也已通过（2026-11-23）；多 bot 单 host 与生产镜像未做。
+（`HOST_E2E_OK`）；自动 projection 页面 E2E 也已通过；多 bot 单 host 的页面 E2E 已通过
+（`MULTI_A_OK`/`MULTI_B_OK`，两个独立 session）；生产镜像未做。
 状态以 [`12-status.md`](12-status.md) 为准。
 
 **永远不要把 Rayrun token 或模型 key 写进会提交的配置文件。**

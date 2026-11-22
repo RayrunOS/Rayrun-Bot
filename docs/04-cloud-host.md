@@ -143,14 +143,16 @@ DSH agent sessions（bot）
 
 ## 4. Session 与 profile
 
-- **映射**：`botId → sessionId → profileDir`，持久化在机器上；host 重启后重读。
-- **续接**：第二次对话接着第一次；平台是否支持按 id 创建/续接 session 未验证。
+- **映射**：`botId → sessionId`，DSH profile 共享；session id 持久化在机器上，host
+  重启后重读。
+- **续接**：第二次对话接着第一次；DSH headless 的 `--session-id` 已在 dev 镜像
+  验证（2026-11-22）。
 - **回退**：逐次 headless + transcript replay；更慢、更贵，且可能丢掉工具状态；
   必须在 UI 和文档里说明降级。
 - ** transcript**：D3 计划写 `sessions/*.jsonl`，脱敏；本地镜像默认只存元数据，不存
   完整对话（[`06-local-state.md`](06-local-state.md)）。
-- **多 bot**：共享机器，串行执行；一个 bot 的长任务会阻塞其他 bot。公平性、超时和
-  取消尚未定义（ADR-012）。
+- **多 bot**：共享机器，全局串行 + round-robin；一个 bot 的长任务会阻塞其他 bot。
+  host 侧任务超时和取消尚未定义（ADR-012）。
 
 ---
 

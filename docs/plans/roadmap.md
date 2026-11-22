@@ -1,10 +1,11 @@
 # 路线图
 
-*状态：2026-11-22。Pre-alpha。两个独立项目：云电脑插件
+*状态：2026-11-23。Pre-alpha。两个独立项目：云电脑插件
 `RayrunOS/dsh-rayrun-computer` 保持独立，并作为依赖被消费。下面的里程碑来自塑造本
 仓库的产品调研；它们是方向，不是承诺。v0.1 客户端壳、health 路由、持久化本地名册
 和按轮次的 runtime（依赖 1.1+ 用 detached，1.0.x 用单轮 `rayrun_agent`）已经存在；
-常驻云端 runtime、bot↔云端 session 映射、远程审批和 routines 尚未构建。实现状态以
+常驻云端 runtime 与 bot↔云端 session 映射已有 dev 预览（多 bot 单 host E2E 通过），
+远程审批执行和 routines 尚未构建，生产镜像/部署未交付。实现状态以
 [12-status.md](../12-status.md) 为准。日期刻意省略。*
 
 ## 我们在哪（M0 — bootstrap）
