@@ -49,7 +49,7 @@
 | `exec` | 启动 runtime、watchdog、健康检查 | 超时/退出码/输出上限 |
 | 文件 read/write/list | 队列、审批、outbox、镜像 | 原子写/ETag/分页/大小上限 |
 | agent prompt + SSE | 发任务、流式回复 | session id、取消、`409 sandbox_busy` |
-| session create/continue | bot 续接 | 平台不提供 session 对象；bot host 自己写 `/workspace`（R-G008 已实现，待部署） |
+| session create/continue | bot 续接 | 平台不提供 session 对象；bot host 自己写 `/workspace`（R-G008 已实现并本机 dev 正测通过，待生产部署） |
 | credential 注入状态 | 确认模型 key 已注入 | runtime boot 时注入；runtime restart 不刷新，轮换需 sandbox stop→start（ADR-007） |
 | balance/usage | 成本栏 | 余额、机器小时；per-sandbox 是 beta |
 | worker projection | 把 bot runtime ship 到机器并启动 | 扩展点、hash、启动/重启 |
@@ -81,7 +81,7 @@ adapter 放在我们的包里，不改依赖。
 没有它时的回退：逐次 headless + transcript replay（更慢、更贵），以及本地 watchdog
 通过 `exec` 重启 host。
 
-**Rayrun 答复（2026-11-22）。** 平台侧 R-G008 已实现并有本机验收（`rayrun` 仓库
+**Rayrun 答复（2026-11-22）。** 平台侧 R-G008 已实现并本机 dev 正测通过（`rayrun` 仓库
 `rayrun-bot-gaps`，`4709ac0`），**生产尚未部署**，现在不能在 `api.rayrunos.com`
 使用。初步支持的契约：
 
@@ -102,8 +102,14 @@ adapter 放在我们的包里，不改依赖。
 - 验收：PUT 后 Running；sandbox stop→start 后 runtime 自动 Running、session 文件还在；
   kill runtime 后按 restart 策略回来；凭证 env 注入但日志无明文；`keep_alive` 不被
   idle 停；旧镜像 409；daemon 重启后 GET 仍 Running。
-- 前提与时间：部署到 bot 测试环境 + 联合验收约 2–3 天，需我方授权；bot 侧 host/session
-  实现是本仓库的工作量。
+- 2026-11-22 本机 dev 正测（dev daemon HEAD `648f6c5`，测试机 `rayrun-bot`，镜像
+  `dsh-bot-devcheck@1`/guestd 0.6.0）：PUT runtime 后 Running；runtime 内
+  `DEEPSEEK_API_KEY` 存在（heartbeat `credential=set`，未打印值）；sandbox
+  stop→start 后 autostart；`kill -9` 后重启、restarts=1；DELETE 后清空。测试后机器
+  stop，未 destroy。旧镜像负测：`rayrun-bot-old`（`ci@1`，guestd 0.5.0）GET
+  `/runtimes` → 200 `{"runtimes":[]}`，PUT → 409 `{"error":"guestd_outdated"}`。
+- 前提与时间：生产部署 + 联合验收约 2–3 天，需我方授权；bot 侧 host/session 实现是
+  本仓库的工作量。
 
 审批隔离不在这个初步支持范围内，见 §3.3。
 
@@ -264,7 +270,7 @@ SSO/SAML/SCIM、组织 RBAC、审计导出/SIEM、DPA 与数据驻留、marketpl
 
 | 需求 | 需要时间 | 今天阻塞发布？ |
 | --- | --- | --- |
-| 1. session + 常驻 runtime 契约 | v0.1 | 平台侧已实现（待部署）；bot 侧 host/session 未实现 |
+| 1. session + 常驻 runtime 契约 | v0.1 | 平台侧已实现并本机 dev 正测；待生产部署；bot 侧 host/session 未实现 |
 | 2. 余额宽限 / 护栏 | v0.1 | 风险接受并警告 |
 | host/agent 权限隔离 + 审批端点（§3.3） | v0.1 | 是（ADR-001；平台提供前审批不实现） |
 | 3. 文件通道语义 | v0.1 | 否（有 workaround） |

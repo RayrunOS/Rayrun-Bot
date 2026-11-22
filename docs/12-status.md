@@ -14,8 +14,9 @@ Pre-alpha。没有可发布版本。本项目依赖的云电脑插件
 session/transcript，以及按轮次的 runtime（依赖 1.1+ 用 detached
 `dsh.start/status/result`，1.0.x 用 `rayrun_agent`），但没有常驻云端 bot host
 （supervisor/boot hook）、bot↔云端 session 映射、审批执行、会运行的 routines 和
-发布路径。平台侧 R-G008 runtimes API 已实现并有本机验收
-（`rayrun-bot-gaps`，`4709ac0`），但生产未部署；bot 侧 host/session 尚未构建。
+发布路径。平台侧 R-G008 runtimes API 已实现并本机 dev 正测通过
+（`rayrun-bot-gaps`，`4709ac0`，2026-11-22），但生产未部署；bot 侧 host/session
+尚未构建。
 
 ## 2. 依赖项目今天可用
 
@@ -87,9 +88,11 @@ session/transcript，以及按轮次的 runtime（依赖 1.1+ 用 detached
 - 页面层云电脑创建按钮的补验。
 - 真实失败与恢复的 Rayrun 验证（失败路径已有本机 smoke）；同一 host 不重启的连续
   两轮未单独测试。
-- 常驻云端 bot runtime 与 bot↔云端 session 映射：平台 R-G008 runtimes API 已实现并有
-  本机验收（`rayrun-bot-gaps`，`4709ac0`），生产未部署；bot 侧 supervisor/session
-  尚未构建。部署到 bot 测试环境需授权。
+- 常驻云端 bot runtime 与 bot↔云端 session 映射：平台 R-G008 runtimes API 已实现并
+  本机 dev 正测通过（`rayrun-bot-gaps`，`4709ac0`，2026-11-22：runtime 启动、凭证
+  注入、sandbox stop/start autostart、SIGKILL 重启、删除；旧镜像 `ci@1` 负测 409
+  `guestd_outdated`）；生产未部署；bot 侧 supervisor/session 尚未构建。生产部署需
+  授权。
 - 机器上常驻的 DSH host。
 - 能拦住 worker 的远程审批执行（协议后端已有；执行阻塞于 Rayrun host/agent
   权限隔离；ADR-001）。
@@ -110,8 +113,8 @@ session/transcript，以及按轮次的 runtime（依赖 1.1+ 用 detached
 - host/agent 权限隔离与 host-only 审批端点（ADR-001）。平台答复（2026-11-22）：同
   沙箱内不可行；平台端点为非首版（设计 1 周 + 实现 2–4 周）。可选的 host/agent 分域
   路径需要本项目新 ADR；在那之前审批执行保持关闭。
-- R-G008 常驻 runtime：平台实现已就绪（`rayrun-bot-gaps`，`4709ac0`），待部署到测试
-  环境；bot 侧 host/session 未实现。
+- R-G008 常驻 runtime：平台实现本机 dev 正测通过（`rayrun-bot-gaps`，`4709ac0`），
+  旧镜像 409 已验证；待生产部署；bot 侧 host/session 未实现。
 - 安全入向网络（今天 token ingress 不可用，只有 `public` 可用）。
 - 空闲自动停机、spend cap、动态调整资源、运行期 egress 更新。
 

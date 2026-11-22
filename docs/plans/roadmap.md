@@ -33,7 +33,7 @@
 - **Bot 名册与 bot↔session 映射。** Bot 有名字、指令、技能、记忆目录和持久 session；
   映射在 DSH 重启后仍然存在，而不是住在 host 内存里。
 - **机器上的常驻 DSH host。** 把“每个 prompt 跑一次 `headless`”换成受监督的 host，
-  让 bot 在笔记本合上后继续工作。平台 R-G008 runtimes API 已实现（待部署）；用它
+  让 bot 在笔记本合上后继续工作。平台 R-G008 runtimes API 已实现并本机 dev 正测通过（待生产部署）；用它
   跑通常驻 host、并把 session 写进 `/workspace` 是第一个 spike。
 - **Fail-closed 审批。** DSH 审批 seam → host half → 浏览器卡片 → 决定写回。超时、
   未知或面板关闭都算拒绝。执行等待平台 host/agent 隔离（ADR-001）；在那之前，文件
@@ -124,8 +124,8 @@ profile 持久化、完整品牌化或 analytics 让 B1 不够时才作为升级
 有些项取决于平台，而不是本仓库。第一项已有平台实现、待部署；第二项仍待决策/平台
 端点；其余是 v0.2/beta：
 
-- R-G008 常驻 runtime：平台 runtimes API 已实现并有本机验收（`rayrun-bot-gaps`，
-  `4709ac0`），待部署到测试环境；session 由 bot host 写 `/workspace`，bot 侧
+- R-G008 常驻 runtime：平台 runtimes API 已实现并本机 dev 正测通过（`rayrun-bot-gaps`，
+  `4709ac0`），待生产部署；session 由 bot host 写 `/workspace`，bot 侧
   host/session 尚未实现；
 - host/agent 权限隔离与 host-only 审批端点（ADR-001：审批执行点）。平台答复
   （2026-11-22）：同沙箱不可行，平台端点非首版；host/agent 分域路径需要本项目新
