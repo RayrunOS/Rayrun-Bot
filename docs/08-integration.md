@@ -202,8 +202,9 @@ PATCH /v1/sandboxes/{id}
 - **机器生命周期事件**：started/stopped/failed、低余额；webhook 或 SSE。
 - **Per-sandbox usage**：按沙箱的 `vm_hours`/egress 时间序列，支持 per-bot 成本。
 - **Prompt queue**：平台侧排队，替代 `409 sandbox_busy`，让多个 bot 优雅串行。
-- **Golden image 与 DSH 版本**：官方镜像带当前 DSH（镜像为 `0.2.0-rc.2`，本地基线
-  `0.2.2-rc.1`），文档化版本矩阵，可选镜像构建/固定。
+- **Golden image 与 DSH 版本**：官方镜像带当前 DSH（镜像为 `0.2.0-rc.2`，本地页面
+  验证基线为 `0.2.2-rc.5`），文档化版本矩阵（[`version-matrix.md`](version-matrix.md)），
+  可选镜像构建/固定。
 
 ---
 

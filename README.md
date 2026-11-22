@@ -41,7 +41,7 @@ A few design choices that follow from that picture:
 
 **Requirements**
 
-- DeepSeek Harness — the desktop app or `dsh web`. The cloud-computer plugin was verified on `0.2.1-rc.5`; re-verification against `0.2.2-rc.1` is in progress.
+- DeepSeek Harness — the desktop app or `dsh web`. The cloud-computer plugin was verified on `0.2.1-rc.5`; page-level and image combinations on `0.2.2-rc.5` and `0.2.0-rc.2` are recorded in [docs/version-matrix.md](docs/version-matrix.md).
 - The separate cloud-computer plugin (`dsh-rayrun-computer`, MIT) — required at runtime; install it from a checkout until it is on npm.
 - A Rayrun account from [rayrunos.com](https://rayrunos.com/).
 - A DeepSeek API key.
@@ -147,7 +147,7 @@ dsh plugin --profile web add /absolute/path/to/package
 
 | | |
 | --- | --- |
-| **Works today** (separate project, our dependency) | Seven `rayrun_*` tools, noVNC desktop, per-session cloud/local routing, hash-verified workspace sync, task delegation, worker projection, optional idle stop. Verified on DeepSeek Harness `0.2.1-rc.5`. |
+| **Works today** (separate project, our dependency) | Seven `rayrun_*` tools, noVNC desktop, per-session cloud/local routing, hash-verified workspace sync, task delegation, worker projection, optional idle stop. Verified on DeepSeek Harness `0.2.1-rc.5`; additional combinations are in the [version matrix](docs/version-matrix.md). |
 | **This repository** | README, docs, issue and PR templates, agent rules, the dependency boundary, and `dsh-rayrun-bots`: a health route, a persisted local bot roster (`bots.*` RPC with atomic `bot.json` writes), and the v0.1 client shell (five screens, roster-backed chat list, in-memory conversation preview, same-origin host status, setup Rayrun token bridge, setup computer creation, and Open / Take over through the cloud-computer plugin RPC), with plain-Node checks (including tarball contents), a checks-first CI workflow (Node 24/26 plus a DSH profile-install smoke from both the checkout and the packed tarball), a [version matrix](docs/version-matrix.md), and an opt-in main-only Rayrun deploy job. No cloud bot runtime and no publishable release yet. |
 | **Not built yet** | Page-level computer-creation verification, bot↔session mapping, a persistent DSH host on the machine, remote approvals that gate a worker (blocked on Rayrun host/agent isolation; ADR-001), routines that actually run, per-bot spend attribution, IM channel, the two-plugin install path (dependency declaration and version check), npm packages and the release/publish CI path. |
 | **Platform gaps** | Host/agent permission isolation and a host-only approval endpoint (ADR-001), safe inbound networking (today the token ingress is unusable and only `public` works), idle auto-stop, a spend cap, dynamic resource adjustment, the session-resume contract. The full list is in [docs/08-integration.md](docs/08-integration.md) §3 and [docs/01-system-architecture.md](docs/01-system-architecture.md). |

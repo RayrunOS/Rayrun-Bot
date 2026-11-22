@@ -70,8 +70,9 @@
 | 版本 | DSH 仓库的 Desktop 包为 `0.2.2-rc.5`；DSH 是 developer preview，会有 breaking changes | `apps/desktop/package.json`、README |
 
 **注意**：以上是 DSH `master` 的事实，不是本仓库已实现的功能。确认时 DSH 仓库的
-Desktop 包是 `0.2.2-rc.5`，而本仓库记录的本地基线是 `0.2.2-rc.1`，云端镜像为
-`0.2.0-rc.2`；B1/B2 动工前需要复验，版本矩阵见 §8。
+Desktop 包是 `0.2.2-rc.5`，本仓库的页面验证基线也是 `0.2.2-rc.5`，云端镜像为
+`0.2.0-rc.2`；B1/B2 动工前仍需在官方桌面复验，组合见
+[`../version-matrix.md`](../version-matrix.md) §2。
 
 ---
 

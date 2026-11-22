@@ -41,7 +41,7 @@ Rayrun Bot 给 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harnes
 
 **环境要求**
 
-- DeepSeek Harness——桌面 App 或 `dsh web`。云电脑插件在 `0.2.1-rc.5` 上验证过；针对 `0.2.2-rc.1` 的复测进行中。
+- DeepSeek Harness——桌面 App 或 `dsh web`。云电脑插件在 `0.2.1-rc.5` 上验证过；页面层与镜像层的 `0.2.2-rc.5` / `0.2.0-rc.2` 组合记录在 [docs/version-matrix.md](docs/version-matrix.md)。
 - 独立的云电脑插件（`dsh-rayrun-computer`，MIT）——运行时必须；在它上 npm 之前用 checkout 安装。
 - 一个 [rayrunos.com](https://rayrunos.com/) 的 Rayrun 账号。
 - 一个 DeepSeek API key。
@@ -147,7 +147,7 @@ dsh plugin --profile web add /absolute/path/to/package
 
 | | |
 | --- | --- |
-| **今天可用**（独立项目，我们的依赖） | 7 个 `rayrun_*` 工具、noVNC 桌面、按会话的云/本地路由、双端哈希校验的 workspace 同步、任务委托、worker 投影、可选空闲停机。已在 DeepSeek Harness `0.2.1-rc.5` 上验证。 |
+| **今天可用**（独立项目，我们的依赖） | 7 个 `rayrun_*` 工具、noVNC 桌面、按会话的云/本地路由、双端哈希校验的 workspace 同步、任务委托、worker 投影、可选空闲停机。已在 DeepSeek Harness `0.2.1-rc.5` 上验证；其他组合见[版本矩阵](docs/version-matrix.md)。 |
 | **本仓库** | README、docs、issue/PR 模板、agent 规则、依赖边界，以及 `dsh-rayrun-bots`：一条 health 路由、一份持久化的本机 Bot 名册（`bots.*` RPC，原子写 `bot.json`），以及 v0.1 客户端界面（五个画面，名册驱动的聊天列表，内存里的对话预览，同源读取 host 状态，setup 的 Rayrun token 桥接，setup 的云电脑创建，以及经云电脑插件 RPC 的 Open / Take over），带普通 Node 检查（含 tarball 内容）、以检查为主的 CI workflow（Node 24/26，并从 checkout 和打包后的 tarball 各做一次 DSH profile 安装冒烟）、[版本矩阵](docs/version-matrix.md)，以及可选的 main-only Rayrun 部署 job。还没有云端 Bot runtime，也没有可发布版本。 |
 | **尚未构建** | 页面层的云电脑创建验证、Bot↔session 映射、机器上的常驻 DSH host、能拦住 worker 的远程审批（阻塞于 Rayrun host/agent 隔离；ADR-001）、真正会跑的 routines 与触发器、按 Bot 的花费归因、IM 通道、两插件安装路径（依赖声明与版本检查）、npm 包以及发布用的 CI 路径。 |
 | **平台缺口** | host/agent 权限隔离与 host-only 审批端点（ADR-001）、安全入向网络（今天 token ingress 不可用，只有 `public` 能用）、空闲自动停、spend cap、动态调整资源、session 续跑契约。完整清单在 [docs/08-integration.md](docs/08-integration.md) §3 与 [docs/01-system-architecture.md](docs/01-system-architecture.md)。 |
