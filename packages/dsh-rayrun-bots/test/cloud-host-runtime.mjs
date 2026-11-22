@@ -20,7 +20,7 @@ function setup({ machineStatus = 'Running', runtime: existing = null, withTool =
   const calls = []
   const uploads = []
   const files = new Map()
-  files.set('.rayrun/bots/echo-bot/host/state.json', JSON.stringify({ state: 'running' }))
+  files.set('.rayrun/host/state.json', JSON.stringify({ state: 'running' }))
   const state = {
     machine: { id: 'box-id', name: 'box', status: machineStatus, remote_desktop: false },
     runtimes: new Map(existing === null ? [] : [[existing.name, existing]]),
@@ -111,9 +111,9 @@ check('start uploads one task and returns a detached record', async () => {
   assert.deepEqual(spec.credentials, ['deepseek-flash'])
   assert.equal(spec.keep_alive, true)
   assert.equal(spec.restart, 'always')
-  assert.equal(spec.env.DSH_BOT_ROOT, `/workspace/.rayrun/bots/${bot.id}`)
-  assert.equal(spec.env.BOT_ID, bot.id)
-  assert.equal(hostRuntimeName(bot.id), 'bot-host-echo-bot')
+  assert.equal(spec.env.DSH_BOT_ROOT, '/workspace/.rayrun')
+  assert.equal(Object.hasOwn(spec.env, 'BOT_ID'), false)
+  assert.equal(hostRuntimeName(), 'bot-host')
 })
 
 check('projects the host assets before starting when no override is set', async () => {
@@ -144,7 +144,7 @@ check('starts a stopped machine and resumes a paused one', async () => {
 })
 
 check('reuses an existing running runtime without putting it again', async () => {
-  const existing = { name: `bot-host-${bot.id}`, state: 'running', pid: 7, restarts: 0 }
+  const existing = { name: 'bot-host', state: 'running', pid: 7, restarts: 0 }
   const { root, runtime, state } = setup({ runtime: existing })
   await runtime.start({ bot, text: 'hello', messageSeq: 1, botId: bot.id, stateRoot: root })
   assert.equal(state.puts.length, 0)

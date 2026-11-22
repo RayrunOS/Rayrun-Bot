@@ -5,16 +5,17 @@
 > loaded by the DSH host half. The CLI can use a headless DSH agent; the library
 > still defaults to an echo stub for tests.
 
-A minimal host for a Rayrun machine, intended to run under the platform
-`runtimes` API (R-G008, ADR-036 in the Rayrun repo). It proves the lifecycle
-mechanics that the future cloud bot runtime needs:
+A host for a Rayrun machine, intended to run under the platform `runtimes`
+API (R-G008, ADR-036 in the Rayrun repo). **One process serves every bot on
+the machine** with one serial queue, round-robin across bots:
 
-- one queue under `/workspace/.rayrun/bots/<id>/inbox/`;
-- a chronological `transcript.jsonl`, one outbox entry per completed task;
-- a heartbeat/state file in `host/state.json`;
+- one queue per bot under `/workspace/.rayrun/bots/<id>/inbox/`;
+- a chronological per-bot `transcript.jsonl`, one outbox entry per task;
+- a global heartbeat/state file in `host/state.json` plus per-bot summaries;
 - recovery of a task that was in flight when the process died;
 - duplicate task ids are idempotent;
-- a DSH session id persisted in `host/session-id` and reused for the next task;
+- a DSH session id persisted per bot in `bots/<id>/host/session-id` and reused
+  for that bot's next task;
 - stdout/state logs do not contain credential values.
 
 The library agent defaults to `echo:<text>` for tests. `host.mjs` uses
@@ -78,8 +79,7 @@ were removed.
   "argv": ["node", "/workspace/.rayrun/host/<package version>/host.mjs"],
   "workdir": "/workspace",
   "env": {
-    "DSH_BOT_ROOT": "/workspace/.rayrun/bots/demo",
-    "BOT_ID": "demo",
+    "DSH_BOT_ROOT": "/workspace/.rayrun",
     "DSH_BOT_AGENT": "dsh",
     "DSH_BOT_PROFILE": "bot",
     "DSH_HOME": "/workspace/.rayrun/dsh",
@@ -95,6 +95,10 @@ were removed.
 }
 ```
 
+The multi-bot queue has plain-Node coverage (round-robin, independent session
+ids, recovery and state). The live E2E below used the earlier one-bot build;
+the multi-bot host still needs a live page E2E.
+
 The adapter projects the assets with `lib/host-projection.js` into
 `/workspace/.rayrun/host/<package version>/` and verifies the SHA-256 manifest
 before registering the runtime. An explicit `hostScript` config bypasses the
@@ -103,6 +107,5 @@ projection for development.
 ## Not built yet
 
 - a production guestd 0.6 + DSH image and build/deploy pipeline;
-- one host process serving multiple bots (currently one runtime per bot);
 - approval proposals or execution (ADR-001 remains closed);
 - package release and the one-install path.

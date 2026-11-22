@@ -1,11 +1,14 @@
 /**
- * Cloud bot host POC — queue, transcript, heartbeat and a pluggable agent.
+ * Cloud bot host — one process, one serial queue, many bots.
  *
- * This is a proof of concept, not the shipped cloud runtime. It runs inside a
- * Rayrun machine under a platform `runtimes` entry. The default agent only
- * echoes; a later slice replaces it with a DSH session. The host owns state
- * under `<root>` and writes one heartbeat/state file; it never reads the
- * Rayrun token.
+ * The host runs inside a Rayrun machine under a platform `runtimes` entry. It
+ * discovers bot roots under `<root>/bots/<botId>/` and processes their inboxes
+ * one task at a time in round-robin order. Each bot keeps its own transcript,
+ * outbox and DSH session id; the DSH profile is shared. The default agent only
+ * echoes; the CLI wires the headless DSH agent.
+ *
+ * The workspace is writable by the cloud agent. This is queue/session code,
+ * not an approval or credential boundary.
  */
 import {
   appendFileSync, closeSync, existsSync, fsyncSync, mkdirSync, openSync,
@@ -14,6 +17,7 @@ import {
 import { randomUUID } from 'node:crypto'
 import path from 'node:path'
 
+const BOT_ID = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 const TASK_ID = /^[A-Za-z0-9._-]{1,80}$/
 const TASK_MAX_BYTES = 64 * 1024
 const SECRET = /(Bearer\s+)\S+|(sk-)[A-Za-z0-9_-]{8,}|((?:RAYRUN_TOKEN|DEEPSEEK_API_KEY|DEEPSEEK_KEY)\s*[=:]\s*)\S+/gi
@@ -23,10 +27,9 @@ const SECRET = /(Bearer\s+)\S+|(sk-)[A-Za-z0-9_-]{8,}|((?:RAYRUN_TOKEN|DEEPSEEK_
  * has no timers, so it can be used from tests.
  * @param {{
  *   root: string,
- *   botId?: string,
  *   logPath?: string | null,
  *   credentialPresent?: boolean,
- *   agent?: (input: { taskId: string, text: string, sessionId: string | null }) => Promise<string | { text: string, sessionId?: string }>,
+ *   agent?: (input: { botId: string, taskId: string, text: string, sessionId: string | null }) => Promise<string | { text: string, sessionId?: string }>,
  *   now?: () => string,
  *   sleep?: (ms: number) => Promise<void>,
  *   taskDelayMs?: number,
@@ -35,7 +38,6 @@ const SECRET = /(Bearer\s+)\S+|(sk-)[A-Za-z0-9_-]{8,}|((?:RAYRUN_TOKEN|DEEPSEEK_
 export function createCloudHost(options = {}) {
   const {
     root,
-    botId = 'demo',
     logPath = null,
     credentialPresent = Boolean(process.env.DEEPSEEK_API_KEY),
     agent = async ({ text }) => `echo:${text}`,
@@ -44,24 +46,57 @@ export function createCloudHost(options = {}) {
     taskDelayMs = 0,
   } = options
   if (typeof root !== 'string' || root.trim() === '') throw new Error('root is required')
-  if (!TASK_ID.test(botId)) throw new Error('botId must be a safe path segment')
 
-  const dirs = {
-    inbox: path.join(root, 'inbox'),
-    processing: path.join(root, 'processing'),
-    done: path.join(root, 'done'),
-    failed: path.join(root, 'failed'),
-    outbox: path.join(root, 'outbox'),
-    results: path.join(root, 'results'),
-    host: path.join(root, 'host'),
-  }
-  const transcriptPath = path.join(root, 'transcript.jsonl')
-  const statePath = path.join(dirs.host, 'state.json')
-  const sessionPath = path.join(dirs.host, 'session-id')
+  const botsRoot = path.join(root, 'bots')
+  const hostDir = path.join(root, 'host')
+  const statePath = path.join(hostDir, 'state.json')
   const startedAt = now()
   let lastTask = null
+  let lastBot = null
 
   const ensure = (dir) => mkdirSync(dir, { recursive: true, mode: 0o700 })
+
+  function botIdOf(value) {
+    if (typeof value !== 'string' || !BOT_ID.test(value) || value.length > 64) {
+      throw new Error('botId must be a kebab-case path segment')
+    }
+    return value
+  }
+
+  function pathsFor(botId) {
+    const id = botIdOf(botId)
+    const botRoot = path.join(botsRoot, id)
+    return {
+      root: botRoot,
+      inbox: path.join(botRoot, 'inbox'),
+      processing: path.join(botRoot, 'processing'),
+      done: path.join(botRoot, 'done'),
+      failed: path.join(botRoot, 'failed'),
+      outbox: path.join(botRoot, 'outbox'),
+      results: path.join(botRoot, 'results'),
+      host: path.join(botRoot, 'host'),
+      transcript: path.join(botRoot, 'transcript.jsonl'),
+      state: path.join(botRoot, 'host', 'state.json'),
+      session: path.join(botRoot, 'host', 'session-id'),
+    }
+  }
+
+  function ensureBot(botId) {
+    const paths = pathsFor(botId)
+    for (const key of ['inbox', 'processing', 'done', 'failed', 'outbox', 'results', 'host']) ensure(paths[key])
+    return paths
+  }
+
+  function listBots() {
+    try {
+      return readdirSync(botsRoot, { withFileTypes: true })
+        .filter((entry) => entry.isDirectory() && BOT_ID.test(entry.name))
+        .map((entry) => entry.name)
+        .sort()
+    } catch {
+      return []
+    }
+  }
 
   function atomicJson(file, value) {
     ensure(path.dirname(file))
@@ -93,17 +128,17 @@ export function createCloudHost(options = {}) {
     renameSync(temp, file)
   }
 
-  function readSessionId() {
+  function readSessionId(botId) {
     try {
-      const value = readFileSync(sessionPath, 'utf8').trim()
+      const value = readFileSync(pathsFor(botId).session, 'utf8').trim()
       return value === '' ? null : value
     } catch {
       return null
     }
   }
 
-  function writeSessionId(value) {
-    if (typeof value === 'string' && value.trim() !== '') atomicText(sessionPath, value.trim())
+  function writeSessionId(botId, value) {
+    if (typeof value === 'string' && value.trim() !== '') atomicText(pathsFor(botId).session, value.trim())
   }
 
   function redact(value) {
@@ -118,16 +153,17 @@ export function createCloudHost(options = {}) {
     if (logPath === null) return
     try {
       ensure(path.dirname(logPath))
-      appendFileSync(logPath, `${JSON.stringify({ at: now(), event, botId, ...extra })}\n`, { mode: 0o600 })
+      appendFileSync(logPath, `${JSON.stringify({ at: now(), event, ...extra })}\n`, { mode: 0o600 })
     } catch {
       // Logging must not stop the queue; stdout is still captured by the platform.
     }
   }
 
-  function transcript() {
-    if (!existsSync(transcriptPath)) return []
+  function transcript(botId) {
+    const file = pathsFor(botId).transcript
+    if (!existsSync(file)) return []
     const messages = []
-    for (const line of readFileSync(transcriptPath, 'utf8').split('\n')) {
+    for (const line of readFileSync(file, 'utf8').split('\n')) {
       if (!line) continue
       try {
         messages.push(JSON.parse(line))
@@ -138,25 +174,25 @@ export function createCloudHost(options = {}) {
     return messages
   }
 
-  function hasUser(taskId) {
-    return transcript().some((message) => message.role === 'user' && message.taskId === taskId)
+  function hasUser(botId, taskId) {
+    return transcript(botId).some((message) => message.role === 'user' && message.taskId === taskId)
   }
 
-  function hasBot(taskId) {
-    return transcript().some((message) => message.role === 'bot' && message.replyTo === taskId)
+  function hasBot(botId, taskId) {
+    return transcript(botId).some((message) => message.role === 'bot' && message.replyTo === taskId)
   }
 
-  function appendMessage(role, text, extra = {}) {
-    const messages = transcript()
+  function appendMessage(botId, role, text, extra = {}) {
+    const messages = transcript(botId)
     const seq = messages.reduce((max, message) => Math.max(max, Number(message.seq) || 0), 0) + 1
     const message = { seq, at: now(), role, text, ...extra }
-    appendFileSync(transcriptPath, `${JSON.stringify(message)}\n`, { mode: 0o600 })
+    appendFileSync(pathsFor(botId).transcript, `${JSON.stringify(message)}\n`, { mode: 0o600 })
     return message
   }
 
-  function listInbox() {
+  function listInbox(botId) {
     try {
-      return readdirSync(dirs.inbox)
+      return readdirSync(pathsFor(botId).inbox)
         .filter((name) => name.endsWith('.json') && !name.startsWith('.'))
         .sort()
     } catch {
@@ -172,53 +208,70 @@ export function createCloudHost(options = {}) {
     }
   }
 
+  function describeBot(botId) {
+    const paths = pathsFor(botId)
+    const messages = transcript(botId)
+    return {
+      botId,
+      queueDepth: listInbox(botId).length + count(paths.processing),
+      processed: count(paths.done),
+      sessionId: readSessionId(botId),
+      lastSeq: messages.length === 0 ? 0 : messages[messages.length - 1].seq,
+    }
+  }
+
   function writeState(state = 'running') {
-    const messages = transcript()
+    const bots = listBots().map(describeBot)
     const value = {
       schema: 1,
-      botId,
       state,
       pid: process.pid,
       startedAt,
       heartbeatAt: now(),
-      processed: count(dirs.done),
-      queueDepth: listInbox().length + count(dirs.processing),
       hasCredential: credentialPresent,
-      sessionId: readSessionId(),
-      lastSeq: messages.length === 0 ? 0 : messages[messages.length - 1].seq,
+      bots,
+      queueDepth: bots.reduce((sum, bot) => sum + bot.queueDepth, 0),
+      processed: bots.reduce((sum, bot) => sum + bot.processed, 0),
       lastTask,
+      lastBot,
     }
     atomicJson(statePath, value)
     return value
   }
 
   function recover() {
-    for (const dir of Object.values(dirs)) ensure(dir)
+    ensure(botsRoot)
+    ensure(hostDir)
     let moved = 0
-    for (const name of readdirSync(dirs.processing)) {
-      if (!name.endsWith('.json')) continue
-      const from = path.join(dirs.processing, name)
-      let task = null
-      try {
-        task = JSON.parse(readFileSync(from, 'utf8'))
-      } catch {
-        renameSync(from, path.join(dirs.failed, `${name}.unreadable-${randomUUID()}`))
-        continue
+    for (const botId of listBots()) {
+      ensureBot(botId)
+      const paths = pathsFor(botId)
+      for (const name of readdirSync(paths.processing)) {
+        if (!name.endsWith('.json')) continue
+        const from = path.join(paths.processing, name)
+        let task = null
+        try {
+          task = JSON.parse(readFileSync(from, 'utf8'))
+        } catch {
+          renameSync(from, path.join(paths.failed, `${name}.unreadable-${randomUUID()}`))
+          continue
+        }
+        if (task?.id && hasBot(botId, task.id)) {
+          renameSync(from, path.join(paths.done, `${task.id}.json`))
+          continue
+        }
+        renameSync(from, path.join(paths.inbox, `recovered-${randomUUID()}.json`))
+        moved += 1
       }
-      if (task?.id && hasBot(task.id)) {
-        renameSync(from, path.join(dirs.done, `${task.id}.json`))
-        continue
-      }
-      renameSync(from, path.join(dirs.inbox, `recovered-${randomUUID()}.json`))
-      moved += 1
     }
     return moved
   }
 
-  function claim(name) {
+  function claim(botId, name) {
+    const paths = pathsFor(botId)
     try {
-      const to = path.join(dirs.processing, name)
-      renameSync(path.join(dirs.inbox, name), to)
+      const to = path.join(paths.processing, name)
+      renameSync(path.join(paths.inbox, name), to)
       return to
     } catch (error) {
       if (error?.code === 'ENOENT') return null
@@ -233,59 +286,82 @@ export function createCloudHost(options = {}) {
     return { id: task.id, text: task.text }
   }
 
-  /** Process the first inbox task; returns `null` when the inbox is empty. */
+  /** Pick the next bot with pending work, round-robin after the last one. */
+  function nextTask() {
+    const bots = listBots()
+    if (bots.length === 0) return null
+    const start = lastBot === null ? 0 : (bots.indexOf(lastBot) + 1 + bots.length) % bots.length
+    for (let offset = 0; offset < bots.length; offset += 1) {
+      const botId = bots[(start + offset) % bots.length]
+      const [name] = listInbox(botId)
+      if (name) return { botId, name }
+    }
+    return null
+  }
+
+  /** Process one task from any bot; returns `null` when all inboxes are empty. */
   async function processNext() {
-    const [name] = listInbox()
-    if (!name) return null
-    const file = claim(name)
+    const next = nextTask()
+    if (next === null) return null
+    const { botId, name } = next
+    ensureBot(botId)
+    const file = claim(botId, name)
     if (file === null) return null
+    const paths = pathsFor(botId)
 
     let task
     try {
       task = validateTask(JSON.parse(readFileSync(file, 'utf8')))
     } catch (error) {
-      renameSync(file, path.join(dirs.failed, `${name}.invalid-${randomUUID()}`))
-      log('task-invalid', { message: redact(error.message) })
-      return { taskId: null, error: redact(error.message) }
+      renameSync(file, path.join(paths.failed, `${name}.invalid-${randomUUID()}`))
+      log('task-invalid', { botId, message: redact(error.message) })
+      return { botId, taskId: null, error: redact(error.message) }
     }
 
-    if (hasBot(task.id)) {
-      renameSync(file, path.join(dirs.done, `${task.id}.json`))
-      log('task-skipped', { taskId: task.id })
-      return { taskId: task.id, skipped: true }
+    if (hasBot(botId, task.id)) {
+      renameSync(file, path.join(paths.done, `${task.id}.json`))
+      log('task-skipped', { botId, taskId: task.id })
+      return { botId, taskId: task.id, skipped: true }
     }
 
-    if (!hasUser(task.id)) appendMessage('user', task.text, { taskId: task.id })
+    if (!hasUser(botId, task.id)) appendMessage(botId, 'user', task.text, { taskId: task.id })
     lastTask = task.id
-    log('task-start', { taskId: task.id })
+    lastBot = botId
+    log('task-start', { botId, taskId: task.id })
     try {
       if (taskDelayMs > 0) await sleep(taskDelayMs)
-      const sessionId = readSessionId()
-      const result = await agent({ taskId: task.id, text: task.text, sessionId })
+      const result = await agent({
+        botId,
+        taskId: task.id,
+        text: task.text,
+        sessionId: readSessionId(botId),
+      })
       const reply = typeof result === 'string' ? result : result?.text
       if (typeof reply !== 'string' || reply.trim() === '') throw new Error('agent returned no reply')
-      if (result && typeof result === 'object') writeSessionId(result.sessionId)
-      appendMessage('bot', reply, { replyTo: task.id })
-      atomicJson(path.join(dirs.outbox, `${task.id}.json`), {
+      if (result && typeof result === 'object') writeSessionId(botId, result.sessionId)
+      appendMessage(botId, 'bot', reply, { replyTo: task.id })
+      atomicJson(path.join(paths.outbox, `${task.id}.json`), {
         schema: 1, botId, taskId: task.id, reply, at: now(),
       })
-      atomicJson(path.join(dirs.results, `${task.id}.json`), {
-        schema: 1, taskId: task.id, reply, at: now(),
+      atomicJson(path.join(paths.results, `${task.id}.json`), {
+        schema: 1, botId, taskId: task.id, reply, at: now(),
       })
-      renameSync(file, path.join(dirs.done, `${task.id}.json`))
-      log('task-done', { taskId: task.id })
+      renameSync(file, path.join(paths.done, `${task.id}.json`))
+      log('task-done', { botId, taskId: task.id })
       writeState()
-      return { taskId: task.id, reply }
+      return { botId, taskId: task.id, reply }
     } catch (error) {
-      renameSync(file, path.join(dirs.failed, `${task.id || name}.json`))
-      log('task-failed', { taskId: task.id, message: redact(error.message) })
-      return { taskId: task.id, error: redact(error.message) }
+      renameSync(file, path.join(paths.failed, `${task.id || name}.json`))
+      log('task-failed', { botId, taskId: task.id, message: redact(error.message) })
+      return { botId, taskId: task.id, error: redact(error.message) }
     }
   }
 
   return {
-    paths: { ...dirs, transcript: transcriptPath, state: statePath },
+    paths: { root, bots: botsRoot, host: hostDir, state: statePath, log: logPath },
     startedAt,
+    listBots,
+    pathsFor: ensureBot,
     recover,
     processNext,
     writeState,

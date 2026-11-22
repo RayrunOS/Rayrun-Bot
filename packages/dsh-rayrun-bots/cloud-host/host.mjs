@@ -1,17 +1,17 @@
 /**
- * Cloud bot host POC entry point.
+ * Cloud bot host entry point.
  *
  * Intended argv in a Rayrun `runtimes` spec:
- *   node /workspace/.rayrun/bin/host.mjs
+ *   node /workspace/.rayrun/host/<package version>/host.mjs
  *
- * Environment: DSH_BOT_ROOT, BOT_ID, DSH_BOT_LOG, DEEPSEEK_API_KEY (injected by
- * the platform through a sandbox credential; never read as a value here).
+ * Environment: DSH_BOT_ROOT (state root, default /workspace/.rayrun), DSH_BOT_LOG,
+ * DEEPSEEK_API_KEY (injected by the platform through a sandbox credential; never
+ * read as a value here).
  */
 import { createCloudHost } from './lib/host.mjs'
 import { createDshAgent } from './lib/dsh-agent.mjs'
 
-const root = process.env.DSH_BOT_ROOT || '/workspace/.rayrun/bots/demo'
-const botId = process.env.BOT_ID || 'demo'
+const root = process.env.DSH_BOT_ROOT || '/workspace/.rayrun'
 const logPath = process.env.DSH_BOT_LOG || '/workspace/.rayrun/logs/bot-host.log'
 const dshAgent = process.env.DSH_BOT_AGENT === 'dsh'
   ? createDshAgent({
@@ -23,13 +23,12 @@ const dshAgent = process.env.DSH_BOT_AGENT === 'dsh'
   : undefined
 const host = createCloudHost({
   root,
-  botId,
   logPath,
   credentialPresent: Boolean(process.env.DEEPSEEK_API_KEY),
   ...(dshAgent === undefined ? {} : { agent: dshAgent.run }),
 })
 const recovered = host.recover()
-host.log('started', { pid: process.pid, recovered, hasCredential: Boolean(process.env.DEEPSEEK_API_KEY) })
+host.log('started', { pid: process.pid, recovered, bots: host.listBots().length, hasCredential: Boolean(process.env.DEEPSEEK_API_KEY) })
 host.writeState('running')
 
 let busy = false

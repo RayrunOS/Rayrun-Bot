@@ -14,7 +14,7 @@
  * adapter resolves and verifies an existing machine first and refuses when
  * there is none; profiles for Bots should set `autoCreate: false`.
  */
-import { createHash, randomUUID } from 'node:crypto'
+import { randomUUID } from 'node:crypto'
 import path from 'node:path'
 import { assertBotId } from './bot-schema.js'
 import { ERROR_CODES } from './errors.js'
@@ -25,16 +25,13 @@ import { createRuntimeRpc } from './runtime-rpc.js'
 import { RUNTIME_CONTRACT_VERSION } from './runtime.js'
 
 const TASK_TIMEOUT_SECONDS = 900
-const RUNTIME_MAX_NAME = 64
 const HOST_PROFILE = 'bot'
+const HOST_RUNTIME = 'bot-host'
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
-/** Stable runtime name for one bot, within the platform's name limit. */
-export function hostRuntimeName(botId) {
-  const name = `bot-host-${assertBotId(botId)}`
-  if (name.length <= RUNTIME_MAX_NAME) return name
-  const digest = createHash('sha256').update(botId).digest('hex').slice(0, 16)
-  return `bot-host-${digest}`
+/** One host process serves every bot on the machine. */
+export function hostRuntimeName() {
+  return HOST_RUNTIME
 }
 
 /** True when a file-read error means "not uploaded yet", not a broken machine. */
@@ -121,8 +118,7 @@ export function createCloudHostRuntime({
     throw rayrunFailure(ERROR_CODES.machineStopped, 'The cloud computer did not start in time; no turn was sent.')
   }
 
-  function spec(botId, script) {
-    const root = `/workspace/.rayrun/bots/${botId}`
+  function spec(script) {
     return {
       argv: ['node', script],
       workdir: '/workspace',
@@ -130,11 +126,10 @@ export function createCloudHostRuntime({
         PATH: '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',
         DSH_HOME: '/workspace/.rayrun/dsh',
         HOME: '/workspace/.rayrun/home',
-        DSH_BOT_ROOT: root,
-        BOT_ID: botId,
+        DSH_BOT_ROOT: '/workspace/.rayrun',
         DSH_BOT_AGENT: 'dsh',
         DSH_BOT_PROFILE: profile,
-        DSH_BOT_LOG: `/workspace/.rayrun/logs/bot-host-${botId}.log`,
+        DSH_BOT_LOG: '/workspace/.rayrun/logs/bot-host.log',
       },
       credentials: [...credentials],
       restart: 'always',
@@ -145,12 +140,12 @@ export function createCloudHostRuntime({
     }
   }
 
-  async function ensureHost(machine, botId, script) {
+  async function ensureHost(machine, script) {
     const ref = machine.name || machine.id
-    const name = hostRuntimeName(botId)
+    const name = HOST_RUNTIME
     let current = (await runtimeRpc.get(ref, name)).runtime
     if (!current) {
-      await runtimeRpc.put(ref, name, spec(botId, script))
+      await runtimeRpc.put(ref, name, spec(script))
       current = (await runtimeRpc.get(ref, name)).runtime
     }
     if (current?.state !== 'running') {
@@ -208,8 +203,8 @@ export function createCloudHostRuntime({
     }
   }
 
-  async function waitHostReady(sandbox, botId) {
-    const statePath = `.rayrun/bots/${botId}/host/state.json`
+  async function waitHostReady(sandbox) {
+    const statePath = '.rayrun/host/state.json'
     for (let attempt = 0; attempt < 15; attempt += 1) {
       const text = await readFile(sandbox, statePath)
       if (text !== null) {
@@ -243,8 +238,8 @@ export function createCloudHostRuntime({
         })
         script = projected.script
       }
-      const host = await ensureHost(machine, botId, script)
-      await waitHostReady(host.ref, botId)
+      const host = await ensureHost(machine, script)
+      await waitHostReady(host.ref)
       const taskId = `task-${randomUUID()}`
       const paths = filePaths(botId, taskId)
       const prompt = buildPrompt({ bot, text, history, messageSeq })

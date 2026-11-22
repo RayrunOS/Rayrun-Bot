@@ -1,7 +1,7 @@
 /**
- * Cloud bot host POC checks (plain Node, no framework).
+ * Multi-bot cloud host checks (plain Node, no framework).
  *
- *   node tools/cloud-host-poc/test/host.mjs
+ *   node test/cloud-host.mjs
  */
 import assert from 'node:assert/strict'
 import {
@@ -20,7 +20,6 @@ function makeHost({ agent, credentialPresent = true } = {}) {
   roots.push(root)
   const host = createCloudHost({
     root,
-    botId: 'demo',
     logPath: path.join(root, 'host.log'),
     credentialPresent,
     agent,
@@ -29,119 +28,146 @@ function makeHost({ agent, credentialPresent = true } = {}) {
   return { root, host }
 }
 
-function inbox(root, name, task) {
-  mkdirSync(path.join(root, 'inbox'), { recursive: true })
-  writeFileSync(path.join(root, 'inbox', name), JSON.stringify(task))
+function inbox(host, botId, name, task) {
+  const paths = host.pathsFor(botId)
+  mkdirSync(paths.inbox, { recursive: true })
+  writeFileSync(path.join(paths.inbox, name), JSON.stringify(task))
 }
 
 function readJson(file) {
   return JSON.parse(readFileSync(file, 'utf8'))
 }
 
-function messages(root) {
-  const file = path.join(root, 'transcript.jsonl')
+function messages(host, botId) {
+  const file = host.pathsFor(botId).transcript
   if (!existsSync(file)) return []
   return readFileSync(file, 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line))
 }
 
-check('processes one task and writes transcript, outbox and state', async () => {
-  const { root, host } = makeHost()
-  inbox(root, '0001.json', { id: 't1', text: 'hello' })
+check('processes one task and writes per-bot transcript, outbox and global state', async () => {
+  const { host } = makeHost()
+  inbox(host, 'bot-a', '0001.json', { id: 't1', text: 'hello' })
   const result = await host.processNext()
-  assert.deepEqual(result, { taskId: 't1', reply: 'echo:hello' })
+  assert.deepEqual(result, { botId: 'bot-a', taskId: 't1', reply: 'echo:hello' })
 
-  const transcript = messages(root)
+  const transcript = messages(host, 'bot-a')
   assert.deepEqual(transcript.map((message) => [message.role, message.text]), [
     ['user', 'hello'],
     ['bot', 'echo:hello'],
   ])
   assert.equal(transcript[0].taskId, 't1')
   assert.equal(transcript[1].replyTo, 't1')
-  assert.equal(transcript[1].seq, 2)
 
-  assert.equal(readJson(path.join(root, 'outbox', 't1.json')).reply, 'echo:hello')
-  assert.equal(readJson(path.join(root, 'results', 't1.json')).reply, 'echo:hello')
-  assert.ok(existsSync(path.join(root, 'done', 't1.json')))
+  assert.equal(readJson(path.join(host.pathsFor('bot-a').outbox, 't1.json')).reply, 'echo:hello')
+  assert.ok(existsSync(path.join(host.pathsFor('bot-a').done, 't1.json')))
 
   const state = readJson(host.paths.state)
   assert.equal(state.state, 'running')
-  assert.equal(state.processed, 1)
   assert.equal(state.queueDepth, 0)
+  assert.equal(state.processed, 1)
   assert.equal(state.hasCredential, true)
+  assert.equal(state.lastBot, 'bot-a')
   assert.equal(state.lastTask, 't1')
-  assert.equal(state.lastSeq, 2)
+  assert.equal(state.bots.length, 1)
+  assert.equal(state.bots[0].botId, 'bot-a')
 })
 
-check('recovers a task that was in flight without duplicating the user message', async () => {
-  const { root, host } = makeHost()
-  mkdirSync(path.join(root, 'processing'), { recursive: true })
-  writeFileSync(path.join(root, 'processing', '0002.json'), JSON.stringify({ id: 't2', text: 'crash' }))
-  appendFileSync(path.join(root, 'transcript.jsonl'), `${JSON.stringify({
+check('recovers an in-flight task without duplicating the user message', async () => {
+  const { host } = makeHost()
+  const paths = host.pathsFor('bot-a')
+  mkdirSync(paths.processing, { recursive: true })
+  writeFileSync(path.join(paths.processing, '0002.json'), JSON.stringify({ id: 't2', text: 'crash' }))
+  appendFileSync(paths.transcript, `${JSON.stringify({
     seq: 1, at: new Date().toISOString(), role: 'user', text: 'crash', taskId: 't2',
   })}\n`)
 
   assert.equal(host.recover(), 1)
   const result = await host.processNext()
-  assert.deepEqual(result, { taskId: 't2', reply: 'echo:crash' })
-  const transcript = messages(root)
+  assert.deepEqual(result, { botId: 'bot-a', taskId: 't2', reply: 'echo:crash' })
+  const transcript = messages(host, 'bot-a')
   assert.equal(transcript.filter((message) => message.role === 'user' && message.taskId === 't2').length, 1)
   assert.equal(transcript.filter((message) => message.role === 'bot' && message.replyTo === 't2').length, 1)
 })
 
 check('skips a duplicate task id without appending again', async () => {
-  const { root, host } = makeHost()
-  inbox(root, '0001.json', { id: 't1', text: 'hello' })
+  const { host } = makeHost()
+  inbox(host, 'bot-a', '0001.json', { id: 't1', text: 'hello' })
   await host.processNext()
-  const before = messages(root)
-  inbox(root, '0002.json', { id: 't1', text: 'hello again' })
+  const before = messages(host, 'bot-a')
+  inbox(host, 'bot-a', '0002.json', { id: 't1', text: 'hello again' })
   const result = await host.processNext()
-  assert.deepEqual(result, { taskId: 't1', skipped: true })
-  assert.deepEqual(messages(root), before)
-  assert.equal(readJson(path.join(root, 'outbox', 't1.json')).reply, 'echo:hello')
+  assert.deepEqual(result, { botId: 'bot-a', taskId: 't1', skipped: true })
+  assert.deepEqual(messages(host, 'bot-a'), before)
 })
 
-check('persists the agent session id and passes it to the next task', async () => {
+check('persists an independent DSH session id per bot', async () => {
   const seen = []
-  const { root, host } = makeHost({
-    agent: async ({ text, sessionId }) => {
-      seen.push(sessionId)
-      return { text: `reply:${text}`, sessionId: 'session-host-1' }
+  const { host } = makeHost({
+    agent: async ({ botId, text, sessionId }) => {
+      seen.push({ botId, text, sessionId })
+      return { text: `reply:${text}`, sessionId: `session-${botId}` }
     },
   })
-  inbox(root, '0001.json', { id: 't1', text: 'first' })
+  inbox(host, 'alpha', '0001.json', { id: 'a1', text: 'one' })
+  inbox(host, 'beta', '0001.json', { id: 'b1', text: 'two' })
   await host.processNext()
-  inbox(root, '0002.json', { id: 't2', text: 'second' })
   await host.processNext()
-  assert.deepEqual(seen, [null, 'session-host-1'])
-  assert.equal(readJson(host.paths.state).sessionId, 'session-host-1')
-  assert.equal(readFileSync(path.join(root, 'host', 'session-id'), 'utf8').trim(), 'session-host-1')
+  inbox(host, 'alpha', '0002.json', { id: 'a2', text: 'three' })
+  await host.processNext()
+
+  assert.deepEqual(seen.map((item) => [item.botId, item.sessionId]), [
+    ['alpha', null],
+    ['beta', null],
+    ['alpha', 'session-alpha'],
+  ])
+  const state = readJson(host.paths.state)
+  const sessions = Object.fromEntries(state.bots.map((bot) => [bot.botId, bot.sessionId]))
+  assert.deepEqual(sessions, { alpha: 'session-alpha', beta: 'session-beta' })
+  assert.deepEqual(messages(host, 'alpha').map((message) => message.text), ['one', 'reply:one', 'three', 'reply:three'])
+  assert.deepEqual(messages(host, 'beta').map((message) => message.text), ['two', 'reply:two'])
+})
+
+check('serves multiple bots in round-robin order', async () => {
+  const seen = []
+  const { host } = makeHost({
+    agent: async ({ botId, text }) => {
+      seen.push(botId)
+      return `ok:${text}`
+    },
+  })
+  inbox(host, 'alpha', '0001.json', { id: 'a1', text: 'a' })
+  inbox(host, 'beta', '0001.json', { id: 'b1', text: 'b' })
+  await host.processNext()
+  await host.processNext()
+  assert.deepEqual(seen, ['alpha', 'beta'])
 })
 
 check('moves a failing agent task to failed and redacts the log', async () => {
   const secret = 'sk-abcdefghijklmnop'
-  const { root, host } = makeHost({
+  const { host } = makeHost({
     agent: async () => {
       throw new Error(`bad ${secret} Bearer supersecretvalue`)
     },
   })
-  inbox(root, '0001.json', { id: 't1', text: 'fail' })
+  inbox(host, 'bot-a', '0001.json', { id: 't1', text: 'fail' })
   const result = await host.processNext()
-  assert.equal(result.taskId, 't1')
+  assert.equal(result.botId, 'bot-a')
   assert.match(result.error, /\[redacted\]/)
-  assert.ok(existsSync(path.join(root, 'failed', 't1.json')))
-  const log = readFileSync(path.join(root, 'host.log'), 'utf8')
+  assert.ok(existsSync(path.join(host.pathsFor('bot-a').failed, 't1.json')))
+  const log = readFileSync(host.paths.log, 'utf8')
   assert.doesNotMatch(log, new RegExp(secret))
   assert.doesNotMatch(log, /supersecretvalue/)
 })
 
-check('a stopped state is written without losing the queue', async () => {
-  const { root, host } = makeHost()
-  inbox(root, '0001.json', { id: 't1', text: 'queued' })
+check('a stopped state counts queued work for every bot', () => {
+  const { host } = makeHost()
+  inbox(host, 'alpha', '0001.json', { id: 'a1', text: 'a' })
+  inbox(host, 'beta', '0001.json', { id: 'b1', text: 'b' })
   host.writeState('stopped')
   const state = readJson(host.paths.state)
   assert.equal(state.state, 'stopped')
-  assert.equal(state.queueDepth, 1)
-  assert.equal(state.processed, 0)
+  assert.equal(state.queueDepth, 2)
+  assert.deepEqual(state.bots.map((bot) => [bot.botId, bot.queueDepth]), [['alpha', 1], ['beta', 1]])
 })
 
 let passed = 0
@@ -160,6 +186,5 @@ try {
 } finally {
   for (const root of roots) rmSync(root, { recursive: true, force: true })
 }
-
-console.log(`${passed}/${checks.length} cloud host POC checks passed`)
+console.log(`${passed}/${checks.length} cloud host checks passed`)
 if (failed > 0) process.exit(1)
