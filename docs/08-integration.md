@@ -4,7 +4,7 @@
 > 需要补的能力和优先级。技术基线见 [`01-system-architecture.md`](01-system-architecture.md)；
 > 云端 bot runtime 见 [`04-cloud-host.md`](04-cloud-host.md)；未决决策见
 > [`adr/architecture-decisions.md`](adr/architecture-decisions.md)。
-> 本文是 handoff 清单；状态以 [`../README.md`](../README.md) 与各平台文档为准。
+> 本文是 handoff 清单；状态以 [`12-status.md`](12-status.md) 与各平台文档为准。
 
 ## 0. 与现有文档的关系
 

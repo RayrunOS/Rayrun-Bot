@@ -1,45 +1,42 @@
-# UI design — v0.1
+# UI 设计 — v0.1
 
-*Status: 2026-11-21 (rev 6). The client copies the layout of Grok Bot's desktop
-app as seen in the reference screenshot the user shared — one chat-list column, a
-markdown conversation in the middle, a per-bot details panel on the right — in a
-the visual language of rayrunos.com: white canvas, navy primary buttons, blue accents, hairline borders. Approvals are inline cards, not a separate
-inbox. The clickable reference is [`docs/mockups/index.html`](../mockups/index.html);
-append `#library`, `#newbot`, `#setup` or `#settings` to the URL for the other
-screens. The mockups render the **zh-CN** locale; English copy in §5 is the source and ships alongside (`locale/en.json`, `locale/zh.json`). Chinese is the primary UI language: the client follows the DSH locale when it is Chinese or English, falls back to Chinese for anything else, and the Settings language row writes the choice back to DSH. Related: [client-plan.md](../plans/client-plan.md) (surfaces, RPC),
-[mvp-plan.md](../plans/mvp-plan.md) (approval semantics), [bot-persona.md](bot-persona.md)
-(names, voice), [local-file-design.md](../06-local-state.md) (state).*
+*状态：2026-11-21（rev 6）。客户端照搬用户分享的参考截图里 Grok Bot 桌面 App 的布局
+——左栏聊天列表、中间 markdown 对话、右侧每 bot 详情面板——但使用 rayrunos.com 的
+视觉语言：白色画布、深蓝主按钮、蓝色强调、细线边框。审批是内联卡，不是单独收件箱。
+可点击参考是 [`docs/mockups/index.html`](../mockups/index.html)；在 URL 后追加
+`#library`、`#newbot`、`#setup` 或 `#settings` 打开其他屏幕。Mockup 渲染 **zh-CN**
+locale；§5 的英文文案是源，并与中文一起发布（`locale/en.json`、`locale/zh.json`）。
+中文是主 UI 语言：客户端跟随 DSH locale 当它是中文或英文时，其他语言回退中文；
+Settings 的语言行把选择写回 DSH。相关：[client-plan.md](../plans/client-plan.md)
+（表面、RPC）、[mvp-plan.md](../plans/mvp-plan.md)（审批语义）、
+[bot-persona.md](bot-persona.md)（名字、语气）、[06-local-state.md](../06-local-state.md)
+（状态）。实现状态以 [../12-status.md](../12-status.md) 为准。*
 
-Rendered previews: [conversation](../mockups/conversation.png) · [library](../mockups/library.png) · [new bot](../mockups/newbot.png) · [setup](../mockups/setup.png) · [settings](../mockups/cost-settings.png).
+渲染预览：[对话](../mockups/conversation.png) · [library](../mockups/library.png) ·
+[新建 bot](../mockups/newbot.png) · [setup](../mockups/setup.png) ·
+[settings](../mockups/cost-settings.png)。
 
-## 0. Principles
+## 0. 原则
 
-1. **Three columns, like the reference.** Chat list (left) · conversation
-   (center) · per-bot details (right). Everything else is a form inside this
-   shell; no separate dashboard.
-2. **Chat list is the roster.** Search and `+` at the top, the current bot's
-   avatar and name, then the other bots as rows with their latest snippet and
-   time. Attention is a small dot, not a badge wall.
-3. **Conversation is markdown.** Bot replies read like a colleague's written
-   update — short paragraphs, lists, code spans — not a card dashboard. Timestamp
-   separators appear when the day changes.
-4. **The right panel belongs to the bot.** Activity (recent receipts), Upcoming
-   (routines), Computer (state, preview, open/take over) and Usage. Tabs switch
-   between Activity and Library.
-5. **Approvals are inline cards.** An external action stops inside the
-   conversation with its warning line and `Deny` / `Allow once`; the chat list
-   shows a dot for the bot that needs attention. No dedicated inbox in v0.1.
-6. **Warm, low-contrast light.** Off-white canvas, white cards, hairline
-   borders, near-black text; color only for warnings, success and the status
-   dots. Rayrun's mark is the only brand color.
-7. **Honest states.** Reconnecting, couldn't reach, expired, missing dependency,
-   low balance: one short line and one action. No fake success.
-8. **Chinese primary, English alongside; keyboard-first.** Strings in
-   `locale/en.json` / `locale/zh.json`; the UI falls back to Chinese, and the
-   Settings language row persists the choice through DSH. Enter sends, Escape
-   closes, focus always visible.
+1. **三栏，像参考一样。** 聊天列表（左）· 对话（中）· 每 bot 详情（右）。其他一切都
+   是这个壳里的表单；没有单独 dashboard。
+2. **聊天列表就是名册。** 顶部是搜索和 `+`，当前 bot 的头像和名字，然后是其他 bot
+   的行，带最新摘要和时间。关注状态是一个小点，不是徽章墙。
+3. **对话是 markdown。** Bot 回复读起来像同事写的更新——短段落、列表、code span——
+   不是卡片 dashboard。日期变化时出现时间戳分隔。
+4. **右面板属于 bot。** Activity（最近的 receipt）、Upcoming（routines）、Computer
+   （状态、预览、open/take over）和 Usage。标签页在 Activity 与 Library 之间切换。
+5. **审批是内联卡。** 外部动作停在对话里，带警告行和 `Deny` / `Allow once`；聊天列表
+   给需要关注的 bot 显示一个点。v0.1 没有专用 inbox。
+6. **温暖、低对比的浅色。** 米白画布、白色卡片、细线边框、近黑文字；颜色只用于警告、
+   成功和状态点。Rayrun 的标志是唯一的品牌色。
+7. **诚实的状态。** 重连中、连不上、已过期、缺依赖、余额低：一句短话和一个动作。
+   不假成功。
+8. **中文优先，英文并列；键盘优先。** 文案在 `locale/en.json` / `locale/zh.json`；
+   UI 回退中文，Settings 的语言行通过 DSH 持久化选择。Enter 发送，Escape 关闭，焦点
+   始终可见。
 
-## 1. App shell
+## 1. App 壳
 
 ```
 ┌────────────────────┬───────────────────────────────────────┬──────────────────┐
@@ -63,187 +60,157 @@ Rendered previews: [conversation](../mockups/conversation.png) · [library](../m
 └────────────────────┴───────────────────────────────────────┴──────────────────┘
 ```
 
-Column widths: 296 px / flexible / 328 px. The details column collapses below
-1120 px; the chat list collapses below 900 px.
+栏宽：296 px / 弹性 / 328 px。详情栏在 1120 px 以下折叠；聊天列表在 900 px 以下折叠。
 
-### 1.1 Standalone Bots view
+### 1.1 独立的 Bots 视图
 
-The client activates Bots on load (`ctx.layout.selectPanel('rayrun-bots')`), so
-entry lands on the product surface; the page title becomes `Rayrun Bot`. While
-the Bots main panel is active, the client renders `.rb-frame` as a fixed
-full-viewport layer (`position: fixed; inset: var(--dsh-frame-chrome-top, 0) 0 0 0;
-z-index: 10`). It covers the DSH sidebar and bottom bar, so the Rayrun Bot roster
-is the leftmost column. DSH overlays (modals, z-index 20) stay above it. The Bots
-view is the only product surface: there is no in-product Back to Harness control.
-DSH remains the host; setup, Plugins, 云电脑 and Workspaces must be owned by Bots
-(not implemented yet). Because the v0.1 surface is an in-memory preview, the
-brand row carries a visible `Preview` pill; it goes away when real data replaces
-the sample.
+客户端在加载时激活 Bots（`ctx.layout.selectPanel('rayrun-bots')`），所以进入页面就落在
+产品表面；页面标题变成 `Rayrun Bot`。Bots 主面板激活时，客户端把 `.rb-frame` 渲染为
+固定全视口层（`position: fixed; inset: var(--dsh-frame-chrome-top, 0) 0 0 0;
+z-index: 10`）。它覆盖 DSH 侧边栏和底栏，所以 Rayrun Bot 名册是最左列。DSH 浮层
+（modal，z-index 20）保持在它上面。Bots 视图是唯一的产品表面：产品内没有“返回
+Harness”控件。DSH 仍是宿主；setup、Plugins、云电脑和 Workspaces 必须归 Bots 所有
+（尚未实现）。因为 v0.1 表面是内存预览，品牌行带一个可见的 `Preview` 胶囊；真实数据
+替换样例后它消失。
 
-## 2. Screens
+## 2. 屏幕
 
-### 2.1 Chat list
+### 2.1 聊天列表
 
-- Top row: Rayrun mark and wordmark, `Preview` pill, search, `+` (new bot).
-- Current bot block: 52 px avatar, name, `job · state`.
-- Rows: 34 px avatar, name, one-line latest snippet, time; a 6 px dot marks
-  needs attention (amber), unread (blue) or working (green). Opening a row marks
-  it read.
-- Empty roster: first-run copy plus a Create bot button; a search with no
-  matches keeps `No matching bots`. Preview it with `?first-run=1` on the DSH
-  page URL.
-- Footer: the user's avatar, name, `Rayrun connected · balance`, settings gear.
-  A low balance turns that line amber with an amber dot and a screen-reader
-  label; the full top-up line stays in Usage.
+- 顶行：Rayrun 标志和字标、`Preview` 胶囊、搜索、`+`（新建 bot）。
+- 当前 bot 块：52 px 头像、名字、`job · state`。
+- 行：34 px 头像、名字、一行最新摘要、时间；6 px 点标记需要关注（琥珀）、未读（蓝）
+  或工作中（绿）。打开一行即标为已读。
+- 空名册：首次运行文案加 Create bot 按钮；搜索无结果时保留 `No matching bots`。在
+  DSH 页面 URL 上加 `?first-run=1` 预览。
+- 页脚：用户头像、名字、`Rayrun connected · balance`、设置齿轮。余额低时该行变琥珀色，
+  带琥珀点和读屏标签；完整的充值提示留在 Usage。
 
-### 2.2 Conversation
+### 2.2 对话
 
-- Rich text messages with a 26 px avatar, name and job label; user messages are
-  short right-aligned bubbles.
-- A day separator (`Today 20:07`) opens each session.
-- A new bot with no messages shows its avatar, name, job and
-  `No messages yet`; the composer stays available.
-- Sending a message shows a working row; after a short preview-only delay a
-  simulated reply and a pending approval card appear. Nothing leaves the page.
-  The thread scrolls to the newest entry on send, reply and bot switch.
-- Approval and draft blocks are the only cards: thin border, white surface,
-  origin/target chips, a risk line (`Outside your computer · Can't be undone`),
-  `Deny` / `Allow once`, and a metadata line (`requested 20:07`).
-- **Computer activity.** A thin row with a mini screen — `On the computer · Feishu #weekly — pasted the digest, waiting for approval` and a `View` button.
-- Notices sit above the composer as one line with a dot. The line follows the
-  computer state — reconnecting (amber), sleeping (quiet), unreachable (red) —
-  and is absent while the computer is live; a flash message overrides it.
-- Composer: `+` attach, input, dark circular send. The composer takes focus
-  after a bot is created.
+- 富文本消息，带 26 px 头像、名字和职责标签；用户消息是右对齐的短气泡。
+- 每个 session 以日期分隔（`Today 20:07`）开头。
+- 没有消息的新 bot 显示头像、名字、职责和 `No messages yet`；composer 仍可用。
+- 发送消息时显示工作行；短暂仅预览的延迟后出现模拟回复和一张待审批卡。没有任何东西
+  离开页面。发送、回复和切换 bot 时，线程滚动到最新一条。
+- 审批块和草稿块是仅有的卡片：细边框、白底、来源/目标 chips、风险行
+  （`Outside your computer · Can't be undone`）、`Deny` / `Allow once`，以及元数据行
+  （`requested 20:07`）。
+- **电脑活动。** 一行细条带迷你屏幕——`On the computer · Feishu #weekly — pasted the
+  digest, waiting for approval` 和一个 `View` 按钮。
+- 通知在 composer 上方以一行带点的形式出现。该行跟随电脑状态——重连中（琥珀）、
+  休眠（安静）、连不上（红）——电脑在线时不存在；flash 消息会覆盖它。
+- Composer：`+` 附件、输入框、深色圆形发送。创建 bot 后 composer 获得焦点。
 
-### 2.3 Details panel
+### 2.3 详情面板
 
-Profile header (avatar, name, `job · computer`), then `Activity | Library` tabs.
+资料头（头像、名字、`job · computer`），然后是 `Activity | Library` 标签页。
 
-**Activity** sections:
+**Activity** 分区：
 
-- **Recent** — receipts: task title, state (`ready` / `waiting` / `done`), time,
-  artifact count and today's spend. A receipt is the "report back" surface.
-- **Upcoming** — routines: one row per routine with title, schedule and a toggle.
-  When every routine is off, a quiet `All routines are paused` line appears above
-  the rows. v0.1 ships at most one routine (P1); the other rows illustrate the
-  shape.
-- **Computer** — a compact row near the bottom, like the reference: name and
-  state (`live` / `reconnecting…` / `sleeping` / `unreachable`; `Not connected`
-  when Rayrun is not configured) on the left with
-  a colored dot (green / amber / gray / red), a small 44×30 screen thumbnail on
-  the right, and `Open` / `Take over` / `Stop` right-aligned below. Stop appears
-  only while the machine is live. No large preview in v0.1; Open starts or
-  resumes the machine through the dependency's same-origin RPC, waits for
-  `Running`, repairs the desktop service, opens `desktop_url` in a new tab, and
-  shows the desktop password in a dismissible toast. Take over currently runs
-  the same path. Stop asks for inline confirmation, calls `machine.action` with
-  `stop`, and never destroys. Each failure gets one line: not connected, no
-  machine, popup blocked, start timeout, no desktop, stop timeout, or stop
-  failure. Preview the states with
-  `?computer=live|reconnecting|sleeping|unreachable`.
-- **Usage** — balance, machine-hours, this week's spend, idle-stop policy. The
-  balance turns amber and a low-balance line appears below the threshold;
-  preview it with `?low-balance=1`.
+- **Recent** — receipt：任务标题、状态（`ready` / `waiting` / `done`）、时间、产物数量
+  和今日花费。Receipt 是“回来汇报”的表面。
+- **Upcoming** — routines：每行一个 routine，带标题、日程和开关。所有 routine 都关时，
+  行上方出现一行安静的 `All routines are paused`。v0.1 最多交付一个 routine（P1）；
+  其他行只是示意形态。
+- **Computer** — 靠近底部的紧凑行，像参考一样：左边是名字和状态（`live` /
+  `reconnecting…` / `sleeping` / `unreachable`；Rayrun 未配置时 `Not connected`），
+  带彩色点（绿 / 琥珀 / 灰 / 红），右边是 44×30 的小屏幕缩略图，下面右对齐
+  `Open` / `Take over` / `Stop`。Stop 只在机器 live 时出现。v0.1 没有大预览；Open 经
+  依赖的同源 RPC 启动或恢复机器，等待 `Running`，修复桌面服务，在新标签页打开
+  `desktop_url`，并在可关闭的 toast 里显示桌面密码。Take over 目前走同一路径。Stop
+  先做内联确认，调用 `machine.action` 带 `stop`，永不 destroy。每种失败给一行：未连接、
+  没有机器、弹窗被拦截、启动超时、没有桌面、停止超时或停止失败。用
+  `?computer=live|reconnecting|sleeping|unreachable` 预览状态。
+- **Usage** — 余额、机时、本周花费、idle-stop 策略。余额低于阈值时变琥珀色，下方出现
+  低余额行；用 `?low-balance=1` 预览。
 
-**Library** groups artifacts under Today / This week / Older; each row is a file,
-image or link with one muted subline. P1 in v0.1.
+**Library** 把产物分组为 Today / This week / Older；每行是文件、图片或链接，带一行
+灰色副标题。v0.1 为 P1。
 
-Filled sections show their item count next to the section header. Empty Recent,
-Upcoming or Library sections render a dashed block with one state line and one
-hint about when content appears; no dead action button.
+有内容的分区在标题旁显示条目数。Recent、Upcoming 或 Library 为空时渲染虚线块，带一行
+状态和一句关于内容何时出现的提示；不放无效按钮。
 
-### 2.4 New bot
+### 2.4 新建 bot
 
-The `+` opens a small form, not a wizard: monogram preview, **Name**, **Job, one
-line**, **Instructions, optional**, then `Cancel` / `Create bot`. The name field
-is focused when the form opens. Defaults come from
-[bot-persona.md](bot-persona.md); no personality picker.
+`+` 打开一个小表单，不是向导：字母头像预览、**Name**、**Job, one line**、
+**Instructions, optional**，然后 `Cancel` / `Create bot`。表单打开时聚焦名字字段。
+默认值来自 [bot-persona.md](bot-persona.md)；没有人格选择器。
 
-### 2.5 Setup
+### 2.5 Setup（设置向导）
 
-Four thin steps on the same light canvas: Dependency · Rayrun · Computer ·
-First bot. Current step shows one paragraph and its inputs; `Continue` enables
-when the current step passes; `Skip for now` leaves the setup row in place. The
-dependency step shows the installed cloud-computer plugin version
-(`Installed · v…` / missing / incompatible) and the Rayrun Bot host health
-(`Checking…` / `Loaded · v…` / `Not responding` with Retry). The Rayrun step
-sends a pasted API token to the cloud-computer plugin's same-origin RPC and
-shows the real balance and machine count; a rejected token gets one actionable
-line. The computer step adopts an existing machine or creates one through the
-plugin, with an optional DeepSeek key passed as its model credential; it says
-the machine is billable and that Bots never destroys it. The first-bot step
-remains preview-only.
+同一浅色画布上的四个细步骤：Dependency · Rayrun · Computer · First bot。当前步骤显示
+一段说明和输入；`Continue` 在当前步骤通过时启用；`Skip for now` 保留 setup 行。依赖
+步骤显示已安装的云电脑插件版本（`Installed · v…` / 缺失 / 不兼容）和 Rayrun Bot host
+健康（`Checking…` / `Loaded · v…` / `Not responding` 带 Retry）。Rayrun 步骤把粘贴的
+API token 发给云电脑插件的同源 RPC，并显示真实余额和机器数；被拒绝的 token 得到一句
+可执行提示。电脑步骤采用已有机器或经插件创建一台，可选的 DeepSeek key 作为模型
+credential 传入；它说明机器会计费，且 Bots 永不 destroy 它。第一个 bot 步骤仍只是预览。
 
-### 2.6 Settings
+### 2.6 设置
 
-Reached from the footer gear: Account (Rayrun connection, Rayrun Bot host
-health, dependency health), Usage, Notifications, Appearance/language. The host
-row shows the same-origin health state and offers Retry when the host does not
-answer. The language row offers 简体中文 and English, Chinese first; selecting
-one writes `locale.preference` through DSH so the choice survives a reload.
-Usage reads the cloud-computer plugin's `overview` through the same-origin
-RPC: it shows balance, machine-hours and machine count when connected, and
-`Connect Rayrun to see usage.` when not; the token is never in the page. A Back
-control returns to the conversation; Escape does the same. There is no in-product
-control that returns to the DSH shell (ADR-017). Plain rows with hairline
-separators; no stat cards.
+从页脚齿轮进入：Account（Rayrun 连接、Rayrun Bot host 健康、依赖健康）、Usage、
+Notifications、Appearance/language。Host 行显示同源健康状态，host 不响应时提供 Retry。
+语言行提供简体中文和 English，中文在前；选择后通过 DSH 写入 `locale.preference`，
+刷新后仍保留。Usage 经同源 RPC 读取云电脑插件的 `overview`：连接时显示余额、机时和
+机器数，未连接时显示 `Connect Rayrun to see usage.`；token 永不进入页面。Back 控件
+返回对话；Escape 同样。产品内没有返回 DSH 壳的控件（ADR-017）。朴素的行加细线分隔；
+没有统计卡片。
 
-### 2.7 Approvals (inline only)
+### 2.7 审批（仅内联）
 
-Cards render in the conversation where the action stopped. The chat list shows a
-dot and the latest snippet says what waits. There is **no separate approvals
-page in v0.1** — the earlier inbox is dropped to match the reference; the store
-and RPC still expose the same list for future views.
+卡片渲染在动作停下的对话位置。聊天列表显示一个点，最新摘要说明在等什么。v0.1
+**没有单独的审批页**——早先的 inbox 为贴合参考被砍掉；store 和 RPC 仍为未来视图暴露
+同一个列表。
 
-Pending cards show `expires in N min` for background work (or `waits for you`
-for chat-started work) plus `Deny` / `Allow once`. The background TTL decreases
-once a minute; at zero the card becomes expired, loses its actions, and the
-chat-list dot, snippet and time follow. Chat-started cards have no TTL. Expired cards
-are muted, show `Expired — the bot did not act`, and have no actions. Answered
-cards keep the local-only result line and no actions. The preview's background
-card starts at one minute so the transition is observable.
+待处理卡对后台工作显示 `expires in N min`（聊天发起的显示 `waits for you`），加
+`Deny` / `Allow once`。后台 TTL 每分钟减一；到零时卡片过期、失去动作，聊天列表的点、
+摘要和时间跟着变。聊天发起的卡没有 TTL。过期卡变灰，显示
+`Expired — the bot did not act`，没有动作。已答卡保留本地结果行，没有动作。预览的
+后台卡从一分钟开始，便于观察过渡。
 
-## 3. Alignment with Grok Bot
+## 3. 与 Grok Bot 的对齐
 
-| Grok Bot pattern | Source | Our v0.1 |
+| Grok Bot 模式 | 来源 | 我们的 v0.1 |
 | --- | --- | --- |
-| Chat list column: search, `+`, current bot, rows with snippet/time | reference screenshot, 2026-11-12 | copied |
-| Center conversation as rich markdown with timestamp separators | reference screenshot | copied: paragraphs, lists, code spans |
-| Right details panel per bot: profile, Activity/Library tabs, routines, computer | reference screenshot; `skills-routines-and-automations.md` | copied; usage section added, voice omitted |
-| Inline approval card with Deny / allow | `approvals-security-and-privacy.md:30-57` | `Deny` / `Allow once`; `Always allow` deferred to Auto Review (v0.2) |
-| Chat cards wait, background cards expire 30 min | `approvals-security-and-privacy.md:72-83` | copied via `origin` field |
-| Editable draft marked Needs approval | `chat-and-collaboration.md:89-107` | copied |
-| Computer preview with open/take over | `computer-and-apps.md:31-63` | small computer row at the bottom of the details panel, like the reference, plus activity rows in the conversation |
-| Attention states in the list | `settings-and-notifications.md:205-214` | dots: needs attention / unread / working |
-| Bot name, picture, job label; light persona | `bots.md:5-6,77-103`; [bot-persona.md](bot-persona.md) | copied; monogram avatar in v0.1 |
-| Voice chat, group chats, mobile, shared bots, marketplace, Vault, Auto Review | Grok Bot product surface | out of v0.1 (§8) |
+| 聊天列表栏：搜索、`+`、当前 bot、带摘要/时间的行 | 参考截图，2026-11-12 | 照搬 |
+| 中间对话是富 markdown，带时间戳分隔 | 参考截图 | 照搬：段落、列表、code span |
+| 右详情面板：资料、Activity/Library 标签页、routines、电脑 | 参考截图；`skills-routines-and-automations.md` | 照搬；增加 usage 分区，省略语音 |
+| 内联审批卡带 Deny / allow | `approvals-security-and-privacy.md:30-57` | `Deny` / `Allow once`；`Always allow` 推迟到 Auto Review（v0.2） |
+| 聊天卡等待，后台卡 30 分钟过期 | `approvals-security-and-privacy.md:72-83` | 通过 `origin` 字段照搬 |
+| 可编辑草稿标记 Needs approval | `chat-and-collaboration.md:89-107` | 照搬 |
+| 电脑预览带 open/take over | `computer-and-apps.md:31-63` | 详情面板底部的小电脑行，像参考一样，外加对话里的活动行 |
+| 列表里的关注状态 | `settings-and-notifications.md:205-214` | 点：需要关注 / 未读 / 工作中 |
+| Bot 名字、图片、职责标签；轻人格 | `bots.md:5-6,77-103`；[bot-persona.md](bot-persona.md) | 照搬；v0.1 用字母头像 |
+| 语音聊天、群聊、移动端、共享 bot、市场、Vault、Auto Review | Grok Bot 产品表面 | 超出 v0.1（§8） |
 
-Two anchors: the reference screenshot decides the layout (three columns, chat-list rows, details panel); rayrunos.com decides the look (white canvas, light gray panels, navy primary buttons, blue active pills, hairline borders, dark navy terminal surfaces, blue geometric mark).
+两个锚点：参考截图决定布局（三栏、聊天列表行、详情面板）；rayrunos.com 决定观感
+（白色画布、浅灰面板、深蓝主按钮、蓝色激活胶囊、细线边框、深蓝终端表面、蓝色几何
+标志）。
 
-## 4. Component inventory
+## 4. 组件清单
 
-| Component | Used on | Wave | Notes |
+| 组件 | 用在 | 波次 | 备注 |
 | --- | --- | --- | --- |
-| `AppShell` | all | C1 | three columns, collapsible details |
-| `ChatList` | shell | C2 | search, `+`, current bot, rows, dots, footer |
-| `ChatRow` | shell | C2 | avatar, name, snippet, time, attention dot |
-| `Conversation` | center | C2 | markdown messages, day separators |
-| `ApprovalCard` | conversation | C3 | Deny / Allow once, warning, origin, meta |
-| `DraftCard` | conversation | C3 | editable, Discard / Send |
-| `Composer` | center | C2 | attach, send, disabled reason |
-| `Notice` | center | C1 | one line above the composer |
-| `DetailsPanel` | right | C3 | profile, tabs |
-| `ReceiptCard` | activity | C3 | task, state, time, artifacts, spend |
-| `RoutineRow` | upcoming | C4 | title, schedule, toggle |
-| `ComputerRow` | details (bottom) | C4 | name, state, small thumbnail, Open / Take over |
-| `ComputerActivityRow` | conversation | C3 | mini screen, what the bot is doing, View |
-| `UsageBlock` | details | C4 | balance, hours, week, idle stop |
-| `NewBotForm` | newbot | C2 | name, job, instructions, monogram |
-| `SetupWizard` | setup | C4 | four thin steps |
+| `AppShell` | 全部 | C1 | 三栏，详情可折叠 |
+| `ChatList` | 壳 | C2 | 搜索、`+`、当前 bot、行、点、页脚 |
+| `ChatRow` | 壳 | C2 | 头像、名字、摘要、时间、关注点 |
+| `Conversation` | 中栏 | C2 | markdown 消息、日期分隔 |
+| `ApprovalCard` | 对话 | C3 | Deny / Allow once、警告、来源、元数据 |
+| `DraftCard` | 对话 | C3 | 可编辑，Discard / Send |
+| `Composer` | 中栏 | C2 | 附件、发送、禁用原因 |
+| `Notice` | 中栏 | C1 | composer 上方一行 |
+| `DetailsPanel` | 右栏 | C3 | 资料、标签页 |
+| `ReceiptCard` | activity | C3 | 任务、状态、时间、产物、花费 |
+| `RoutineRow` | upcoming | C4 | 标题、日程、开关 |
+| `ComputerRow` | 详情（底部） | C4 | 名字、状态、小缩略图、Open / Take over |
+| `ComputerActivityRow` | 对话 | C3 | 迷你屏幕、bot 在做什么、View |
+| `UsageBlock` | 详情 | C4 | 余额、机时、本周、idle stop |
+| `NewBotForm` | newbot | C2 | 名字、职责、指令、字母头像 |
+| `SetupWizard` | setup | C4 | 四个细步骤 |
 | `SettingsPage` | settings | C4 | account/usage/notifications/appearance |
 
-## 5. Copy deck (source for `locale/en.json`)
+## 5. 文案表（`locale/en.json` 的源）
 
 | Key | English | 中文 |
 | --- | --- | --- |
@@ -281,57 +248,53 @@ Two anchors: the reference screenshot decides the layout (three columns, chat-li
 | `cost.low` | Balance is low — top up in the Rayrun console. Stop is safe; destroy is not. | 余额偏低——去 Rayrun 控制台充值。停机会保留磁盘，销毁不会。 |
 | `cost.lowShort` | Balance low | 余额偏低 |
 
-Approval and key copy never contains jokes; every error row has one next action.
+审批和 key 文案绝不含玩笑；每个错误行都有一个下一步动作。
 
-## 6. Visual system
+## 6. 视觉系统
 
-Two anchors: the reference screenshot decides the layout (§1–§3); rayrunos.com
-decides the look. Captured from the Rayrun site and docs on 2026-11-12: white
-canvas, very light gray panels, hairline gray borders, dark navy primary buttons,
-blue links and active pills, dark navy terminal surfaces, a blue geometric logo
-mark, and bold CJK-friendly headings.
+两个锚点：参考截图决定布局（§1–§3）；rayrunos.com 决定观感。2026-11-12 从 Rayrun 站点
+和文档采集：白色画布、很浅的灰色面板、细灰边框、深蓝主按钮、蓝色链接和激活胶囊、
+深蓝终端表面、蓝色几何 logo 标志，以及加粗的 CJK 友好标题。
 
-| Token | Value | Use |
+| Token | 值 | 用途 |
 | --- | --- | --- |
-| `bg` | `#ffffff` | app canvas |
-| `list` | `#f7f8fa` | chat list, details panel |
-| `main` | `#ffffff` | conversation canvas |
-| `card` | `#ffffff` | approval, draft, receipt cards |
-| `text` | `#0f172a` | primary text (slate/navy) |
-| `muted` | `#5b6472` | secondary text |
-| `faint` | `#8a93a3` | timestamps, hints |
-| `border` | `#e4e8f0` | card and control borders |
-| `border-soft` | `#eef1f6` | list separators |
-| `primary` | `#0e2050` on `#ffffff` | primary buttons, send, toggles |
-| `accent` | `#1d4ed8` | links, active rows, tabs |
-| `accent-soft` | `#eaf1fd` | selected chat row |
-| `success` | `#15803d` | done / working |
-| `attention` | `#b45309` on `#fff7e6` | needs attention, warnings |
-| `danger` | `#b42318` on `#fff5f4` | deny, irreversible warnings |
-| `brand` | `#003d9b` | official Rayrun logo mark only |
+| `bg` | `#ffffff` | App 画布 |
+| `list` | `#f7f8fa` | 聊天列表、详情面板 |
+| `main` | `#ffffff` | 对话画布 |
+| `card` | `#ffffff` | 审批、草稿、receipt 卡 |
+| `text` | `#0f172a` | 主文字（slate/navy） |
+| `muted` | `#5b6472` | 次级文字 |
+| `faint` | `#8a93a3` | 时间戳、提示 |
+| `border` | `#e4e8f0` | 卡片和控件边框 |
+| `border-soft` | `#eef1f6` | 列表分隔 |
+| `primary` | `#0e2050` on `#ffffff` | 主按钮、发送、开关 |
+| `accent` | `#1d4ed8` | 链接、激活行、标签页 |
+| `accent-soft` | `#eaf1fd` | 选中的聊天行 |
+| `success` | `#15803d` | 完成 / 工作中 |
+| `attention` | `#b45309` on `#fff7e6` | 需要关注、警告 |
+| `danger` | `#b42318` on `#fff5f4` | 拒绝、不可逆警告 |
+| `brand` | `#003d9b` | 仅官方 Rayrun logo 标志 |
 
-Rules: white cards on light-gray panels; navy primary controls; blue reserved for
-links, selected rows and tabs; amber only for warnings; one border weight and one
-shadow level; radii 12 px cards / 9 px controls; no gradients or colored panels.
-Brand: use the official Rayrun logo — the lucide **Boxes** mark shown in the rayrunos.com header, in `#003d9b`, plus the "Rayrun Bot" wordmark. The mockup inlines that official mark; the favicon variant (blue rounded square, white mark) is saved at [`docs/mockups/rayrun-logo.svg`](../mockups/rayrun-logo.svg) for packaging. Never redraw or restyle the mark; it is the only place the brand blue appears. Type: system stack with `PingFang SC` / `Microsoft YaHei` fallbacks;
-14 px body, 13 px UI labels, 18 px page titles. Motion 120 ms; honor
-`prefers-reduced-motion`. Light only in v0.1; dark follows DSH when available.
+规则：浅灰面板上的白色卡片；深蓝主控件；蓝色只用于链接、选中行和标签页；琥珀色只用于
+警告；一种边框粗细和一种阴影层级；圆角 12 px 卡片 / 9 px 控件；不用渐变或彩色面板。
+品牌：使用官方 Rayrun logo——rayrunos.com 页眉里的 lucide **Boxes** 标志，颜色
+`#003d9b`，加“Rayrun Bot”字标。Mockup 内联该官方标志；favicon 变体（蓝色圆角方块、
+白色标志）保存在 [`docs/mockups/rayrun-logo.svg`](../mockups/rayrun-logo.svg)，用于
+打包。绝不重画或改风格；它是品牌蓝唯一出现的地方。字体：系统字体栈，带
+`PingFang SC` / `Microsoft YaHei` 回退；正文 14 px、UI 标签 13 px、页面标题 18 px。
+动效 120 ms；尊重 `prefers-reduced-motion`。v0.1 仅浅色；深色跟随 DSH（可用时）。
 
-## 7. Accessibility and responsive
+## 7. 无障碍与响应式
 
-- Keyboard: search → rows → conversation → approval buttons; visible focus;
-  Escape closes forms. Opening the new-bot form focuses its name field; creating
-  a bot focuses the composer.
-- Approval changes announced with `aria-live="polite"`; countdowns are silent.
-- Contrast ≥ 4.5:1; dots always paired with an accessible label.
-- Three columns ≥1120 px; details collapses below; list collapses below 900 px.
-  No mobile-native layout in v0.1.
+- 键盘：搜索 → 行 → 对话 → 审批按钮；焦点可见；Escape 关闭表单。打开新建 bot 表单时
+  聚焦名字字段；创建 bot 后聚焦 composer。
+- 审批变化用 `aria-live="polite"` 播报；倒计时静默。
+- 对比度 ≥ 4.5:1；点始终配可访问标签。
+- 三栏 ≥1120 px；详情在下面折叠；列表在 900 px 以下折叠。v0.1 没有移动原生布局。
 
-## 8. Out of scope for v0.1
+## 8. v0.1 之外
 
-Voice input/chat, group chats, X Chat, mobile layouts, shared bots, bot templates
-and marketplace, Vault/Secure Form, bot email, Auto Review rules and
-"Always allow" (v0.2), primary-bot check-ins, bot-to-bot handoff cards (v0.2
-candidate, see [inspiration.md](../research/inspiration.md)), avatar upload or generation,
-personality presets, custom themes, artifact preview beyond links, and keyboard
-shortcuts beyond Enter/Escape.
+语音输入/聊天、群聊、X Chat、移动布局、共享 bot、bot 模板和市场、Vault/Secure Form、
+bot 邮箱、Auto Review 规则和“Always allow”（v0.2）、primary bot check-in、bot-to-bot
+交接卡（v0.2 候选，见 [inspiration.md](../research/inspiration.md)）、头像上传或生成、
+人格预设、自定义主题、链接之外的产物预览，以及 Enter/Escape 之外的键盘快捷键。

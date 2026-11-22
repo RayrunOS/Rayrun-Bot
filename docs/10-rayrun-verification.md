@@ -4,7 +4,7 @@
 > 所有需要计算资源的验证与测试都走 Rayrun（真实 token 页面例外见 §2.6）；Rayrun 不满足
 > 的项记在这里，不静默改用本地或其他云，也不把未验证写成已实现。平台能力需求本身仍以
 > [`08-integration.md`](08-integration.md) 为准。
-> 测试证据和实现状态以 [`../README.md`](../README.md) 的 **Status** 段为准。
+> 测试证据和实现状态以 [`12-status.md`](12-status.md) 为准。
 
 ## 0. 与现有文档的关系
 
@@ -15,7 +15,7 @@
 | [`11-dsh-rayrun-computer-issues.md`](11-dsh-rayrun-computer-issues.md) | `dsh-rayrun-computer` 自身的问题登记；修复去上游 |
 | [`design/desktop-distribution.md`](design/desktop-distribution.md) | D-S1a 清单与 2026-11-21 实测记录（§5.8） |
 | [`plans/mvp-plan.md`](plans/mvp-plan.md) | v0.1 验收任务与测试证据要求（§2、§7） |
-| [`../README.md`](../README.md) | 产品状态；本文不复制状态 |
+| [`12-status.md`](12-status.md) | 实现状态；本文不复制状态 |
 
 ---
 
@@ -257,4 +257,4 @@
 - [`05-approvals.md`](05-approvals.md) 与 [ADR-001](adr/architecture-decisions.md#adr-001)
 - [`design/desktop-distribution.md`](design/desktop-distribution.md) §5.8
 - [`plans/mvp-plan.md`](plans/mvp-plan.md) §7
-- [`../README.md`](../README.md) Status
+- [`12-status.md`](12-status.md)

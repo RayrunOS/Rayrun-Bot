@@ -7,7 +7,7 @@
 > 审批见 [`05-approvals.md`](05-approvals.md)；本地状态见
 > [`06-local-state.md`](06-local-state.md)；未决决策见
 > [`adr/architecture-decisions.md`](adr/architecture-decisions.md)。
-> 实现状态以 [`../README.md`](../README.md) 的 **Status** 段为准；本文中的
+> 实现状态以 [`12-status.md`](12-status.md) 为准；本文中的
 > **计划 / TBD** 不是已交付。本层由 **ADR-015** 提案（Proposed）；定稿前它仍是
 > 设计方向。
 

@@ -1,131 +1,112 @@
-# MVP plan — v0.1 (detailed)
+# MVP 计划 — v0.1（详细）
 
-*Status: 2026-11-11. Detailed execution plan for the first release. Scope is
-frozen; only the P0 items below ship. Estimates are engineer-days and assume
-1–2 engineers plus coding agents; the research estimate of 4–6 weeks assumes the
-cloud-computer layer is reused as-is and no platform blocker hits. Related:
-[client plan](client-plan.md), [platform asks](../08-integration.md),
-[system architecture](../01-system-architecture.md), [roadmap](roadmap.md).*
+*状态：2026-11-22。首个版本的详细执行计划。范围已冻结；只交付下面的 P0 项。估算单位
+是工程师日，假设 1–2 名工程师加编码 agent；调研给出的 4–6 周估算假设云电脑层原样复用，
+且没有平台阻塞。实现状态以 [../12-status.md](../12-status.md) 为准。相关：
+[客户端计划](client-plan.md)、[平台需求](../08-integration.md)、
+[系统架构](../01-system-architecture.md)、[路线图](roadmap.md)。*
 
-## 0. How to read this plan
+## 0. 怎么读这份计划
 
-- §2 holds the sign-off table (A1–A12); a row that cannot be demonstrated blocks
-  the release.
-- §5 holds work items with IDs, deliverables, dependencies and estimates; §6
-  sequences them into milestones M0–M5.
-- §4 fixes the interfaces so host, bot runtime and client can be built in parallel
-  against stubs.
-- Anything not in §3 is out of scope; open decisions in §11 are due before M1.
+- §2 是签收表（A1–A12）；无法演示的行阻塞发布。
+- §5 是带 ID、交付物、依赖和估算的工作项；§6 把它们排成里程碑 M0–M5。
+- §4 固定接口，让 host、bot runtime 和客户端能对着 stub 并行构建。
+- §3 之外都不在范围内；§11 的未决项在 M1 前到期。
 
-## 1. What the MVP is
+## 1. MVP 是什么
 
-One person, on their own laptop, installs the Rayrun Bot DSH plugin — which pulls
-in the separate cloud-computer plugin as a dependency — signs in to their own
-Rayrun account, stores their own DeepSeek key, creates a cloud computer, creates
-a named bot, talks to it, closes the laptop, and the bot finishes a background
-task and stops for an approval. The user approves it from the browser, the bot
-continues, and the machine-hours bill is visible. That is the whole MVP.
+一个人，在自己的笔记本上，安装 Rayrun Bot 的 DSH 插件——它把独立的云电脑插件作为
+依赖拉进来——登录自己的 Rayrun 账号，存入自己的 DeepSeek key，创建一台云电脑，创建
+一个有名字的 bot，和它对话，合上笔记本；bot 完成一个后台任务，并停在一个审批上。
+用户在浏览器里批准，bot 继续，机时账单可见。这就是整个 MVP。
 
-The demo we must be able to record on the first day of alpha:
+Alpha 第一天我们必须能录下来的演示：
 
-1. Fresh DSH profile; install both plugins from the README; restart.
-2. Sign in to Rayrun; store the DeepSeek key.
-3. Create a computer (one screen); open its desktop.
-4. Create a bot named "weekly-watch"; give it one instruction.
-5. Send it a task; watch the reply stream in the panel.
-6. Close the local DSH; the bot keeps working.
-7. Reopen: the task is done, and the bot is waiting on one approval.
-8. Approve; the bot takes the gated action; the cost bar shows the spend.
+1. 全新的 DSH profile；按文档安装路径装两个插件；重启。
+2. 登录 Rayrun；存入 DeepSeek key。
+3. 创建云电脑（一屏）；打开它的桌面。
+4. 创建一个叫“weekly-watch”的 bot；给它一条指令。
+5. 给它一个任务；看回复在面板里流式出现。
+6. 关闭本地 DSH；bot 继续工作。
+7. 重新打开：任务完成，bot 在等一个审批。
+8. 批准；bot 执行受限动作；成本栏显示花费。
 
-## 2. Acceptance tasks — v0.1 sign-off
+## 2. 验收任务 — v0.1 签收
 
-Every row must pass with the stated evidence; a row that cannot be demonstrated
-blocks the release. Automated rows run as plain-Node tests (`node test/*.mjs`);
-manual rows are recorded as a screen capture plus the log files.
+每一行都必须以所述证据通过；无法演示的行阻塞发布。自动行用普通 Node 测试
+（`node test/*.mjs`）；手动行记录为截图加日志文件。
 
-| ID | Task | Pass evidence |
+| ID | 任务 | 通过证据 |
 | --- | --- | --- |
-| A1 | Clean-machine install | fresh DSH profile: install both plugins per README, restart, both pages load; a missing dependency shows an actionable error; ≤ 3 minutes |
-| A2 | Sign-in and key | Rayrun login stores the token in the vault; the DeepSeek key is stored as a Rayrun credential; without a token the tools answer `token_required` |
-| A3 | Create a computer | ≤ 15 s, at least 2 GB, desktop optional; balance and machine hours visible |
-| A4 | Create a bot and talk to it | a named bot with instructions appears in the chat list, streams a reply, and its directory exists on the machine (`rayrun_files` evidence) |
-| A5 | Laptop closed | with the local DSH closed, a bot finishes one background task; reopening shows the result, with timestamps on both sides |
-| A6 | Approve | a gated action stops; the card appears within 10 s; approval resumes the bot within 10 s; the side effect happens only after the decision |
-| A7 | Deny and expiry | a denial means no side effect; a background card expires after 30 minutes and is denied; a chat-started card waits; replayed, wrong-bot and expired requests are rejected and logged (negative tests) |
-| A8 | Resume | the same bot's second conversation continues the first, and still continues after the host process is killed and after machine stop/start |
-| A9 | Recovery | killing the bot runtime loses no queued work; the watchdog restarts it within 60 s and the queue drains |
-| A10 | Cost and lifecycle | balance and hours shown; idle stop stops, never destroys; `destroy` only from an explicit human action |
-| A11 | Security regression | repo, logs and workspace scan clean of tokens and keys; no public ingress; approval negative tests green; dependency version check enforced |
-| A12 | Release | README/quickstart three-minute path verified on a clean machine; npm tarball contains host half, client half, locale and bundle patch; CI green |
+| A1 | 干净机器安装 | 全新 DSH profile：按文档安装路径装两个插件，重启，两个页面都加载；缺依赖时显示可执行错误；≤ 3 分钟 |
+| A2 | 登录与 key | Rayrun 登录把 token 存进 vault；DeepSeek key 存为 Rayrun credential；没有 token 时工具返回 `token_required` |
+| A3 | 创建云电脑 | ≤ 15 秒，至少 2 GB，桌面可选；余额和机时可见 |
+| A4 | 创建 bot 并对话 | 带指令的有名字 bot 出现在聊天列表，流式回复，它的目录存在于机器上（`rayrun_files` 证据） |
+| A5 | 笔记本合上 | 本地 DSH 关闭时，bot 完成一个后台任务；重新打开显示结果，两侧都有时间戳 |
+| A6 | 批准 | 受限动作停下；卡片 10 秒内出现；批准后 bot 10 秒内继续；副作用只在决定之后发生 |
+| A7 | 拒绝与过期 | 拒绝意味着没有副作用；后台卡 30 分钟后过期并被拒绝；聊天发起的卡等待；重放、错 bot 和过期请求被拒绝并记录（负向测试） |
+| A8 | 续接 | 同一个 bot 的第二次对话接着第一次，host 进程被杀后以及机器 stop/start 后仍能续接 |
+| A9 | 恢复 | 杀死 bot runtime 不丢排队工作；watchdog 60 秒内重启它，队列排空 |
+| A10 | 成本与生命周期 | 余额和机时可见；idle stop 只停，永不 destroy；`destroy` 只来自明确的人类动作 |
+| A11 | 安全回归 | 仓库、日志和工作区扫描不到 token 和 key；没有公网 ingress；审批负向测试全绿；依赖版本检查强制执行 |
+| A12 | 发布 | 干净机器上验证三分钟安装路径；npm tarball 包含 host half、client half、locale 和 bundle patch；CI 全绿 |
 
-A6/A7 are blocked on the platform ask in [08 §3.3](../08-integration.md)
-(ADR-001); they remain sign-off criteria.
+A6/A7 阻塞于 [08 §3.3](../08-integration.md) 的平台需求（ADR-001）；它们仍是签收
+标准。
 
-Alpha gate after A1–A12: 10–20 seed users; first-bot success ≥ 80 %; week-2
-retention ≥ 40 %; zero billing complaints. These are signals, not ship gates.
+A1–A12 之后的 alpha 门：10–20 名种子用户；首个 bot 成功率 ≥ 80%；第 2 周留存 ≥ 40%；
+零计费投诉。这些是信号，不是发布门。
 
-## 3. Scope
+## 3. 范围
 
-In — P0 unless marked P1:
+范围内——P0，除非标 P1：
 
-| Item | Note |
+| 项 | 说明 |
 | --- | --- |
-| Bot registry: name, label, avatar, instructions, skills, memory dir | bots are profile directories on the machine, not code |
-| Chat list, conversation and per-bot details panel | Grok Bot three-column shell; reuse DSH chat where the API allows |
-| Bot↔session mapping | persisted on the machine, mirrored locally |
-| Cloud bot runtime: queue, inbox/outbox, watchdog | one agent task at a time |
-| Fail-closed approval gate | TTL 30 min, replay protection, audit line; blocked on ADR-001 platform isolation |
-| Inline approval cards | cards in the conversation; a dot in the chat list marks attention |
-| Cloud-computer dependency integration | dependency declaration, version check, missing-plugin error |
-| Cost bar: balance and machine hours | per-bot attribution is P1 |
-| Onboarding wizard | login → key → computer → first bot |
-| npm package, CI, DSH version matrix | required to ship v0.1.0 |
-| Scheduled wake-up, one cron per bot (P1) | only if W3 ends on schedule |
+| Bot 注册表：名字、标签、头像、指令、技能、记忆目录 | bot 是机器上的 profile 目录，不是代码 |
+| 聊天列表、对话和每 bot 详情面板 | Grok Bot 三栏壳；在 API 允许的地方复用 DSH 聊天 |
+| Bot↔session 映射 | 持久化在机器上，本地镜像 |
+| 云端 bot runtime：队列、inbox/outbox、watchdog | 一次一个 agent 任务 |
+| Fail-closed 审批门 | TTL 30 分钟、防重放、审计行；阻塞于 ADR-001 平台隔离 |
+| 内联审批卡 | 对话里的卡片；聊天列表的点标记关注 |
+| 云电脑依赖集成 | 依赖声明、版本检查、缺插件错误 |
+| 成本栏：余额和机时 | 按 bot 归因是 P1 |
+| Onboarding 向导 | 登录 → key → 电脑 → 第一个 bot |
+| npm 包、CI、DSH 版本矩阵 | 发布 v0.1.0 必需 |
+| 定时唤醒，每 bot 一个 cron（P1） | 只在 W3 按计划结束时做 |
 
-Out — deliberately: multi-tenant SaaS, hosted accounts, team/RBAC, IM channel
-(v0.2), mobile app, marketplace, provider abstraction, standalone desktop shell,
-browser-login persistence, public ingress panel, bot-to-bot handoffs and a
-coordinator bot (v0.2 candidate), and parallel execution of multiple bots on one
-computer. The MVP serializes bots through a queue; that is a feature until the
-platform can run more than one agent task per machine.
+范围外——刻意不做：多租户 SaaS、托管账号、团队/RBAC、IM 通道（v0.2）、移动 App、
+市场、供应商抽象、独立桌面壳、浏览器登录持久化、公网 ingress 面板、bot-to-bot 交接和
+协调者 bot（v0.2 候选），以及一台电脑上并行执行多个 bot。MVP 用队列串行化 bot；在
+平台能一台机器跑多个 agent 任务之前，这是特性。
 
-## 4. Architecture and interfaces
+## 4. 架构与接口
 
-The local (plugin-side) file layout is specified in
-[local-file-design.md](../06-local-state.md).
+本地（插件侧）文件布局见 [06-local-state.md](../06-local-state.md)。
 
-### 4.1 Frozen decisions
+### 4.1 冻结决策
 
-1. **No inbound networking.** Local → cloud control goes through the Rayrun API;
-   cloud → local state is written as files under `/workspace/.rayrun/`. The
-   public desktop port is never used as the product panel.
-2. **One computer per user**, shared by that user's bots. Rayrun runs one agent
-   task per machine (`409 sandbox_busy`), so the bot runtime owns a FIFO queue.
-3. **Bot state lives on the machine**; the local side keeps a read-only mirror
-   and pulls it back as the recovery anchor.
-4. **Persistent host on the machine**: a small Node supervisor, shipped by the
-   existing worker projection, runs the queue and the DSH sessions; a local
-   watchdog restarts it through `exec`.
-5. **Approval execution waits for platform isolation (ADR-001, decided
-   2026-11-21).** Proposal and audit files may still be the transport, but the
-   authorization boundary must be where the agent cannot write. Until Rayrun
-   provides host/agent permission isolation and a host-only approval endpoint
-   ([08-integration.md](../08-integration.md) §3.3), E1–E7 and A6/A7 are blocked
-   and no approval execution code ships. The file mailbox is not an
-   authorization path.
-6. **Session strategy is decided by spike S1**: preferred long-lived DSH process
-   on the machine; fallback per-turn headless with a session id; last resort
-   transcript replay.
-7. **Separate projects, one dependency edge.** `dsh-rayrun-computer` stays in its
-   own repository and is consumed as an npm dependency (MIT). The bundle is meant
-   to declare the dependency so one install brings both; S6 decides, and the
-   documented two-install path is the fallback.
-8. **One queue, one agent task.** The host never relies on the platform to queue;
-   busy is retried, never dropped.
-9. **Authority split.** Local-first for ownership and decisions, cloud for
-   execution; see [01-system-architecture.md](../01-system-architecture.md#51-真相在哪).
+1. **没有入向网络。** 本地 → 云端控制走 Rayrun API；云端 → 本地状态写成
+   `/workspace/.rayrun/` 下的文件。公网桌面端口绝不用作产品面板。
+2. **每人一台电脑**，由这个人的 bot 共享。Rayrun 一台机器只跑一个 agent 任务
+   （`409 sandbox_busy`），所以 bot runtime 拥有一个 FIFO 队列。
+3. **Bot 状态住在机器上**；本地保留只读镜像，并把它拉回来作为恢复锚点。
+4. **机器上的常驻 host**：一个小 Node supervisor，由现有 worker projection 交付，
+   运行队列和 DSH session；本地 watchdog 通过 `exec` 重启它。
+5. **审批执行等待平台隔离（ADR-001，2026-11-21 定）。** 提案和审计文件仍可作为传输，
+   但授权边界必须在 agent 写不到的地方。Rayrun 提供 host/agent 权限隔离和 host-only
+   审批端点之前（[08-integration.md](../08-integration.md) §3.3），E1–E7 和 A6/A7
+   阻塞，不交付审批执行代码。文件邮箱不是授权路径。
+6. **Session 策略由 spike S1 决定**：优先机器上的长驻 DSH 进程；回退到每轮 headless
+   加 session id；最后手段是 transcript 重放。
+7. **独立项目，一条依赖边。** `dsh-rayrun-computer` 留在自己的仓库，作为 npm 依赖
+   （MIT）被消费。bundle 计划声明该依赖，让一次安装带两个；S6 决定，文档化的两装路径
+   是回退。
+8. **一个队列，一个 agent 任务。** Host 绝不依赖平台排队；busy 重试，绝不丢弃。
+9. **权限划分。** 所有权和决策 local-first，执行在云端；见
+   [01-system-architecture.md](../01-system-architecture.md#51-真相在哪)。
 
-### 4.2 On-machine layout
+### 4.2 机器内布局
 
 ```
 /workspace/.rayrun/
@@ -140,256 +121,240 @@ The local (plugin-side) file layout is specified in
 └── outbox/events.jsonl     # events for the local UI, append-only
 ```
 
-### 4.3 Schemas
+### 4.3 Schema（数据结构）
 
-**`bot.json`** — `{ schema: 1, id, name, label, avatar, instructions, skills: [], model?: "deepseek", createdAt, updatedAt }`.
-`id` is kebab-case and unique per user; `name` is the Title Case display name;
-`label` is the one-line job shown under the name; `avatar` is a monogram spec
-(`{ kind: "monogram", letter, hue }`) in v0.1; instructions are plain markdown,
-capped at 8 KB. New bots start from the default instruction template in
-[bot-persona.md](../design/bot-persona.md) §6.
+**`bot.json`** — `{ schema: 1, id, name, label, avatar, instructions, skills: [], model?: "deepseek", createdAt, updatedAt }`。
+`id` 是 kebab-case，每个用户唯一；`name` 是 Title Case 显示名；`label` 是名字下方的一行
+职责；`avatar` 在 v0.1 是字母头像规格（`{ kind: "monogram", letter, hue }`）；指令是
+纯 markdown，上限 8 KB。新 bot 从
+[bot-persona.md](../design/bot-persona.md) §6 的默认指令模板开始。
 
-**Queue item** — `{ id, botId, kind: "message" | "task" | "wake", text, createdAt, state, attempts }`
-with states `queued → running → waiting_approval → done | failed | cancelled`.
-One in-flight item per machine; the rest stay `queued`.
+**队列项** — `{ id, botId, kind: "message" | "task" | "wake", text, createdAt, state, attempts }`，
+状态为 `queued → running → waiting_approval → done | failed | cancelled`。每台机器
+一个在途项；其余保持 `queued`。
 
-**Approval request** — `{ schema: 1, id, botId, nonce, actionHash, action, risk,
-origin: "chat" | "background", createdAt, expiresAt }`; **decision** — `{ schema: 1, id, nonce, decision:
-"approve" | "deny", decidedAt }`. Both written to a temp name and renamed into
-place; the decision must match id, nonce and bot id. A card raised from a chat
-message waits with no timer; a card raised by background work expires after 30
-minutes and is denied. The action hash covers the normalized action payload, so a
-stale card cannot approve a different action.
+**审批请求** — `{ schema: 1, id, botId, nonce, actionHash, action, risk,
+origin: "chat" | "background", createdAt, expiresAt }`；**决定** —
+`{ schema: 1, id, nonce, decision: "approve" | "deny", decidedAt }`。两者都先写临时
+文件名再 rename 就位；决定必须匹配 id、nonce 和 bot id。聊天消息发起的卡无限等待；
+后台工作发起的卡 30 分钟后过期并拒绝。Action hash 覆盖规范化后的 action payload，
+所以过期卡不能批准另一个动作。
 
-**Outbox event** — `{ seq, at, botId?, type: "status" | "message" | "approval" |
-"error", payload }`; the client reads by `seq` cursor and ignores gaps older than
-its checkpoint.
+**Outbox 事件** — `{ seq, at, botId?, type: "status" | "message" | "approval" |
+"error", payload }`；客户端按 `seq` 游标读取，忽略早于其 checkpoint 的 gap。
 
-**Error codes** (stable, used by RPC and logs): `E_DEP_MISSING`,
-`E_DEP_VERSION`, `E_TOKEN_REQUIRED`, `E_KEY_REQUIRED`, `E_MACHINE_STOPPED`,
-`E_MACHINE_BUSY`, `E_APPROVAL_EXPIRED`, `E_APPROVAL_REPLAY`,
-`E_APPROVAL_UNKNOWN`, `E_HOST_DOWN`, `E_BOT_UNKNOWN`, `E_BOT_INVALID`,
-`E_BOT_EXISTS`, `E_QUEUE_FULL`, `E_BALANCE_LOW`, `E_INTERNAL`.
+**错误码**（稳定，RPC 和日志共用）：`E_DEP_MISSING`、`E_DEP_VERSION`、
+`E_TOKEN_REQUIRED`、`E_KEY_REQUIRED`、`E_MACHINE_STOPPED`、`E_MACHINE_BUSY`、
+`E_APPROVAL_EXPIRED`、`E_APPROVAL_REPLAY`、`E_APPROVAL_UNKNOWN`、`E_HOST_DOWN`、
+`E_BOT_UNKNOWN`、`E_BOT_INVALID`、`E_BOT_EXISTS`、`E_QUEUE_FULL`、`E_BALANCE_LOW`、
+`E_INTERNAL`。
 
-### 4.4 RPC surface
+### 4.4 RPC 表面
 
-The client ↔ host contract is defined in [client-plan.md](client-plan.md):
-same-origin `/plugins/<bundle-id>/rpc`, size-limited JSON, `{ action, payload }`
-in and `{ ok, data }` or `{ ok: false, code, message }` out. Responses never
-carry the Rayrun token or the DeepSeek key. The bot runtime has no public RPC; it is
-driven by the host half through the dependency's `rayrun_*` tools or its RPC
-route, decided by spike S6.
+客户端 ↔ host 契约定义在 [client-plan.md](client-plan.md)：同源
+`/plugins/<bundle-id>/rpc`，大小限制的 JSON，入 `{ action, payload }`，出 `{ ok, data }`
+或 `{ ok: false, code, message }`。响应绝不携带 Rayrun token 或 DeepSeek key。Bot
+runtime 没有公开 RPC；它由 host half 通过依赖的 `rayrun_*` 工具或 RPC 路由驱动，由
+spike S6 决定。
 
-### 4.5 Dependency contract
+### 4.5 依赖契约
 
-- **We use:** the `rayrun_*` tools (create/stop/pause/resume/destroy, `exec`,
-  `files`, `agent`, `dsh`, `workspace`), their exact names and semantics, and the
-  same-origin RPC route when a direct host-to-host call is cheaper.
-- **Version check:** the host records the installed version at startup and fails
-  with `E_DEP_MISSING` / `E_DEP_VERSION` plus one sentence on what to install.
-- **Never:** edit, fork or vendor `dsh-rayrun-computer`; changes it needs go to
-  its own repository issue tracker.
-- **Not a dependency:** `dsh-superagent-prototype` — a reference-only research
-  prototype with no cloud computer, persistent bot object or remote approvals. We
-  borrow ideas, not code, and revisit it for v0.2 event triggers.
+- **我们使用：** `rayrun_*` 工具（create/stop/pause/resume/destroy、`exec`、`files`、
+  `agent`、`dsh`、`workspace`），它们确切的名称和语义，以及 host-to-host 直接调用
+  更便宜时的同源 RPC 路由。
+- **版本检查：** host 启动时记录已安装版本，缺失/不兼容时以 `E_DEP_MISSING` /
+  `E_DEP_VERSION` 失败，并给一句该装什么。
+- **绝不：** 编辑、fork 或 vendor `dsh-rayrun-computer`；它需要改的地方去它自己的仓库
+  开 issue。
+- **不是依赖：** `dsh-superagent-prototype`——只供参考的研究原型，没有云电脑、持久
+  bot 对象或远程审批。我们借想法，不借代码，v0.2 事件触发器时再回来看。
 
-## 5. Workstreams and task breakdown
+## 5. 工作流与任务分解
 
-Estimates include tests; "Done when" is the evidence, not a code-complete claim.
+估算包含测试；“完成条件”是证据，不是代码写完的声明。
 
-### A. Repo, packaging, release
+### A. 仓库、打包、发布
 
-| ID | Task | Deliverable | Depends | Est | Done when |
+| ID | 任务 | 交付物 | 依赖 | 估算 | 完成条件 |
 | --- | --- | --- | --- | --- | --- |
-| A1 | Scaffold `packages/dsh-rayrun-bots` | package.json (`dsh.bundle` + `dsh.client.inject`), `cordis.patch.yml`, `index.js`, `client.js`, `lib/`, `locale/en+zh`, `test/` | — | 2 | bundle loads in a profile and renders an empty page |
-| A2 | Dependency declaration + version check | dependency range, `E_DEP_MISSING`/`E_DEP_VERSION` copy | A1 | 1 | fresh profile without the dependency shows the action, not a crash |
-| A3 | Host RPC route + envelope + limits | `/plugins/<id>/rpc`, `{ok,data}` / `{ok:false,code,message}`, 64 KB body cap | A1 | 1 | contract tests for success and every error code |
-| A4 | CI | `node --check`, `node test/*.mjs`, locale audit, `git diff --check`, Node × DSH profile-install smoke | A1 | 1 | a failing test or DSH install turns CI red |
-| A5 | npm publish flow | tarball check, bootstrap token → OIDC trusted publishing | A4 | 1 | dry run lists host/client/locale/bundle files |
-| A6 | Version matrix | DSH × `dsh-rayrun-computer` × Rayrun Bot table | A2 | 0.5 | table committed and linked from README |
-| A7 | Package docs | package README with install path and limits | A5 | 0.5 | a fresh user can install from the tarball |
+| A1 | 搭 `packages/dsh-rayrun-bots` | package.json（`dsh.bundle` + `dsh.client.inject`）、`cordis.patch.yml`、`index.js`、`client.js`、`lib/`、`locale/en+zh`、`test/` | — | 2 | bundle 能在 profile 加载并渲染空页面 |
+| A2 | 依赖声明 + 版本检查 | 依赖范围、`E_DEP_MISSING`/`E_DEP_VERSION` 文案 | A1 | 1 | 没有依赖的新 profile 显示动作，而不是崩溃 |
+| A3 | Host RPC 路由 + 信封 + 限制 | `/plugins/<id>/rpc`、`{ok,data}` / `{ok:false,code,message}`、64 KB body 上限 | A1 | 1 | 成功和每个错误码都有契约测试 |
+| A4 | CI | `node --check`、`node test/*.mjs`、locale 审计、`git diff --check`、Node × DSH profile 安装冒烟 | A1 | 1 | 失败测试或 DSH 安装让 CI 变红 |
+| A5 | npm 发布流程 | tarball 检查、bootstrap token → OIDC trusted publishing | A4 | 1 | dry run 列出 host/client/locale/bundle 文件 |
+| A6 | 版本矩阵 | DSH × `dsh-rayrun-computer` × Rayrun Bot 表 | A2 | 0.5 | 表已提交，并从 12-status 与版本矩阵链接 |
+| A7 | 包文档 | 带安装路径和限制的包 README | A5 | 0.5 | 新用户能从 tarball 安装 |
 
-### B. Bot model and local state
+### B. Bot 模型与本地状态
 
-| ID | Task | Deliverable | Depends | Est | Done when |
+| ID | 任务 | 交付物 | 依赖 | 估算 | 完成条件 |
 | --- | --- | --- | --- | --- | --- |
-| B1 | `bot.json` schema + validation | validator for id/name/label/avatar/instructions + default persona template; `schema` version | A1 | 1 | invalid definitions rejected with a code; a new bot gets the default template |
-| B2 | Machine layout init | idempotent directory creation | B1 | 0.5 | re-running never loses files |
-| B3 | Registry + local mirror | host cache, rotation on refresh | B1 | 1 | mirror survives a host restart |
-| B4 | Bot CRUD RPC | list/get/create/update/delete | A3, B1 | 1.5 | contract tests, delete removes machine dir |
-| B5 | Recovery pull | pull bot dirs to local snapshot | B3 | 1 | losing the machine is recoverable |
-| B6 | Migration runway | schema field + upgrade function | B1 | 0.5 | an old `bot.json` still opens |
+| B1 | `bot.json` schema + 校验 | id/name/label/avatar/instructions 校验器 + 默认人格模板；`schema` 版本 | A1 | 1 | 非法定义返回 code 被拒；新 bot 得到默认模板 |
+| B2 | 机器布局初始化 | 幂等目录创建 | B1 | 0.5 | 重复运行不丢文件 |
+| B3 | 注册表 + 本地镜像 | host 缓存、刷新时轮换 | B1 | 1 | 镜像在 host 重启后仍存在 |
+| B4 | Bot CRUD RPC | list/get/create/update/delete | A3, B1 | 1.5 | 契约测试，delete 移除机器目录 |
+| B5 | 恢复拉取 | 把 bot 目录拉到本地快照 | B3 | 1 | 丢失机器后可恢复 |
+| B6 | 迁移跑道 | schema 字段 + 升级函数 | B1 | 0.5 | 旧 `bot.json` 仍能打开 |
 
-### C. Cloud bot runtime
+### C. 云端 bot runtime
 
-| ID | Task | Deliverable | Depends | Est | Done when |
+| ID | 任务 | 交付物 | 依赖 | 估算 | 完成条件 |
 | --- | --- | --- | --- | --- | --- |
-| C1 | Supervisor module | host code shipped by the worker projection, hash-verified | A2 | 2 | files land on a fresh machine |
-| C2 | Boot + handshake | `exec` start, pid/state, first heartbeat | C1 | 1 | host starts without a manual shell |
-| C3 | Queue worker | FIFO, single-flight, retry/backoff | C2 | 2 | a second item waits, never drops |
-| C4 | DSH invocation | per S1 strategy: prompt in, stream out | C3 | 2 | task → reply in a session |
-| C5 | Inbox/outbox polling | 3 s poll, cursor, dedupe | C3 | 1.5 | message round trip < 5 s |
-| C6 | Watchdog | local `exec` restart on missing heartbeat | C2 | 1 | killed host is back within 60 s |
-| C7 | Health and status | heartbeat → `host/state.json` → roster status | C2 | 1 | chat list shows needs-attention / working / idle |
-| C8 | Recovery | queue and approval state re-read after restart | C3 | 1.5 | killing the host loses no work |
-| C9 | Busy handling | 409 mapping, retry budget, never drop | C4 | 1 | busy test: all items eventually run |
+| C1 | Supervisor 模块 | 由 worker projection 交付的 host 代码，哈希校验 | A2 | 2 | 文件落到新机器 |
+| C2 | 启动 + 握手 | `exec` 启动、pid/state、首次心跳 | C1 | 1 | host 无需手工 shell 就能启动 |
+| C3 | 队列 worker | FIFO、单飞、重试/退避 | C2 | 2 | 第二个项等待，绝不丢弃 |
+| C4 | DSH 调用 | 按 S1 策略：prompt 进，stream 出 | C3 | 2 | 任务 → session 里的回复 |
+| C5 | Inbox/outbox 轮询 | 3 秒轮询、游标、去重 | C3 | 1.5 | 消息往返 < 5 秒 |
+| C6 | Watchdog | 本地 `exec` 在心跳缺失时重启 | C2 | 1 | 被杀 host 60 秒内回来 |
+| C7 | 健康与状态 | 心跳 → `host/state.json` → 名册状态 | C2 | 1 | 聊天列表显示 needs-attention / working / idle |
+| C8 | 恢复 | 重启后重读队列和审批状态 | C3 | 1.5 | 杀死 host 不丢工作 |
+| C9 | Busy 处理 | 409 映射、重试预算、绝不丢弃 | C4 | 1 | busy 测试：所有项最终都运行 |
 
-### D. Sessions
+### D. Session（会话）
 
-| ID | Task | Deliverable | Depends | Est | Done when |
+| ID | 任务 | 交付物 | 依赖 | 估算 | 完成条件 |
 | --- | --- | --- | --- | --- | --- |
-| D1 | S1 strategy implementation | session create/continue per selected approach | C4 | 2 | two prompts share one session |
-| D2 | Mapping persistence | bot↔session↔profile dir, restart-safe | D1 | 1 | mapping survives host restart |
-| D3 | Transcript capture | redacted `sessions/*.jsonl`, cursor for UI | D1 | 1.5 | history replays in order |
-| D4 | Resume tests | host kill, machine stop/start, new chat | D2 | 1 | A8 evidence |
-| D5 | Fallback path | transcript replay when the contract fails | D3 | 1 | fallback tested and documented |
+| D1 | S1 策略实现 | 按选定方案创建/继续 session | C4 | 2 | 两个 prompt 共享一个 session |
+| D2 | 映射持久化 | bot↔session↔profile 目录，重启安全 | D1 | 1 | 映射在 host 重启后仍存在 |
+| D3 | Transcript 捕获 | 脱敏的 `sessions/*.jsonl`、UI 游标 | D1 | 1.5 | 历史按顺序重放 |
+| D4 | 续接测试 | host kill、机器 stop/start、新聊天 | D2 | 1 | A8 证据 |
+| D5 | 回退路径 | 契约失败时重放 transcript | D3 | 1 | 回退已测试并记录 |
 
-### E. Approvals
+### E. 审批
 
-**Blocked (ADR-001, 2026-11-21).** E1–E7 wait for Rayrun host/agent permission
-isolation and a host-only approval endpoint ([08 §3.3](../08-integration.md)).
-Do not implement the file-mailbox execution path before that lands.
+**阻塞（ADR-001，2026-11-21）。** E1–E7 等待 Rayrun host/agent 权限隔离和 host-only
+审批端点（[08 §3.3](../08-integration.md)）。平台提供前不要实现文件邮箱执行路径。
 
-| ID | Task | Deliverable | Depends | Est | Done when |
+| ID | 任务 | 交付物 | 依赖 | 估算 | 完成条件 |
 | --- | --- | --- | --- | --- | --- |
-| E1 | Gate API | `requestApproval(action)` blocks before the side effect | C4 | 1.5 | gated step never runs early |
-| E2 | Request writer | nonce, actionHash, TTL, atomic rename | E1 | 1 | schema tests for both files |
-| E3 | Local poller | polls, dedupes, drives card state | E2 | 1.5 | card appears within 10 s |
-| E4 | Approval RPC | `list/get/decide`, idempotent by id | A3, E3 | 1 | contract tests |
-| E5 | TTL and expiry | 30 min default, deny on expiry, cleanup | E2 | 1 | expired request cannot execute |
-| E6 | Negative tests | replay, wrong bot, stale action, malformed | E4 | 2 | suite green and referenced in A7/A11 |
-| E7 | Audit line | one line per request and decision, no secrets | E4 | 0.5 | log format checked |
+| E1 | Gate API | `requestApproval(action)` 在副作用前阻塞 | C4 | 1.5 | 受限步骤绝不提前运行 |
+| E2 | Request writer | nonce、actionHash、TTL、原子 rename | E1 | 1 | 两个文件的 schema 测试 |
+| E3 | 本地 poller | 轮询、去重、驱动卡片状态 | E2 | 1.5 | 卡片 10 秒内出现 |
+| E4 | 审批 RPC | `list/get/decide`，按 id 幂等 | A3, E3 | 1 | 契约测试 |
+| E5 | TTL 与过期 | 默认 30 分钟，过期即拒绝，清理 | E2 | 1 | 过期请求不能执行 |
+| E6 | 负向测试 | 重放、错 bot、stale action、格式错误 | E4 | 2 | 套件全绿，并在 A7/A11 引用 |
+| E7 | 审计行 | 每个请求和决定一行，无密钥 | E4 | 0.5 | 日志格式已检查 |
 
-### F. Client
+### F. 客户端
 
-Detailed in [client-plan.md](client-plan.md); estimates live there too. Work
-streams C1–C6 (shell, chat list, inline approvals, onboarding/usage, computer view, polish)
-are built against stub RPC from M1, so client and host progress in parallel.
+详见 [client-plan.md](client-plan.md)；估算也在那里。工作流 C1–C6（壳、聊天列表、内联
+审批、onboarding/用量、电脑视图、打磨）从 M1 起对着 stub RPC 构建，所以客户端和 host
+可以并行推进。
 
-### G. Cost and operations
+### G. 成本与运维
 
-| ID | Task | Deliverable | Depends | Est | Done when |
+| ID | 任务 | 交付物 | 依赖 | 估算 | 完成条件 |
 | --- | --- | --- | --- | --- | --- |
-| G1 | Balance/hours read | adapter call + parsing, no token leak | A2 | 1 | values visible in the panel |
-| G2 | Cost summary RPC | balance, hours, low-balance threshold | G1 | 1 | warning renders |
-| G3 | Idle stop integration | stop only, skipped when a task runs | C7 | 1 | idle machine stops, never destroys |
-| G4 | Destroy guard | destroy only from an explicit human action | C7 | 0.5 | code path audit |
-| G5 | Recovery runbook | machine loss, balance exhaustion, dependency loss | B5 | 1 | runbook in `docs/` |
-| G6 | Error copy audit | one sentence + one action everywhere | F-stream | 1 | all codes have copy |
+| G1 | 余额/机时读取 | adapter 调用 + 解析，不泄漏 token | A2 | 1 | 值在面板可见 |
+| G2 | 成本摘要 RPC | 余额、机时、低余额阈值 | G1 | 1 | 警告渲染 |
+| G3 | Idle stop 集成 | 只停，任务运行时跳过 | C7 | 1 | 空闲机器停机，永不 destroy |
+| G4 | Destroy 护栏 | destroy 只来自明确的人类动作 | C7 | 0.5 | 代码路径审计 |
+| G5 | 恢复 runbook | 机器丢失、余额耗尽、依赖丢失 | B5 | 1 | runbook 在 `docs/` |
+| G6 | 错误文案审计 | 处处一句 + 一个动作 | F 流 | 1 | 所有 code 都有文案 |
 
-### H. Acceptance, alpha, release
+### H. 验收、alpha、发布
 
-| ID | Task | Deliverable | Depends | Est | Done when |
+| ID | 任务 | 交付物 | 依赖 | 估算 | 完成条件 |
 | --- | --- | --- | --- | --- | --- |
-| H1 | Acceptance runner | checklist for A1–A12 with evidence slots | all | 1 | one run produces a filled checklist |
-| H2 | Integration harness | fake Rayrun API + fake DSH for CI | C4 | 2 | end-to-end loop runs in CI |
-| H3 | Live smoke | real account, one bot, one approval | H2 | 1 | evidence attached to the release |
-| H4 | First publish | npm package + provenance | A5 | 1 | install on a clean profile works |
-| H5 | Release | notes, tag `v0.1.0`, version matrix | H1–H4 | 0.5 | release page links the evidence |
-| H6 | Alpha kit | 20-user invite, issue templates, feedback form | H5 | 1 | first user onboarded |
+| H1 | 验收 runner | A1–A12 清单，带证据槽 | 全部 | 1 | 跑一次产出填好的清单 |
+| H2 | 集成 harness | 假 Rayrun API + 假 DSH 用于 CI | C4 | 2 | 端到端闭环在 CI 运行 |
+| H3 | 实时冒烟 | 真实账号、一个 bot、一次审批 | H2 | 1 | 证据附到 release |
+| H4 | 首次发布 | npm 包 + provenance | A5 | 1 | 干净 profile 安装成功 |
+| H5 | 发布 | notes、tag `v0.1.0`、版本矩阵 | H1–H4 | 0.5 | release 页面链接证据 |
+| H6 | Alpha kit | 20 用户邀请、issue 模板、反馈表 | H5 | 1 | 第一位用户完成 onboarding |
 
-**Effort summary:** A 7, B 5.5, C 13, D 6.5, E 8.5, F ~22 (client plan), G 5.5,
-H 6.5 ≈ **74 engineer-days**, plus W0 3 days and 2 weeks of alpha. With two
-engineers working the host and client streams in parallel, the MVP is a 6–8 week
-calendar effort; one engineer should plan for 10–12 weeks.
+**工作量汇总：** A 7、B 5.5、C 13、D 6.5、E 8.5、F ~22（客户端计划）、G 5.5、
+H 6.5 ≈ **74 工程师日**，外加 W0 3 天和 2 周 alpha。两名工程师并行做 host 和客户端
+流时，MVP 是 6–8 周日历工作量；一名工程师应按 10–12 周计划。
 
-## 6. Milestones and schedule
+## 6. 里程碑与排期
 
-| Milestone | Week | Work delivered | Exit criterion | Demo |
+| 里程碑 | 周 | 交付工作 | 退出标准 | 演示 |
 | --- | --- | --- | --- | --- |
-| M0 | W0 (3 d) | spikes S1–S6, platform questions sent | decisions recorded, go/no-go | written decision log |
-| M1 | W1 | A1–A3, B1–B3, F1, G1 | roster read-only from stub data | empty→stub chat list in the panel |
-| M2 | W2 | C1–C5, B4, D1–D2, F2 | a bot replies end to end | create bot, send task, get reply |
-| M3 | W3 | E1–E4, D3, F3, G2–G3 (E blocked on ADR-001 platform isolation) | approval loop works | gated action → card → approve → continue |
-| M4 | W4 | E5–E7, D4–D5, C6–C8, F4–F5 | resume and recovery pass | close laptop, reopen, still working |
-| M5 | W5 | C9, G4–G6, F6, H1–H4 | A1–A12 pass on a clean machine | acceptance run recorded |
-| Alpha | W6–W7 | H6, fixes | alpha gate | 10–20 users on the loop |
+| M0 | W0（3 天） | spike S1–S6，平台问题发出 | 决策记录，go/no-go | 书面决策日志 |
+| M1 | W1 | A1–A3、B1–B3、F1、G1 | 名册从 stub 数据只读 | 面板里从空到 stub 聊天列表 |
+| M2 | W2 | C1–C5、B4、D1–D2、F2 | bot 端到端回复 | 创建 bot、发任务、得到回复 |
+| M3 | W3 | E1–E4、D3、F3、G2–G3（E 阻塞于 ADR-001 平台隔离） | 审批闭环工作 | 受限动作 → 卡 → 批准 → 继续 |
+| M4 | W4 | E5–E7、D4–D5、C6–C8、F4–F5 | 续接与恢复通过 | 合上笔记本、重开、仍在工作 |
+| M5 | W5 | C9、G4–G6、F6、H1–H4 | 干净机器上 A1–A12 通过 | 验收运行录像 |
+| Alpha | W6–W7 | H6、修复 | alpha 门 | 10–20 名用户跑闭环 |
 
-If one engineer: run M1→M5 sequentially, with the client stream merged into the
-host stream and the same exit criteria.
+如果只有一名工程师：顺序跑 M1→M5，把客户端流并入 host 流，退出标准相同。
 
-## 7. Testing and evidence
+## 7. 测试与证据
 
-- **Unit** — pure modules (queue, approval state machine, bot schema, formatters)
-  as `node test/*.mjs`; no framework.
-- **Contract** — RPC request/response and error codes against stubs.
-- **Integration** — the H2 harness: fake Rayrun API and fake DSH; CI runs the
-  closed loop without real credentials.
-- **Live smoke** — real Rayrun account, manual, never in CI; records the
-  acceptance checklist.
-- **Acceptance** — A1–A12 run on a clean profile; evidence (screen captures,
-  logs) attached to the release notes, never committed with secrets.
-- No browser test framework in v0.1; the client's manual golden path is the
-  checklist in [client-plan.md](client-plan.md).
+- **单元** —— 纯模块（队列、审批状态机、bot schema、formatter）作为
+  `node test/*.mjs`；无框架。
+- **契约** —— 对着 stub 的 RPC 请求/响应和错误码。
+- **集成** —— H2 harness：假 Rayrun API 和假 DSH；CI 在没有真实凭据的情况下跑闭环。
+- **实时冒烟** —— 真实 Rayrun 账号，手动，绝不在 CI；记录验收清单。
+- **验收** —— 干净 profile 上跑 A1–A12；证据（截图、日志）附到 release notes，绝不
+  连同密钥提交。
+- v0.1 没有浏览器测试框架；客户端的手工 golden path 是
+  [client-plan.md](client-plan.md) 里的清单。
 
-## 8. Platform dependencies
+## 8. 平台依赖
 
-MVP blockers from [platform-asks.md](../08-integration.md): the session/long-lived
-runtime contract (#1), balance grace (#2), and host/agent permission isolation
-plus a host-only approval endpoint (#3.3, ADR-001). Everything else has a
-workaround: file-mailbox polling for control, local watchdog for restart, account
-token in the vault, no inbound networking, two-install path if S6 fails.
-Approvals have no execution workaround under ADR-001.
+来自 [08-integration.md](../08-integration.md) 的 MVP 阻塞项：session/长驻 runtime
+契约（#1）、余额宽限（#2）、host/agent 权限隔离与 host-only 审批端点（#3.3，
+ADR-001）。其他都有 workaround：文件邮箱轮询做控制、本地 watchdog 重启、账号 token
+放 vault、无入向网络、S6 失败时两装路径。在 ADR-001 下，审批没有执行 workaround。
 
-## 9. Risks
+## 9. 风险
 
-| Risk | Trigger | Mitigation | Fallback |
+| 风险 | 触发 | 缓解 | 回退 |
 | --- | --- | --- | --- |
-| Session contract is not what we think | S1 fails both host and id resume | transcript replay, cut scope | ship without resume, call it out |
-| Long-lived host cannot be restarted | S2 shows no way to keep it alive | local watchdog + open-on-connect | document "host restarts when you open the panel" |
-| Approval latency too high | p95 over 10 s in S3 | shorter polling, exec-based mailbox | move IM forward to v0.2 |
-| Dependency install friction | one-install path fails or package stays off npm | documented two-install path, version check | install both from checkouts for alpha |
-| Dependency drift | tool names/RPC change upstream | version contract + adapter + contract tests | pin a known version |
-| Balance exhaustion destroys data | account hits zero | warn, recommend lifetime cap, pull state locally | recovery runbook |
-| Scope creep | IM, desktop, routines enter W3 | P1 cut at the W3 gate | ship P0 only |
-| Public ingress temptation | someone asks for a panel URL | forbidden: no inbound, no `public` desktop | local-only UI |
-| DSH version drift | image vs laptop mismatch | version matrix in M5 | pin image request |
+| Session 契约不是我们以为的那样 | S1 的 host 和 id 续接都失败 | transcript 重放，砍范围 | 不带续接发布，并明确说明 |
+| 长驻 host 无法重启 | S2 显示无法保活 | 本地 watchdog + open-on-connect | 记录“打开面板时 host 重启” |
+| 审批延迟太高 | S3 p95 超过 10 秒 | 更短轮询、基于 exec 的邮箱 | 把 IM 提前到 v0.2 |
+| 依赖安装摩擦 | 一次安装失败，或包一直不上 npm | 文档化两装路径、版本检查 | alpha 期间从 checkout 装两个 |
+| 依赖漂移 | 上游工具名/RPC 变化 | 版本契约 + adapter + 契约测试 | 固定已知版本 |
+| 余额耗尽销毁数据 | 账号归零 | 警告、建议生命周期上限、本地拉取状态 | 恢复 runbook |
+| 范围蔓延 | IM、桌面、routines 进入 W3 | W3 门砍 P1 | 只交付 P0 |
+| 公网 ingress 诱惑 | 有人要面板 URL | 禁止：无入向、不用 `public` 桌面 | 本地 UI |
+| DSH 版本漂移 | 镜像与笔记本不一致 | M5 的版本矩阵 | 固定镜像请求 |
 
-## 10. Metrics
+## 10. 指标
 
-Install → sign-in conversion; first-bot success rate; approval latency p50/p95;
-week-2 retention; recovery events per user (watchdog restarts, resumed sessions);
-support issues per user; Rayrun spend per user per week.
+安装 → 登录转化；首个 bot 成功率；审批延迟 p50/p95；第 2 周留存；每用户恢复事件
+（watchdog 重启、续接 session）；每用户支持问题；每用户每周 Rayrun 花费。
 
-## 11. Open decisions
+## 11. 未决决策
 
-1. **Bot concurrency** — serialized queue for v0.1 (recommended) or a machine per bot. Due W0.
-2. **Routines** — one cron per bot as P1 (recommended) or cut entirely. Due W0.
-3. **Approval channel** — file mailbox for v0.1, IM in v0.2 (recommended). Due W0.
-4. **Resolved (2026-11-11)** — `dsh-rayrun-computer` stays untouched in its own
-   repository; Rayrun Bot is a separate project that depends on it. Open
-   sub-decision: one-install dependency (S6) or documented two-install fallback.
-5. **npm ownership** — which account owns both packages, who publishes the
-   dependency, and who configures trusted publishing. Due W1.
+1. **Bot 并发** —— v0.1 串行队列（推荐）还是每 bot 一台机器。W0 到期。
+2. **Routines** —— 每 bot 一个 cron 作为 P1（推荐）还是完全砍掉。W0 到期。
+3. **审批通道** —— v0.1 文件邮箱，v0.2 IM（推荐）。W0 到期。
+4. **已解决（2026-11-11）** —— `dsh-rayrun-computer` 保持不动，留在自己的仓库；
+   Rayrun Bot 是依赖它的独立项目。未决子决策：一次安装依赖（S6）还是文档化两装回退。
+5. **npm 所有权** —— 哪个账号拥有两个包、谁发布依赖、谁配置 trusted publishing。
+   W1 到期。
 
-The consolidated review and decision log, including the trust-boundary,
-ownership and control-channel questions, is
-[architecture-decisions.md](../adr/architecture-decisions.md).
+统一评审与决策日志，包括信任边界、所有权和控制通道问题，见
+[architecture-decisions.md](../adr/architecture-decisions.md)。
 
-## 12. Release checklist for v0.1.0
+## 12. v0.1.0 发布清单
 
-- [ ] A1–A12 pass with evidence on a clean machine.
-- [ ] CI green: checks, unit tests, contract tests, integration harness.
-- [ ] Locale audit passes; every error code has one-sentence copy.
-- [ ] Version matrix updated; dependency range pinned.
-- [ ] No secret, token or key in the diff, logs, fixtures or tarball.
-- [ ] README, README.zh-CN and quickstart match shipped behavior.
-- [ ] npm tarball contains host half, client half, locale and bundle patch.
-- [ ] `v0.1.0` tagged from `main`; release notes link the acceptance evidence.
-- [ ] One clean-profile install from npm verified after publishing.
-- [ ] Alpha kit ready: invite text, issue templates, feedback form.
+- [ ] A1–A12 在干净机器上带证据通过。
+- [ ] CI 全绿：检查、单元测试、契约测试、集成 harness。
+- [ ] Locale 审计通过；每个错误码都有一句文案。
+- [ ] 版本矩阵更新；依赖范围固定。
+- [ ] diff、日志、fixture 或 tarball 中没有密钥、token 或 key。
+- [ ] `12-status.md`、`09-deployment.md` 和 README 营销叙事与已发布行为一致。
+- [ ] npm tarball 包含 host half、client half、locale 和 bundle patch。
+- [ ] `v0.1.0` 从 `main` 打 tag；release notes 链接验收证据。
+- [ ] 发布后验证一次从 npm 的干净 profile 安装。
+- [ ] Alpha kit 就绪：邀请文案、issue 模板、反馈表。
 
-## 13. Out of scope for v0.1
+## 13. v0.1 之外
 
-Multi-tenant SaaS, hosted accounts, team/RBAC, IM channel, mobile app,
-marketplace, provider abstraction, standalone desktop shell, browser-login
-persistence, public ingress panel, per-bot cost charts, custom themes, and
-parallel execution of multiple bots.
+多租户 SaaS、托管账号、团队/RBAC、IM 通道、移动 App、市场、供应商抽象、独立桌面壳、
+浏览器登录持久化、公网 ingress 面板、按 bot 的成本图表、自定义主题，以及多 bot 并行
+执行。
 
-## 14. Week 0 checklist
+## 14. Week 0 清单
 
-Day 1 — S1 session contract; S2 long-lived host; client spike C-S1 (shell).
-Day 2 — S3 approval mailbox latency; S6 bundle dependency; send
-[platform-asks.md](../08-integration.md) questions #1 and #2 to Rayrun.
-Day 3 — record the decision log (session strategy, one-install vs two-install,
-routines in/out), freeze §4 interfaces, start M1.
+第 1 天 —— S1 session 契约；S2 长驻 host；客户端 spike C-S1（壳）。
+第 2 天 —— S3 审批邮箱延迟；S6 bundle 依赖；把
+[08-integration.md](../08-integration.md) 的问题 #1 和 #2 发给 Rayrun。
+第 3 天 —— 记录决策日志（session 策略、一次安装 vs 两次安装、routines 进/出），冻结
+§4 接口，开始 M1。

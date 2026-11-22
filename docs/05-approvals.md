@@ -8,7 +8,7 @@
 > [`06-local-state.md`](06-local-state.md)；威胁模型见
 > [`07-security.md`](07-security.md)；未决决策见
 > [`adr/architecture-decisions.md`](adr/architecture-decisions.md)。
-> 实现状态以 [`../README.md`](../README.md) 的 **Status** 段为准。
+> 实现状态以 [`12-status.md`](12-status.md) 为准。
 
 ## 0. 与现有文档的关系
 
@@ -109,7 +109,7 @@ agent，归到平台隔离或从 v0.1 移除。
 
 ## 5. Schema 与 action hash
 
-### 5.1 Request
+### 5.1 请求（Request）
 
 ```json
 {
@@ -127,7 +127,7 @@ agent，归到平台隔离或从 v0.1 移除。
 }
 ```
 
-### 5.2 Decision
+### 5.2 决定（Decision）
 
 建议字段：`schema`、`id`、`botId`、`actionId`、`actionHash`、`nonce`、`decision`
 （`approve` / `deny`）、`decidedAt`、`decisionId`。
@@ -135,7 +135,7 @@ agent，归到平台隔离或从 v0.1 移除。
 当前 MVP 草案的 decision 只有 `{ schema, id, nonce, decision, decidedAt }`，缺
 `botId`/`actionId`/`actionHash`；正文却要求匹配 bot 并绑定动作。接线前按 ADR-011 补齐。
 
-### 5.3 Canonical action hash
+### 5.3 规范化 action hash
 
 - 对 canonical JSON（RFC 8785/JCS，或一份写明的 canonical serializer）计算 SHA-256。
 - 覆盖至少 `{ botId, actionId, action, risk, origin, expiresAt }`，并带 schema 版本。

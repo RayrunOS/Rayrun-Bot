@@ -4,7 +4,7 @@
 > 生命周期与身份边界。产品方向见 [`00-product-direction.md`](00-product-direction.md)；
 > 技术基线见 [`01-system-architecture.md`](01-system-architecture.md)；未决决策见
 > [`adr/architecture-decisions.md`](adr/architecture-decisions.md)。
-> 实现状态以 [`../README.md`](../README.md) 的 **Status** 段为准。
+> 实现状态以 [`12-status.md`](12-status.md) 为准。
 
 ## 0. 与现有文档的关系
 

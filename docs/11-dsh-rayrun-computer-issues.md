@@ -5,7 +5,7 @@
 > [`10-rayrun-verification.md`](10-rayrun-verification.md)：每条有 ID、日期、证据、
 > 影响/workaround 和下一步。
 > **本仓库不修改、不 fork、不 vendor 它**；修复应去它的仓库，或在本仓库写 adapter。
-> 实现状态仍以 [`../README.md`](../README.md) 的 **Status** 段为准。
+> 实现状态仍以 [`12-status.md`](12-status.md) 为准。
 
 ## 0. 与 10 的分工
 
@@ -14,7 +14,7 @@
 | [`10-rayrun-verification.md`](10-rayrun-verification.md) | 验证/测试环境在 Rayrun 上的缺口（平台、镜像、测试资源、egress 等） |
 | [`11-dsh-rayrun-computer-issues.md`](11-dsh-rayrun-computer-issues.md) | `dsh-rayrun-computer` 自身的问题（本文） |
 | [`08-integration.md`](08-integration.md) | 平台能力需求与 handoff；不重复依赖问题 |
-| [`../README.md`](../README.md) Status | 实现状态与已验证/未验证结论 |
+| [`12-status.md`](12-status.md) | 实现状态与已验证/未验证结论 |
 
 10 里的 R-G 编号只表示“测试环境能不能做”；本文的 RC 编号表示“依赖本身需要改什么”。
 同一个现象可能同时出现在两边（例如 egress 缺失导致 `fetch failed`），但结论和下一步不同。
@@ -95,4 +95,4 @@
 - [`07-security.md`](07-security.md)
 - [`03-client-design.md`](03-client-design.md)
 - [`../packages/dsh-rayrun-bots/README.md`](../packages/dsh-rayrun-bots/README.md)
-- [`../README.md`](../README.md) Status
+- [`12-status.md`](12-status.md)

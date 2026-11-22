@@ -46,8 +46,8 @@ soon as we can, but we do not promise a response time, a fix SLA, or an audit.
 - The DeepSeek key is injected into the bot's agent process as a Rayrun
   credential; it must never be written into the workspace, the repository,
   fixtures, prompts, or chat.
-- Log redaction is still being verified — see the status note in
-  [README.md](README.md).
+- Log redaction is still being verified — see
+  [docs/12-status.md](docs/12-status.md).
 
 Out of scope: bugs in DeepSeek Harness itself, in Rayrun's platform or cloud
 images, or in third-party dependencies. Report those to the relevant upstream

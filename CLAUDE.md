@@ -1,10 +1,10 @@
 # Rayrun Bot 顶层工程指令
 
 > 本文件是 Claude Code 在本仓库中的项目级**指令**，不承载项目状态、交付进度或文档索引。
-> 状态入口：`README.md` 的 **Status** 段（中文镜像 `README.zh-CN.md` 的「状态」段）。
-> 文档索引：`docs/README.md`；产品页与状态：`README.md`；设计细节：`docs/`。
+> 状态入口：`docs/12-status.md`。根 `README.md` / `README.zh-CN.md` 是营销页，不承载事实。
+> 文档索引：`docs/README.md`；营销页：`README.md`；事实与设计：`docs/`。
 >
-> 本文件用中文。产品 README 英文为准并维护中文镜像；`docs/` 新文档用中文；代码、注释、接口命名和提交信息用英文（见 §5）。
+> 本文件用中文。产品 README 是英中双语营销页；`docs/` 全部用中文；代码、注释、接口命名和提交信息用英文（见 §5）。
 
 **取舍：** 这些规则偏向谨慎而非速度；琐碎任务自行判断。
 
@@ -13,8 +13,8 @@
 - 项目：**Rayrun Bot**（`RayrunOS/Rayrun-Bot`）。给 DeepSeek Harness 里的 bot 一个名字、一副身体和一个家：bot 有名字、指令、记忆和日程，运行在用户自己的 Rayrun 云电脑上，用用户自己的 DeepSeek key 思考。
 - 不是托管的聊天服务：没有项目方账号、控制面、代理或中继。计算在用户的 Rayrun 账号上，模型账单是用户的，审批提示就是契约。
 - 本仓库构建的是 **bot 层**。云电脑能力来自独立项目 `RayrunOS/dsh-rayrun-computer`（MIT），本项目只通过它已发布的 tools/RPC 表面和版本契约消费它。两个插件，一个产品。
-- 真相源：`README.md`（产品与状态，英文为准）、`README.zh-CN.md`（同 commit 中文镜像）、`docs/`（设计细节）、代码本身。不要凭记忆描述现状；先读文件。
-- 不要把本项目描述成完整的托管平台或已经可用的产品；状态陈述以 README 的 Status 段为准。
+- 真相源：`docs/12-status.md`（实现状态，唯一事实源）、`docs/`（产品方向、架构与设计细节）、代码本身。`README.md` / `README.zh-CN.md` 是英中双语营销页，不是事实依据；不要从 README 推断实现状态。不要凭记忆描述现状；先读文件。
+- 不要把本项目描述成完整的托管平台或已经可用的产品；状态陈述以 `docs/12-status.md` 为准。
 
 ## 1. 设计原则
 
@@ -36,10 +36,11 @@
 
 ## 2. 仓库分层
 
-- `README.md` / `README.zh-CN.md` — 产品页；英文为真相源，中文同 commit 镜像。
+- `README.md` / `README.zh-CN.md` — 英中双语营销页；英文为准，中文同 commit 镜像；不承载状态、版本、安装细节或验证读数。
 - `CLAUDE.md` — 本文件，只放指令。
 - `docs/README.md` — 文档索引、分类与 ADR 登记册。
-- `docs/` — 编号顶层文档：00-product-direction、01-system-architecture、02-bot-model、03-client-design、04-cloud-host、05-approvals、06-local-state、07-security、08-integration、09-deployment、10-rayrun-verification、11-dsh-rayrun-computer-issues、faq；子目录：`adr/`（ADR 登记）、`plans/`（MVP/客户端/路线图）、`design/`（UI/人格）、`research/`（调研）、`mockups/`（视觉素材）。
+- `docs/12-status.md` — 实现状态的唯一事实源。
+- `docs/` — 编号顶层文档：00-product-direction、01-system-architecture、02-bot-model、03-client-design、04-cloud-host、05-approvals、06-local-state、07-security、08-integration、09-deployment、10-rayrun-verification、11-dsh-rayrun-computer-issues、12-status、faq；子目录：`adr/`（ADR 登记）、`plans/`（MVP/客户端/路线图）、`design/`（UI/人格）、`research/`（调研）、`mockups/`（视觉素材）。
 - `packages/dsh-rayrun-bots/` — 目前唯一的包：host half（`index.js`）、client half（`client.js`）、`lib/`、`locale/en.json` + `zh.json`、`test/`、`cordis.patch.yml`、包 `README.md`、`package.json`。
 - `tools/update-poc/` — 更新内核原型（签名 manifest、校验、暂存、原子切换、回滚）；不进入插件运行时，也不进 npm 包。
 - `tools/rayrun-deploy/` — CI 部署 helper（`fetch-url.mjs`）与部署契约测试；不进入插件运行时，也不进 npm 包。
@@ -55,7 +56,7 @@
 - **包身份。** 每个包的包名、client module id、bundle row `name` 必须一致；`lib/*.js` 必须留在 `files` 列表；client half 必须自包含，只能加载 DSH 自身提供的模块。
 - **本机 ↔ 云端。** 执行可以在云端，审批、本地 profile 和 Rayrun token 留在本机。云端 → 本机状态通过 `/workspace/.rayrun/` 下的文件，本机 → 云端通过 Rayrun API；不使用入站网络，不把 public desktop 当产品面板。
 - **页面 ↔ host。** 同源、origin 校验的 RPC；不要把 token 交给页面来绕过它。
-- **依赖方向。** 根 `package.json` 是私有 workspace 根，无运行时依赖。`dsh-rayrun-computer` 的版本契约与安装路径以 `README.md` 和 `docs/plans/mvp-plan.md` §4.5 为准。
+- **依赖方向。** 根 `package.json` 是私有 workspace 根，无运行时依赖。`dsh-rayrun-computer` 的版本契约与安装路径以 `docs/09-deployment.md`、`docs/version-matrix.md` 和 `docs/plans/mvp-plan.md` §4.5 为准。
 
 ## 4. Claude Code 工作方式
 
@@ -65,12 +66,12 @@
 2. 需求不完整时显式说明假设，不假设需求已完整。
 3. 有多种解释时列出主要解释；不阻塞时选最合理路径继续，影响长期架构时停下询问。
 4. 有更简单方案主动说明；过度复杂、维护成本高或偏离 MVP 时反向提醒。
-5. 读本文件、`README.md`、目标包的 `README.md` 和相关 `docs/` 页；读要改的代码，不凭记忆。
+5. 读本文件、`docs/12-status.md`、目标包的 `README.md` 和相关 `docs/` 页；读要改的代码，不凭记忆。根 README 只作营销叙事，不作为事实来源。
 6. 跨包、跨项目变更先说明影响面，再改代码。
 7. 先 grep 找最接近的现有模式并扩展它；不为仓库已有的东西造平行 helper。
 8. 最小 diff；不顺手优化相邻代码、注释或格式；不重构没坏且不属于当前任务的代码；匹配现有风格。
 9. 本次变更引入的未使用 import、变量、函数或文件必须清理；变更前已存在的死代码只指出，不擅自删除。
-10. 用户可见变更 → 同一次变更更新 `README.md`、`README.zh-CN.md` 和相关 `docs/` 页。
+10. 用户可见变更 → 同一次变更更新 `docs/12-status.md`；涉及营销叙事时同步更新 `README.md` 和 `README.zh-CN.md`；相关 `docs/` 页同步。
 11. 非平凡任务先给简短计划，每步写验证方式（`步骤 → 验证: [检查]`）。
 12. 运行 §8 的检查；不用“应该能跑”宣告完成。
 13. 完成后说明改了哪些文件、如何验证、剩余风险与未覆盖的缺口。
@@ -85,7 +86,7 @@
 
 - Plain ESM JavaScript，Node 24+（DSH 运行时自带 Node）。无构建步骤、无运行时依赖、无 bundler。
 - Client half 只能加载 DSH 提供的模块（`react` 等）；浏览器全局对象可用，Node 内置模块不可用。
-- 代码、注释、接口命名和提交信息用英文；产品 README 英文为准并维护中文镜像；`docs/` 新文档用中文，历史英文文档在重写时翻译。**本文件是刻意使用中文的 agent 指令**。
+- 代码、注释、接口命名和提交信息用英文；产品 README 是英中双语营销页，英文为准并维护中文镜像；`docs/` 全部用中文（技术标识、代码、schema、UI 文案保持英文）。**本文件是刻意使用中文的 agent 指令**。
 - 错误：审批、凭据、云生命周期相关的错误绝不吞掉；给出可执行的信息，让调用方失败（fail closed）。
 - 不实现用户没要求的功能；不为单次使用造不必要的抽象；不加未要求的“灵活性”“可配置性”或未来扩展点；不为不可能发生的场景堆错误处理——信任边界（RPC、审批、凭据、文件/网络入口）除外。
 - 200 行能 50 行解决就重写；提交前自问资深工程师会不会认为过度复杂，会就简化。
@@ -103,7 +104,7 @@
 6. **包身份保持一致。** 每个包的包名、client module id、bundle row `name` 必须相同；`lib/*.js` 必须留在 `files` 列表；client half 必须自包含，只加载 DSH 自身提供的模块。
 7. **永不自动销毁。** Rayrun 的 `destroy` 会不可逆地删除机器及其 workspace。idle 策略只能 stop 或 pause；销毁必须由人类明确请求。
 8. **同源 RPC。** 新的 page→host 动作保持同源、origin 校验的 RPC 属性；不要把 token 交给页面来绕过它。
-9. **文档诚实。** 绝不把计划中的功能写成已实现。`README.md` 和 `docs/` 中带日期的状态陈述是事实；做了就更新，发现失效的说法就修。
+9. **文档诚实。** 绝不把计划中的功能写成已实现。`docs/12-status.md` 中带日期的状态陈述是事实；做了就更新，发现失效的说法就修。README 营销叙事不得声称未实现的功能已经可用。
 10. **默认无遥测。** 不收集、不上传任何东西。未来的遥测必须 opt-in、有文档，且绝不包含 prompt、key 或 workspace 内容。
 11. **没有 bubblewrap 的云端就是 root。** worker profile 故意跑 `danger-full-access`，这是 workaround，不是隔离。绝不把它说成沙箱保证，也不削弱 `docs/07-security.md` 中的警告。
 12. **云电脑插件是依赖，不是我们的代码。** `dsh-rayrun-computer` 在自己的仓库里，绝不从这里编辑、fork 或 vendor。集成只通过其已发布 tools/RPC 表面和版本契约；需要它改行为 → 去那个仓库开 issue/PR，或在本仓库写 adapter。
@@ -111,11 +112,12 @@
 
 ## 7. 文档约定
 
-- `README.md` 是产品页和英文真相源；`README.zh-CN.md` 是中文镜像，**同一 commit 更新**。README 保持简短，细节进 `docs/`。
-- 状态陈述带日期、与代码一致；构建了某功能就更新状态；“状态”以 README 的 Status 段为准，不在本文件复述。
-- 新增文档先登记到 `docs/README.md` 的文档地图；新增决策在 ADR 登记册加一行。Markdown 链接必须可解析。
+- `README.md` / `README.zh-CN.md` 是营销页：英中双语，英文为准，**同一 commit 更新**。只放产品叙事、价值主张、概念图和指向 `docs/` 的入口；不承载状态、版本号、安装步骤、配置表、验证读数或 CI 细节。
+- 状态陈述带日期、与代码一致；构建了某功能就更新状态；“状态”以 `docs/12-status.md` 为准，不在本文件复述。
+- `docs/` 全部用中文；技术标识、代码、schema、UI 文案保持英文。新增文档先登记到 `docs/README.md` 的文档地图；新增决策在 ADR 登记册加一行。Markdown 链接必须可解析。
 - 本文件只承载指令，不承载项目状态、交付进度或文档索引。
-- 产品方向以 `docs/00-product-direction.md` 为准，技术基线以 `docs/01-system-architecture.md` 为准；实现状态只回 README 的 Status 段。
+- 产品方向以 `docs/00-product-direction.md` 为准，技术基线以 `docs/01-system-architecture.md` 为准；实现状态只回 `docs/12-status.md`。
+- 文档事实源与语言由 ADR-018（2026-11-22）决定：README 只做营销，`docs/12-status.md` 是实现状态唯一事实源，`docs/` 全中文。
 - 架构性决策同步到 `docs/01-system-architecture.md`、`docs/07-security.md`、`docs/adr/architecture-decisions.md` 或对应计划页；平台相关缺口进 `docs/08-integration.md`。
 - 不描述不存在的功能；不夸大安全保证。代码与文档冲突时，先核实当前行为，再修正错误的一方。
 
@@ -149,7 +151,7 @@ node tools/rayrun-deploy/test/contract.mjs
 - Markdown 链接可解析；没有文档声称不存在的功能。
 - 代码、日志、fixture、diff 中没有密钥、凭据或 token。
 - 没有新依赖、无关 diff、无关重构。
-- `README.md` / `README.zh-CN.md` / `CLAUDE.md` 仍然准确。
+- `docs/12-status.md` 与代码一致；`README.md` / `README.zh-CN.md` 仍是诚实的营销叙事；`CLAUDE.md` 仍然准确。
 
 审批层或密钥处理的变更，手工冒烟测试是：把插件载入本地 DSH profile，启动一个 bot，触发一个受控动作，确认它停在审批上。在该路径存在之前，变更必须在纸面上保持这条规则为真，并明确说明缺口。
 
@@ -193,12 +195,12 @@ node tools/rayrun-deploy/test/contract.mjs
 - 需求不完整但不阻塞时，先做合理假设并继续推进；会影响长期架构时，明确提出需要用户决策。
 - 说明权衡，不要只给结论；架构、依赖、模块边界和长期维护成本尤其要讲清利弊。
 - 简单任务直接完成；复杂任务先给简短计划与验证方式。
-- 状态类问题先读 README 和代码再回答，不凭记忆。
+- 状态类问题先读 `docs/12-status.md` 和代码再回答，不凭记忆。
 
 ## 12. 依赖决策
 
 - 零运行时依赖、无构建步骤是有意的产品选择（boring on purpose），不是临时状态。
-- 唯一的外部运行时依赖是独立项目 `dsh-rayrun-computer`；集成走其发布表面和版本契约，依赖声明与版本检查的状态以 README 为准。
+- 唯一的外部运行时依赖是独立项目 `dsh-rayrun-computer`；集成走其发布表面和版本契约，依赖声明与版本检查的状态以 `docs/12-status.md` 和 `docs/version-matrix.md` 为准。
 - 新增依赖前说明：现有能力为何不够、替代方案、影响范围、是否破坏零依赖/无构建；需要用户明确同意。
 - 不 vendor、不 fork、不复制它的代码；需要它改行为去它自己的仓库。
 - 不为测试引入框架；沿用 `node test/*.mjs`。
@@ -212,7 +214,8 @@ node tools/rayrun-deploy/test/contract.mjs
 - **同源门的细节。** POST 没有 `Origin` 视为 host 侧调用（工具、测试），不是浏览器；有 `Origin` 时必须与请求到达的 `Host` 一致。不要“修”成强制要求 `Origin`，否则会打断 host 侧调用。
 - **CI 自动跑新测试。** workflow 用 `for test in packages/dsh-rayrun-bots/test/*.mjs`；新增测试文件会被自动执行，无需改 workflow。
 - **无 `node_modules`。** 不要跑 `npm install` 或引入包；根 workspace 是私有的、无依赖。
-- **状态不在本文件。** 问进度看 README 的 Status 段；本文件不维护状态。
+- **状态不在本文件。** 问进度看 `docs/12-status.md`；本文件不维护状态。
+- **README 不是事实源。** 根 README 只做营销叙事；不要在 README 写状态表、版本号、安装步骤或验证读数，也不要让其他文档引用 README 证明事实。
 
 ---
 

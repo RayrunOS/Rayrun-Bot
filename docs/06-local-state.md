@@ -5,7 +5,7 @@
 > 云端 bot runtime 见 [`04-cloud-host.md`](04-cloud-host.md)；审批文件见
 > [`05-approvals.md`](05-approvals.md)；未决决策见
 > [`adr/architecture-decisions.md`](adr/architecture-decisions.md)。
-> 实现状态以 [`../README.md`](../README.md) 的 **Status** 段为准。
+> 实现状态以 [`12-status.md`](12-status.md) 为准。
 
 ## 0. 与现有文档的关系
 

@@ -1,8 +1,8 @@
 # 09 — 部署与运行
 
-> 状态：2026-11-22。本文说明依赖、安装、运行、配置、检查与故障处理。它是
-> [`../README.md`](../README.md) 快速开始的展开版；实现状态以 README 的 **Status**
-> 段为准。产品方向见 [`00-product-direction.md`](00-product-direction.md)；技术基线见
+> 状态：2026-11-22。本文说明依赖、安装、运行、配置、检查与故障处理，是安装与运行的
+> 操作页；实现状态以 [`12-status.md`](12-status.md) 为准。产品方向见
+> [`00-product-direction.md`](00-product-direction.md)；技术基线见
 > [`01-system-architecture.md`](01-system-architecture.md)；平台 handoff 见
 > [`08-integration.md`](08-integration.md)。
 
@@ -10,7 +10,7 @@
 
 | 文档 | 负责什么 |
 | --- | --- |
-| [`../README.md`](../README.md) | 产品页与状态；三分钟路径 |
+| [`12-status.md`](12-status.md) | 实现状态；三分钟路径当前可达哪一步 |
 | [`08-integration.md`](08-integration.md) | 依赖契约、一次安装 S6、平台能力 |
 | [`plans/roadmap.md`](plans/roadmap.md) | 阶段与发布退出标准 |
 | [`plans/mvp-plan.md`](plans/mvp-plan.md) | A1–A12 验收与 release checklist |
@@ -80,9 +80,11 @@ dsh plugin --profile web add "<packages/dsh-rayrun-bots 的绝对路径>"
 ```
 
 安装后打开 **Bots** 会看到 v0.1 客户端壳：聊天列表、对话、详情、新建 bot、设置向导、
-设置。**这些是页内内存预览**：创建 bot 不会落到云电脑，Allow once 不会发给 worker。
-本地 roster 已持久化；session 映射、审批执行、routines 与成本栏尚未构建（审批执行
-等待平台权限隔离，ADR-001）；状态以 README 为准。
+设置。对话、审批卡和设置仍是**页内内存预览**：创建 bot 不会落到云电脑，Allow once
+不会发给 worker。本地 roster 已持久化；setup 的 Rayrun/电脑步骤，以及详情和 Settings
+的用量读取，会真正调用云电脑插件。session 映射、审批执行、routines 与独立成本栏尚未
+构建（审批执行等待平台权限隔离，ADR-001）；状态以
+[`12-status.md`](12-status.md) 为准。
 
 **从 tarball 安装**（发布产物的内容）：
 
@@ -112,8 +114,10 @@ patch、`lib/*.js`、图标、README 和 LICENSE；CI 会把打出的 tarball �
 4. 和它对话，或让 routine 在你离开时唤醒它。
 5. 在面板里批准它的第一个受控动作。
 
-第 2–5 步目前**不会真正到达 Rayrun**；客户端壳是预览。详见
-[`plans/roadmap.md`](plans/roadmap.md) 与 [`plans/mvp-plan.md`](plans/mvp-plan.md)。
+第 2 步的 Rayrun 登录和云电脑创建经云电脑插件的同源 RPC 真正到达 Rayrun；第 3–5 步
+（bot 落到云电脑、routine 唤醒、审批执行）尚未打通，对话、审批和设置仍是页内预览。
+详见 [`plans/roadmap.md`](plans/roadmap.md)、[`plans/mvp-plan.md`](plans/mvp-plan.md)
+和 [`12-status.md`](12-status.md)。
 
 ---
 
@@ -231,4 +235,4 @@ Rayrun token 是维护者例外，不是产品运行时路径；安全边界见
 - [安全](07-security.md) — 保护什么、不保护什么
 - [FAQ](faq.md)
 - [路线图](plans/roadmap.md)
-- [README](../README.md) — 产品页与状态
+- [实现状态](12-status.md) — 今天能做什么、还缺什么

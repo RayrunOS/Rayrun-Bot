@@ -5,7 +5,7 @@
 > [`01-system-architecture.md`](01-system-architecture.md)；视觉规范见
 > [`design/ui-design.md`](design/ui-design.md)；交付计划见
 > [`plans/client-plan.md`](plans/client-plan.md)。
-> 实现状态以 [`../README.md`](../README.md) 的 **Status** 段为准。
+> 实现状态以 [`12-status.md`](12-status.md) 为准。
 
 ## 0. 与现有文档的关系
 

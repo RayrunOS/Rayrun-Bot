@@ -5,6 +5,8 @@ the bundle loads, the client half renders the v0.1 screens, and the host half
 answers health and persists the bot roster. Conversations, approvals, routines
 and settings are still an in-memory preview; there is no cloud runtime yet. The
 page-level create/reload path was verified on 2026-11-21 in a local DSH page.
+Repository-level status and verified combinations live in
+[docs/12-status.md](../../docs/12-status.md).
 
 ## What it does today
 

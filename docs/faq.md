@@ -1,153 +1,126 @@
-# FAQ
+# 常见问题
 
-*Status: 2026-11-11. Pre-alpha. Two separate projects: the cloud-computer plugin
-at [RayrunOS/dsh-rayrun-computer](https://github.com/RayrunOS/dsh-rayrun-computer)
-works on its own; the bot half of this repository does not exist yet and will
-reuse that plugin as an external dependency. Short answers here; details in
-[system architecture](01-system-architecture.md), [security](07-security.md) and
-[roadmap](plans/roadmap.md).*
-
-## Is this a SaaS?
-
-No. It is an open-source plugin for DeepSeek Harness, under MIT. There is no
-project-hosted service, account, relay or control plane: you bring your own
-Rayrun account and your own DeepSeek API key. The code runs on your machine and
-on your cloud computer.
-
-## If the software is free, who do I pay?
-
-You pay Rayrun for compute and DeepSeek for tokens. Rayrun bills cloud
-computers by the second (about ¥57.6/month for 2 vCPU / 2 GiB kept always-on at
-the time of writing); model usage is on your DeepSeek account. This project
-neither collects payment nor resells compute or tokens.
-
-## Which model does it use?
-
-DeepSeek, through your own DeepSeek API key. The key is stored as a Rayrun
-credential and injected into the agent process inside your cloud computer, so
-the model calls come from that machine, not from this project.
-
-## Can I use another model provider?
-
-Not designed or tested. This product only wires the DeepSeek credential path.
-DSH itself can talk to other model providers, but that path is outside v0.1 and
-must be verified before it can be claimed.
-
-## Can I point it at another cloud backend, like E2B?
-
-No. The integration is Rayrun-specific: the tools call the Rayrun API directly.
-A provider abstraction is an open decision and is not planned for v0.1; adding
-one later would be a redesign of the plugin's cloud layer, not a config flag.
-
-## Is my Rayrun token safe?
-
-It should be: the token lives in the DeepSeek Harness credential vault on the
-host side, the page never receives it, and a page→host call is a same-origin,
-origin-checked RPC. Passwords are memory-only. Residual risks — a compromised
-host, a malicious plugin in the same profile — are in [07-security.md](07-security.md).
-
-## Is my DeepSeek key safe?
-
-The key is stored as a Rayrun credential and injected into the agent process
-only; `exec` shells in the machine cannot read it, and the plugin does not read
-it. "Never in logs" is a design claim still being verified — see the status
-note in the [README](../README.md) and [07-security.md](07-security.md). Whether the
-cloud provider itself could read a stored credential is **not verified**; do
-not assume it cannot.
-
-## Do I need to install two plugins?
-
-Yes, today: Rayrun Bot plus the separate
+*状态：2026-11-22。Pre-alpha。两个独立项目：云电脑插件
 [RayrunOS/dsh-rayrun-computer](https://github.com/RayrunOS/dsh-rayrun-computer)
-project. Rayrun Bot reuses that plugin as an external dependency and does not
-modify, fork or vendor it. The Rayrun Bot bundle is intended to declare it as a
-dependency so one install brings both, but whether a DSH bundle dependency loads
-both host and client halves is the W0 spike S6 and is **not verified**. Until
-then — and until both are on npm — install both plugins from their checkouts
-into the same DSH profile and restart DSH.
+独立可用；本仓库的 bot 层在它之上构建，并把它作为外部依赖复用。实现状态以
+[12-status.md](12-status.md) 为准；本文只给短答，细节见[系统架构](01-system-architecture.md)、
+[安全](07-security.md) 和[路线图](plans/roadmap.md)。*
 
-## Why is this repository mostly docs?
+## 这是 SaaS 吗？
 
-Because this repository is the project for the bot half, and the bot half is not
-written yet. It is not a monorepo for the cloud-computer plugin: that package is
-a separate project at
+不是。它是 DeepSeek Harness 的开源插件，MIT 许可。没有项目方托管的服务、账号、中继
+或控制面：你带自己的 Rayrun 账号和 DeepSeek API key。代码跑在你的机器和你的云电脑上。
+
+## 软件免费，我付钱给谁？
+
+云电脑付给 Rayrun，token 付给 DeepSeek。Rayrun 按秒给云电脑计费（写作时 2 vCPU /
+2 GiB 常开约 ¥57.6/月）；模型用量记在你的 DeepSeek 账号上。本项目不收款，也不转售
+算力或 token。
+
+## 用哪个模型？
+
+DeepSeek，用你自己的 DeepSeek API key。key 存在 Rayrun credential 里，注入你云电脑
+内的 agent 进程；模型调用来自那台机器，不来自本项目。
+
+## 能用其他模型供应商吗？
+
+未设计、未测试。本产品只接通 DeepSeek 凭据路径。DSH 本身可以接其他模型供应商，但
+那条路径超出 v0.1，必须先验证才能声称支持。
+
+## 能指向 E2B 之类的其他云后端吗？
+
+不能。集成是 Rayrun 专用的：工具直接调用 Rayrun API。供应商抽象是一个未决决策，v0.1
+没有计划；以后要加，是对插件云层的重新设计，不是一个配置开关。
+
+## 我的 Rayrun token 安全吗？
+
+设计上应该安全：token 留在 host 侧的 DeepSeek Harness 凭证库里，页面永远拿不到；
+page→host 调用是同源、origin 校验的 RPC。密码只存在内存里。残余风险——host 被攻陷、
+同一 profile 里的恶意插件——见 [07-security.md](07-security.md)。
+
+## 我的 DeepSeek key 安全吗？
+
+key 存在 Rayrun credential 里，只注入 agent 进程；机器里的 `exec` shell 读不到它，
+插件也不读它。“永不进日志”仍是待验证的设计声明——见
+[12-status.md](12-status.md) 和 [07-security.md](07-security.md)。云供应商本身能否读到
+存储的 credential **未验证**；不要假设它读不到。
+
+## 需要装两个插件吗？
+
+今天需要：Rayrun Bot，以及独立的
 [RayrunOS/dsh-rayrun-computer](https://github.com/RayrunOS/dsh-rayrun-computer)
-and stays one. The bootstrap commit here is README, docs, templates and agent
-rules; code arrives with v0.1.
+项目。Rayrun Bot 把它当作外部依赖复用，不修改、不 fork、不 vendor。Rayrun Bot 的
+bundle 计划把它声明为依赖，让一次安装带两个插件；但 DSH bundle 依赖是否会同时加载
+host 和 client 两半，是 W0 spike S6，**未验证**。在那之前——以及两个包都上 npm 之前——
+从各自的 checkout 把两个插件装进同一个 DSH profile，然后重启 DSH。
 
-## What can I do today, then?
+## 为什么这个仓库文档这么多？
 
-Install the separate cloud-computer plugin from a checkout into DeepSeek Harness
-and use its seven tools: create/stop/pause/destroy a machine, run commands, move
-files, drive the desktop, delegate tasks, sync a workspace, project a worker
-layer. It is a dependency of Rayrun Bot, not part of this repository. The
-[quickstart](09-deployment.md) has the exact commands and a "what is missing" table.
+因为这是一个从设计起步的项目，而且 bot 层仍在构建中。它不是云电脑插件的 monorepo：
+那个包是独立项目，位于
+[RayrunOS/dsh-rayrun-computer](https://github.com/RayrunOS/dsh-rayrun-computer)，
+并保持独立。文档记录产品方向、架构、审批和验证证据；代码按 v0.1 计划逐步落地。
 
-## How is this different from Grok Bot?
+## 今天能做什么？
 
-Grok Bot is a hosted product: xAI/Cursor runs the machine, the model is part of
-the subscription, and the client is a dedicated app distributed by them. This
-project is the opposite
-of hosted — open code, your Rayrun account, your DeepSeek key, and DSH as the
-client. It borrows the product shape (named bots sharing one persistent
-computer, approvals when a bot needs you) but is not a clone and has no
-marketplace, mobile app or managed onboarding.
+把独立的云电脑插件从 checkout 装进 DeepSeek Harness，使用它的七个工具：
+create/stop/pause/destroy 机器、跑命令、搬文件、驱动桌面、委派任务、同步 workspace、
+project worker 层。它是 Rayrun Bot 的依赖，不是本仓库的一部分。本仓库的
+`dsh-rayrun-bots` 也能从 checkout 装进同一个 profile，打开 Bots 壳并持久化本地名册；
+对话和审批仍是页内预览。[安装与运行](09-deployment.md)有确切命令和“还缺什么”表，
+实现状态见 [12-status.md](12-status.md)。
 
-## How is this different from dsh-superagent or OpenMausBot?
+## 和 Grok Bot 有什么不同？
 
-`dsh-superagent` is DeepSeek's research prototype for one GitHub repository: it
-runs locally, has no cloud computer and is explicitly reference-only.
-OpenMausBot is a broader Apache-2.0 self-hosted product whose cloud desktop is
-an external service; it is a useful UX reference but not a Rayrun/BYO
-integration. This project's bet is narrower: DSH as the brain, Rayrun as the
-computer, credentials the user already owns. See
-[../README.md](../README.md) for the acknowledged inspirations.
+Grok Bot 是托管产品：xAI/Cursor 运行机器，模型包含在订阅里，客户端是他们分发的专用
+App。本项目与托管相反——开放代码、你的 Rayrun 账号、你的 DeepSeek key、DSH 作为
+客户端。它借鉴产品形态（有名字的 bot 共享一台持久电脑，bot 需要你时出现审批），但
+不是克隆，也没有市场、移动 App 或托管 onboarding。
 
-## What happens if I forget to stop the computer?
+## 和 dsh-superagent 或 OpenMausBot 有什么不同？
 
-You keep paying by the second. Rayrun has no platform-side idle auto-stop
-today; the computer package has an optional `idle_stop_minutes` that stops (not
-destroys) an idle machine, but its timer lives in host memory and is lost on
-restart. `max_lifetime_seconds` stops a machine without restarting it. If your
-balance runs out, the platform can force-destroy your organization's machines
-including disks — so watch the balance as a data-loss risk, not just a cost.
+`dsh-superagent` 是 DeepSeek 针对单个 GitHub 仓库的研究原型：本地运行，没有云电脑，
+明确仅供参考。OpenMausBot 是更广的 Apache-2.0 自托管产品，云桌面是外部服务；它是有用
+的 UX 参考，但不是 Rayrun/BYO 集成。本项目的赌注更窄：DSH 是大脑，Rayrun 是电脑，
+凭据是用户本来就拥有的。致谢名单见[灵感调研](research/inspiration.md)。
 
-## Are approvals working?
+## 如果我忘了停电脑会怎样？
 
-Not on the cloud path, and not until the platform can isolate the approver. The
-design contract is fail-closed (timeout or unknown means no), and the approval
-cards inside DSH exist as a preview, but the cloud worker profile currently runs
-with `approval: never` because there is nobody to ask on a headless machine. A
-file mailbox inside the agent's writable workspace could be read and self-approved
-by a compromised bot, so ADR-001 (2026-11-21) decided to wait for Rayrun to provide
-host/agent permission isolation and a host-only approval endpoint. Until that
-lands, approval execution is not implemented, the preview authorizes nothing, and
-a cloud bot is unsupervised.
+你会按秒继续付费。Rayrun 今天没有平台侧 idle auto-stop；云电脑包有可选的
+`idle_stop_minutes`，会 stop（不 destroy）空闲机器，但计时器在 host 内存里，重启就丢。
+`max_lifetime_seconds` 会停机且不重启。余额耗尽时，平台可能 force-destroy 你组织内
+的机器和磁盘——所以要把余额当作数据丢失风险，而不只是成本。
 
-## Can I self-host?
+## 审批在工作吗？
 
-There is nothing to self-host on our side — no server. Your DSH runs locally.
-Rayrun's CLI can point at a self-hosted Rayrun deployment, but that is Rayrun's
-product, not this project's, and it is not verified for this use case (TBD).
+云端路径上还没有，而且在平台能隔离审批者之前不会有。设计契约是 fail-closed（超时或
+未知 = 拒绝），DSH 内的审批卡是预览，但云端 worker profile 目前以 `approval: never`
+运行，因为无人值守的机器上没有人可以问。agent 可写工作区里的文件邮箱可能被攻陷的 bot
+读取并自批，所以 ADR-001（2026-11-21）决定等待 Rayrun 提供 host/agent 权限隔离和
+host-only 审批端点。平台提供之前，审批执行不实现，预览不授权任何动作，云端 bot 是
+无监督的。
 
-## Is it on npm? Can I install it as a plugin?
+## 能自托管吗？
 
-Neither package is on npm. The bot package — `dsh-rayrun-bots`, the intended
-install name — is not installable yet. The cloud-computer package from the
-separate `RayrunOS/dsh-rayrun-computer` project is not on npm either; install it
-from a checkout with `dsh plugin --profile web add <absolute path>` and restart
-DSH. Both stay checkout-based until they are published.
+我们这边没有可自托管的东西——没有服务器。你的 DSH 在本地运行。Rayrun 的 CLI 可以
+指向自托管的 Rayrun 部署，但那是 Rayrun 的产品，不是本项目的，而且对本用例未验证
+（TBD）。
 
-## Is my data uploaded anywhere?
+## 上 npm 了吗？能作为插件安装吗？
 
-Not to us: there is no project server. Your workspace is pushed to your own
-Rayrun cloud computer, prompts go from that machine to DeepSeek, and Rayrun and
-DeepSeek's terms apply to what reaches them. Nothing in this repository sends
-telemetry.
+两个包都不在 npm 上。bot 包——`dsh-rayrun-bots`，预期的安装名——还不可安装。独立的
+`RayrunOS/dsh-rayrun-computer` 云电脑包也不在 npm 上；从 checkout 用
+`dsh plugin --profile web add <absolute path>` 安装，然后重启 DSH。发布之前，两者都
+保持 checkout 安装。
 
-## What is the roadmap?
+## 我的数据会被上传到什么地方吗？
 
-Short version: v0.1 is the bot plugin plus the cloud-computer dependency, on
-`dsh web`, with one computer, a bot roster, fail-closed approvals and a cost bar;
-v0.2 adds an IM channel with your own bot token; v1.0 may add a thin desktop
-shell. Exit criteria and the not-planned list are in [plans/roadmap.md](plans/roadmap.md).
+不会传到我们这里：没有项目服务器。你的 workspace 被推到你自己的 Rayrun 云电脑，
+prompt 从那台机器发往 DeepSeek，Rayrun 和 DeepSeek 的条款适用于到达它们的数据。
+本仓库不发送遥测。
+
+## 路线图是什么？
+
+简短版：v0.1 是 bot 插件加云电脑依赖，跑在 `dsh web` 上，包含一台电脑、一份 bot
+名册、fail-closed 审批和成本栏；v0.2 用你自己的 bot token 加 IM 通道；v1.0 可能加一层
+轻量桌面壳。退出标准与“不做什么”清单见[路线图](plans/roadmap.md)。

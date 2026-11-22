@@ -1,15 +1,17 @@
 # Rayrun Bot 文档索引
 
 > 本文件只做导航与约定，不复制项目状态、验收读数或版本号。
-> 状态入口：`../README.md` 的 **Status** 段（中文镜像 `../README.zh-CN.md` 的「状态」段）。
+> 状态入口：[`12-status.md`](12-status.md)。根 `README.md` 是营销页，不承载事实，
+> 也不作为事实依据。
 > 工程指令：`../CLAUDE.md`。
 
 ## 1. 真相源与入口
 
 | 入口 | 负责什么 |
 | --- | --- |
-| [`../README.md`](../README.md) | 产品页与状态；英文为准 |
-| [`../README.zh-CN.md`](../README.zh-CN.md) | 中文镜像，同一 commit 更新 |
+| [`../README.md`](../README.md) | 英文营销页；不承载状态或事实，英中双语 |
+| [`../README.zh-CN.md`](../README.zh-CN.md) | 中文营销页，同一 commit 更新 |
+| [`12-status.md`](12-status.md) | 实现状态的唯一事实源：今天有什么、缺什么、验证到哪一步 |
 | [`00-product-direction.md`](00-product-direction.md) | 产品方向：定位、目标用户、v0.1 范围与产品决策 |
 | [`01-system-architecture.md`](01-system-architecture.md) | 技术基线：分层、边界、信任模型 |
 | [`06-local-state.md`](06-local-state.md) | 本地状态目录、机器布局、原子写与权限 |
@@ -32,20 +34,20 @@
 | 客户端与设计 | [客户端设计](03-client-design.md)、[UI 设计](design/ui-design.md)、[Bot 人格](design/bot-persona.md)、[桌面发行版](design/desktop-distribution.md)、[mockups](mockups) | 表面、RPC、视觉规范、bot 身份、v1.0 桌面 B1/B2 方案 |
 | 计划与验收 | [MVP 计划](plans/mvp-plan.md)、[客户端计划](plans/client-plan.md) | v0.1 工作分解、客户端交付 |
 | 平台集成 | [集成与平台需求](08-integration.md)、[dsh-rayrun-computer 问题登记](11-dsh-rayrun-computer-issues.md) | 依赖契约、平台能力与优先级；依赖自身问题的证据、workaround 与上游修复方向 |
-| 验证与测试 | [Rayrun 验证与缺口](10-rayrun-verification.md) | 测试资源政策、Rayrun 验证路径、缺口登记 |
+| 状态与验证 | [实现状态](12-status.md)、[Rayrun 验证与缺口](10-rayrun-verification.md) | 实现状态事实源；测试资源政策、Rayrun 验证路径、缺口登记 |
 | 部署与操作 | [部署与运行](09-deployment.md)、[版本矩阵](version-matrix.md) | 安装、配置、检查、故障处理；DSH × 依赖 × 包的已验证组合 |
 | 调研 | [灵感](research/inspiration.md) | Grok Bot 等参考；不是真相源 |
-| 决策 | [架构决策](adr/architecture-decisions.md) | [ADR-001–ADR-017](#3-adr-登记册)；只有 Decided 才算最终 |
+| 决策 | [架构决策](adr/architecture-decisions.md) | [ADR-001–ADR-018](#3-adr-登记册)；只有 Accepted / Decided 才算最终 |
 
-`00`–`11` 是编号顶层文档；`plans/`、`adr/`、`design/`、`research/` 放细节，
-`mockups/` 放视觉素材。`00`/`01` 分别是产品与技术的第一真相源；其余编号文档是
-各自领域的规范，状态仍回 README。
+`00`–`12` 是编号顶层文档；`plans/`、`adr/`、`design/`、`research/` 放细节，
+`mockups/` 放视觉素材。`00`/`01` 分别是产品与技术的第一真相源；`12` 是实现状态的
+唯一事实源；其余编号文档是各自领域的规范。
 
 ## 3. ADR 登记册
 
-> 状态只取 `Proposed` / `Decided`；`Open` 表示还没有提案。本表只登记，决策细节、
-> 证据和修订以 [architecture-decisions.md](adr/architecture-decisions.md) 为准。
-> **下一个可用编号：ADR-018。** 编号一旦占用不再复用。
+> 状态取 `Proposed` / `Accepted` / `Decided`；`Open` 表示还没有提案。本表只登记，
+> 决策细节、证据和修订以 [architecture-decisions.md](adr/architecture-decisions.md)
+> 为准。**下一个可用编号：ADR-019。** 编号一旦占用不再复用。
 
 | 编号 | 标题 | 状态 | 文件 |
 | --- | --- | --- | --- |
@@ -66,6 +68,7 @@
 | ADR-015 | 云端 bot runtime 层 | Proposed（v0.1） | [architecture-decisions.md](adr/architecture-decisions.md#adr-015) |
 | ADR-016 | 本地 bot 控制面 | Proposed（v0.1） | [architecture-decisions.md](adr/architecture-decisions.md#adr-016) |
 | ADR-017 | Bots 作为默认产品表面 | Accepted（2026-11-21） | [architecture-decisions.md](adr/architecture-decisions.md#adr-017) |
+| ADR-018 | 文档事实源与语言 | Accepted（2026-11-22） | [architecture-decisions.md](adr/architecture-decisions.md#adr-018) |
 
 **ADR-001 已定（平台权限隔离）；审批实现等待 08 §3.3 的平台能力。** ADR-015/016、
 ADR-002 等仍决定控制面/执行面的分层与产物所有权，未定前相应 C/E 工作流不动工。
@@ -78,22 +81,24 @@ ADR-014 已定为 B1，属于 v1.0，不阻塞 v0.1。
 | 计划 | 未闭合项 | 详情 |
 | --- | --- | --- |
 | [MVP 计划](plans/mvp-plan.md) | A1–A12 验收、B/C/D/E 工作流 | §2、§5、§6 |
-| [客户端计划](plans/client-plan.md) | C-S1–C-S6 spike 与客户端接线 | Week 0、Delivery waves |
+| [客户端计划](plans/client-plan.md) | C-S1–C-S6 spike 与客户端接线 | Week 0、交付波次 |
 | [集成与平台需求](08-integration.md) | 会话/常驻 runtime、余额护栏 | §3 |
-| [架构决策](adr/architecture-decisions.md) | ADR-001–ADR-017 | 本文 §3 |
+| [架构决策](adr/architecture-decisions.md) | ADR-001–ADR-018 | 本文 §3 |
 
 ## 5. 文档约定
 
-- **真相源优先级**：产品方向 → `00-product-direction.md`；产品状态 → `README.md`；
+- **真相源优先级**：产品方向 → `00-product-direction.md`；实现状态 → `12-status.md`；
   技术基线 → `01-system-architecture.md`；安全 → `07-security.md`；范围与验收 →
   `plans/mvp-plan.md`；未决架构 → `adr/architecture-decisions.md`；导航 → 本文件。
-  文档冲突时按此顺序回落。
+  文档冲突时按此顺序回落。根 `README.md` 只在最后作为营销叙事，不作为事实依据。
 - **分类**：`plans/` 记“为什么这么做、怎么做”；`adr/` 记不可轻易逆转的决策；
   `design/` 记视觉、交互与人格；`research/` 是调研材料，不是真相源；
   `09-deployment.md` 记“怎么跑起来”。
-- **语言**：产品 README 英文为准并维护中文镜像；`docs/` 新文档用中文，历史英文
-  文档在重写时翻译；代码、注释、接口命名和提交信息用英文。
+- **语言**：`docs/` 全部用中文（技术标识、代码、schema、UI 文案保持英文）；根
+  README 是英中双语营销页，英文为准并维护中文镜像；代码、注释、接口命名和提交信息
+  用英文。
 - **新增文档**：先在本文件 §2 加一行；新增决策在 §3 加一行，并把“下一个可用编号”
   加一；新增未收口计划在 §4 加一行。
 - **链接**：Markdown 链接必须可解析；相对链接以本文件所在目录为基准。
 - 本文件不复制状态、验收读数或版本号；这些只出现在各自的真相源中。
+- 以上事实源与语言约定由 [ADR-018](adr/architecture-decisions.md#adr-018)（2026-11-22）决定。

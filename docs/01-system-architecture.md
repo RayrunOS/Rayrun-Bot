@@ -3,7 +3,7 @@
 > 状态：2026-11-20。本文是**技术层的唯一真相源**：系统由什么组成、边界在哪、状态怎么
 > 流转、信任模型是什么。
 > 产品范围与验收以 [`00-product-direction.md`](00-product-direction.md) 为准；当前实现
-> 状态以 [`../README.md`](../README.md) 的 **Status** 段为准；未决架构决策见
+> 状态以 [`12-status.md`](12-status.md) 为准；未决架构决策见
 > [`adr/architecture-decisions.md`](adr/architecture-decisions.md)。
 > 本文中的 **计划 / TBD** 表示未实现或未验证，不要读成已交付。
 
@@ -12,7 +12,8 @@
 | 文档 | 本文对它的处置 |
 | --- | --- |
 | [`00-product-direction.md`](00-product-direction.md) | 产品方向唯一真相源；产品与技术冲突时以 00 为准 |
-| [`../README.md`](../README.md) | 产品页与实现状态；本文不复制状态 |
+| [`../README.md`](../README.md) | 营销页，不承载事实 |
+| [`12-status.md`](12-status.md) | 实现状态的唯一事实源；本文不复制状态 |
 | [`07-security.md`](07-security.md) | 威胁模型、凭据边界与“不保护什么”的细节 |
 | [`06-local-state.md`](06-local-state.md) | 本地状态目录、原子写、权限与保留规则 |
 | [`plans/mvp-plan.md`](plans/mvp-plan.md) | 工作分解、接口草案、A1–A12 验收 |
@@ -147,7 +148,7 @@ host half 属于本地控制面。**ADR-015/016 目前是 Proposed**；在它们
 
 - **DSH host**：加载两个 bundle；本仓库的 host half 用 `ctx.inject(['webServer'])`
   注册同源路由，最小路由见 [`../packages/dsh-rayrun-bots/index.js`](../packages/dsh-rayrun-bots/index.js)；
-  实现状态以 README 为准。
+  实现状态以 [`12-status.md`](12-status.md) 为准。
 - **Client half**：DSH 页面里的三栏 bot 界面；只调用同源 RPC，不直接访问 Rayrun API，
   不持有 Rayrun token 或 DeepSeek key。
 - **Harness vault**：Rayrun token 的宿主；host 在需要调用 Rayrun API 时取值，不写入
@@ -415,7 +416,8 @@ ADR-004，未定之前 C1/D1 不应动工。
 
 ## 10. 文档约定
 
-- 产品方向：00；技术基线：本文；实现状态：README Status。
+- 产品方向：00；技术基线：本文；实现状态：[`12-status.md`](12-status.md)。
+- 根 `README.md` 是营销页，不作为事实依据。
 - 安全与威胁模型：`07-security.md`；本地状态：`06-local-state.md`。
 - 工作分解与验收：`plans/mvp-plan.md`；客户端：`plans/client-plan.md`；平台 handoff：
   `08-integration.md`。

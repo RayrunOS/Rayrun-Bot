@@ -1,12 +1,12 @@
 # 架构决策 — v0.1
 
-*状态：2026-11-20。本文是对 v0.1 架构的评审，以及在 bot runtime 与审批层动工前必须定下来的决策。它记录设计在哪里不完整、互相矛盾或存在安全问题，并为每一项给出建议。本文不描述已实现的行为。只有状态为 **Decided** 的条目才算最终决定；其余都是未决。*
+*状态：2026-11-22。本文是对 v0.1 架构的评审，以及在 bot runtime 与审批层动工前必须定下来的决策。它记录设计在哪里不完整、互相矛盾或存在安全问题，并为每一项给出建议。本文不描述已实现的行为。只有状态为 **Accepted** / **Decided** 的条目才算最终决定；其余都是未决。*
 
 相关：[产品方向](../00-product-direction.md) 是范围；[系统架构](../01-system-architecture.md) 是设计；[MVP 计划](../plans/mvp-plan.md) 是工作分解；[安全](../07-security.md) 是威胁模型；[本地文件设计](../06-local-state.md) 是状态布局；[平台需求](../08-integration.md) 是交给 Rayrun 平台的清单。
 
 ## 如何阅读
 
-每项是一个决策。**状态**取 `Open`、`Proposed`、`Decided`；**阻塞**列出在决策前不能安全实现的工作项；**证据**指向当前文本，用章节号而不是行号，以免编辑后失效。
+每项是一个决策。**状态**取 `Open`、`Proposed`、`Accepted`、`Decided`；**阻塞**列出在决策前不能安全实现的工作项；**证据**指向当前文本，用章节号而不是行号，以免编辑后失效。
 
 本次评审发现 1 个安全边界错误（ADR-001）、3 个阻塞 bot runtime 的契约缺口（ADR-003、ADR-004、ADR-005），以及一组范围与文档不一致。下面的建议都是提案，不是决定。
 
@@ -31,6 +31,7 @@
 | [ADR-015](#adr-015) | 云端 bot runtime 层 | Proposed（v0.1） | 用户云电脑内的 supervisor；queue/session/DSH/事件/恢复 | C1–C9, D1–D5, E1–E7 |
 | [ADR-016](#adr-016) | 本地 bot 控制面 | Proposed（v0.1） | DSH host + 插件 host half；token/审批/成本/依赖；不做托管服务 | A2/A3, B1–B4, E3/E4, G1/G2 |
 | [ADR-017](#adr-017) | Bots 作为默认产品表面 | Accepted（2026-11-21） | Rayrun Bot 品牌；加载即激活 Bots；DSH 是宿主，Bots 内不返回 DSH | v0.1, v1.0 |
+| [ADR-018](#adr-018) | 文档事实源与语言 | Accepted（2026-11-22） | README 只做营销；`docs/12-status.md` 是实现状态唯一事实源；`docs/` 全中文 | docs |
 
 ## P0 — bot runtime 与审批动工前必须定
 
@@ -236,14 +237,14 @@ schema 还缺 `botId` 和 `actionHash`，而正文要求匹配 bot 并绑定动�
 
 **问题。** 本地 DSH 关闭时，哪些工作继续，代价是什么？
 
-**当前设计。** README 说合上笔记本不会让 bot 停止。本地控制面运行审批轮询、
-idle-stop 策略和 watchdog。平台没有 idle auto-stop；`max_lifetime_seconds` 只停不
-重启；后台审批卡 30 分钟后过期（[README](../../README.md) “How it works”；
-[FAQ](../faq.md) “What happens if I forget to stop the computer?”；[MVP 计划](../plans/mvp-plan.md)
-G3；[客户端计划](../plans/client-plan.md) “UX flows and failure states”）。
+**当前设计。** 产品叙事说合上笔记本不会让 bot 停止；架构上的落点是本地控制面运行
+审批轮询、idle-stop 策略和 watchdog。平台没有 idle auto-stop；`max_lifetime_seconds`
+只停不重启；后台审批卡 30 分钟后过期（[系统架构](../01-system-architecture.md)；
+[FAQ](../faq.md) “如果我忘了停电脑会怎样？”；[MVP 计划](../plans/mvp-plan.md)
+G3；[客户端计划](../plans/client-plan.md) “UX 流程与失败状态”）。
 
 **问题。** “继续工作”只对已经排队、且不需要审批的动作成立。后台受控动作会停在卡片
-处并过期；新工作无法提交；本地 idle stop 不在运行，机器继续计费。产品页没有说明
+处并过期；新工作无法提交；本地 idle stop 不在运行，机器继续计费。状态文档没有说明
 成本后果。
 
 **建议。** 公布一张小矩阵：
@@ -258,12 +259,12 @@ G3；[客户端计划](../plans/client-plan.md) “UX flows and failure states�
 | 重新打开 | 拉取状态与 outbox；显示 working、unread、pending、expired。 |
 
 增加云端 idle 策略或平台 idle stop（或带警告的默认 max lifetime），让“合上笔记本”
-不等于无上限账单。在 README 和 FAQ 中写明限制。
+不等于无上限账单。在 [`12-status.md`](../12-status.md) 和 FAQ 中写明限制。
 
-**影响。** A5、A6、G3；README 与 FAQ 措辞。
+**影响。** A5、A6、G3；12-status 与 FAQ 措辞。
 
-**证据。** [README](../../README.md) “How it works”；[FAQ](../faq.md)；
-[系统架构](../01-system-architecture.md) “Concurrency, cost and failure”；[MVP 计划](../plans/mvp-plan.md)
+**证据。** [系统架构](../01-system-architecture.md) “Concurrency, cost and failure”；
+[FAQ](../faq.md)；[MVP 计划](../plans/mvp-plan.md)
 C6、G3。
 
 <a id="adr-007"></a>
@@ -354,13 +355,13 @@ replay 作为有文档的回退，并写清它的 UX 与成本。
 `{ ok: false, error: { code, message, status } }`
 （[index.js](../../packages/dsh-rayrun-bots/index.js)；[rpc.js](../../packages/dsh-rayrun-bots/lib/rpc.js)）。
 客户端计划与 MVP 计划却写 `/plugins/<bundle-id>/rpc`、`{ action, payload }` 和扁平的
-`{ ok: false, code, message }`（[客户端计划](../plans/client-plan.md) “RPC contract with the
-host”；[MVP 计划](../plans/mvp-plan.md) §4.4）。
+`{ ok: false, code, message }`（[客户端计划](../plans/client-plan.md) “与 host 的 RPC
+契约”；[MVP 计划](../plans/mvp-plan.md) §4.4）。
 
 **问题。** 按文档实现的客户端会调用不存在的路由，或发送 host 不读的 body。这是接线
 失败，不是文案问题。
 
-**建议。** 选定一个契约，并在同一次变更里对齐代码、测试、README 和两份计划。建议形状：
+**建议。** 选定一个契约，并在同一次变更里对齐代码、测试、文档和两份计划。建议形状：
 保留已测试的 `/plugins/rayrun-bots`，把 body 统一为 `{ action, payload? }`，保留嵌套
 错误信封，然后更新文档；或改名为 `/plugins/rayrun-bots/rpc` 并更新测试。不要同时保留
 两套契约。
@@ -458,7 +459,7 @@ untrusted”；[客户端计划](../plans/client-plan.md) C-S6。
 
 **仍开放。**
 
-- “no runtime dependencies”（README、CLAUDE.md）与声明 `dsh-rayrun-computer`：
+- “no runtime dependencies”（`CLAUDE.md`、01）与声明 `dsh-rayrun-computer`：
   区分库依赖与 peer bundle。
 - [errors.js](../../packages/dsh-rayrun-bots/lib/errors.js) 和 MVP 错误码表缺
   `E_BOT_INVALID`，但 B1 要求非法定义返回一个 code。
@@ -663,6 +664,45 @@ roster 是最左列。DSH 仍是宿主和运行时，不是被 fork/重写的客
 2026-11-21 UX/产品独立审核；[`design/ui-design.md`](../design/ui-design.md) §1.1；
 `packages/dsh-rayrun-bots/client.js` 的 `selectPanel(PANEL_ID)` 与全屏 `.rb-frame`；
 [`10-rayrun-verification.md`](../10-rayrun-verification.md) R-G001/R-G008。
+
+<a id="adr-018"></a>
+### ADR-018 — 文档事实源与语言
+
+**状态：** Accepted（2026-11-22，文档重构）.
+
+**问题。** README 同时承担营销和事实来源，导致状态、版本、安装步骤散落在产品页，文档
+之间互相以 README 的 Status 段为准；`docs/` 里还有多份英文文档，语言不一致。
+
+**选项。**
+
+1. **继续让 README 作为状态真相源，只翻译文档。** 改动小，但营销与事实继续耦合，任何
+   状态更新都要改两份 README，其他文档继续依赖产品页。
+2. **README 只做营销，新增 `docs/12-status.md` 作为实现状态唯一事实源，`docs/` 全中文
+   （选中）。** README 保留英中双语和产品叙事，状态/版本/安装/验证读数移入 docs；
+   所有文档的状态引用指向 12-status；英文 docs 翻译为中文。
+3. **把 README 也改成纯中文。** 会削弱英文受众和 GitHub/npm 首屏。
+
+**决策（2026-11-22）。** 采用 2。
+
+- `README.md` / `README.zh-CN.md`：英中双语营销页，英文为准，同一 commit 更新；只放
+  产品叙事、价值主张、概念图和指向 `docs/` 的入口，不承载状态、版本、安装步骤、配置表、
+  验证读数或 CI 细节。
+- `docs/12-status.md`：实现状态的唯一事实源；带日期，证据指向
+  [`10-rayrun-verification.md`](../10-rayrun-verification.md) 和
+  [`version-matrix.md`](../version-matrix.md)。
+- 其他文档提到实现状态时引用 12-status，不引用 README。
+- `docs/` 全部用中文；技术标识、代码、schema、UI 文案保持英文。
+- 新增用户可见行为时更新 12-status；营销叙事变化时同步两份 README。
+
+**理由。** 营销和事实分离，状态只有一处；中文文档降低维护和阅读成本；英文 README
+保留对外展示。
+
+**影响。** `docs/00`–`12`、[`docs/README.md`](../README.md)、[`CLAUDE.md`](../../CLAUDE.md)、
+[`SECURITY.md`](../../SECURITY.md)、[`CONTRIBUTING.md`](../../CONTRIBUTING.md) 和包
+README 的状态引用；不影响代码和 RPC 契约。
+
+**证据。** 本次文档重构；[`docs/12-status.md`](../12-status.md)；
+[`docs/README.md`](../README.md) §5 文档约定。
 
 ## 建议顺序
 

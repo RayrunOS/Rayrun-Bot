@@ -23,7 +23,11 @@ land than a large speculative one.
 - Never commit tokens, API keys, `.env` files, or cloud credentials. Use
   placeholders in examples.
 - Update the docs in the same pull request when behavior changes, and make sure
-  any link you add resolves in the tree.
+  any link you add resolves in the tree. `docs/12-status.md` is the single source
+  of implementation status; keep it dated and evidence-backed.
+- Documentation under `docs/` is written in Chinese (technical identifiers, code
+  and UI copy stay in English). The root README is a bilingual marketing page,
+  not a source of record.
 - Link the issue you are closing (`Closes #123`) when there is one.
 
 ## Local checks

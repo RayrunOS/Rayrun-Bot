@@ -7,7 +7,7 @@
 > [`08-integration.md`](08-integration.md)；未决决策见
 > [`adr/architecture-decisions.md`](adr/architecture-decisions.md)。
 > 本仓库的 bot 层安全属性是**设计意图**，不是已验证行为；实现状态以
-> [`../README.md`](../README.md) 的 **Status** 段为准。标记 **TBD** 的项未验证。
+> [`12-status.md`](12-status.md) 为准。标记 **TBD** 的项未验证。
 
 本产品带来用户自己的凭据：Rayrun 账号 token、DeepSeek API key 和一台云电脑。本文说明
 设计保护什么、怎么保护，以及同样重要的——**不保护什么**。漏洞请按
