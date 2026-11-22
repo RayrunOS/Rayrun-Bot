@@ -80,10 +80,12 @@ dsh plugin --profile web add "<packages/dsh-rayrun-bots 的绝对路径>"
 ```
 
 安装后打开 **Bots** 会看到 v0.1 客户端壳：聊天列表、对话、详情、新建 bot、设置向导、
-设置。对话、审批卡和设置仍是**页内内存预览**：创建 bot 不会落到云电脑，Allow once
-不会发给 worker。本地 roster 已持久化；setup 的 Rayrun/电脑步骤，以及详情和 Settings
-的用量读取，会真正调用云电脑插件。session 映射、审批执行、routines 与独立成本栏尚未
-构建（审批执行等待平台权限隔离，ADR-001）；状态以
+设置。对话 UI、审批卡和设置仍是**页内内存预览**：创建 bot 不会落到云电脑，Allow once
+不会发给 worker。本地 roster 和每 bot 的 `session.json` / `transcript.jsonl` 已持久化，
+host half 提供 `session.send/history/status`；生产 runtime 尚未接线，`session.send`
+返回 `E_RUNTIME_UNAVAILABLE`。setup 的 Rayrun/电脑步骤，以及详情和 Settings 的用量
+读取，会真正调用云电脑插件。bot↔云端 session 映射、审批执行、routines 与独立成本栏
+尚未构建（审批执行等待平台权限隔离，ADR-001）；状态以
 [`12-status.md`](12-status.md) 为准。
 
 **从 tarball 安装**（发布产物的内容）：

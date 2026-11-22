@@ -22,7 +22,7 @@ const VERSION = JSON.parse(readFileSync(new URL('../package.json', import.meta.u
 const DEPENDENCY_UNKNOWN = { name: 'dsh-rayrun-computer', required: '>=1.0.0 <2.0.0', version: null, status: 'unknown', code: null }
 
 /** Mount the host half on a fake context and return the registered route. */
-function hostFor({ origin = 'http://127.0.0.1:59999', profileDir } = {}) {
+function hostFor({ origin = 'http://127.0.0.1:59999', profileDir, runtime } = {}) {
   const routes = []
   const child = {
     effect(fn) {
@@ -47,7 +47,7 @@ function hostFor({ origin = 'http://127.0.0.1:59999', profileDir } = {}) {
       return () => {}
     },
   }
-  apply(ctx)
+  apply(ctx, { runtime })
   assert.equal(routes.length, 1, 'the host route is registered once')
   return { handler: routes[0].handler, route: routes[0] }
 }
@@ -242,6 +242,26 @@ function post(action, payload, headers = {}) {
   return { action, body: JSON.stringify({ action, ...payload }), headers }
 }
 
+const FAKE_RUNTIME = {
+  contract: 1,
+  name: 'fake',
+  available: true,
+  async run({ text }) {
+    return { text: `echo:${text}` }
+  },
+}
+
+/** Poll the same host until the session satisfies the predicate. */
+async function waitForSession(handler, botId, predicate) {
+  for (let attempt = 0; attempt < 100; attempt += 1) {
+    const reply = await request(handler, post('session.history', { botId }))
+    assert.equal(reply.status, 200)
+    if (predicate(reply.json)) return reply
+    await new Promise((resolve) => setTimeout(resolve, 5))
+  }
+  throw new Error(`session ${botId} did not settle`)
+}
+
 check('the roster starts empty, persists a created bot, and lists it after a reload', () => withState(async (home) => {
   const { handler } = hostFor()
   const empty = await request(handler, { action: 'bots.list' })
@@ -330,6 +350,97 @@ check('roster replies expose no credential shape', () => withState(async () => {
     await request(handler, post('bots.get', { id: 'weekly-watch' })),
   ]
   for (const reply of replies) {
+    assert.doesNotMatch(reply.text, /Bearer\s|RAYRUN_TOKEN|sk-[A-Za-z0-9]{16,}|api[_-]?key\s*[:=]/i)
+  }
+}))
+
+check('session.send fails closed without a wired runtime and writes no session', () => withState(async (home) => {
+  const { handler } = hostFor()
+  const created = await request(handler, post('bots.create', {
+    name: 'Echo Bot', label: 'Echoes', instructions: 'Echo.',
+  }))
+  const botId = created.json.bot.id
+  const reply = await request(handler, post('session.send', { botId, text: 'hello' }))
+  assert.equal(reply.status, 503)
+  assert.equal(reply.json.error.code, 'E_RUNTIME_UNAVAILABLE')
+  assert.equal(existsSync(path.join(home, 'state', 'rayrun-bot', 'bots', botId, 'session.json')), false)
+}))
+
+check('session.send queues a turn and history returns the fake reply', () => withState(async () => {
+  const { handler } = hostFor({ runtime: FAKE_RUNTIME })
+  const created = await request(handler, post('bots.create', {
+    name: 'Echo Bot', label: 'Echoes', instructions: 'Echo.',
+  }))
+  const botId = created.json.bot.id
+
+  const sent = await request(handler, post('session.send', { botId, text: 'hello' }))
+  assert.equal(sent.status, 200)
+  assert.equal(sent.json.ok, true)
+  assert.equal(sent.json.message.role, 'user')
+  assert.equal(sent.json.message.text, 'hello')
+  assert.ok(['queued', 'running'].includes(sent.json.session.state))
+
+  const settled = await waitForSession(
+    handler,
+    botId,
+    (json) => json.session?.state === 'idle' && json.messages.length === 2,
+  )
+  assert.deepEqual(
+    settled.json.messages.map((message) => [message.role, message.text]),
+    [['user', 'hello'], ['bot', 'echo:hello']],
+  )
+
+  const status = await request(handler, post('session.status', { botId }))
+  assert.equal(status.status, 200)
+  assert.equal(status.json.session.state, 'idle')
+
+  const cursor = await request(handler, post('session.history', { botId, after: sent.json.message.seq }))
+  assert.equal(cursor.status, 200)
+  assert.deepEqual(cursor.json.messages.map((message) => message.text), ['echo:hello'])
+}))
+
+check('session errors carry stable codes and a cross-origin send writes nothing', () => withState(async () => {
+  const { handler } = hostFor({ runtime: FAKE_RUNTIME })
+  const unknown = await request(handler, post('session.send', { botId: 'missing', text: 'x' }))
+  assert.equal(unknown.status, 404)
+  assert.equal(unknown.json.error.code, 'E_BOT_UNKNOWN')
+
+  const created = await request(handler, post('bots.create', {
+    name: 'Echo Bot', label: 'Echoes', instructions: 'Echo.',
+  }))
+  const botId = created.json.bot.id
+  const empty = await request(handler, post('session.send', { botId, text: '   ' }))
+  assert.equal(empty.status, 400)
+  assert.equal(empty.json.error.code, 'E_SESSION_INVALID')
+
+  const cross = await request(handler, post('session.send', { botId, text: 'hello' }, {
+    origin: 'http://evil.example', host: '127.0.0.1:53109',
+  }))
+  assert.equal(cross.status, 403)
+
+  const history = await request(handler, post('session.history', { botId }))
+  assert.equal(history.status, 200)
+  assert.equal(history.json.session, null)
+  assert.deepEqual(history.json.messages, [])
+}))
+
+check('an unknown session action is refused before any state is touched', () => withState(async (home) => {
+  const reply = await request(hostFor().handler, { action: 'session.foo' })
+  assert.equal(reply.status, 404)
+  assert.match(reply.json.error.message, /Unknown action/)
+  assert.equal(existsSync(path.join(home, 'state', 'rayrun-bot')), false)
+}))
+
+check('session replies expose no credential shape', () => withState(async () => {
+  const { handler } = hostFor({ runtime: FAKE_RUNTIME })
+  const created = await request(handler, post('bots.create', {
+    name: 'Echo Bot', label: 'Echoes', instructions: 'Echo.',
+  }))
+  const botId = created.json.bot.id
+  const sent = await request(handler, post('session.send', { botId, text: 'hello' }))
+  const settled = await waitForSession(handler, botId, (json) => json.session?.state === 'idle')
+  const status = await request(handler, post('session.status', { botId }))
+  for (const reply of [sent, settled, status]) {
     assert.doesNotMatch(reply.text, /Bearer\s|RAYRUN_TOKEN|sk-[A-Za-z0-9]{16,}|api[_-]?key\s*[:=]/i)
   }
 }))

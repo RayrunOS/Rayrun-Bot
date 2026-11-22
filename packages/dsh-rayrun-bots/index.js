@@ -20,6 +20,8 @@ import { checkDependency } from './lib/dependency.js'
 import { ERROR_CODES } from './lib/errors.js'
 import { resolveStateRoot } from './lib/local-store.js'
 import { readJsonBody, sendError, sendJson } from './lib/rpc.js'
+import { createUnavailableRuntime, validateRuntime } from './lib/runtime.js'
+import { openSessionRunner } from './lib/sessions.js'
 
 export const name = 'rayrun-bots'
 
@@ -74,19 +76,45 @@ function botAction(action, payload, ctx) {
   }
 }
 
-/** Map a roster error to its stable code and HTTP status. */
-function sendBotError(res, error) {
+/** Map an action error to its stable code and HTTP status. */
+const STATUS_BY_CODE = new Map([
+  [ERROR_CODES.botUnknown, 404],
+  [ERROR_CODES.botInvalid, 400],
+  [ERROR_CODES.botExists, 409],
+  [ERROR_CODES.sessionInvalid, 400],
+  [ERROR_CODES.runtimeUnavailable, 503],
+  [ERROR_CODES.queueFull, 429],
+  [ERROR_CODES.hostDown, 503],
+])
+
+function sendActionError(res, error) {
   const code = typeof error?.code === 'string' && error.code.startsWith('E_')
     ? error.code
     : ERROR_CODES.internal
-  const status = code === ERROR_CODES.botUnknown
-    ? 404
-    : code === ERROR_CODES.botInvalid
-      ? 400
-      : code === ERROR_CODES.botExists
-        ? 409
-        : Number(error?.status) || 500
+  const status = STATUS_BY_CODE.get(code) ?? (Number(error?.status) || 500)
   sendError(res, status, code, String(error?.message ?? error))
+}
+
+/** Run one session action against the bot's durable local session. */
+function sessionAction(action, payload, getService) {
+  if (action !== 'session.send' && action !== 'session.history' && action !== 'session.status') {
+    const error = new Error(`Unknown action: ${action}`)
+    error.status = 404
+    throw error
+  }
+  const service = getService()
+  const bot = service.bots.get(payload.botId)
+  switch (action) {
+    case 'session.send':
+      return { ok: true, ...service.runner.send(bot.id, payload.text) }
+    case 'session.history':
+      return {
+        ok: true,
+        ...service.runner.history(bot.id, { after: payload.after, limit: payload.limit }),
+      }
+    default:
+      return { ok: true, session: service.runner.status(bot.id) }
+  }
 }
 
 /**
@@ -117,9 +145,30 @@ function sameOrigin(req, webServer) {
   return originHost !== '' && expectedHost !== '' && originHost === expectedHost
 }
 
-export function apply(ctx) {
+/**
+ * Mount the host half.
+ *
+ * `options.runtime` is the test/bridge seam for a runtime adapter. The bundle
+ * config is JSON and cannot supply `run`, so production uses the unavailable
+ * default until the cloud bridge is wired.
+ */
+export function apply(ctx, options = {}) {
   ctx.logger?.info?.(`dsh-rayrun-bots: host half loaded (${VERSION})`)
+  const runtime = validateRuntime(options.runtime ?? createUnavailableRuntime())
   const hostHealth = () => health(checkDependency(profileDirectory(ctx)))
+
+  let sessionService
+  function sessions() {
+    if (sessionService === undefined) {
+      const stateRoot = resolveStateRoot({ profileDir: profileDirectory(ctx) })
+      const bots = openBotStore(stateRoot)
+      sessionService = {
+        bots,
+        runner: openSessionRunner({ stateRoot, runtime, getBot: bots.get, logger: ctx.logger }),
+      }
+    }
+    return sessionService
+  }
 
   ctx.inject(['webServer'], (child) => {
     child.effect(() =>
@@ -160,7 +209,15 @@ export function apply(ctx) {
                 try {
                   sendJson(res, 200, botAction(payload.action, payload, ctx))
                 } catch (error) {
-                  sendBotError(res, error)
+                  sendActionError(res, error)
+                }
+                return
+              }
+              if (typeof payload?.action === 'string' && payload.action.startsWith('session.')) {
+                try {
+                  sendJson(res, 200, sessionAction(payload.action, payload, sessions))
+                } catch (error) {
+                  sendActionError(res, error)
                 }
                 return
               }

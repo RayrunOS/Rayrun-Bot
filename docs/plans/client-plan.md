@@ -41,15 +41,16 @@ mockup：[ui-design.md](../design/ui-design.md)。Bot 身份、名字、头像�
 客户端与 `/plugins/<bundle-id>/rpc` 通信（同源、origin 校验、大小限制、JSON）。host
 adapter 拥有 Rayrun token 和文件邮箱。
 
-今天已实现：`GET /plugins/rayrun-bots?action=health`，客户端用它读取 host 状态。下表是
-其余动作的草案。
+今天已实现：`GET /plugins/rayrun-bots?action=health`、`bots.*`，以及 host half 的
+`session.send/history/status`（生产 runtime 未接线时 `session.send` 返回
+`E_RUNTIME_UNAVAILABLE`）。客户端仍主要用 health 和 roster；下表是其余动作的草案。
 
 | 分组 | 动作（草案） |
 | --- | --- |
 | health | `health`（已实现）；`setup.status`、`dependency.health`（已安装版本、是否兼容） |
 | setup | `setup.rayrun.loginStatus`、`setup.key.status`、`setup.computer.ensure` |
 | bots | `bots.list`、`bots.get`、`bots.create`、`bots.update`、`bots.delete`、`bots.start`、`bots.stop` |
-| sessions | `session.history`、`session.send`、`session.subscribe`（stream） |
+| sessions | `session.history`、`session.send`、`session.status`（已实现）；`session.subscribe`（stream，草案） |
 | approvals | `approvals.list`、`approvals.get`、`approvals.decide`、`approvals.history` |
 | cost | `cost.summary`、`cost.byBot`（P1） |
 | settings | `settings.get`、`settings.update` |

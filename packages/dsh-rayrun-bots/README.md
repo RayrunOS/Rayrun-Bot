@@ -1,11 +1,13 @@
 # dsh-rayrun-bots
 
-The Rayrun Bot plugin package. Status: **client shell with a local roster** —
-the bundle loads, the client half renders the v0.1 screens, and the host half
-answers health and persists the bot roster. Conversations, approvals, routines
-and settings are still an in-memory preview; there is no cloud runtime yet. The
-page-level create/reload path was verified on 2026-11-21 in a local DSH page.
-Repository-level status and verified combinations live in
+The Rayrun Bot plugin package. Status: **client shell with a local roster and
+local sessions** — the bundle loads, the client half renders the v0.1 screens,
+and the host half answers health, persists the bot roster, and stores a durable
+per-bot session/transcript. The runtime bridge that executes a turn is not
+wired, so `session.send` fails closed with `E_RUNTIME_UNAVAILABLE`; the
+conversation UI, approvals, routines and settings are still an in-memory
+preview. The page-level create/reload path was verified on 2026-11-21 in a local
+DSH page. Repository-level status and verified combinations live in
 [docs/12-status.md](../../docs/12-status.md).
 
 ## What it does today
@@ -23,6 +25,12 @@ Repository-level status and verified combinations live in
   runtime lands; the machine will become the runtime truth. Ids are derived
   from the name when the client does not send one, and collisions get a numeric
   suffix.
+- Host half: `session.send`, `session.history` and `session.status` persist a
+  per-bot `session.json` and append-only `transcript.jsonl` beside `bot.json`.
+  Sends are queued one turn at a time; a runtime failure writes a redacted
+  system line and leaves the transcript intact; a host restart marks a running
+  turn `interrupted` instead of replaying it. With no runtime bridge injected,
+  `session.send` returns `E_RUNTIME_UNAVAILABLE` and writes no session.
 - Client half: a `Bots` sidebar entry and the three-column shell from
   [docs/design/ui-design.md](../../docs/design/ui-design.md) — chat list, conversation,
   details (Activity / Library), new bot, the four-step setup wizard, and
@@ -65,9 +73,9 @@ Repository-level status and verified combinations live in
   language row writes the choice back to DSH so it survives a reload. The rest
   stays in the page, and the client keeps neither the token nor a DeepSeek key.
 
-Not built yet: a Bots-page-level verified computer-creation success path,
-bot↔session mapping, remote approvals, routines that run, and the npm release
-path. See the
+Not built yet: the runtime bridge that executes a turn on the cloud computer,
+a Bots-page-level verified computer-creation success path, bot↔cloud session
+mapping, remote approvals, routines that run, and the npm release path. See the
 repo-level [MVP plan](../../docs/plans/mvp-plan.md) and [client plan](../../docs/plans/client-plan.md).
 
 ## DSH compatibility
@@ -117,6 +125,7 @@ node test/rpc-contract.mjs
 node test/client-contract.mjs
 node test/bot-schema.mjs
 node test/bot-store.mjs
+node test/session-runtime.mjs
 node test/package-contents.mjs
 ```
 
@@ -132,7 +141,7 @@ need real Rayrun credentials and never run in CI.
 ```
 package.json       # name, exports, dsh.bundle + dsh.client
 cordis.patch.yml   # the bundle row (id rayrun-bots -> package dsh-rayrun-bots)
-index.js           # host half: same-origin RPC route, health + bots.* actions
+index.js           # host half: same-origin RPC route, health + bots.* + session.* actions
 client.js          # client half: v0.1 shell, roster read/write, preview conversation
 lib/bots.js        # persistent roster: list/get/create/update/delete
 lib/bot-schema.js  # bot.json validation, defaults and creation
@@ -140,6 +149,8 @@ lib/dependency.js  # dsh-rayrun-computer detection and version check
 lib/errors.js      # stable error codes (shared with docs/plans/mvp-plan.md §4.3)
 lib/local-store.js # state-directory resolution and atomic JSON writes
 lib/rpc.js         # JSON responses and request-body parsing
+lib/runtime.js     # one-turn runtime contract; unavailable by default
+lib/sessions.js    # per-bot session queue and append-only transcript
 locale/en.json     # source copy
 locale/zh.json     # mirror; keys must match
 icon.svg           # plugin icon (Rayrun blue, monitor mark)

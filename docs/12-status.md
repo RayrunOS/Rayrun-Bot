@@ -10,8 +10,9 @@
 
 Pre-alpha。没有可发布版本。本项目依赖的云电脑插件
 [`RayrunOS/dsh-rayrun-computer`](https://github.com/RayrunOS/dsh-rayrun-computer)
-是独立、可用的项目；本仓库的 bot 层已有可加载的插件壳和持久化本地名册，但云端
-bot runtime、bot↔session 映射、远程审批执行、会运行的 routines 和发布路径都还没有构建。
+是独立、可用的项目；本仓库的 bot 层已有可加载的插件壳、持久化本地名册和本地
+session/transcript，但云端 bot runtime、bot↔云端 session 映射、远程审批执行、
+会运行的 routines 和发布路径都还没有构建。
 
 ## 2. 依赖项目今天可用
 
@@ -34,10 +35,11 @@ bot runtime、bot↔session 映射、远程审批执行、会运行的 routines 
 | Bots 表面 | Client half 打开即进入 Bots，渲染 v0.1 壳：聊天列表、对话、详情、新建 bot、设置向导、设置页；中英双语，以中文为主并跟随 DSH 语言。 |
 | 对话与审批 | 对话、审批卡和设置仍是**页内内存预览**；Deny / Allow once 不会发给 worker。 |
 | 本地名册 | Host half 持久化已校验的 bot 名册到 `$DSH_HOME/state/rayrun-bot/`，原子写入；聊天列表有名册时读取真实名册，新建 bot 会写回 host。 |
+| Session 与 transcript | Host half 持久化每 bot 的 `session.json` + `transcript.jsonl`，提供 `session.send/history/status`；队列单飞、失败脱敏、host 重启后把运行中的 turn 标为 interrupted。生产 runtime 未接线，`session.send` 返回 `E_RUNTIME_UNAVAILABLE`；对话 UI 仍是页内预览。 |
 | setup | Rayrun 步骤经云电脑插件的同源 RPC 接收粘贴的 token；云电脑步骤采用已有机器或经同一 RPC 创建第一台机器。 |
 | 电脑卡片 | Open / Take over 经同一 RPC 启动或恢复机器、等待 `Running`、修复桌面服务并打开 `desktop_url`；Stop 在确认后停止，永不 destroy。 |
 | 用量 | 详情面板的电脑块和用量块，以及 Settings 的用量行，读取真实机器状态、余额与机时。 |
-| 测试 | Host/client 名册接线由普通 Node 契约测试覆盖；包清单、locale、RPC、客户端、名册和 tarball 内容都有检查。 |
+| 测试 | Host/client 名册接线与 session/transcript 由普通 Node 契约测试覆盖；包清单、locale、RPC、客户端、名册、session 和 tarball 内容都有检查。 |
 | 远程审批 | 暂停，等待平台权限隔离与 host-only 审批端点（ADR-001，2026-11-21 定）；审批执行未实现。 |
 | 发布 | 没有可发布版本；npm 发布路径不存在。 |
 
@@ -47,13 +49,17 @@ bot runtime、bot↔session 映射、远程审批执行、会运行的 routines 
   2026-11-21 用本地测试 key 验证；key 没有进入沙盒。
 - 页面层的云电脑创建按钮仍需在没有已有机器时补验。
 - 页面层的新建/刷新名册路径已在 2026-11-21 的本机 DSH 页面验证。
+- Session store 与 `session.*` RPC 已由 `test/session-runtime.mjs` 和
+  `test/rpc-contract.mjs` 在 fake runtime 上覆盖；还没有真实 runtime，也未做真实
+  对话验证。
 - 具体组合、环境和缺口以 [`10-rayrun-verification.md`](10-rayrun-verification.md)
   和 [`version-matrix.md`](version-matrix.md) 为准；未测试的组合不作承诺。
 
 ## 4. 尚未构建或验证
 
 - 页面层云电脑创建按钮的补验。
-- bot↔session 映射：从停下的地方继续，然后回来汇报。
+- 云端 runtime 接线：真实一轮对话、页面关闭后继续、失败与恢复的 Rayrun 验证。
+- bot↔云端 session 映射：从停下的地方继续，然后回来汇报。
 - 机器上常驻的 DSH host。
 - 能拦住 worker 的远程审批（阻塞于 Rayrun host/agent 权限隔离；ADR-001）。
 - 真正会运行的 routines 与触发器。

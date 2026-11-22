@@ -1,6 +1,6 @@
 # 06 — 本地文件与状态
 
-> 状态：2026-11-20。本文定义插件包、本地状态目录与云电脑镜像的文件布局、原子写、
+> 状态：2026-11-22。本文定义插件包、本地状态目录与云电脑镜像的文件布局、原子写、
 > 权限与保留规则。技术基线见 [`01-system-architecture.md`](01-system-architecture.md)；
 > 云端 bot runtime 见 [`04-cloud-host.md`](04-cloud-host.md)；审批文件见
 > [`05-approvals.md`](05-approvals.md)；未决决策见
@@ -32,8 +32,8 @@
    （tmp + rename）；日志只追加。
 5. **无构建步骤。** 纯 ESM，kebab-case 文件名，一个模块一个职责。
 6. **删除本地状态是安全的。** 丢 `$DSH_HOME/state/rayrun-bot/` 只丢缓存和审计历史；
-   bot 可以从机器重建。例外：云端 runtime 落地前，`bots/` 是 Bot 定义的唯一副本，
-   删除会丢定义。
+   bot 可以从机器重建。例外：云端 runtime 落地前，`bots/` 是 Bot 定义与本地对话历史的
+   唯一副本，删除会丢定义和 transcript。
 
 ---
 
@@ -55,6 +55,8 @@ packages/dsh-rayrun-bots/
 │   ├── bot-schema.js     # bot.json 校验/默认值（迁移计划）
 │   ├── local-store.js    # 状态目录、原子写（锁待建）
 │   ├── dependency.js     # 依赖检测、版本检查（能力调用计划）
+│   ├── sessions.js       # 本地 session 队列 + transcript（runtime 接线前）
+│   ├── runtime.js        # 单轮 runtime 契约；默认失败关闭
 │   ├── queue.js          # 本地队列视图（计划）
 │   ├── approvals.js      # 审批状态机（计划）
 │   ├── setup.js          # onboarding 状态（计划）
@@ -88,7 +90,10 @@ packages/dsh-rayrun-bots/
 ```
 $DSH_HOME/state/rayrun-bot/
 ├── schema.json              # { schema: 1, pluginVersion, createdAt }
-├── bots/<botId>/bot.json    # v0.1 本地意图源；runtime 落地后同步到机器
+├── bots/<botId>/
+│   ├── bot.json             # v0.1 本地意图源；runtime 落地后同步到机器
+│   ├── session.json         # 本地 session 状态与队列（runtime 接线前的回退）
+│   └── transcript.jsonl     # 用户/bot/system 消息，只追加
 ├── mirror/
 │   └── bots/<botId>/
 │       ├── bot.json         # 机器定义的副本（只读）
@@ -110,6 +115,8 @@ $DSH_HOME/state/rayrun-bot/
 | --- | --- | --- | --- | --- | --- |
 | `schema.json` | host | host | 否 | 永久 | 否（重建） |
 | `bots/<id>/bot.json` | host | client、host | 否 | 永久 | runtime 落地前否；之后是机器副本 |
+| `bots/<id>/session.json` | host | client、host | 否 | 永久 | runtime 落地前否；之后可从机器重建 |
+| `bots/<id>/transcript.jsonl` | host | client、host | 否 | 永久 | runtime 落地前否（本地对话历史）；之后可从机器重建 |
 | `mirror/bots/<id>/` | host | client、host | 否 | 最近状态 | 是，从机器 |
 | `cache/*.json` | host | client、host | 否 | 上述 TTL | 是 |
 | `outbox/cursor.json` | host | client | 否 | 永久 | 是 |
@@ -122,7 +129,8 @@ $DSH_HOME/state/rayrun-bot/
 - **v0.1 没有配置文件。** 非密钥设置放在 profile 的 `cordis.patch.yml` bundle row；
   这个目录只放派生数据和缓存。
 - **镜像是可丢弃的。** `rm -rf` 后重开面板，bot 从机器重新列出；只有审计历史不会
-  回来，runbook 要明说。
+  回来，runbook 要明说。runtime 落地前，`bots/<id>/transcript.jsonl` 也是本地对话
+  历史的唯一副本。
 - **锁是提示，不是权威。** 超过两个轮询间隔的锁可回收；机器侧队列仍是真相。
 - **日志不含 token、key、prompt 或 workspace 内容。** 只记 id、字节数、错误码和耗时；
   审批 payload 留在机器上并会过期。
