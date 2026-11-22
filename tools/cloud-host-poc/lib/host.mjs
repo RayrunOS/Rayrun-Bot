@@ -26,7 +26,7 @@ const SECRET = /(Bearer\s+)\S+|(sk-)[A-Za-z0-9_-]{8,}|((?:RAYRUN_TOKEN|DEEPSEEK_
  *   botId?: string,
  *   logPath?: string | null,
  *   credentialPresent?: boolean,
- *   agent?: (input: { taskId: string, text: string }) => Promise<string>,
+ *   agent?: (input: { taskId: string, text: string, sessionId: string | null }) => Promise<string | { text: string, sessionId?: string }>,
  *   now?: () => string,
  *   sleep?: (ms: number) => Promise<void>,
  *   taskDelayMs?: number,
@@ -57,6 +57,7 @@ export function createCloudHost(options = {}) {
   }
   const transcriptPath = path.join(root, 'transcript.jsonl')
   const statePath = path.join(dirs.host, 'state.json')
+  const sessionPath = path.join(dirs.host, 'session-id')
   const startedAt = now()
   let lastTask = null
 
@@ -75,6 +76,34 @@ export function createCloudHost(options = {}) {
       closeSync(fd)
     }
     renameSync(temp, file)
+  }
+
+  function atomicText(file, value) {
+    ensure(path.dirname(file))
+    const temp = `${file}.tmp-${randomUUID()}`
+    const data = Buffer.from(`${value}\n`, 'utf8')
+    const fd = openSync(temp, 'wx', 0o600)
+    try {
+      let offset = 0
+      while (offset < data.length) offset += writeSync(fd, data, offset, data.length - offset)
+      fsyncSync(fd)
+    } finally {
+      closeSync(fd)
+    }
+    renameSync(temp, file)
+  }
+
+  function readSessionId() {
+    try {
+      const value = readFileSync(sessionPath, 'utf8').trim()
+      return value === '' ? null : value
+    } catch {
+      return null
+    }
+  }
+
+  function writeSessionId(value) {
+    if (typeof value === 'string' && value.trim() !== '') atomicText(sessionPath, value.trim())
   }
 
   function redact(value) {
@@ -155,6 +184,7 @@ export function createCloudHost(options = {}) {
       processed: count(dirs.done),
       queueDepth: listInbox().length + count(dirs.processing),
       hasCredential: credentialPresent,
+      sessionId: readSessionId(),
       lastSeq: messages.length === 0 ? 0 : messages[messages.length - 1].seq,
       lastTask,
     }
@@ -230,8 +260,11 @@ export function createCloudHost(options = {}) {
     log('task-start', { taskId: task.id })
     try {
       if (taskDelayMs > 0) await sleep(taskDelayMs)
-      const reply = await agent({ taskId: task.id, text: task.text })
+      const sessionId = readSessionId()
+      const result = await agent({ taskId: task.id, text: task.text, sessionId })
+      const reply = typeof result === 'string' ? result : result?.text
       if (typeof reply !== 'string' || reply.trim() === '') throw new Error('agent returned no reply')
+      if (result && typeof result === 'object') writeSessionId(result.sessionId)
       appendMessage('bot', reply, { replyTo: task.id })
       atomicJson(path.join(dirs.outbox, `${task.id}.json`), {
         schema: 1, botId, taskId: task.id, reply, at: now(),

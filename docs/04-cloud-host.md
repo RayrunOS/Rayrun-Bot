@@ -39,7 +39,10 @@
 `4709ac0`），**生产未部署**；它提供受监督常驻进程、autostart、keep_alive 和 boot 时
 credential injection。session 不是平台对象，由 bot host 自己写 `/workspace`；平台保证
 workspace 跨 stop/start 保留。bot 侧 supervisor/session 实现仍是本仓库的工作
-（ADR-007）；契约见 [`08-integration.md`](08-integration.md) §3.1。
+（ADR-007）；契约见 [`08-integration.md`](08-integration.md) §3.1。2026-11-22 dev
+spike：镜像 DSH 0.2.0-rc.2 的 headless `--session-id` 可跨进程续接
+（`RUN1_OK` → `ALPHA`）；`tools/cloud-host-poc` 的 DSH agent 已实现两轮
+`HOST1_OK` → `BETA`。核心 host 尚未进入包。
 
 ### 1.1 在栈里的位置
 

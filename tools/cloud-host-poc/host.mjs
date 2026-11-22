@@ -8,15 +8,25 @@
  * the platform through a sandbox credential; never read as a value here).
  */
 import { createCloudHost } from './lib/host.mjs'
+import { createDshAgent } from './lib/dsh-agent.mjs'
 
 const root = process.env.DSH_BOT_ROOT || '/workspace/.rayrun/bots/demo'
 const botId = process.env.BOT_ID || 'demo'
 const logPath = process.env.DSH_BOT_LOG || '/workspace/.rayrun/logs/bot-host.log'
+const dshAgent = process.env.DSH_BOT_AGENT === 'dsh'
+  ? createDshAgent({
+      dshHome: process.env.DSH_HOME || '/workspace/.rayrun/dsh',
+      home: process.env.HOME || '/workspace/.rayrun/home',
+      profile: process.env.DSH_BOT_PROFILE || 'bot',
+      cwd: '/workspace',
+    })
+  : undefined
 const host = createCloudHost({
   root,
   botId,
   logPath,
   credentialPresent: Boolean(process.env.DEEPSEEK_API_KEY),
+  ...(dshAgent === undefined ? {} : { agent: dshAgent.run }),
 })
 const recovered = host.recover()
 host.log('started', { pid: process.pid, recovered, hasCredential: Boolean(process.env.DEEPSEEK_API_KEY) })

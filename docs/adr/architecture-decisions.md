@@ -311,6 +311,9 @@ runtimes API（`rayrun-bot-gaps`，`4709ac0`，待部署）已提供受监督进
 （[`08-integration.md`](../08-integration.md) §3.1）。detached 的页面级实测已完成：
 页面关闭 + host 重启后收取 `reply.md`，以及机器 stop/start 后的第二轮续接
 （[`10-rayrun-verification.md`](../10-rayrun-verification.md) §3.1，2026-11-22）。
+同日 dev spike：镜像内 DSH 0.2.0-rc.2 的 headless `--session-id` 可跨进程续接
+（`RUN1_OK` → `ALPHA`）；`tools/cloud-host-poc` 的 DSH agent 已跑通两轮
+（`HOST1_OK` → `BETA`）。核心 host 仍未进入包，生产镜像与部署未做。
 
 <a id="adr-008"></a>
 ### ADR-008 — Desktop 访问路径

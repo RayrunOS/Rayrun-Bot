@@ -43,7 +43,7 @@
 - `docs/` — 编号顶层文档：00-product-direction、01-system-architecture、02-bot-model、03-client-design、04-cloud-host、05-approvals、06-local-state、07-security、08-integration、09-deployment、10-rayrun-verification、11-dsh-rayrun-computer-issues、12-status、faq；子目录：`adr/`（ADR 登记）、`plans/`（MVP/客户端/路线图）、`design/`（UI/人格）、`research/`（调研）、`mockups/`（视觉素材）。
 - `packages/dsh-rayrun-bots/` — 目前唯一的包：host half（`index.js`）、client half（`client.js`）、`lib/`、`locale/en.json` + `zh.json`、`test/`、`cordis.patch.yml`、包 `README.md`、`package.json`。
 - `tools/update-poc/` — 更新内核原型（签名 manifest、校验、暂存、原子切换、回滚）；不进入插件运行时，也不进 npm 包。
-- `tools/cloud-host-poc/` — 云 bot host 原型（平台 runtimes 下的 queue/transcript/outbox/heartbeat，agent 为 echo stub）；明确标记的 POC，不进入插件运行时，也不进 npm 包。
+- `tools/cloud-host-poc/` — 云 bot host 原型（平台 runtimes 下的 queue/transcript/outbox/heartbeat；可选 DSH headless agent 与 session id）；明确标记的 POC，不进入插件运行时，也不进 npm 包。
 - `tools/rayrun-deploy/` — CI 部署 helper（`fetch-url.mjs`）与部署契约测试；不进入插件运行时，也不进 npm 包。
 - 根 `package.json` — 私有 workspace 根；无依赖、无构建步骤。
 - `.github/workflows/checks.yml` — push/PR 的 checks CI，以及 main-only 的可选 Rayrun deploy job。
@@ -143,6 +143,7 @@ node packages/dsh-rayrun-bots/test/approvals.mjs
 node packages/dsh-rayrun-bots/test/package-contents.mjs
 node tools/update-poc/test/update.mjs
 node tools/cloud-host-poc/test/host.mjs
+node tools/cloud-host-poc/test/dsh-agent.mjs
 node tools/rayrun-deploy/test/contract.mjs
 ```
 
@@ -186,6 +187,7 @@ node tools/rayrun-deploy/test/contract.mjs
 | `node packages/dsh-rayrun-bots/test/package-contents.mjs` | npm tarball 内容：host/client/locale/lib/bundle 与排除项 |
 | `node tools/update-poc/test/update.mjs` | 更新内核原型：签名、哈希、版本、原子切换、回滚 |
 | `node tools/cloud-host-poc/test/host.mjs` | 云 bot host 原型：队列、transcript、outbox、恢复、去重、日志脱敏 |
+| `node tools/cloud-host-poc/test/dsh-agent.mjs` | 云 bot host DSH agent：profile bootstrap、headless JSON、session id、错误脱敏 |
 | `node tools/rayrun-deploy/test/contract.mjs` | Rayrun 部署契约：main-only、secret 来源、URL 不打印 |
 | `dsh plugin --profile web add <绝对路径>` | 从 checkout 载入 DSH profile；改 client half 后需重启 DSH |
 | `git log --oneline` | 查看提交历史 |

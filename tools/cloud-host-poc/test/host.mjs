@@ -100,6 +100,23 @@ check('skips a duplicate task id without appending again', async () => {
   assert.equal(readJson(path.join(root, 'outbox', 't1.json')).reply, 'echo:hello')
 })
 
+check('persists the agent session id and passes it to the next task', async () => {
+  const seen = []
+  const { root, host } = makeHost({
+    agent: async ({ text, sessionId }) => {
+      seen.push(sessionId)
+      return { text: `reply:${text}`, sessionId: 'session-host-1' }
+    },
+  })
+  inbox(root, '0001.json', { id: 't1', text: 'first' })
+  await host.processNext()
+  inbox(root, '0002.json', { id: 't2', text: 'second' })
+  await host.processNext()
+  assert.deepEqual(seen, [null, 'session-host-1'])
+  assert.equal(readJson(host.paths.state).sessionId, 'session-host-1')
+  assert.equal(readFileSync(path.join(root, 'host', 'session-id'), 'utf8').trim(), 'session-host-1')
+})
+
 check('moves a failing agent task to failed and redacts the log', async () => {
   const secret = 'sk-abcdefghijklmnop'
   const { root, host } = makeHost({
