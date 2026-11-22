@@ -43,7 +43,20 @@ window.__ModuleLoader__.load({
     "simulatedSnippet": "Needs approval: simulated result",
     "simulatedApprovalTitle": "Post the simulated result to the team channel",
     "simulatedApprovalMeta": "Requested just now",
-    "simulatedTarget": "Team channel"
+    "simulatedTarget": "Team channel",
+    "sending": "Sending…",
+    "sendFailed": "Could not send. Try again.",
+    "runtimeUnavailable": "The cloud runtime is unavailable. Install dsh-rayrun-computer and reload DSH.",
+    "connectRayrun": "Connect Rayrun in setup before sending.",
+    "noComputer": "No cloud computer yet. Create one in setup first.",
+    "machineBusy": "The cloud computer is busy. Try again shortly.",
+    "balanceLow": "The Rayrun balance is low. Add credit before sending.",
+    "queueFull": "Too many messages are queued. Wait for a reply.",
+    "messageInvalid": "That message can't be sent: it is empty, too long, or invalid.",
+    "historyFailed": "Could not load this conversation. Reload the page to retry.",
+    "turnTimeout": "The cloud turn is taking too long. Reopen the page to check again.",
+    "turnInterrupted": "The previous turn was interrupted. Send it again.",
+    "errorTitle": "Turn failed"
   },
   "list": {
     "search": "Search",
@@ -173,6 +186,7 @@ window.__ModuleLoader__.load({
     "heading": "No bots yet",
     "body": "Create one with the plus button. It stays on this page until a bot host exists.",
     "thread": "No messages yet. What you type stays on this page.",
+    "threadReal": "No messages yet. Say hello to start a cloud turn.",
     "snippet": "No messages yet"
   },
   "newBot": {
@@ -377,7 +391,20 @@ window.__ModuleLoader__.load({
     "simulatedSnippet": "待审批：模拟结果",
     "simulatedApprovalTitle": "把模拟结果发到团队频道",
     "simulatedApprovalMeta": "刚刚请求",
-    "simulatedTarget": "团队频道"
+    "simulatedTarget": "团队频道",
+    "sending": "正在发送…",
+    "sendFailed": "发送失败，请重试。",
+    "runtimeUnavailable": "云端 runtime 不可用。请安装 dsh-rayrun-computer 并重启 DSH。",
+    "connectRayrun": "请先在设置里连接 Rayrun。",
+    "noComputer": "还没有云电脑。请先在设置里创建一台。",
+    "machineBusy": "云电脑正忙，请稍后再试。",
+    "balanceLow": "Rayrun 余额偏低，请先充值。",
+    "queueFull": "排队消息太多，请等回复后再发送。",
+    "messageInvalid": "这条消息无法发送：为空、过长或格式无效。",
+    "historyFailed": "无法加载这段对话。刷新页面后重试。",
+    "turnTimeout": "云端回合时间过长。重新打开页面查看结果。",
+    "turnInterrupted": "上一回合被中断了。请重新发送。",
+    "errorTitle": "回合失败"
   },
   "list": {
     "search": "搜索",
@@ -507,6 +534,7 @@ window.__ModuleLoader__.load({
     "heading": "还没有 Bot",
     "body": "用加号新建一个。在 Bot host 出现之前，它只留在这一页。",
     "thread": "还没有消息。你输入的内容只留在这一页。",
+    "threadReal": "还没有消息。发一句话开始云端回合。",
     "snippet": "还没有消息"
   },
   "newBot": {
@@ -697,6 +725,8 @@ window.__ModuleLoader__.load({
     const PANEL_ID = 'rayrun-bots'
     const SAMPLE_COMPUTER = 'dsh-workspace'
     const DEFAULT_COMPUTER = 'rayrun-bot'
+    const SESSION_POLL_MS = 1000
+    const SESSION_POLL_LIMIT_MS = 16 * 60 * 1000
     const pickMachine = (machines) => machines.find((item) => item.name === DEFAULT_COMPUTER)
       || machines.find((item) => item.remote_desktop && item.desktop_url)
       || machines[0]
@@ -924,6 +954,9 @@ window.__ModuleLoader__.load({
 .rb-thread-welcome-job { color: #8a93a3; font-size: 12px; }
 .rb-thread-welcome .rb-thread-empty { padding: 0; }
 .rb-working-row { display: flex; align-items: center; gap: 8px; color: #5b6472; font-size: 13px; }
+.rb-error-row { max-width: 760px; width: 100%; align-self: center; display: grid; gap: 3px; margin: 2px 0; padding: 9px 12px; border: 1px solid #f3d1d1; border-radius: 10px; background: #fff5f5; color: #9b1c1c; font-size: 12.5px; }
+.rb-error-code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 10.5px; opacity: .75; }
+.rb-error-text { line-height: 1.5; }
 .rb-mini { display: flex; gap: 8px; padding: 8px 12px; border-bottom: 1px solid #eef1f6; }
 @media (prefers-reduced-motion: reduce) {
   .rb-toggle::after { transition: none; }
@@ -1009,7 +1042,7 @@ window.__ModuleLoader__.load({
       return { color, background }
     }
 
-    /** Map one host roster entry to the client's bot shape; the conversation is still local. */
+    /** Map one host roster entry to the client's bot shape; its session comes from the host. */
     function realBot(bot) {
       return {
         id: bot.id,
@@ -1024,6 +1057,10 @@ window.__ModuleLoader__.load({
         receipts: [],
         routines: [],
         library: [],
+        session: null,
+        sessionCursor: 0,
+        historyLoaded: false,
+        working: false,
       }
     }
 
@@ -1038,6 +1075,103 @@ window.__ModuleLoader__.load({
       const h = String(now.getHours()).padStart(2, '0')
       const m = String(now.getMinutes()).padStart(2, '0')
       return `${h}:${m}`
+    }
+
+    const SESSION_ERROR_KEYS = {
+      E_DEP_MISSING: 'chat.runtimeUnavailable',
+      E_RUNTIME_UNAVAILABLE: 'chat.runtimeUnavailable',
+      E_TOKEN_REQUIRED: 'chat.connectRayrun',
+      E_MACHINE_STOPPED: 'chat.noComputer',
+      E_MACHINE_BUSY: 'chat.machineBusy',
+      E_BALANCE_LOW: 'chat.balanceLow',
+      E_QUEUE_FULL: 'chat.queueFull',
+      E_SESSION_INVALID: 'chat.messageInvalid',
+      E_HOST_DOWN: 'chat.turnInterrupted',
+    }
+
+    function timeOf(at) {
+      const value = new Date(at)
+      if (Number.isNaN(value.getTime())) return clock()
+      return `${String(value.getHours()).padStart(2, '0')}:${String(value.getMinutes()).padStart(2, '0')}`
+    }
+
+    function sessionWorking(session) {
+      return session?.state === 'running' || session?.state === 'queued'
+    }
+
+    function sessionErrorText(t, code, fallback) {
+      const key = SESSION_ERROR_KEYS[code]
+      return key ? t(key) : (fallback || t('chat.sendFailed'))
+    }
+
+    function sessionEntry(message, t) {
+      const entry = { id: `session-${message.seq}`, at: message.at, text: message.text }
+      if (message.role === 'user') return { ...entry, kind: 'user' }
+      if (message.role === 'bot') return { ...entry, kind: 'bot' }
+      return {
+        ...entry,
+        kind: 'error',
+        code: message.code || 'E_INTERNAL',
+        text: sessionErrorText(t, message.code, message.text),
+      }
+    }
+
+    function snippetOf(text) {
+      const value = String(text || '').trim()
+      return value.length > 48 ? `${value.slice(0, 47)}…` : value
+    }
+
+    function applySession(bot, payload, t, { append = false, unread = false } = {}) {
+      const incoming = Array.isArray(payload?.messages)
+        ? payload.messages.map((message) => sessionEntry(message, t))
+        : []
+      const base = append
+        ? [...bot.messages.filter((entry) => entry.kind !== 'working'), ...incoming]
+        : incoming
+      const seen = new Set()
+      const messages = []
+      for (const entry of base) {
+        if (seen.has(entry.id)) continue
+        seen.add(entry.id)
+        messages.push(entry)
+      }
+      const session = payload?.session ?? null
+      if (sessionWorking(session)) messages.push({ id: `working-${bot.id}`, kind: 'working' })
+      const last = [...messages].reverse().find((entry) => entry.kind === 'bot' || entry.kind === 'error' || entry.kind === 'user')
+      return {
+        ...bot,
+        session,
+        sessionCursor: Number.isInteger(session?.lastSeq) ? session.lastSeq : bot.sessionCursor,
+        historyLoaded: true,
+        working: sessionWorking(session),
+        attention: sessionWorking(session)
+          ? 'working'
+          : session?.state === 'failed' || session?.state === 'interrupted'
+            ? 'needs'
+            : unread ? 'unread' : null,
+        snippet: last ? snippetOf(last.text) : '',
+        snippetKey: last ? null : 'empty.snippet',
+        time: last?.at ? timeOf(last.at) : sessionWorking(session) ? clock() : '',
+        timeKey: null,
+        messages,
+      }
+    }
+
+    function appendSessionError(bot, text, code) {
+      const value = String(text || '').trim() || code
+      return {
+        ...bot,
+        working: false,
+        attention: 'needs',
+        snippet: snippetOf(value),
+        snippetKey: null,
+        time: clock(),
+        timeKey: null,
+        messages: [
+          ...bot.messages.filter((entry) => entry.kind !== 'working'),
+          { id: uid('error'), kind: 'error', code, text: value },
+        ],
+      }
     }
 
     function markdownBlocks(text) {
@@ -1511,7 +1645,13 @@ window.__ModuleLoader__.load({
       const searchRef = useRef(null)
       const composerRef = useRef(null)
       const replyTimers = useRef(new Map())
+      const sessionPolls = useRef(new Map())
+      const selectedIdRef = useRef(state.selectedId)
       const width = useContainerWidth(frameRef)
+
+      useEffect(() => {
+        selectedIdRef.current = state.selectedId
+      }, [state.selectedId])
 
       useEffect(() => {
         const onKey = (event) => {
@@ -1529,6 +1669,11 @@ window.__ModuleLoader__.load({
       useEffect(() => () => {
         for (const timer of replyTimers.current.values()) clearTimeout(timer)
         replyTimers.current.clear()
+        for (const record of sessionPolls.current.values()) {
+          record.cancelled = true
+          if (record.timer) clearTimeout(record.timer)
+        }
+        sessionPolls.current.clear()
       }, [])
 
       useEffect(() => {
@@ -1626,6 +1771,7 @@ window.__ModuleLoader__.load({
       const openScreen = (screen) => patch({ screen, flash: null, searchOpen: false })
 
       const selectBot = (id) => {
+        selectedIdRef.current = id
         setState((current) => ({
           ...current,
           selectedId: id,
@@ -1644,18 +1790,85 @@ window.__ModuleLoader__.load({
         }))
       }
 
+      const startPolling = (botId, after) => {
+        if (sessionPolls.current.has(botId)) return
+        const record = { cancelled: false, timer: null, startedAt: Date.now() }
+        sessionPolls.current.set(botId, record)
+        let cursor = Number.isInteger(after) ? after : 0
+        const stop = () => {
+          record.cancelled = true
+          if (record.timer) clearTimeout(record.timer)
+          sessionPolls.current.delete(botId)
+        }
+        const tick = async () => {
+          if (record.cancelled) return
+          if (Date.now() - record.startedAt > SESSION_POLL_LIMIT_MS) {
+            updateBot(botId, (bot) => appendSessionError(bot, t('chat.turnTimeout'), 'E_INTERNAL'))
+            setState((current) => ({ ...current, live: t('chat.turnTimeout') }))
+            stop()
+            return
+          }
+          try {
+            const body = await hostRpc('session.history', { botId, after: cursor })
+            if (record.cancelled) return
+            const session = body.session
+            if (Number.isInteger(session?.lastSeq)) cursor = Math.max(cursor, session.lastSeq)
+            const lastBot = [...(body.messages ?? [])].reverse().find((message) => message.role === 'bot')
+            updateBot(botId, (bot) => applySession(bot, body, t, {
+              append: true,
+              unread: Boolean(lastBot) && selectedIdRef.current !== botId,
+            }))
+            if (lastBot?.text) {
+              setState((current) => ({ ...current, live: String(lastBot.text).slice(0, 200) }))
+            }
+            if (sessionWorking(session)) record.timer = setTimeout(tick, SESSION_POLL_MS)
+            else stop()
+          } catch (error) {
+            if (record.cancelled) return
+            const message = sessionErrorText(t, error?.code, t('chat.historyFailed'))
+            updateBot(botId, (bot) => appendSessionError(bot, message, error?.code ?? 'E_INTERNAL'))
+            setState((current) => ({ ...current, live: message }))
+            stop()
+          }
+        }
+        record.timer = setTimeout(tick, SESSION_POLL_MS)
+      }
+
+      useEffect(() => {
+        if (!selected || selected.source !== 'real' || selected.historyLoaded || host.status !== 'loaded') {
+          return undefined
+        }
+        let cancelled = false
+        void (async () => {
+          try {
+            const body = await hostRpc('session.history', { botId: selected.id, tail: true })
+            if (cancelled) return
+            updateBot(selected.id, (bot) => (
+              bot.messages.length > 0 ? { ...bot, historyLoaded: true } : applySession(bot, body, t)
+            ))
+            if (sessionWorking(body.session)) startPolling(selected.id, body.session.lastSeq ?? 0)
+          } catch (error) {
+            if (cancelled) return
+            const message = sessionErrorText(t, error?.code, t('chat.historyFailed'))
+            updateBot(selected.id, (bot) => appendSessionError(bot, message, error?.code ?? 'E_INTERNAL'))
+          }
+        })()
+        return () => { cancelled = true }
+      }, [selected?.id, selected?.source, selected?.historyLoaded, host.status])
+
       const send = () => {
         const text = state.composer.trim()
         if (!text || !selected || selected.working) return
         const botId = selected.id
         const workingId = uid('working')
         const userId = uid('user')
+        const at = new Date().toISOString()
         const snippet = text.length > 48 ? `${text.slice(0, 47)}…` : text
         setState((current) => ({
           ...current,
           composer: '',
           flash: null,
-          live: t('chat.working'),
+          live: t('chat.sending'),
           bots: current.bots.map((bot) => {
             if (bot.id !== botId) return bot
             return {
@@ -1666,10 +1879,32 @@ window.__ModuleLoader__.load({
               snippetKey: null,
               time: clock(),
               timeKey: null,
-              messages: [...bot.messages, { id: userId, kind: 'user', text }, { id: workingId, kind: 'working' }],
+              messages: [...bot.messages, { id: userId, kind: 'user', text, at }, { id: workingId, kind: 'working' }],
             }
           }),
         }))
+        if (selected.source === 'real') {
+          void (async () => {
+            try {
+              const body = await hostRpc('session.send', { botId, text })
+              const cursor = Number.isInteger(body.message?.seq)
+                ? body.message.seq
+                : Number.isInteger(body.session?.lastSeq) ? body.session.lastSeq : 0
+              updateBot(botId, (bot) => ({
+                ...bot,
+                session: body.session ?? bot.session,
+                sessionCursor: cursor,
+                historyLoaded: true,
+              }))
+              startPolling(botId, cursor)
+            } catch (error) {
+              const message = sessionErrorText(t, error?.code, t('chat.sendFailed'))
+              updateBot(botId, (bot) => appendSessionError(bot, message, error?.code ?? 'E_INTERNAL'))
+              setState((current) => ({ ...current, live: message }))
+            }
+          })()
+          return
+        }
         const timer = setTimeout(() => {
           replyTimers.current.delete(botId)
           setState((current) => ({
@@ -2167,7 +2402,7 @@ window.__ModuleLoader__.load({
       useEffect(() => {
         const thread = threadRef.current
         if (thread) thread.scrollTop = thread.scrollHeight
-      }, [bot.id, bot.messages.length])
+      }, [bot.id, bot.messages.length, bot.session?.lastSeq])
       return h(
         'main',
         { className: 'rb-main', 'data-screen': 'chat' },
@@ -2182,6 +2417,14 @@ window.__ModuleLoader__.load({
           { className: 'rb-thread', ref: threadRef },
           bot.messages.length ? bot.messages.map((entry) => {
             if (entry.kind === 'working') return h('div', { key: entry.id, className: 'rb-working-row', role: 'status' }, h('span', { className: 'rb-dot rb-working', 'aria-hidden': 'true' }), t('chat.working'))
+            if (entry.kind === 'error') {
+              return h(
+                'div',
+                { key: entry.id, className: 'rb-error-row', role: 'alert' },
+                h('div', { className: 'rb-error-code' }, entry.code || t('chat.errorTitle')),
+                h('div', { className: 'rb-error-text' }, entry.text),
+              )
+            }
             if (entry.kind === 'day') return h('div', { key: entry.id, className: 'rb-day' }, textOf(entry, t))
             if (entry.kind === 'user') {
               return h('div', { key: entry.id, className: 'rb-msg rb-user' }, h('div', { className: 'rb-bubble' }, textOf(entry, t)))
@@ -2217,7 +2460,7 @@ window.__ModuleLoader__.load({
             h(Avatar, { size: 'big', name }),
             h('div', { className: 'rb-thread-welcome-title' }, name),
             h('div', { className: 'rb-thread-welcome-job' }, job),
-            h('p', { className: 'rb-thread-empty' }, t('empty.thread')),
+            h('p', { className: 'rb-thread-empty' }, t(bot.source === 'real' ? 'empty.threadReal' : 'empty.thread')),
           ),
         ),
         h(Notice, { t, flash: state.flash, computer: state.computer }),

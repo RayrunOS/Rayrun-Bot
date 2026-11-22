@@ -425,6 +425,10 @@ check('session.send queues a turn and history returns the fake reply', () => wit
   const cursor = await request(handler, post('session.history', { botId, after: sent.json.message.seq }))
   assert.equal(cursor.status, 200)
   assert.deepEqual(cursor.json.messages.map((message) => message.text), ['echo:hello'])
+
+  const tail = await request(handler, post('session.history', { botId, tail: true, limit: 1 }))
+  assert.equal(tail.status, 200)
+  assert.deepEqual(tail.json.messages.map((message) => message.text), ['echo:hello'])
 }))
 
 check('session errors carry stable codes and a cross-origin send writes nothing', () => withState(async () => {

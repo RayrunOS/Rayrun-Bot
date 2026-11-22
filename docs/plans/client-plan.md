@@ -43,8 +43,8 @@ adapter 拥有 Rayrun token 和文件邮箱。
 
 今天已实现：`GET /plugins/rayrun-bots?action=health`、`bots.*`，以及 host half 的
 `session.send/history/status`（依赖的 `rayrun_agent` tool 存在时执行真实一轮，否则
-`session.send` 返回 `E_RUNTIME_UNAVAILABLE`）。客户端仍主要用 health 和 roster；
-下表是其余动作的草案。
+`session.send` 返回 `E_RUNTIME_UNAVAILABLE`）。客户端对话对真实名册 bot 已调用这些
+动作；示例 bot 仍走预览。下表是其余动作的草案。
 
 | 分组 | 动作（草案） |
 | --- | --- |

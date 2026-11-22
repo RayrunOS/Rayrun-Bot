@@ -7,9 +7,10 @@ per-bot session/transcript. When `dsh-rayrun-computer`'s `rayrun_agent` tool is
 registered, the runtime adapter sends a turn to an existing cloud computer;
 without it `session.send` fails closed with `E_RUNTIME_UNAVAILABLE`. A live
 Rayrun turn has not been verified, approval enforcement is not implemented, and
-the conversation UI, approvals, routines and settings are still an in-memory
-preview. The page-level create/reload path was verified on 2026-11-21 in a local
-DSH page. Repository-level status and verified combinations live in
+the conversation UI uses the host session for real roster bots while sample
+bots, approvals, routines and settings remain an in-memory preview. The
+page-level create/reload path was verified on 2026-11-21 in a local DSH page.
+Repository-level status and verified combinations live in
 [docs/12-status.md](../../docs/12-status.md).
 
 ## What it does today
@@ -42,9 +43,10 @@ DSH page. Repository-level status and verified combinations live in
   details (Activity / Library), new bot, the four-step setup wizard, and
   settings. When the host roster has entries, the chat list shows those bots
   instead of the sample list; creating a bot in the new-bot screen or the setup
-  wizard writes through to the host and selects the saved bot. Messages,
-  receipts, the approval card and settings still live in the page only. Deny /
-  Allow once, the wizard, and settings update that in-memory state. The client
+  wizard writes through to the host and selects the saved bot. For real roster
+  bots, messages come from the host session; sample bots, receipts, the approval
+  card and settings still live in the page only. Deny / Allow once, the wizard,
+  and settings update that in-memory state. The client
   activates Bots on load and covers the DSH
   sidebar and bottom bar; there is no in-product return to the Harness shell
   (ADR-017). The setup Rayrun step calls the cloud-computer plugin's

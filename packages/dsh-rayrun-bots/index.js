@@ -118,7 +118,7 @@ function sessionAction(action, payload, getService) {
     case 'session.history':
       return {
         ok: true,
-        ...service.runner.history(bot.id, { after: payload.after, limit: payload.limit }),
+        ...service.runner.history(bot.id, { after: payload.after, limit: payload.limit, tail: payload.tail }),
       }
     default:
       return { ok: true, session: service.runner.status(bot.id) }

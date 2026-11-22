@@ -5,8 +5,8 @@
  * locale/en.json and locale/zh.json. This check keeps those copies identical,
  * requires the v0.1 copy deck, and refuses a client that still shows the A1
  * placeholder or reaches off the machine. The only requests are the same-origin
- * host health check, the host roster RPC, and the cloud-computer plugin's
- * same-origin RPC.
+ * host health check, the host roster/session RPC, and the cloud-computer
+ * plugin's same-origin RPC.
  *
  *   node test/client-contract.mjs
  */
@@ -87,6 +87,12 @@ const required = [
   'chat.simulatedApprovalTitle',
   'chat.simulatedApprovalMeta',
   'chat.simulatedTarget',
+  'chat.sendFailed',
+  'chat.runtimeUnavailable',
+  'chat.historyFailed',
+  'chat.turnTimeout',
+  'chat.turnInterrupted',
+  'empty.threadReal',
   'draft.send',
   'draft.discard',
   'details.recent',
@@ -201,6 +207,17 @@ assert.match(client, /pluginRpc\('\/plugins\/rayrun-bots'/)
 assert.match(client, /hostRpc\('bots\.list'\)/)
 assert.match(client, /hostRpc\('bots\.create'/)
 assert.match(client, /bots\.create returned no bot/)
+assert.match(client, /hostRpc\('session\.history'/)
+assert.match(client, /tail: true/)
+assert.match(client, /hostRpc\('session\.send'/)
+assert.match(client, /sessionErrorText/)
+assert.match(client, /sessionWorking\(/)
+assert.match(client, /applySession/)
+assert.match(client, /appendSessionError/)
+assert.match(client, /SESSION_POLL_MS/)
+assert.match(client, /SESSION_POLL_LIMIT_MS/)
+assert.match(client, /kind === 'error'/)
+assert.match(client, /empty\.threadReal/)
 assert.match(client, /source: 'real'/)
 assert.match(client, /machine\.password/)
 assert.match(client, /overview\.connection\?\.configured !== true/)
@@ -289,7 +306,7 @@ assert.match(client, /cost\.lowShort/)
 assert.match(client, /const threadRef = useRef\(null\)/)
 assert.match(client, /className: 'rb-thread', ref: threadRef/)
 assert.match(client, /thread\.scrollTop = thread\.scrollHeight/)
-assert.match(client, /\[bot\.id, bot\.messages\.length\]/)
+assert.match(client, /\[bot\.id, bot\.messages\.length, bot\.session\?\.lastSeq\]/)
 assert.match(client, /autoFocus: true/)
 assert.match(client, /focusComposer: false/)
 assert.match(client, /focusComposer: true/)

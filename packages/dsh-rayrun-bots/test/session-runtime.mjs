@@ -65,11 +65,14 @@ check('history returns only messages after the cursor and validates its bounds',
   await runner.settled(bot.id)
 
   const all = runner.history(bot.id)
-  const tail = runner.history(bot.id, { after: sent.message.seq })
+  const cursor = runner.history(bot.id, { after: sent.message.seq })
+  const lastOne = runner.history(bot.id, { tail: true, limit: 1 })
   assert.deepEqual(all.messages.map((message) => message.text), ['ping', 'pong'])
-  assert.deepEqual(tail.messages.map((message) => message.text), ['pong'])
+  assert.deepEqual(cursor.messages.map((message) => message.text), ['pong'])
+  assert.deepEqual(lastOne.messages.map((message) => message.text), ['pong'])
   expectCode(() => runner.history(bot.id, { after: -1 }), ERROR_CODES.sessionInvalid)
   expectCode(() => runner.history(bot.id, { limit: HISTORY_MAX_LIMIT + 1 }), ERROR_CODES.sessionInvalid)
+  expectCode(() => runner.history(bot.id, { tail: 'yes' }), ERROR_CODES.sessionInvalid)
 })
 
 check('a second send queues behind the running turn and order is preserved', async () => {

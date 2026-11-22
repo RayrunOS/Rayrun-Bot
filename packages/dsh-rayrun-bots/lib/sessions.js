@@ -238,12 +238,13 @@ export function openSessionStore(stateRoot) {
     return session === null ? null : publicSession(session)
   }
 
-  function history(id, { after = 0, limit = HISTORY_DEFAULT_LIMIT } = {}) {
+  function history(id, { after = 0, limit = HISTORY_DEFAULT_LIMIT, tail = false } = {}) {
     const botId = assertBotId(id)
     if (!Number.isInteger(after) || after < 0) fail('after must be a non-negative integer.', { field: 'after' })
     if (!Number.isInteger(limit) || limit < 1 || limit > HISTORY_MAX_LIMIT) {
       fail(`limit must be an integer from 1 through ${HISTORY_MAX_LIMIT}.`, { field: 'limit' })
     }
+    if (typeof tail !== 'boolean') fail('tail must be a boolean.', { field: 'tail' })
     const session = load(botId)
     if (session === null) return { session: null, messages: [] }
     const all = readTranscript(root, botId)
@@ -251,7 +252,8 @@ export function openSessionStore(stateRoot) {
     if (last !== session.lastSeq) {
       fail(`transcript.jsonl for ${botId} is out of sync with session.json.`)
     }
-    const messages = all.filter((message) => message.seq > after).slice(0, limit)
+    const filtered = all.filter((message) => message.seq > after)
+    const messages = tail ? filtered.slice(-limit) : filtered.slice(0, limit)
     return { session: publicSession(session), messages }
   }
 
@@ -458,8 +460,7 @@ export function openSessionRunner({ stateRoot, runtime, getBot, logger } = {}) {
       try {
         const bot = getBot(botId)
         // Give the runtime the most recent window, not the oldest one.
-        const after = Math.max(0, next.session.lastSeq - HISTORY_MAX_LIMIT)
-        const { messages } = store.history(botId, { after, limit: HISTORY_MAX_LIMIT })
+        const { messages } = store.history(botId, { limit: HISTORY_MAX_LIMIT, tail: true })
         const reply = await runtime.run({
           bot,
           text: next.item.text,

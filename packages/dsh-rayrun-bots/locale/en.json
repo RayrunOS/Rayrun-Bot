@@ -16,7 +16,20 @@
     "simulatedSnippet": "Needs approval: simulated result",
     "simulatedApprovalTitle": "Post the simulated result to the team channel",
     "simulatedApprovalMeta": "Requested just now",
-    "simulatedTarget": "Team channel"
+    "simulatedTarget": "Team channel",
+    "sending": "Sending…",
+    "sendFailed": "Could not send. Try again.",
+    "runtimeUnavailable": "The cloud runtime is unavailable. Install dsh-rayrun-computer and reload DSH.",
+    "connectRayrun": "Connect Rayrun in setup before sending.",
+    "noComputer": "No cloud computer yet. Create one in setup first.",
+    "machineBusy": "The cloud computer is busy. Try again shortly.",
+    "balanceLow": "The Rayrun balance is low. Add credit before sending.",
+    "queueFull": "Too many messages are queued. Wait for a reply.",
+    "messageInvalid": "That message can't be sent: it is empty, too long, or invalid.",
+    "historyFailed": "Could not load this conversation. Reload the page to retry.",
+    "turnTimeout": "The cloud turn is taking too long. Reopen the page to check again.",
+    "turnInterrupted": "The previous turn was interrupted. Send it again.",
+    "errorTitle": "Turn failed"
   },
   "list": {
     "search": "Search",
@@ -146,6 +159,7 @@
     "heading": "No bots yet",
     "body": "Create one with the plus button. It stays on this page until a bot host exists.",
     "thread": "No messages yet. What you type stays on this page.",
+    "threadReal": "No messages yet. Say hello to start a cloud turn.",
     "snippet": "No messages yet"
   },
   "newBot": {
