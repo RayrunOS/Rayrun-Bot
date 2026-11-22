@@ -14,9 +14,9 @@ Pre-alpha。没有可发布版本。本项目依赖的云电脑插件
 session/transcript，以及按轮次的 runtime（依赖 1.1+ 用 detached
 `dsh.start/status/result`，1.0.x 用 `rayrun_agent`），但没有常驻云端 bot host
 （supervisor/boot hook）、bot↔云端 session 映射、审批执行、会运行的 routines 和
-发布路径。平台侧 R-G008 runtimes API 已实现并本机 dev 正测通过
+发布路径。平台侧 R-G008 runtimes API 已实现并本机 dev 全量验收通过
 （`rayrun-bot-gaps`，`4709ac0`，2026-11-22），但生产未部署；bot 侧 host/session
-尚未构建。
+尚未进入核心包（`/tmp` 原型已通过 queue/autostart/SIGKILL）。
 
 ## 2. 依赖项目今天可用
 
@@ -72,6 +72,11 @@ session/transcript，以及按轮次的 runtime（依赖 1.1+ 用 detached
   `DSH_HOME` 后发第二轮，依赖自动唤醒机器，bot 从持久化 transcript 回答 `ALPHA`；
   transcript 为 user,bot,user,bot，session `idle`，刷新后两轮仍在；未新建机器，
   测试后机器回到 Stopped。同一 host 不重启的连续两轮未单独测试。
+- R-G008 平台验收已在 2026-11-22 的 dev daemon 上完成：runtimes 正测、`keep_alive`
+  （60s idle 机等 150s 仍 Running，删除 runtime 后约 240s 自动 Stopped）、daemon
+  重启（runtime pid 不变）、旧镜像 `ci@1` 409 `guestd_outdated` 均通过；生产未部署。
+  最小 cloud bot host 原型（`/tmp`，未入核心包）也在同一环境通过 queue/transcript/
+  heartbeat、sandbox stop/start autostart、SIGKILL 重启；尚未接 DSH agent。
 - Bots 页面层 session 接线已在 2026-11-22 用本机 DSH web + Firefox/geckodriver
   （临时 profile，未安装云电脑依赖）验证：真实名册 bot 替换预览列表；空对话显示
   真实文案；`session.history` 返回 `session: null`；发送后显示用户消息与
@@ -89,10 +94,11 @@ session/transcript，以及按轮次的 runtime（依赖 1.1+ 用 detached
 - 真实失败与恢复的 Rayrun 验证（失败路径已有本机 smoke）；同一 host 不重启的连续
   两轮未单独测试。
 - 常驻云端 bot runtime 与 bot↔云端 session 映射：平台 R-G008 runtimes API 已实现并
-  本机 dev 正测通过（`rayrun-bot-gaps`，`4709ac0`，2026-11-22：runtime 启动、凭证
-  注入、sandbox stop/start autostart、SIGKILL 重启、删除；旧镜像 `ci@1` 负测 409
-  `guestd_outdated`）；生产未部署；bot 侧 supervisor/session 尚未构建。生产部署需
-  授权。
+  本机 dev 全量验收通过（`rayrun-bot-gaps`，`4709ac0`，2026-11-22：runtime 启动、凭证
+  注入、sandbox stop/start autostart、SIGKILL 重启、删除；keep_alive 与 daemon 重启
+  保留；旧镜像 `ci@1` 负测 409 `guestd_outdated`）；生产未部署；bot 侧
+  supervisor/session 尚未进入核心包（`/tmp` 原型已通过 queue/autostart/SIGKILL）。
+  生产部署需授权。
 - 机器上常驻的 DSH host。
 - 能拦住 worker 的远程审批执行（协议后端已有；执行阻塞于 Rayrun host/agent
   权限隔离；ADR-001）。
@@ -113,7 +119,7 @@ session/transcript，以及按轮次的 runtime（依赖 1.1+ 用 detached
 - host/agent 权限隔离与 host-only 审批端点（ADR-001）。平台答复（2026-11-22）：同
   沙箱内不可行；平台端点为非首版（设计 1 周 + 实现 2–4 周）。可选的 host/agent 分域
   路径需要本项目新 ADR；在那之前审批执行保持关闭。
-- R-G008 常驻 runtime：平台实现本机 dev 正测通过（`rayrun-bot-gaps`，`4709ac0`），
+- R-G008 常驻 runtime：平台实现本机 dev 全量验收通过（`rayrun-bot-gaps`，`4709ac0`），
   旧镜像 409 已验证；待生产部署；bot 侧 host/session 未实现。
 - 安全入向网络（今天 token ingress 不可用，只有 `public` 可用）。
 - 空闲自动停机、spend cap、动态调整资源、运行期 egress 更新。

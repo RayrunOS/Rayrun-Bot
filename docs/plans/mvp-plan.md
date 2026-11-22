@@ -212,11 +212,12 @@ spike S6 决定。
 | C8 | 恢复 | 重启后重读队列和审批状态 | C3 | 1.5 | 杀死 host 不丢工作 |
 | C9 | Busy 处理 | 409 映射、重试预算、绝不丢弃 | C4 | 1 | busy 测试：所有项最终都运行 |
 
-平台答复（2026-11-22）：R-G008 runtimes API 已实现并本机 dev 正测通过（`rayrun-bot-gaps`，
+平台答复（2026-11-22）：R-G008 runtimes API 已实现并本机 dev 全量验收通过（`rayrun-bot-gaps`，
 `4709ac0`），待部署。C2/C6 应改为向 `/v1/sandboxes/{id}/runtimes` 注册受监督进程
 （`restart=always`、`autostart`、`keep_alive`），不再依赖本地 `exec` watchdog；C1 仍需
 把 host 代码送进镜像。D1 的 session 由 host 自己写 `/workspace`，平台不提供 session
-对象。审批隔离不在首版；见 [`../08-integration.md`](../08-integration.md) §3.1/§3.3。
+对象。最小 host 原型已在 `/tmp` 通过 queue/autostart/SIGKILL，尚未进入核心包。审批隔离
+不在首版；见 [`../08-integration.md`](../08-integration.md) §3.1/§3.3。
 
 ### D. Session（会话）
 
