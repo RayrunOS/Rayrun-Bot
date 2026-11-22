@@ -58,6 +58,8 @@ jobs:
           done
       - name: Run the update prototype checks
         run: node tools/update-poc/test/update.mjs
+      - name: Run the cloud host POC checks
+        run: node tools/cloud-host-poc/test/host.mjs
       - name: Run the Rayrun deploy contract checks
         run: node tools/rayrun-deploy/test/contract.mjs
 
