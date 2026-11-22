@@ -41,10 +41,11 @@ mockup：[ui-design.md](../design/ui-design.md)。Bot 身份、名字、头像�
 客户端与 `/plugins/<bundle-id>/rpc` 通信（同源、origin 校验、大小限制、JSON）。host
 adapter 拥有 Rayrun token 和文件邮箱。
 
-今天已实现：`GET /plugins/rayrun-bots?action=health`、`bots.*`，以及 host half 的
+今天已实现：`GET /plugins/rayrun-bots?action=health`、`bots.*`、host half 的
 `session.send/history/status`（依赖的 `rayrun_agent` tool 存在时执行真实一轮，否则
-`session.send` 返回 `E_RUNTIME_UNAVAILABLE`）。客户端对话对真实名册 bot 已调用这些
-动作；示例 bot 仍走预览。下表是其余动作的草案。
+`session.send` 返回 `E_RUNTIME_UNAVAILABLE`），以及 `approvals.list/get/decide`
+（只记录决定，不执行）。客户端对话对真实名册 bot 已调用 session 动作；示例 bot 仍走
+预览，审批卡尚未接入真实列表。下表是其余动作的草案。
 
 | 分组 | 动作（草案） |
 | --- | --- |
@@ -52,7 +53,7 @@ adapter 拥有 Rayrun token 和文件邮箱。
 | setup | `setup.rayrun.loginStatus`、`setup.key.status`、`setup.computer.ensure` |
 | bots | `bots.list`、`bots.get`、`bots.create`、`bots.update`、`bots.delete`、`bots.start`、`bots.stop` |
 | sessions | `session.history`、`session.send`、`session.status`（已实现）；`session.subscribe`（stream，草案） |
-| approvals | `approvals.list`、`approvals.get`、`approvals.decide`、`approvals.history` |
+| approvals | `approvals.list`、`approvals.get`、`approvals.decide`（已实现，只记录决定、不执行）；`approvals.history`（草案） |
 | cost | `cost.summary`、`cost.byBot`（P1） |
 | settings | `settings.get`、`settings.update` |
 

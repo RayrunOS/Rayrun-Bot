@@ -33,6 +33,8 @@ export const SESSION_STATES = Object.freeze(['idle', 'queued', 'running', 'faile
 
 /** Control characters that would break one-line JSON or terminal output. */
 const CONTROL = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/
+const DETACHED_TASK = /^[A-Za-z0-9._-]{1,80}$/
+const DETACHED_TIMEOUT_MAX = 3600
 /** Credential shapes that must never enter the transcript through an error line. */
 const SECRET = /(Bearer\s+)[A-Za-z0-9._~+/=-]+|(sk-)[A-Za-z0-9_-]{16,}|((?:RAYRUN_TOKEN|DEEPSEEK_API_KEY|DEEPSEEK_KEY)\s*[=:]\s*)\S+/gi
 
@@ -106,6 +108,27 @@ function validateQueueItem(value) {
   return { seq: value.seq, at: isoOf(value.at, 'queue.at'), text: textOf(value.text, 'queue.text') }
 }
 
+function validateDetached(value) {
+  if (!isObject(value)) fail('detached must be an object.')
+  if (typeof value.taskId !== 'string' || !DETACHED_TASK.test(value.taskId)) {
+    fail('detached.taskId is invalid.', { field: 'detached.taskId' })
+  }
+  const sandbox = textOf(value.sandbox, 'detached.sandbox')
+  if (!path.isAbsolute(String(value.localDir ?? ''))) fail('detached.localDir must be absolute.', { field: 'detached.localDir' })
+  const localDir = String(value.localDir)
+  if (CONTROL.test(localDir)) fail('detached.localDir contains control characters.', { field: 'detached.localDir' })
+  if (!Number.isInteger(value.timeoutSeconds) || value.timeoutSeconds < 1 || value.timeoutSeconds > DETACHED_TIMEOUT_MAX) {
+    fail(`detached.timeoutSeconds must be an integer from 1 through ${DETACHED_TIMEOUT_MAX}.`, { field: 'detached.timeoutSeconds' })
+  }
+  return {
+    taskId: value.taskId,
+    sandbox,
+    localDir,
+    startedAt: isoOf(value.startedAt, 'detached.startedAt'),
+    timeoutSeconds: value.timeoutSeconds,
+  }
+}
+
 function validateSession(value, botId) {
   if (!isObject(value)) fail('session.json must be a JSON object.')
   if (value.schema !== SESSION_SCHEMA_VERSION) fail('Unsupported session schema.')
@@ -130,6 +153,7 @@ function validateSession(value, botId) {
     }
     if (typeof value.error.message !== 'string') fail('Session error message is invalid.')
   }
+  const detached = value.detached === undefined ? undefined : validateDetached(value.detached)
   return {
     schema: SESSION_SCHEMA_VERSION,
     botId,
@@ -139,6 +163,7 @@ function validateSession(value, botId) {
     queue,
     createdAt,
     updatedAt,
+    ...(detached === undefined ? {} : { detached }),
     ...(value.error === undefined ? {} : { error: { code: value.error.code, message: value.error.message } }),
   }
 }
@@ -153,6 +178,9 @@ function publicSession(session) {
     pending: session.queue.length,
     createdAt: session.createdAt,
     updatedAt: session.updatedAt,
+    ...(session.detached === undefined ? {} : {
+      detached: { taskId: session.detached.taskId, startedAt: session.detached.startedAt },
+    }),
     ...(session.error === undefined ? {} : { error: session.error }),
   }
 }
@@ -295,6 +323,7 @@ export function openSessionStore(stateRoot) {
       queue: [...session.queue, { seq: message.seq, at, text: content }],
       createdAt: session.createdAt,
       updatedAt: at,
+      ...(session.detached === undefined ? {} : { detached: session.detached }),
     }
     writeSession(root, next)
     return { session: publicSession(next), message }
@@ -367,10 +396,76 @@ export function openSessionStore(stateRoot) {
     return { session: publicSession(next), message }
   }
 
+  /** Record the cloud task id for a turn that outlives this host process. */
+  function attach(id, detached, { now = Date.now() } = {}) {
+    const botId = assertBotId(id)
+    const session = load(botId)
+    if (session === null) fail(`session for ${botId} disappeared before the detached task was attached.`)
+    if (session.state !== 'running' && session.state !== 'queued') {
+      fail(`session for ${botId} is not running; cannot attach a detached task.`)
+    }
+    const at = isoNow(now)
+    const next = {
+      schema: SESSION_SCHEMA_VERSION,
+      botId,
+      sessionId: session.sessionId,
+      state: session.state,
+      lastSeq: session.lastSeq,
+      queue: session.queue,
+      createdAt: session.createdAt,
+      updatedAt: at,
+      detached: validateDetached({ ...detached, startedAt: detached?.startedAt ?? at }),
+    }
+    writeSession(root, next)
+    return publicSession(next)
+  }
+
+  /** The full detached task record for the runner, or null. */
+  function detached(id) {
+    const session = load(id)
+    return session?.detached ?? null
+  }
+
+  /** Sessions whose cloud task must be resumed by this host process. */
+  function detachedSessions() {
+    const botsRoot = path.join(root, 'bots')
+    if (!existsSync(botsRoot)) return []
+    const sessions = []
+    for (const entry of readdirSync(botsRoot, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue
+      const botId = assertBotId(entry.name)
+      const session = load(botId)
+      if (session?.detached !== undefined) {
+        sessions.push({ botId, state: session.state, detached: session.detached })
+      }
+    }
+    return sessions
+  }
+
+  /** Complete a detached turn only if it is still the session's current task. */
+  function finishDetached(id, taskId, text, { now = Date.now() } = {}) {
+    const botId = assertBotId(id)
+    const session = load(botId)
+    if (session === null) fail(`session for ${botId} disappeared before the detached result arrived.`)
+    if (session.detached === undefined || session.detached.taskId !== taskId) return null
+    return complete(botId, text, { now })
+  }
+
+  /** Fail a detached turn only if it is still the session's current task. */
+  function failDetached(id, taskId, error, { now = Date.now() } = {}) {
+    const botId = assertBotId(id)
+    const session = load(botId)
+    if (session === null) fail(`session for ${botId} disappeared before the detached error arrived.`)
+    if (session.detached === undefined || session.detached.taskId !== taskId) return null
+    return failTurn(botId, error, { now })
+  }
+
   /**
    * Reconcile state left by a previous host process. A turn that was running
    * cannot be proven complete, so it becomes `interrupted` and is never
-   * replayed automatically. Queued turns stay queued for the next send.
+   * replayed automatically. A detached turn is the exception: its cloud task
+   * still exists, so it stays running and the runner resumes polling. Queued
+   * turns stay queued for the next send.
    */
   function recover() {
     const botsRoot = path.join(root, 'bots')
@@ -386,6 +481,7 @@ export function openSessionStore(stateRoot) {
         throw error
       }
       if (session === null) continue
+      if (session.detached !== undefined) continue
       if (session.state === 'running') {
         const messages = readTranscript(root, botId)
         const last = messages.length === 0 ? 0 : messages[messages.length - 1].seq
@@ -422,7 +518,10 @@ export function openSessionStore(stateRoot) {
     }
   }
 
-  return { status, history, enqueue, shift, complete, failTurn, recover }
+  return {
+    status, history, enqueue, shift, complete, failTurn, recover,
+    attach, detached, detachedSessions, finishDetached, failDetached,
+  }
 }
 
 /**
@@ -434,13 +533,24 @@ export function openSessionStore(stateRoot) {
  * redacted system line; the next send resumes the remaining queue.
  * @param {{ stateRoot: string, runtime: object, getBot: (id: string) => object, logger?: object }} options
  */
-export function openSessionRunner({ stateRoot, runtime, getBot, logger } = {}) {
+export function openSessionRunner({ stateRoot, runtime, getBot, logger, detachedPollMs = 3000 } = {}) {
   if (typeof getBot !== 'function') throw new TypeError('getBot is required.')
   const store = openSessionStore(stateRoot)
   store.recover()
   const active = new Map()
+  const detachedPolls = new Map()
+  const pollDelay = Number.isInteger(detachedPollMs) && detachedPollMs > 0 ? detachedPollMs : 3000
+
+  function detachedCapable() {
+    return runtime.available === true
+      && runtime.detached === true
+      && typeof runtime.start === 'function'
+      && typeof runtime.status === 'function'
+      && typeof runtime.collect === 'function'
+  }
 
   function kick(botId) {
+    if (detachedPolls.has(botId)) return undefined
     if (active.has(botId)) return active.get(botId)
     const job = drain(botId)
       .catch((error) => {
@@ -461,6 +571,28 @@ export function openSessionRunner({ stateRoot, runtime, getBot, logger } = {}) {
         const bot = getBot(botId)
         // Give the runtime the most recent window, not the oldest one.
         const { messages } = store.history(botId, { limit: HISTORY_MAX_LIMIT, tail: true })
+        if (detachedCapable()) {
+          const started = await runtime.start({
+            bot,
+            text: next.item.text,
+            history: messages,
+            sessionId: next.session.sessionId,
+            messageSeq: next.item.seq,
+            botId,
+            stateRoot,
+          })
+          if (typeof started?.taskId !== 'string' || started.taskId.trim() === ''
+            || typeof started?.sandbox !== 'string' || started.sandbox.trim() === ''
+            || typeof started?.localDir !== 'string' || started.localDir.trim() === ''
+            || !Number.isInteger(started?.timeoutSeconds)) {
+            const error = new Error('The detached runtime returned an invalid task.')
+            error.code = ERROR_CODES.internal
+            throw error
+          }
+          store.attach(botId, started)
+          startDetachedPoll(botId, started.taskId)
+          return
+        }
         const reply = await runtime.run({
           bot,
           text: next.item.text,
@@ -481,6 +613,96 @@ export function openSessionRunner({ stateRoot, runtime, getBot, logger } = {}) {
     }
   }
 
+  function startDetachedPoll(botId, taskId) {
+    if (detachedPolls.has(botId)) return
+    let resolveDone
+    const done = new Promise((resolve) => { resolveDone = resolve })
+    const record = { taskId, cancelled: false, timer: null, failures: 0, done, resolveDone }
+    detachedPolls.set(botId, record)
+
+    const stop = () => {
+      if (record.cancelled) return
+      record.cancelled = true
+      if (record.timer) clearTimeout(record.timer)
+      detachedPolls.delete(botId)
+      resolveDone()
+    }
+    const schedule = (delay = pollDelay) => {
+      if (!record.cancelled) record.timer = setTimeout(tick, delay)
+    }
+    const tick = async () => {
+      if (record.cancelled) return
+      const detached = store.detached(botId)
+      if (detached === null || detached.taskId !== taskId) {
+        stop()
+        return
+      }
+      const deadline = Date.parse(detached.startedAt) + detached.timeoutSeconds * 1000 + 5 * 60_000
+      if (Date.now() > deadline) {
+        const error = new Error('The detached cloud task did not finish in time; nothing was stored.')
+        error.code = ERROR_CODES.internal
+        store.failDetached(botId, taskId, error)
+        stop()
+        return
+      }
+      try {
+        const state = await runtime.status({ detached })
+        if (record.cancelled) return
+        if (state?.running === true) {
+          record.failures = 0
+          schedule()
+          return
+        }
+        if (state?.running !== false) {
+          const error = new Error('The detached runtime returned no running state.')
+          error.code = ERROR_CODES.internal
+          throw error
+        }
+        const collected = await runtime.collect({ detached })
+        if (record.cancelled) return
+        if (collected?.running === true) {
+          record.failures = 0
+          schedule()
+          return
+        }
+        if (typeof collected?.text !== 'string' || collected.text.trim() === '') {
+          const error = new Error('The detached task finished without a reply.')
+          error.code = ERROR_CODES.internal
+          throw error
+        }
+        const finished = store.finishDetached(botId, taskId, collected.text)
+        stop()
+        if (finished !== null) kick(botId)
+      } catch (error) {
+        if (record.cancelled) return
+        record.failures += 1
+        if (error?.code === ERROR_CODES.machineStopped
+          || error?.code === ERROR_CODES.tokenRequired
+          || record.failures >= 3) {
+          store.failDetached(botId, taskId, error)
+          stop()
+          return
+        }
+        schedule()
+      }
+    }
+    schedule()
+  }
+
+  function resumeDetached() {
+    const pending = store.detachedSessions()
+    if (pending.length === 0) return
+    if (!detachedCapable()) {
+      for (const item of pending) {
+        const error = new Error('The detached runtime is unavailable; the cloud task cannot be collected.')
+        error.code = ERROR_CODES.runtimeUnavailable
+        store.failDetached(item.botId, item.detached.taskId, error)
+      }
+      return
+    }
+    for (const item of pending) startDetachedPoll(item.botId, item.detached.taskId)
+  }
+
   function send(botId, text) {
     if (runtime.available !== true) {
       const error = new Error('The cloud bot runtime is not wired in this build; no turn was sent.')
@@ -492,10 +714,38 @@ export function openSessionRunner({ stateRoot, runtime, getBot, logger } = {}) {
     return result
   }
 
+  async function settled(botId) {
+    for (;;) {
+      const job = active.get(botId)
+      if (job) {
+        await job
+        continue
+      }
+      const poll = detachedPolls.get(botId)
+      if (poll) {
+        await poll.done
+        continue
+      }
+      return
+    }
+  }
+
+  function close() {
+    for (const record of detachedPolls.values()) {
+      record.cancelled = true
+      if (record.timer) clearTimeout(record.timer)
+      record.resolveDone()
+    }
+    detachedPolls.clear()
+  }
+
+  resumeDetached()
+
   return {
     send,
     status: (botId) => store.status(botId),
     history: (botId, options) => store.history(botId, options),
-    settled: (botId) => active.get(botId) ?? Promise.resolve(),
+    settled,
+    close,
   }
 }

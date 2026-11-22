@@ -3,15 +3,20 @@
 The Rayrun Bot plugin package. Status: **client shell with a local roster and
 local sessions** — the bundle loads, the client half renders the v0.1 screens,
 and the host half answers health, persists the bot roster, and stores a durable
-per-bot session/transcript. When `dsh-rayrun-computer`'s `rayrun_agent` tool is
-registered, the runtime adapter sends a turn to an existing cloud computer;
-without it `session.send` fails closed with `E_RUNTIME_UNAVAILABLE`. A one-turn
-live Rayrun smoke was verified on 2026-11-22; page-close continuation and
-approval enforcement are not implemented. The conversation UI uses the host
-session for real roster bots while sample bots, approvals, routines and settings
-remain an in-memory preview. The page-level create/reload path was verified on
-2026-11-21 in a local DSH page. Repository-level status and verified
-combinations live in [docs/12-status.md](../../docs/12-status.md).
+per-bot session/transcript. With `dsh-rayrun-computer` 1.1+, a turn is posted as
+a detached `dsh.start` task, its task id is persisted, and `reply.md` is
+collected from the task result directory; 1.0.x falls back to the single-turn
+`rayrun_agent` tool, and without either surface `session.send` fails closed with
+`E_RUNTIME_UNAVAILABLE`. One-turn and detached live Rayrun smokes were verified
+on 2026-11-22; the detached smoke closed the page and restarted the local DSH
+while the task ran, and the restarted host collected `reply.md`. Approval
+execution is not implemented. The approval protocol and audit store
+exist, but a decision explicitly reports `execution.available: false`. The
+conversation UI uses the host session for real roster bots while sample bots,
+approvals, routines and settings remain an in-memory preview. The page-level
+create/reload path was verified on 2026-11-21 in a local DSH page. Repository-
+level status and verified combinations live in
+[docs/12-status.md](../../docs/12-status.md).
 
 ## What it does today
 
@@ -38,6 +43,14 @@ combinations live in [docs/12-status.md](../../docs/12-status.md).
   computer (the adapter refuses to auto-create one); a stopped or paused machine
   is woken by the dependency, which may incur machine-hour charges. Without the
   tool, `session.send` returns `E_RUNTIME_UNAVAILABLE` and writes no session.
+- Host half: `approvals.list`, `approvals.get` and `approvals.decide` operate on
+  one request/decision file pair per approval under `bots/<id>/approvals/`.
+  Requests carry an action id, nonce and canonical SHA-256 action hash; background
+  requests expire after 30 minutes, chat requests wait; duplicate decisions are
+  idempotent and a conflicting or replayed decision is refused. Every request,
+  decision and refusal is appended to `logs/audit.log` without the action payload.
+  Decisions always return `execution: { available: false, reason:
+  "platform_isolation_pending" }`; this package never executes the action.
 - Client half: a `Bots` sidebar entry and the three-column shell from
   [docs/design/ui-design.md](../../docs/design/ui-design.md) — chat list, conversation,
   details (Activity / Library), new bot, the four-step setup wizard, and
@@ -81,9 +94,9 @@ combinations live in [docs/12-status.md](../../docs/12-status.md).
   language row writes the choice back to DSH so it survives a reload. The rest
   stays in the page, and the client keeps neither the token nor a DeepSeek key.
 
-Not built yet: page-close continuation, approval enforcement, a Bots-page-level
-verified computer-creation success path, bot↔cloud session mapping, routines
-that run, and the npm release path. See the repo-level
+Not built yet: approval execution, a Bots-page-level verified computer-creation
+success path, bot↔cloud session mapping, routines that run, and the npm release
+path. See the repo-level
 [MVP plan](../../docs/plans/mvp-plan.md) and [client plan](../../docs/plans/client-plan.md).
 
 ## DSH compatibility
@@ -135,6 +148,10 @@ node test/bot-schema.mjs
 node test/bot-store.mjs
 node test/session-runtime.mjs
 node test/rayrun-runtime.mjs
+node test/rayrun-detached-runtime.mjs
+node test/bot-workspace.mjs
+node test/dependency.mjs
+node test/approvals.mjs
 node test/package-contents.mjs
 ```
 
@@ -152,15 +169,19 @@ package.json       # name, exports, dsh.bundle + dsh.client
 cordis.patch.yml   # the bundle row (id rayrun-bots -> package dsh-rayrun-bots)
 index.js           # host half: same-origin RPC route, health + bots.* + session.* actions
 client.js          # client half: v0.1 shell, roster read/write, preview conversation
+lib/approvals.js   # approval request/decision protocol, TTL, action hash, audit
 lib/bots.js        # persistent roster: list/get/create/update/delete
 lib/bot-schema.js  # bot.json validation, defaults and creation
-lib/dependency.js  # dsh-rayrun-computer detection and version check
+lib/bot-workspace.js # per-bot local git checkout for detached tasks
+lib/dependency.js  # dsh-rayrun-computer detection, version and detached gate
 lib/errors.js      # stable error codes (shared with docs/plans/mvp-plan.md §4.3)
 lib/local-store.js # state-directory resolution and atomic JSON writes
 lib/rpc.js         # JSON responses and request-body parsing
-lib/runtime.js     # one-turn runtime contract; unavailable by default
+lib/runtime.js     # single-turn and detached runtime contracts
+lib/rayrun-rpc.js  # shared same-origin dependency RPC caller
 lib/rayrun-runtime.js # rayrun_agent-backed runtime adapter
-lib/sessions.js    # per-bot session queue and append-only transcript
+lib/rayrun-detached-runtime.js # dsh.start/status/result adapter
+lib/sessions.js    # per-bot queue, transcript and detached polling
 locale/en.json     # source copy
 locale/zh.json     # mirror; keys must match
 icon.svg           # plugin icon (Rayrun blue, monitor mark)

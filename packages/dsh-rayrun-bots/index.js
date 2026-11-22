@@ -1,26 +1,28 @@
 /**
  * Host half of the Rayrun Bot bundle.
  *
- * One same-origin RPC route: a health action and the persisted bot roster
- * (`bots.list/get/create/update/delete`). Sessions, approvals, the cloud
- * runtime and the adapter to dsh-rayrun-computer are not built yet. The client
- * half renders the v0.1 shell from in-memory preview data, reads the roster
- * when it has bots, and calls the GET health action for its host status.
+ * One same-origin RPC route: health, the persisted bot roster, durable
+ * session/transcript, the approval protocol, and the runtime bridge to
+ * `dsh-rayrun-computer`. Dependency 1.1+ uses detached
+ * `dsh.start/status/result`; 1.0.x falls back to the single-turn
+ * `rayrun_agent` tool. The client half renders the v0.1 shell, reads the
+ * roster, and uses the host session for real bots.
  *
- * The health action also reports the installed `dsh-rayrun-computer` version
- * (ok / missing / incompatible / unknown) by reading the profile's package
- * metadata. POST is same-origin gated: a browser `Origin` that does not match
- * the `Host` the request reached is refused. GET is read-only. The route never
- * touches credentials: the Rayrun token stays in the Harness vault on this
- * side and never reaches the page.
+ * The health action reports the installed dependency version (ok / missing /
+ * incompatible / unknown) and the selected runtime. POST is same-origin gated:
+ * a browser `Origin` that does not match the `Host` the request reached is
+ * refused. GET is read-only. The route never touches credentials: the Rayrun
+ * token stays in the Harness vault on this side and never reaches the page.
  */
 import { readFileSync } from 'node:fs'
+import { openApprovalStore } from './lib/approvals.js'
 import { openBotStore } from './lib/bots.js'
-import { checkDependency } from './lib/dependency.js'
+import { checkDependency, supportsDetached } from './lib/dependency.js'
 import { ERROR_CODES } from './lib/errors.js'
 import { resolveStateRoot } from './lib/local-store.js'
-import { readJsonBody, sendError, sendJson } from './lib/rpc.js'
+import { createRayrunDetachedRuntime } from './lib/rayrun-detached-runtime.js'
 import { createRayrunAgentRuntime } from './lib/rayrun-runtime.js'
+import { readJsonBody, sendError, sendJson } from './lib/rpc.js'
 import { validateRuntime } from './lib/runtime.js'
 import { openSessionRunner } from './lib/sessions.js'
 
@@ -93,6 +95,10 @@ const STATUS_BY_CODE = new Map([
   [ERROR_CODES.runtimeUnavailable, 503],
   [ERROR_CODES.queueFull, 429],
   [ERROR_CODES.hostDown, 503],
+  [ERROR_CODES.approvalInvalid, 400],
+  [ERROR_CODES.approvalExpired, 410],
+  [ERROR_CODES.approvalReplay, 409],
+  [ERROR_CODES.approvalUnknown, 404],
 ])
 
 function sendActionError(res, error) {
@@ -122,6 +128,27 @@ function sessionAction(action, payload, getService) {
       }
     default:
       return { ok: true, session: service.runner.status(bot.id) }
+  }
+}
+
+/** Run one approval action. Decisions are recorded; execution stays closed. */
+function approvalAction(action, payload, ctx) {
+  const stateRoot = resolveStateRoot({ profileDir: profileDirectory(ctx) })
+  const bots = openBotStore(stateRoot)
+  const bot = bots.get(payload.botId)
+  const approvals = openApprovalStore(stateRoot)
+  switch (action) {
+    case 'approvals.list':
+      return { ok: true, approvals: approvals.list(bot.id) }
+    case 'approvals.get':
+      return { ok: true, approval: approvals.get(bot.id, payload.id) }
+    case 'approvals.decide':
+      return { ok: true, ...approvals.decide(bot.id, payload.id, payload.decision) }
+    default: {
+      const error = new Error(`Unknown action: ${action}`)
+      error.status = 404
+      throw error
+    }
   }
 }
 
@@ -164,10 +191,15 @@ export function apply(ctx, options = {}) {
   ctx.logger?.info?.(`dsh-rayrun-bots: host half loaded (${VERSION})`)
   let webServer
   const injectedRuntime = options.runtime === undefined ? undefined : validateRuntime(options.runtime)
-  const runtime = injectedRuntime ?? validateRuntime(createRayrunAgentRuntime({
-    getTools: () => ctx.get?.('tools'),
-    getOrigin: () => webServer?.getOrigin?.(),
-  }))
+  const installed = checkDependency(profileDirectory(ctx))
+  const runtime = injectedRuntime ?? validateRuntime(
+    supportsDetached(installed.version)
+      ? createRayrunDetachedRuntime({ getOrigin: () => webServer?.getOrigin?.() })
+      : createRayrunAgentRuntime({
+        getTools: () => ctx.get?.('tools'),
+        getOrigin: () => webServer?.getOrigin?.(),
+      }),
+  )
   const hostHealth = () => health(checkDependency(profileDirectory(ctx)), runtime)
 
   let sessionService
@@ -230,6 +262,14 @@ export function apply(ctx, options = {}) {
               if (typeof payload?.action === 'string' && payload.action.startsWith('session.')) {
                 try {
                   sendJson(res, 200, sessionAction(payload.action, payload, sessions))
+                } catch (error) {
+                  sendActionError(res, error)
+                }
+                return
+              }
+              if (typeof payload?.action === 'string' && payload.action.startsWith('approvals.')) {
+                try {
+                  sendJson(res, 200, approvalAction(payload.action, payload, ctx))
                 } catch (error) {
                   sendActionError(res, error)
                 }

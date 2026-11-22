@@ -206,6 +206,18 @@
   `Run the smoke.`，bot 回复 `SMOKE_OK`；`session.history` 为 `idle`，transcript 有
   user+bot；刷新页面后回复仍在。机时读数从 0.1878 增至 0.1914（约 13 秒，读数不是
   承诺）；机器随后由依赖的 idle stop 回到 sleeping。审批未参与。
+- Detached 页面关闭 + host 重启（2026-11-22，本机 DSH web `0.2.2-rc.5` +
+  Firefox/geckodriver，独立临时 DSH_HOME，两个插件从 checkout 安装，依赖
+  `1.1.0` 本地 checkout；Rayrun token 只经共享 Harness vault，从不打印）：health 报
+  dependency `ok`、runtime `rayrun-detached`；overview 有已有机器 `rayrun-bot-test`
+  （Running，未新建机器）。在 Bots 页创建 `Live Detached` 并发送
+  `Run the detached smoke.`；`session.status` 在 `dsh.start` 返回后出现持久化的
+  `detached.taskId`，session 为 `running`，本地每 bot git workspace 已建立。随后关闭
+  浏览器页面，并在 task 运行期间用 SIGKILL 停掉本地 DSH；用同一 `DSH_HOME` 重启后，
+  新 host 从 `session.json` 恢复 poll，收取 `.dsh/results/<taskId>/reply.md`
+  （内容 `DETACHED_OK`），session 回到 `idle`，transcript 有 user+bot，刷新页面后
+  回复仍在。机时读数从 0.8114 增至 0.8244（约 47 秒，读数不是承诺）。审批未参与；
+  同一 host 连续两轮仍未验证。
 - 打包产物安装（2026-11-22，本机 DSH `0.2.2-rc.5`；本地打包检查）：`npm pack` 生成
   15 个文件的 tarball（host/client、locale、`lib/*.js`、bundle patch、icon、README、
   LICENSE；54.6 kB），`test/`、`docs/`、`tools/` 未进入；`dsh plugin --profile
@@ -239,10 +251,11 @@
   权限和 agent 可读性；若 root agent 可读，记录残余风险并评估是否应移到 host-only
   位置；
 - bot 会话、审批往返、远程审批、队列与恢复（会话/常驻 runtime 受 R-G008 阻塞）；
-  本地 session store、`session.*` RPC 与 `rayrun_agent` adapter 已有 fake 测试，
-  页面层真实一轮已在本机 DSH + 已有 Rayrun 机器验证（§3.1）；页面关闭后继续、
-  审批往返、队列与恢复仍未验证；审批执行等待平台权限隔离（ADR-001，
-  [`08-integration.md`](08-integration.md) §3.3），在平台提供前不做往返验证；
+  本地 session store、`session.*` RPC、`rayrun_agent`/detached adapter 已有 fake
+  测试；页面层真实一轮，以及 detached 的页面关闭 + host 重启收取，已在本机 DSH +
+  已有 Rayrun 机器验证（§3.1）；同一 host 连续两轮、队列与恢复仍未验证；审批往返/
+  执行等待平台权限隔离（ADR-001，[`08-integration.md`](08-integration.md) §3.3），
+  在平台提供前不做往返验证；
 - DeepSeek 模型调用（至今只创建了 model credential，没有发模型请求）；
 - 零余额宽限/force-destroy 行为（R-G009，不做破坏性验证）；
 - 在 Rayrun 上构建自定义 Dockerfile 镜像（R-G013）。

@@ -59,7 +59,7 @@ packages/dsh-rayrun-bots/
 │   ├── runtime.js        # 单轮 runtime 契约；默认失败关闭
 │   ├── rayrun-runtime.js # 依赖 rayrun_agent 的 runtime adapter
 │   ├── queue.js          # 本地队列视图（计划）
-│   ├── approvals.js      # 审批状态机（计划）
+│   ├── approvals.js      # 审批 request/decision、action hash、TTL、审计
 │   ├── setup.js          # onboarding 状态（计划）
 │   ├── cost.js           # 余额/机器小时（计划）
 │   ├── errors.js         # 稳定错误码
@@ -93,8 +93,12 @@ $DSH_HOME/state/rayrun-bot/
 ├── schema.json              # { schema: 1, pluginVersion, createdAt }
 ├── bots/<botId>/
 │   ├── bot.json             # v0.1 本地意图源；runtime 落地后同步到机器
-│   ├── session.json         # 本地 session 状态与队列（runtime 接线前的回退）
-│   └── transcript.jsonl     # 用户/bot/system 消息，只追加
+│   ├── session.json         # 本地 session 状态与队列
+│   ├── transcript.jsonl     # 用户/bot/system 消息，只追加
+│   ├── approvals/
+│   │   ├── req-<id>.json    # 审批提案；不是授权边界
+│   │   └── res-<id>.json    # 用户决定；执行按 ADR-001 关闭
+│   └── workspace/           # detached task 的本地 git checkout；.dsh/ 被忽略
 ├── mirror/
 │   └── bots/<botId>/
 │       ├── bot.json         # 机器定义的副本（只读）
@@ -118,6 +122,9 @@ $DSH_HOME/state/rayrun-bot/
 | `bots/<id>/bot.json` | host | client、host | 否 | 永久 | runtime 落地前否；之后是机器副本 |
 | `bots/<id>/session.json` | host | client、host | 否 | 永久 | session 镜像落地前否；之后可从机器重建 |
 | `bots/<id>/transcript.jsonl` | host | client、host | 否 | 永久 | session 镜像落地前否（本地对话历史）；之后可从机器重建 |
+| `bots/<id>/approvals/req-<id>.json` | bot runtime（提案；当前由协议 API/测试写入） | host、client | 否 | 永久/过期清理 | 否（审计） |
+| `bots/<id>/approvals/res-<id>.json` | host（用户决定） | host、执行方 | 否 | 永久 | 否（审计） |
+| `bots/<id>/workspace/` | host（初始化）/依赖的 `dsh.start`（任务 push） | 依赖 worker | 否 | 任务生命周期 | 是（任务结果进入 transcript） |
 | `mirror/bots/<id>/` | host | client、host | 否 | 最近状态 | 是，从机器 |
 | `cache/*.json` | host | client、host | 否 | 上述 TTL | 是 |
 | `outbox/cursor.json` | host | client | 否 | 永久 | 是 |
@@ -174,10 +181,12 @@ approval request/decision、outbox event）。本文补四个本地格式：
   状态，旧版本走迁移。
 - **`locks/<botId>.lock`** — `{ pid, host, acquiredAt, beatAt }`；持有者存活时重写，
   干净退出时删除。
-- **`approvals.jsonl`** — `{ at, requestId, botId, nonce, actionHash, decision,
-  decidedAt }`；无 action payload、无密钥；只追加。
-- **`host.log` / `audit.log`** — `{ at, level, code?, botId?, event, n? }`；字段稳定，
-  runbook 可 grep。
+- **`approvals.jsonl`** — 计划中的云端镜像；本地实现的审计在 `logs/audit.log`，见下。
+- **`logs/audit.log`** — 每行 `{ at, event: "request" | "decision" | "refused",
+  requestId, botId, actionId?, nonce?, actionHash?, decision?, decidedAt?,
+  decisionId?, code? }`；无 action payload、无密钥；只追加。
+- **`logs/host.log`** — `{ at, level, code?, botId?, event, n? }`；字段稳定，runbook
+  可 grep。
 
 **写入规则**：所有 JSON/JSONL 写 `name.tmp-<random>`，fsync，rename 到目标；读者在
 目标缺失时回退 `name.bak`。JSONL 追加在每 bot 锁下用一次 `appendFile`。**每个文件

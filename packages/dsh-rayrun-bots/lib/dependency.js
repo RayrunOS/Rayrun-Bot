@@ -13,6 +13,23 @@ export const DEPENDENCY_NAME = 'dsh-rayrun-computer'
 /** The supported dependency line. v0.1 uses the 1.x releases. */
 export const DEPENDENCY_RANGE = '>=1.0.0 <2.0.0'
 
+/** `dsh.start/status/result` arrived in the 1.1 line. */
+export const DETACHED_MIN_VERSION = '1.1.0'
+
+/**
+ * Whether an installed 1.x dependency exposes the host-callable detached RPC.
+ * 1.0.x uses the single-turn `rayrun_agent` tool instead.
+ * @param {string | null | undefined} version
+ * @returns {boolean}
+ */
+export function supportsDetached(version) {
+  if (typeof version !== 'string') return false
+  const match = /^1\.(\d+)\.(\d+)(?:[-+][0-9A-Za-z.-]+)?$/.exec(version)
+  if (!match) return false
+  const minor = Number(match[1])
+  return minor > 1 || (minor === 1 && Number(match[2]) >= 0)
+}
+
 /** Read the installed package manifest, distinguishing a missing package from a broken one. */
 function readInstalled(profileDir) {
   const filename = path.join(profileDir, 'node_modules', DEPENDENCY_NAME, 'package.json')

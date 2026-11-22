@@ -35,6 +35,15 @@ function expectCode(fn, code) {
   })
 }
 
+async function until(fn, message, { tries = 100, delay = 10 } = {}) {
+  for (let index = 0; index < tries; index += 1) {
+    const value = await fn()
+    if (value) return value
+    await new Promise((resolve) => setTimeout(resolve, delay))
+  }
+  throw new Error(message)
+}
+
 check('a send persists the user message and the fake reply, then returns to idle', async () => {
   let seen
   const { bot, runner } = setup(async ({ bot: current, text, history, messageSeq }) => {
@@ -101,6 +110,155 @@ check('a second send queues behind the running turn and order is preserved', asy
     runner.history(bot.id).messages.map((message) => message.text),
     ['one', 'two', 're:one', 're:two'],
   )
+})
+
+check('a second turn continues after a runner restart', async () => {
+  const root = mkdtempSync(path.join(tmpdir(), 'rayrun-bots-session-'))
+  roots.push(root)
+  const bots = openBotStore(root)
+  const bot = bots.create({ name: 'Echo Bot', label: 'Echoes messages' })
+
+  const first = openSessionRunner({
+    stateRoot: root,
+    runtime: {
+      contract: 1,
+      name: 'fake-1',
+      available: true,
+      async run({ text }) { return { text: `one:${text}` } },
+    },
+    getBot: bots.get,
+  })
+  first.send(bot.id, 'first')
+  await first.settled(bot.id)
+
+  let secondSeen
+  const second = openSessionRunner({
+    stateRoot: root,
+    runtime: {
+      contract: 1,
+      name: 'fake-2',
+      available: true,
+      async run({ text, history }) {
+        secondSeen = { text, history: history.map((message) => message.text) }
+        return { text: 'two' }
+      },
+    },
+    getBot: bots.get,
+  })
+  second.send(bot.id, 'second')
+  await second.settled(bot.id)
+
+  assert.equal(secondSeen.text, 'second')
+  assert.deepEqual(secondSeen.history, ['first', 'one:first', 'second'])
+  assert.deepEqual(
+    second.history(bot.id).messages.map((message) => message.text),
+    ['first', 'one:first', 'second', 'two'],
+  )
+  assert.equal(second.status(bot.id).state, 'idle')
+})
+
+check('a detached turn survives a runner restart and is collected later', async () => {
+  const root = mkdtempSync(path.join(tmpdir(), 'rayrun-bots-session-'))
+  roots.push(root)
+  const bots = openBotStore(root)
+  const bot = bots.create({ name: 'Echo Bot', label: 'Echoes messages' })
+  const localDir = path.join(root, 'bots', bot.id, 'workspace')
+  const first = openSessionRunner({
+    stateRoot: root,
+    runtime: {
+      contract: 1,
+      name: 'fake-detached',
+      available: true,
+      detached: true,
+      async start() {
+        return { taskId: 'task-1', sandbox: 'box', localDir, timeoutSeconds: 900 }
+      },
+      async status() { return { running: true } },
+      async collect() { return { running: true } },
+    },
+    getBot: bots.get,
+    detachedPollMs: 10,
+  })
+  first.send(bot.id, 'first')
+  await until(() => first.status(bot.id)?.detached?.taskId === 'task-1', 'detached task did not attach')
+  first.close()
+
+  const second = openSessionRunner({
+    stateRoot: root,
+    runtime: {
+      contract: 1,
+      name: 'fake-detached-2',
+      available: true,
+      detached: true,
+      async start() { throw new Error('the resumed turn must not start again') },
+      async status() { return { running: false } },
+      async collect() { return { text: 'done' } },
+    },
+    getBot: bots.get,
+    detachedPollMs: 10,
+  })
+  await second.settled(bot.id)
+  const status = second.status(bot.id)
+  assert.equal(status.state, 'idle')
+  assert.equal(status.detached, undefined)
+  assert.deepEqual(second.history(bot.id).messages.map((message) => message.text), ['first', 'done'])
+  second.close()
+})
+
+check('a detached task only completes while its id is still current', () => {
+  const root = mkdtempSync(path.join(tmpdir(), 'rayrun-bots-session-'))
+  roots.push(root)
+  const bots = openBotStore(root)
+  const bot = bots.create({ name: 'Echo Bot', label: 'Echoes messages' })
+  const store = openSessionStore(root)
+  store.enqueue(bot.id, 'first')
+  store.shift(bot.id)
+  store.attach(bot.id, {
+    taskId: 'task-a',
+    sandbox: 'box',
+    localDir: path.join(root, 'workspace'),
+    timeoutSeconds: 900,
+  })
+  assert.equal(store.status(bot.id).detached.taskId, 'task-a')
+  assert.equal(store.finishDetached(bot.id, 'task-b', 'late'), null)
+  assert.equal(store.status(bot.id).state, 'running')
+  const done = store.finishDetached(bot.id, 'task-a', 'done')
+  assert.equal(done.session.state, 'idle')
+  assert.equal(store.status(bot.id).detached, undefined)
+  assert.deepEqual(store.history(bot.id).messages.map((message) => message.text), ['first', 'done'])
+})
+
+check('a detached start failure fails closed without a detached state', async () => {
+  const root = mkdtempSync(path.join(tmpdir(), 'rayrun-bots-session-'))
+  roots.push(root)
+  const bots = openBotStore(root)
+  const bot = bots.create({ name: 'Echo Bot', label: 'Echoes messages' })
+  const runner = openSessionRunner({
+    stateRoot: root,
+    runtime: {
+      contract: 1,
+      name: 'fake-detached',
+      available: true,
+      detached: true,
+      async start() {
+        const error = new Error('No cloud computer.')
+        error.code = ERROR_CODES.machineStopped
+        throw error
+      },
+      async status() { return { running: false } },
+      async collect() { return { text: 'never' } },
+    },
+    getBot: bots.get,
+    detachedPollMs: 10,
+  })
+  runner.send(bot.id, 'first')
+  await runner.settled(bot.id)
+  const status = runner.status(bot.id)
+  assert.equal(status.state, 'failed')
+  assert.equal(status.error.code, ERROR_CODES.machineStopped)
+  assert.equal(status.detached, undefined)
+  assert.equal(runner.history(bot.id).messages.at(-1).role, 'system')
+  runner.close()
 })
 
 check('a runtime failure fails closed, redacts credentials and resumes on the next send', async () => {

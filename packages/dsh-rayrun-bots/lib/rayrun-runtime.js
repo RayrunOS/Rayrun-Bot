@@ -13,57 +13,11 @@
  */
 import { Buffer } from 'node:buffer'
 import { ERROR_CODES } from './errors.js'
+import { createRayrunRpc, dependencyFailure, rayrunFailure } from './rayrun-rpc.js'
 import { RUNTIME_CONTRACT_VERSION } from './runtime.js'
 
-/** Mirrors the Bots client's preferred machine name. */
-const DEFAULT_COMPUTER = 'rayrun-bot'
 const AGENT_TIMEOUT_SECONDS = 900
-const OVERVIEW_TIMEOUT_MS = 30_000
 const HISTORY_MAX_BYTES = 24 * 1024
-
-const DEPENDENCY_CODES = new Map([
-  ['token_required', ERROR_CODES.tokenRequired],
-  ['unauthorized', ERROR_CODES.tokenRequired],
-  ['invalid_token', ERROR_CODES.tokenRequired],
-  ['key_required', ERROR_CODES.keyRequired],
-  ['model_credential_required', ERROR_CODES.keyRequired],
-  ['sandbox_busy', ERROR_CODES.machineBusy],
-  ['sandbox_missing', ERROR_CODES.machineStopped],
-  ['sandbox_not_running', ERROR_CODES.machineStopped],
-  ['balance_low', ERROR_CODES.balanceLow],
-  ['insufficient_balance', ERROR_CODES.balanceLow],
-])
-
-function failure(code, message) {
-  const error = new Error(message)
-  error.code = code
-  return error
-}
-
-/** Map a dependency error to a stable host code without copying its payload. */
-function dependencyFailure(error) {
-  const raw = typeof error?.code === 'string' ? error.code : ''
-  let code = raw.startsWith('E_') ? raw : DEPENDENCY_CODES.get(raw)
-  if (!code && error?.status === 401) code = ERROR_CODES.tokenRequired
-  if (!code && error?.status === 402) code = ERROR_CODES.balanceLow
-  if (!code && error?.status === 404) code = ERROR_CODES.depMissing
-  if (!code && error?.status === 409) code = ERROR_CODES.machineBusy
-  const mapped = failure(code ?? ERROR_CODES.internal, String(error?.message ?? error ?? 'The cloud turn failed.'))
-  return mapped
-}
-
-function rpcFailure(body, status) {
-  const detail = body?.error
-  if (typeof detail === 'string') {
-    const error = new Error(detail)
-    error.status = status
-    return error
-  }
-  const error = new Error(detail?.message ?? `Cloud-computer RPC failed (${status}).`)
-  error.code = detail?.code ?? `http_${status}`
-  error.status = status
-  return error
-}
 
 function formatMessage(message) {
   if (message.role === 'user') return `User: ${message.text}`
@@ -137,55 +91,7 @@ export function createRayrunAgentRuntime({ getTools, getOrigin, fetchImpl = glob
     }
   }
 
-  async function resolveMachine() {
-    const origin = getOrigin?.()
-    if (!origin) {
-      throw failure(ERROR_CODES.runtimeUnavailable, 'The DSH web server is not available; no turn was sent.')
-    }
-    if (typeof fetchImpl !== 'function') {
-      throw failure(ERROR_CODES.runtimeUnavailable, 'This runtime has no fetch implementation; no turn was sent.')
-    }
-
-    let response
-    try {
-      response = await fetchImpl(new URL('/plugins/rayrun/rpc', origin), {
-        method: 'POST',
-        headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'overview' }),
-        signal: AbortSignal.timeout(OVERVIEW_TIMEOUT_MS),
-      })
-    } catch (error) {
-      if (error?.name === 'TimeoutError' || error?.name === 'AbortError') {
-        throw failure(ERROR_CODES.internal, 'Reading the cloud computer list timed out; no turn was sent.')
-      }
-      throw failure(ERROR_CODES.depMissing, 'The cloud-computer plugin is not reachable; no turn was sent.')
-    }
-
-    let body = null
-    try {
-      body = await response.json()
-    } catch {
-      body = null
-    }
-    if (!response.ok || body?.ok !== true) throw dependencyFailure(rpcFailure(body, response.status))
-    if (body.connection?.configured !== true) {
-      throw failure(ERROR_CODES.tokenRequired, 'Connect Rayrun in Bots setup before sending a message.')
-    }
-
-    const machines = Array.isArray(body.machines)
-      ? body.machines.filter((machine) => machine?.status !== 'Terminated')
-      : []
-    const machine = machines.find((item) => item.name === DEFAULT_COMPUTER)
-      ?? machines.find((item) => item.remote_desktop && item.desktop_url)
-      ?? machines[0]
-    if (!machine) {
-      throw failure(ERROR_CODES.machineStopped, 'No cloud computer yet; create one in Bots setup first.')
-    }
-    if (!machine.name && !machine.id) {
-      throw failure(ERROR_CODES.machineStopped, 'The cloud computer has no name or id; no turn was sent.')
-    }
-    return machine
-  }
+  const rpc = createRayrunRpc({ getOrigin, fetchImpl })
 
   return {
     contract: RUNTIME_CONTRACT_VERSION,
@@ -196,9 +102,9 @@ export function createRayrunAgentRuntime({ getTools, getOrigin, fetchImpl = glob
     async run({ bot, text, history = [], messageSeq } = {}) {
       const tool = agentTool()
       if (typeof tool?.execute !== 'function') {
-        throw failure(ERROR_CODES.runtimeUnavailable, 'dsh-rayrun-computer is missing the rayrun_agent tool; no turn was sent.')
+        throw rayrunFailure(ERROR_CODES.runtimeUnavailable, 'dsh-rayrun-computer is missing the rayrun_agent tool; no turn was sent.')
       }
-      const machine = await resolveMachine()
+      const machine = await rpc.resolveMachine()
       const prompt = buildPrompt({ bot, text, history, messageSeq })
 
       // Host-initiated call to the tool's published execute(). There is no agent
@@ -219,11 +125,11 @@ export function createRayrunAgentRuntime({ getTools, getOrigin, fetchImpl = glob
       }
 
       if (result?.finished !== true) {
-        throw failure(ERROR_CODES.internal, `The cloud agent did not finish; nothing was stored. Try again.${resultDetail(result)}`)
+        throw rayrunFailure(ERROR_CODES.internal, `The cloud agent did not finish; nothing was stored. Try again.${resultDetail(result)}`)
       }
       const reply = typeof result.text === 'string' ? result.text.trim() : ''
       if (reply === '') {
-        throw failure(ERROR_CODES.internal, `The cloud agent returned no text; nothing was stored.${resultDetail(result)}`)
+        throw rayrunFailure(ERROR_CODES.internal, `The cloud agent returned no text; nothing was stored.${resultDetail(result)}`)
       }
       return { text: reply }
     },

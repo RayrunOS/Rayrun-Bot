@@ -133,21 +133,23 @@ A1–A12 之后的 alpha 门：10–20 名种子用户；首个 bot 成功率 �
 状态为 `queued → running → waiting_approval → done | failed | cancelled`。每台机器
 一个在途项；其余保持 `queued`。
 
-**审批请求** — `{ schema: 1, id, botId, nonce, actionHash, action, risk,
-origin: "chat" | "background", createdAt, expiresAt }`；**决定** —
-`{ schema: 1, id, nonce, decision: "approve" | "deny", decidedAt }`。两者都先写临时
-文件名再 rename 就位；决定必须匹配 id、nonce 和 bot id。聊天消息发起的卡无限等待；
-后台工作发起的卡 30 分钟后过期并拒绝。Action hash 覆盖规范化后的 action payload，
-所以过期卡不能批准另一个动作。
+**审批请求** — `{ schema: 1, id, botId, actionId, nonce, actionHash, action,
+risk: string[], origin: "chat" | "background", createdAt, expiresAt }`；**决定** —
+`{ schema: 1, id, botId, actionId, actionHash, nonce, decision: "approve" | "deny",
+decidedAt, decisionId }`。两者都先写临时文件名再就位，且不覆盖已有文件；决定必须匹配
+id、botId、actionId、nonce 和 actionHash。聊天消息发起的卡无限等待；后台工作发起的
+卡 30 分钟后过期并拒绝。Action hash 对 canonical JSON（排序后的 key，无空白）覆盖
+`{ schema, botId, actionId, action, risk, origin, expiresAt }`，所以过期卡不能批准
+另一个动作。
 
 **Outbox 事件** — `{ seq, at, botId?, type: "status" | "message" | "approval" |
 "error", payload }`；客户端按 `seq` 游标读取，忽略早于其 checkpoint 的 gap。
 
 **错误码**（稳定，RPC 和日志共用）：`E_DEP_MISSING`、`E_DEP_VERSION`、
 `E_TOKEN_REQUIRED`、`E_KEY_REQUIRED`、`E_MACHINE_STOPPED`、`E_MACHINE_BUSY`、
-`E_APPROVAL_EXPIRED`、`E_APPROVAL_REPLAY`、`E_APPROVAL_UNKNOWN`、`E_HOST_DOWN`、
-`E_BOT_UNKNOWN`、`E_BOT_INVALID`、`E_BOT_EXISTS`、`E_QUEUE_FULL`、`E_SESSION_INVALID`、
-`E_RUNTIME_UNAVAILABLE`、`E_BALANCE_LOW`、`E_INTERNAL`。
+`E_APPROVAL_EXPIRED`、`E_APPROVAL_REPLAY`、`E_APPROVAL_UNKNOWN`、`E_APPROVAL_INVALID`、
+`E_HOST_DOWN`、`E_BOT_UNKNOWN`、`E_BOT_INVALID`、`E_BOT_EXISTS`、`E_QUEUE_FULL`、
+`E_SESSION_INVALID`、`E_RUNTIME_UNAVAILABLE`、`E_BALANCE_LOW`、`E_INTERNAL`。
 
 ### 4.4 RPC 表面
 
@@ -222,8 +224,10 @@ spike S6 决定。
 
 ### E. 审批
 
-**阻塞（ADR-001，2026-11-21）。** E1–E7 等待 Rayrun host/agent 权限隔离和 host-only
-审批端点（[08 §3.3](../08-integration.md)）。平台提供前不要实现文件邮箱执行路径。
+**执行阻塞（ADR-001，2026-11-21）。** E1/E3 的执行与卡片生产等待 Rayrun host/agent
+权限隔离和 host-only 审批端点（[08 §3.3](../08-integration.md)）；E2/E4/E5/E6/E7 的
+协议、RPC、TTL、负向测试和审计已实现（`lib/approvals.js`，2026-11-22），但只记录
+决定，不执行动作。平台提供前不要实现文件邮箱执行路径。
 
 | ID | 任务 | 交付物 | 依赖 | 估算 | 完成条件 |
 | --- | --- | --- | --- | --- | --- |

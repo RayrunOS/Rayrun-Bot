@@ -1,6 +1,6 @@
 # 05 — 审批
 
-> 状态：2026-11-21。本文定义“什么需要审批、谁来执行、失败怎么拒绝、决定怎么绑定
+> 状态：2026-11-22。本文定义“什么需要审批、谁来执行、失败怎么拒绝、决定怎么绑定
 > 动作”。ADR-001 已于 2026-11-21 定为**平台权限隔离**；平台提供 host/agent 隔离与
 > 审批端点前，审批执行不实现（见 [`08-integration.md`](08-integration.md) §3.3）。
 > 技术基线见 [`01-system-architecture.md`](01-system-architecture.md)；
@@ -9,6 +9,11 @@
 > [`07-security.md`](07-security.md)；未决决策见
 > [`adr/architecture-decisions.md`](adr/architecture-decisions.md)。
 > 实现状态以 [`12-status.md`](12-status.md) 为准。
+>
+> **实现状态（2026-11-22）：** 协议后端 [`lib/approvals.js`](../packages/dsh-rayrun-bots/lib/approvals.js)
+> 与 `approvals.list/get/decide` RPC 已实现（schema、canonical action hash、TTL、
+> 幂等/重放/错 bot 负向测试、审计）。执行仍然关闭：`decide` 只写决定并返回
+> `execution.available: false`，不执行任何动作；文件仍不是授权边界。
 
 ## 0. 与现有文档的关系
 
@@ -73,9 +78,9 @@ agent，归到平台隔离或从 v0.1 移除。
 2. **送达**：request 写入审批目录；本地控制面每 3 秒轮询（平台无入站通道）。
 3. **卡片**：本地控制面显示结构化字段；用户 Deny / Allow once。卡片内容不信任机器
    提供的 HTML/markdown。
-4. **决定**：决定写入 `res-<id>.json`；或由本地/平台执行（ADR-001）。
+4. **决定**：决定写入 `res-<id>.json`。当前实现只记录决定，不执行（ADR-001）。
 5. **执行**：执行方校验 id、botId、actionId、nonce、actionHash；任何不匹配、过期、
-   重放、错 bot 都拒绝并记录。
+   重放、错 bot 都拒绝并记录。执行点仍等待平台隔离。
 6. **完成**：写 audit 行与队列状态；失败给错误码与一句可读信息。
 
 **TTL**：
@@ -105,6 +110,11 @@ agent，归到平台隔离或从 v0.1 移除。
 - **大小/数量限制**：单个 request 有上限；每 bot 的待审批数量有上限；洪泛要拒绝并
   记录（见 ADR-012）。
 
+> **当前实现路径（2026-11-22）。** 本地实现把同一 schema 放在
+> `$DSH_HOME/state/rayrun-bot/bots/<botId>/approvals/`，审计在
+> `$DSH_HOME/state/rayrun-bot/logs/audit.log`。它仍然是传输/审计，不是授权边界；
+> 执行按 ADR-001 保持关闭。
+
 ---
 
 ## 5. Schema 与 action hash
@@ -120,7 +130,7 @@ agent，归到平台隔离或从 v0.1 移除。
   "nonce": "random-256-bit",
   "actionHash": "sha256-hex",
   "action": { "kind": "send-message", "target": "...", "text": "..." },
-  "risk": "external-side-effect",
+  "risk": ["outside", "irreversible"],
   "origin": "chat",
   "createdAt": "2026-11-18T12:00:00.000Z",
   "expiresAt": null
@@ -132,8 +142,10 @@ agent，归到平台隔离或从 v0.1 移除。
 建议字段：`schema`、`id`、`botId`、`actionId`、`actionHash`、`nonce`、`decision`
 （`approve` / `deny`）、`decidedAt`、`decisionId`。
 
-当前 MVP 草案的 decision 只有 `{ schema, id, nonce, decision, decidedAt }`，缺
-`botId`/`actionId`/`actionHash`；正文却要求匹配 bot 并绑定动作。接线前按 ADR-011 补齐。
+2026-11-22 的实现已按 ADR-011 补齐：decision 包含 `botId`、`actionId`、
+`actionHash`、`nonce`、`decision`、`decidedAt` 和 `decisionId`。页面只提交
+`approve`/`deny` 和 approval id；本地实现从 request 构造决定，免得页面伪造 nonce
+或 hash。
 
 ### 5.3 规范化 action hash
 
@@ -195,6 +207,10 @@ agent，归到平台隔离或从 v0.1 移除。
 - 审批洪泛/超大文件 → 拒绝并记录。
 - 日志/响应不含 token、key 或 action payload。
 
+> 2026-11-22 的实现已覆盖重放、错 bot、过期、篡改 actionHash、损坏文件、审计不含
+> action payload；见 `packages/dsh-rayrun-bots/test/approvals.mjs` 和
+> `test/rpc-contract.mjs`。执行侧的“拒绝后没有副作用”仍等待 ADR-001。
+
 ---
 
 ## 10. 未决项
@@ -202,7 +218,7 @@ agent，归到平台隔离或从 v0.1 移除。
 | 问题 | 影响 | 决策 |
 | --- | --- | --- |
 | 审批在哪里执行？ | 它是不是安全边界 | ADR-001：已定（平台权限隔离）；平台提供前不实现 |
-| decision 字段与 canonical hash | 绑定动作、负向测试 | ADR-011（Proposed；恢复审批工作时先定） |
+| decision 字段与 canonical hash | 绑定动作、负向测试 | ADR-011：Accepted（2026-11-22，协议已实现；执行仍按 ADR-001 关闭） |
 | 副作用崩溃/重试语义 | 重复发送/花钱 | ADR-005 |
 | TTL/时钟/限流/多客户端 | 状态机与恢复 | ADR-012 |
 | 审计是否 tamper-evident | 安全声明 | ADR-012 |

@@ -7,7 +7,9 @@ import assert from 'node:assert/strict'
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { DEPENDENCY_NAME, DEPENDENCY_RANGE, checkDependency } from '../lib/dependency.js'
+import {
+  DEPENDENCY_NAME, DEPENDENCY_RANGE, checkDependency, supportsDetached,
+} from '../lib/dependency.js'
 
 const root = mkdtempSync(path.join(tmpdir(), 'rayrun-bots-dependency-'))
 const errors = []
@@ -51,6 +53,21 @@ for (const version of ['0.9.0', '2.0.0', '2.0.0-rc.1', 'not-a-version']) {
     assert.deepEqual(checkDependency(dir), expected({ version, status: 'incompatible', code: 'E_DEP_VERSION' }))
   })
 }
+
+check('supportsDetached requires the 1.1 line, not 1.0 or 2.x', () => {
+  for (const [version, expectedValue] of [
+    ['1.0.0', false],
+    ['1.0.9', false],
+    ['1.1.0', true],
+    ['1.4.2', true],
+    ['1.1.0-rc.1', true],
+    ['2.0.0', false],
+    [null, false],
+    ['not-a-version', false],
+  ]) {
+    assert.equal(supportsDetached(version), expectedValue, `supportsDetached(${version})`)
+  }
+})
 
 check('malformed installed metadata is incompatible, not missing', () => {
   const dir = profile('malformed', '{not json')

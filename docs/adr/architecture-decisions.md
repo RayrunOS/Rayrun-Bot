@@ -24,7 +24,7 @@
 | [ADR-008](#adr-008) | Desktop 访问路径 | Proposed | 核实依赖的路径；没有安全路径就不要承诺 takeover | F5, security |
 | [ADR-009](#adr-009) | Routines / scheduler 范围 | Proposed | 除非 W3 有余量，否则定为 P1；从核心分层图移除 scheduler | M1, M4 |
 | [ADR-010](#adr-010) | RPC 路由与信封 | Proposed | 选定一个契约，代码、测试、文档一起对齐 | F2, F4 |
-| [ADR-011](#adr-011) | 审批 schema 与 canonical action hash | Proposed | canonical JSON、完整 decision 字段、本地重算 hash | E2–E6, C-S6 |
+| [ADR-011](#adr-011) | 审批 schema 与 canonical action hash | Accepted（2026-11-22，协议已实现；执行仍按 ADR-001 关闭） | canonical JSON、完整 decision 字段、本地重算 hash | E2–E6, C-S6 |
 | [ADR-012](#adr-012) | 恢复与运行语义 | Proposed | 补字段、时钟规则、限流与审计语义 | C8, D4, E5–E7, A8, A9 |
 | [ADR-013](#adr-013) | 文档清理 | Proposed | 与相关决策同批修正下文列出的矛盾 | docs |
 | [ADR-014](#adr-014) | 桌面发行版与更新单元 | Accepted（2026-11-21，B1） | v1.0 采用预配置 DSH 发行包（bootstrap 安装器）；B2 整包更新是升级路径；薄壳不做 | v1.0, 09-deployment |
@@ -293,6 +293,12 @@ replay 作为有文档的回退，并写清它的 UX 与成本。
 **证据。** [系统架构](../01-system-architecture.md) “Layers”；[平台需求](../08-integration.md) §1；
 [安全](../07-security.md) “Design goals” 3。
 
+**实现（2026-11-22）。** 依赖 1.1 的 `dsh.start/status/result` 已接 detached adapter
+（[`lib/rayrun-detached-runtime.js`](../../packages/dsh-rayrun-bots/lib/rayrun-detached-runtime.js)）：
+每 turn 一个 task id、每 bot 一个本地 git checkout、`reply.md` 收取，task id 持久化，
+host 重启后恢复 poll。常驻 DSH host、session 续跑契约和监督进程凭据仍按本 ADR 的
+spike 处理；detached 的页面级 Rayrun 实测仍未做。
+
 <a id="adr-008"></a>
 ### ADR-008 — Desktop 访问路径
 
@@ -375,7 +381,7 @@ replay 作为有文档的回退，并写清它的 UX 与成本。
 <a id="adr-011"></a>
 ### ADR-011 — 审批 schema 与 canonical action hash
 
-**状态：** Proposed.
+**状态：** Accepted（2026-11-22，协议已实现；执行仍按 ADR-001 关闭）。
 
 **问题。** 哪些字段和 hash 能让一个决定只绑定一个动作？
 
@@ -415,6 +421,11 @@ target、amount、recipient 和 URL。
 
 **证据。** [MVP 计划](../plans/mvp-plan.md) §4.3；[安全](../07-security.md) “The model is
 untrusted”；[客户端计划](../plans/client-plan.md) C-S6。
+
+**实现（2026-11-22）。** [`lib/approvals.js`](../../packages/dsh-rayrun-bots/lib/approvals.js)
+按本形状实现 request/decision 文件、canonical action hash、TTL、幂等/重放/错 bot
+负向测试和审计；`approvals.list/get/decide` 已接线。`decide` 返回
+`execution.available: false`；ADR-001 未满足前不执行动作。页面尚未消费真实审批列表。
 
 <a id="adr-012"></a>
 ### ADR-012 — 恢复与运行语义

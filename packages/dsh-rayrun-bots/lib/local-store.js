@@ -6,7 +6,9 @@
  * or the documented `~/.dsh` default is used. This module never writes outside
  * the directory it is given.
  */
-import { closeSync, fsyncSync, mkdirSync, openSync, renameSync, unlinkSync, writeSync } from 'node:fs'
+import {
+  closeSync, fsyncSync, linkSync, mkdirSync, openSync, renameSync, unlinkSync, writeSync,
+} from 'node:fs'
 import { homedir } from 'node:os'
 import path from 'node:path'
 import { randomUUID } from 'node:crypto'
@@ -64,5 +66,38 @@ export function writeJsonAtomic(filename, value) {
       // The rename is what failed; the temp cleanup is best effort.
     }
     throw error
+  }
+}
+
+/**
+ * Write one new JSON file without replacing an existing file.
+ *
+ * The same temp + fsync pattern as `writeJsonAtomic`, then a hard link
+ * publishes the file only if the target does not exist. A duplicate raises
+ * `EEXIST`; the caller decides whether that is idempotent or a replay.
+ * @param {string} filename Target file.
+ * @param {unknown} value JSON-serializable value.
+ */
+export function writeJsonOnce(filename, value) {
+  const directory = path.dirname(filename)
+  ensureDirectory(directory)
+  const temp = path.join(directory, `.${path.basename(filename)}.tmp-${randomUUID()}`)
+  const data = Buffer.from(`${JSON.stringify(value, null, 2)}\n`, 'utf8')
+  const fd = openSync(temp, 'wx', 0o600)
+  try {
+    let offset = 0
+    while (offset < data.length) offset += writeSync(fd, data, offset, data.length - offset)
+    fsyncSync(fd)
+  } finally {
+    closeSync(fd)
+  }
+  try {
+    linkSync(temp, filename)
+  } finally {
+    try {
+      unlinkSync(temp)
+    } catch {
+      // The link is what matters; temp cleanup is best effort.
+    }
   }
 }

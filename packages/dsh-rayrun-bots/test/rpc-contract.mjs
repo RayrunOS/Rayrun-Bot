@@ -14,6 +14,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { Readable } from 'node:stream'
 import { apply } from '../index.js'
+import { openApprovalStore } from '../lib/approvals.js'
 
 const NAME = 'rayrun-bots'
 const ROUTE = '/plugins/rayrun-bots'
@@ -131,6 +132,20 @@ check('health reports the runtime available when rayrun_agent is registered', as
   const reply = await request(hostFor({ tools }).handler, { method: 'GET', action: 'health' })
   assert.equal(reply.status, 200)
   assert.deepEqual(reply.json.runtime, { name: 'rayrun-agent', available: true })
+})
+
+check('health selects the detached runtime for dependency 1.1.0', async () => {
+  const profileDir = mkdtempSync(path.join(tmpdir(), 'rayrun-bots-detached-profile-'))
+  const packageDir = path.join(profileDir, 'node_modules', 'dsh-rayrun-computer')
+  mkdirSync(packageDir, { recursive: true })
+  writeFileSync(path.join(packageDir, 'package.json'), JSON.stringify({ name: 'dsh-rayrun-computer', version: '1.1.0' }))
+  try {
+    const reply = await request(hostFor({ profileDir }).handler, { method: 'GET', action: 'health' })
+    assert.equal(reply.status, 200)
+    assert.deepEqual(reply.json.runtime, { name: 'rayrun-detached', available: true })
+  } finally {
+    rmSync(profileDir, { recursive: true, force: true })
+  }
 })
 
 check('health reports a missing cloud-computer dependency', async () => {
@@ -473,6 +488,85 @@ check('session replies expose no credential shape', () => withState(async () => 
   const settled = await waitForSession(handler, botId, (json) => json.session?.state === 'idle')
   const status = await request(handler, post('session.status', { botId }))
   for (const reply of [sent, settled, status]) {
+    assert.doesNotMatch(reply.text, /Bearer\s|RAYRUN_TOKEN|sk-[A-Za-z0-9]{16,}|api[_-]?key\s*[:=]/i)
+  }
+}))
+
+check('approvals RPC lists, gets and records decisions without execution', () => withState(async (home) => {
+  const { handler } = hostFor()
+  const created = await request(handler, post('bots.create', {
+    name: 'Approval Bot', label: 'Needs approvals', instructions: 'Ask first.',
+  }))
+  const botId = created.json.bot.id
+  const root = path.join(home, 'state', 'rayrun-bot')
+  const store = openApprovalStore(root)
+  const pending = store.createRequest({
+    botId,
+    actionId: 'act-1',
+    action: { kind: 'send-message', target: '#weekly', text: 'hello' },
+    risk: ['outside', 'irreversible'],
+    origin: 'chat',
+  })
+
+  const listed = await request(handler, post('approvals.list', { botId }))
+  assert.equal(listed.status, 200)
+  assert.equal(listed.json.approvals.length, 1)
+  assert.equal(listed.json.approvals[0].state, 'pending')
+  assert.equal(Object.hasOwn(listed.json.approvals[0], 'nonce'), false)
+  assert.equal(Object.hasOwn(listed.json.approvals[0], 'actionHash'), false)
+
+  const got = await request(handler, post('approvals.get', { botId, id: pending.id }))
+  assert.equal(got.status, 200)
+  assert.equal(got.json.approval.id, pending.id)
+
+  const cross = await request(handler, post('approvals.decide', {
+    botId, id: pending.id, decision: 'approve',
+  }, { origin: 'http://evil.example', host: '127.0.0.1:53109' }))
+  assert.equal(cross.status, 403)
+  const still = await request(handler, post('approvals.get', { botId, id: pending.id }))
+  assert.equal(still.json.approval.state, 'pending')
+
+  const decided = await request(handler, post('approvals.decide', { botId, id: pending.id, decision: 'approve' }))
+  assert.equal(decided.status, 200)
+  assert.equal(decided.json.approval.state, 'approved')
+  assert.equal(decided.json.execution.available, false)
+  assert.equal(decided.json.execution.reason, 'platform_isolation_pending')
+  assert.equal(decided.json.idempotent, false)
+
+  const again = await request(handler, post('approvals.decide', { botId, id: pending.id, decision: 'approve' }))
+  assert.equal(again.status, 200)
+  assert.equal(again.json.idempotent, true)
+
+  const replay = await request(handler, post('approvals.decide', { botId, id: pending.id, decision: 'deny' }))
+  assert.equal(replay.status, 409)
+  assert.equal(replay.json.error.code, 'E_APPROVAL_REPLAY')
+
+  const unknown = await request(handler, post('approvals.get', { botId, id: 'missing' }))
+  assert.equal(unknown.status, 404)
+  assert.equal(unknown.json.error.code, 'E_APPROVAL_UNKNOWN')
+
+  const unknownBot = await request(handler, post('approvals.list', { botId: 'missing' }))
+  assert.equal(unknownBot.status, 404)
+  assert.equal(unknownBot.json.error.code, 'E_BOT_UNKNOWN')
+
+  const expired = store.createRequest({
+    botId,
+    actionId: 'act-2',
+    action: { kind: 'publish', target: '#weekly' },
+    risk: ['outside'],
+    origin: 'background',
+  }, { now: Date.now() - 31 * 60 * 1000 })
+  const expiredReply = await request(handler, post('approvals.decide', { botId, id: expired.id, decision: 'approve' }))
+  assert.equal(expiredReply.status, 410)
+  assert.equal(expiredReply.json.error.code, 'E_APPROVAL_EXPIRED')
+
+  const invalid = await request(handler, post('approvals.decide', { botId, id: pending.id, decision: 'maybe' }))
+  assert.equal(invalid.status, 400)
+  assert.equal(invalid.json.error.code, 'E_APPROVAL_INVALID')
+
+  const audit = readFileSync(path.join(root, 'logs', 'audit.log'), 'utf8')
+  assert.doesNotMatch(audit, /send-message|#weekly|publish/)
+  for (const reply of [listed, got, decided, again]) {
     assert.doesNotMatch(reply.text, /Bearer\s|RAYRUN_TOKEN|sk-[A-Za-z0-9]{16,}|api[_-]?key\s*[:=]/i)
   }
 }))

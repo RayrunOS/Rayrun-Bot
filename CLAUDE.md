@@ -134,6 +134,10 @@ node packages/dsh-rayrun-bots/test/client-contract.mjs
 node packages/dsh-rayrun-bots/test/bot-store.mjs
 node packages/dsh-rayrun-bots/test/session-runtime.mjs
 node packages/dsh-rayrun-bots/test/rayrun-runtime.mjs
+node packages/dsh-rayrun-bots/test/rayrun-detached-runtime.mjs
+node packages/dsh-rayrun-bots/test/bot-workspace.mjs
+node packages/dsh-rayrun-bots/test/dependency.mjs
+node packages/dsh-rayrun-bots/test/approvals.mjs
 node packages/dsh-rayrun-bots/test/package-contents.mjs
 node tools/update-poc/test/update.mjs
 node tools/rayrun-deploy/test/contract.mjs
@@ -171,6 +175,10 @@ node tools/rayrun-deploy/test/contract.mjs
 | `node packages/dsh-rayrun-bots/test/bot-store.mjs` | 持久 roster：校验、原子写、创建、更新、删除 |
 | `node packages/dsh-rayrun-bots/test/session-runtime.mjs` | 持久 session/transcript：队列、fake runtime、失败脱敏、重启恢复 |
 | `node packages/dsh-rayrun-bots/test/rayrun-runtime.mjs` | `rayrun_agent` adapter：prompt、机器选择、失败映射、拒绝自动建机器 |
+| `node packages/dsh-rayrun-bots/test/rayrun-detached-runtime.mjs` | `dsh.start/status/result` adapter：workspace、task id、reply.md、错误映射 |
+| `node packages/dsh-rayrun-bots/test/bot-workspace.mjs` | 每 bot 的本地 git checkout：幂等、非 git 失败关闭 |
+| `node packages/dsh-rayrun-bots/test/dependency.mjs` | 依赖检测与 1.1+ detached 版本门 |
+| `node packages/dsh-rayrun-bots/test/approvals.mjs` | 审批协议：schema、canonical hash、TTL、幂等/重放、审计 |
 | `node packages/dsh-rayrun-bots/test/package-contents.mjs` | npm tarball 内容：host/client/locale/lib/bundle 与排除项 |
 | `node tools/update-poc/test/update.mjs` | 更新内核原型：签名、哈希、版本、原子切换、回滚 |
 | `node tools/rayrun-deploy/test/contract.mjs` | Rayrun 部署契约：main-only、secret 来源、URL 不打印 |
