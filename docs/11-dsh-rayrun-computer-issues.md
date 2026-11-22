@@ -32,8 +32,8 @@
 ## 2. 版本基线
 
 - 观察对象：`dsh-rayrun-computer@1.0.0`，2026-11-21 安装到 Rayrun 沙箱的 DSH web
-  profile；`1.1.0` 本地 checkout（2026-11-22，含 `dsh.start/status/result`，上游尚未
-  提交/发布）用于 detached 页面验证。
+  profile；`1.1.0` 的 `feat/host-dsh-rpc` 分支（2026-11-22，含
+  `dsh.start/status/result`，已推送，未合并/发布）用于 detached 页面验证。
 - DSH：Rayrun 镜像 `0.2.0-rc.2`；升级验证 `0.2.2-rc.5`。
 - 集成版本范围：本仓库 `lib/dependency.js` 接受 `>=1.0.0 <2.0.0`。
 - 观察方式：Rayrun 沙箱内 Chrome + CDP 调 `/plugins/rayrun/rpc`；未使用真实 Rayrun
@@ -58,7 +58,7 @@
 | RC-013 | 2026-11-21 | Low | 契约 | `machine.desktopRepair` 返回 exec 输出而不是更新后的 machine；调用方要再 `machine.get`。证据：`index.js` 返回 `{ ok: true, result }`。 | Bots Open 多一次往返；当前 repair 不改 `desktop_url`，所以用旧对象未出错。 | Open；Bots 可按需 refetch。上游应返回 machine 或文档说明需要 refetch。 |
 | RC-014 | 2026-11-21 | Medium | 隐私/契约 | `ensureModelCredential` 用本机 hostname 生成 credential 名称（`dsh-model-<hostname>`）。证据：`lib/rayrun.js` 的 `modelCredentialName()` 调 `hostname()`；2026-11-21 真实测试返回的名称含本机主机名（本文不记录具体值）。 | Rayrun 账号会看到本机主机标识；换机器会生成新 credential，产生重复；Bots 无法给用户稳定、友好的凭据名。 | Open；上游应接受调用方提供的显示名或用稳定标签；Bots 目前不能改名。 |
 | RC-015 | 2026-11-21 | Medium | i18n/契约 | 云电脑插件的 client half 读 `locale.getLocale()?.id`，但 DSH 0.2.2-rc.5 的 locale 快照字段是 `active`；该插件的 client 导出还只有 `inject: ['slots']`，没有注入 `locale`。证据：`client.js` 的 `useT()` / `english()` 读 `.id`；本机 DSH web 把语言切到 English 后，DSH 壳和 Bots 变英文，云电脑侧栏与页面仍为中文。 | 云电脑插件自己的界面无法跟随 DSH 语言；产品的双语只覆盖 Bots 部分。Workaround：Bots 自己声明 `inject: ['slots', 'locale']` 并读 `.active`；不改依赖。 | Open；上游应读 `.active` 并注入 `locale`。 |
-| RC-016 | 2026-11-22 | High | API 缺口 | `rayrun_dsh` 只作为 agent tool 注册；`startTask` 通过 `localDirectory(exec.agent)` 取本地 workspace，host half 没有 agent session/workspace，无法启动或收取 detached worker turn。证据：`index.js` 的 `rayrun_dsh` tool、`lib/delegate.js` 的 `startTask/checkTask/collectTask`；本仓库 session runner 只有单轮 `rayrun_agent` adapter。 | 页面关闭后继续（v0.1 A5/A8）无法在 Bots host 中实现；单轮 `rayrun_agent` 在本地 DSH 关闭后无法收取结果。Workaround：暂无干净方案。 | Resolved（2026-11-22，`dsh-rayrun-computer` 1.1.0 本地 checkout 提供 `dsh.start/status/result`；上游尚未提交/发布；Bots 已接 detached adapter，页面关闭 + host 重启后继续已在本机页面 + 已有 Rayrun 机器验证，见 [`10-rayrun-verification.md`](10-rayrun-verification.md) §3.1）。 |
+| RC-016 | 2026-11-22 | High | API 缺口 | `rayrun_dsh` 只作为 agent tool 注册；`startTask` 通过 `localDirectory(exec.agent)` 取本地 workspace，host half 没有 agent session/workspace，无法启动或收取 detached worker turn。证据：`index.js` 的 `rayrun_dsh` tool、`lib/delegate.js` 的 `startTask/checkTask/collectTask`；本仓库 session runner 只有单轮 `rayrun_agent` adapter。 | 页面关闭后继续（v0.1 A5/A8）无法在 Bots host 中实现；单轮 `rayrun_agent` 在本地 DSH 关闭后无法收取结果。Workaround：暂无干净方案。 | Resolved（2026-11-22，`dsh-rayrun-computer` 1.1.0 的 `feat/host-dsh-rpc` 分支提供 `dsh.start/status/result`，已推送、未合并/发布；Bots 已接 detached adapter，页面关闭 + host 重启后继续已在本机页面 + 已有 Rayrun 机器验证，见 [`10-rayrun-verification.md`](10-rayrun-verification.md) §3.1）。 |
 
 ## 4. 按设计/非问题
 

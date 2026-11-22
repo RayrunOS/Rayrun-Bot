@@ -208,7 +208,8 @@
   承诺）；机器随后由依赖的 idle stop 回到 sleeping。审批未参与。
 - Detached 页面关闭 + host 重启（2026-11-22，本机 DSH web `0.2.2-rc.5` +
   Firefox/geckodriver，独立临时 DSH_HOME，两个插件从 checkout 安装，依赖
-  `1.1.0` 本地 checkout；Rayrun token 只经共享 Harness vault，从不打印）：health 报
+  `1.1.0` 的 `feat/host-dsh-rpc` 分支（已推送，未合并/发布）；Rayrun token 只经共享
+  Harness vault，从不打印）：health 报
   dependency `ok`、runtime `rayrun-detached`；overview 有已有机器 `rayrun-bot-test`
   （Running，未新建机器）。在 Bots 页创建 `Live Detached` 并发送
   `Run the detached smoke.`；`session.status` 在 `dsh.start` 返回后出现持久化的
@@ -218,8 +219,9 @@
   （内容 `DETACHED_OK`），session 回到 `idle`，transcript 有 user+bot，刷新页面后
   回复仍在。机时读数从 0.8114 增至 0.8244（约 47 秒，读数不是承诺）。审批未参与；
   同一 host 不重启的连续两轮未单独测试。
-- A8 续接（2026-11-22，同一本机 DSH 环境，独立临时 DSH_HOME，依赖 `1.1.0` 本地
-  checkout，Rayrun token 只经共享 Harness vault，从不打印）：第一轮发送
+- A8 续接（2026-11-22，同一本机 DSH 环境，独立临时 DSH_HOME，依赖 `1.1.0` 的
+  `feat/host-dsh-rpc` 分支，已推送、未合并/发布；Rayrun token 只经共享 Harness vault，
+  从不打印）：第一轮发送
   `Remember the word ALPHA. Reply with exactly TURN1_OK.`，bot 回复 `TURN1_OK`，
   session `idle`；随后把 `rayrun-bot-test` 从 Running stop 到 Stopped，关闭页面并
   SIGKILL 本地 DSH；用同一 `DSH_HOME` 重启后，页面仍显示第一轮。发送
@@ -260,6 +262,9 @@
 - 核实 `$DSH_HOME/.credentials.yaml`（DSH web auth secret）在云端 workspace 上的文件
   权限和 agent 可读性；若 root agent 可读，记录残余风险并评估是否应移到 host-only
   位置；
+- A11 本地 workspace 扫描发现 `tmp/` 下有未跟踪的本地 key 文件（`dp-code.key`、
+  `rayrun-dev.key`）。它们被 `.gitignore` 忽略，且未进入 git 历史或 npm 包，但仍
+  留在工作区；需轮换并移出/删除后才能声称 A11 通过。扫描未打印值；
 - bot 会话、审批往返、远程审批、队列与恢复（会话/常驻 runtime 受 R-G008 阻塞）；
   本地 session store、`session.*` RPC、`rayrun_agent`/detached adapter 已有 fake
   测试；页面层真实一轮，以及 detached 的页面关闭 + host 重启收取，已在本机 DSH +
