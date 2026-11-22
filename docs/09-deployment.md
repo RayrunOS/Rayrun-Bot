@@ -80,13 +80,15 @@ dsh plugin --profile web add "<packages/dsh-rayrun-bots 的绝对路径>"
 ```
 
 安装后打开 **Bots** 会看到 v0.1 客户端壳：聊天列表、对话、详情、新建 bot、设置向导、
-设置。对话 UI、审批卡和设置仍是**页内内存预览**：创建 bot 不会落到云电脑，Allow once
-不会发给 worker。本地 roster 和每 bot 的 `session.json` / `transcript.jsonl` 已持久化，
-host half 提供 `session.send/history/status`；生产 runtime 尚未接线，`session.send`
-返回 `E_RUNTIME_UNAVAILABLE`。setup 的 Rayrun/电脑步骤，以及详情和 Settings 的用量
-读取，会真正调用云电脑插件。bot↔云端 session 映射、审批执行、routines 与独立成本栏
-尚未构建（审批执行等待平台权限隔离，ADR-001）；状态以
-[`12-status.md`](12-status.md) 为准。
+设置。对话 UI、审批卡和设置仍是**页内内存预览**：页面尚未调用 `session.*`，创建 bot
+不会落到云电脑，Allow once 不会发给 worker。本地 roster 和每 bot 的
+`session.json` / `transcript.jsonl` 已持久化，host half 提供 `session.send/history/status`；
+依赖的 `rayrun_agent` tool 存在时，adapter 会把一轮 turn 发给已有的云电脑（没有机器时
+拒绝自动创建），否则 `session.send` 返回 `E_RUNTIME_UNAVAILABLE`。发送一轮会让依赖
+启动已停止/暂停的机器，可能产生机时费用。真实 Rayrun 对话尚未验证。setup 的 Rayrun/电脑步骤，以及详情和 Settings 的用量读取，会真正调用云电脑
+插件。bot↔云端 session 映射、审批执行、routines 与独立成本栏尚未构建（审批执行等待
+平台权限隔离，ADR-001）；`rayrun_agent` adapter 不拦截外部动作，prompt 里的“先询问”
+只是指引。状态以 [`12-status.md`](12-status.md) 为准。
 
 **从 tarball 安装**（发布产物的内容）：
 
@@ -117,7 +119,8 @@ patch、`lib/*.js`、图标、README 和 LICENSE；CI 会把打出的 tarball �
 5. 在面板里批准它的第一个受控动作。
 
 第 2 步的 Rayrun 登录和云电脑创建经云电脑插件的同源 RPC 真正到达 Rayrun；第 3–5 步
-（bot 落到云电脑、routine 唤醒、审批执行）尚未打通，对话、审批和设置仍是页内预览。
+（bot 落到云电脑、routine 唤醒、审批执行）尚未打通。host 的 `session.*` 已可执行一轮，
+但页面对话、审批和设置仍是页内预览。
 详见 [`plans/roadmap.md`](plans/roadmap.md)、[`plans/mvp-plan.md`](plans/mvp-plan.md)
 和 [`12-status.md`](12-status.md)。
 

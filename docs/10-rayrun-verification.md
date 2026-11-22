@@ -227,9 +227,10 @@
   权限和 agent 可读性；若 root agent 可读，记录残余风险并评估是否应移到 host-only
   位置；
 - bot 会话、审批往返、远程审批、队列与恢复（会话/常驻 runtime 受 R-G008 阻塞）；
-  本地 session store 与 `session.*` RPC 已有 fake runtime 的 Node 测试，但真实
-  runtime 未接线，因此没有真实对话证据；审批执行等待平台权限隔离（ADR-001，
-  [`08-integration.md`](08-integration.md) §3.3），在平台提供前不做往返验证；
+  本地 session store、`session.*` RPC 与 `rayrun_agent` adapter 已有 fake 测试，
+  但真实一轮对话尚未在 Rayrun 验证（会消耗用户额度，需单独授权）；审批执行等待
+  平台权限隔离（ADR-001，[`08-integration.md`](08-integration.md) §3.3），在平台
+  提供前不做往返验证；
 - DeepSeek 模型调用（至今只创建了 model credential，没有发模型请求）；
 - 零余额宽限/force-destroy 行为（R-G009，不做破坏性验证）；
 - 在 Rayrun 上构建自定义 Dockerfile 镜像（R-G013）。

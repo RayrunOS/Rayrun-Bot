@@ -12,9 +12,9 @@
  * turn to answer as `text`; `history` is context and may include later queued
  * messages.
  *
- * This is the local fallback for the cloud session. Until the runtime bridge
- * lands, `session.json` and `transcript.jsonl` are the only copy of a bot's
- * conversation.
+ * The runtime adapter executes one turn; the transcript stays local until a
+ * cloud session mirror exists. `session.json` and `transcript.jsonl` are the
+ * only copy of a bot's conversation.
  */
 import { Buffer } from 'node:buffer'
 import { appendFileSync, existsSync, readFileSync, readdirSync } from 'node:fs'
@@ -465,6 +465,7 @@ export function openSessionRunner({ stateRoot, runtime, getBot, logger } = {}) {
           text: next.item.text,
           history: messages,
           sessionId: next.session.sessionId,
+          messageSeq: next.item.seq,
         })
         if (typeof reply?.text !== 'string' || reply.text.trim() === '') {
           const error = new Error('The runtime returned no text.')

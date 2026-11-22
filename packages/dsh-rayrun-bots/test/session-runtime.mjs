@@ -37,8 +37,8 @@ function expectCode(fn, code) {
 
 check('a send persists the user message and the fake reply, then returns to idle', async () => {
   let seen
-  const { bot, runner } = setup(async ({ bot: current, text, history }) => {
-    seen = { current, text, history }
+  const { bot, runner } = setup(async ({ bot: current, text, history, messageSeq }) => {
+    seen = { current, text, history, messageSeq }
     return { text: 'pong' }
   })
   const sent = runner.send(bot.id, 'ping')
@@ -49,6 +49,7 @@ check('a send persists the user message and the fake reply, then returns to idle
   await runner.settled(bot.id)
   assert.equal(seen.current.id, bot.id)
   assert.equal(seen.text, 'ping')
+  assert.equal(seen.messageSeq, sent.message.seq)
   assert.deepEqual(seen.history.map((message) => message.role), ['user'])
 
   const status = runner.status(bot.id)

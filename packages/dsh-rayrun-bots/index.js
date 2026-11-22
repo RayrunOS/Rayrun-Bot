@@ -20,7 +20,8 @@ import { checkDependency } from './lib/dependency.js'
 import { ERROR_CODES } from './lib/errors.js'
 import { resolveStateRoot } from './lib/local-store.js'
 import { readJsonBody, sendError, sendJson } from './lib/rpc.js'
-import { createUnavailableRuntime, validateRuntime } from './lib/runtime.js'
+import { createRayrunAgentRuntime } from './lib/rayrun-runtime.js'
+import { validateRuntime } from './lib/runtime.js'
 import { openSessionRunner } from './lib/sessions.js'
 
 export const name = 'rayrun-bots'
@@ -37,8 +38,15 @@ const VERSION = (() => {
   }
 })()
 
-function health(dependency) {
-  return { ok: true, plugin: name, version: VERSION, ready: false, dependency }
+function health(dependency, runtime) {
+  return {
+    ok: true,
+    plugin: name,
+    version: VERSION,
+    ready: false,
+    dependency,
+    runtime: { name: runtime.name, available: runtime.available },
+  }
 }
 
 /** The active profile directory, when the host runs inside a DSH profile. */
@@ -148,14 +156,19 @@ function sameOrigin(req, webServer) {
 /**
  * Mount the host half.
  *
- * `options.runtime` is the test/bridge seam for a runtime adapter. The bundle
- * config is JSON and cannot supply `run`, so production uses the unavailable
- * default until the cloud bridge is wired.
+ * `options.runtime` is the test/bridge seam for a runtime adapter. Production
+ * uses the `rayrun_agent` adapter when the dependency's tool is registered;
+ * otherwise that adapter reports `available: false` and every send fails closed.
  */
 export function apply(ctx, options = {}) {
   ctx.logger?.info?.(`dsh-rayrun-bots: host half loaded (${VERSION})`)
-  const runtime = validateRuntime(options.runtime ?? createUnavailableRuntime())
-  const hostHealth = () => health(checkDependency(profileDirectory(ctx)))
+  let webServer
+  const injectedRuntime = options.runtime === undefined ? undefined : validateRuntime(options.runtime)
+  const runtime = injectedRuntime ?? validateRuntime(createRayrunAgentRuntime({
+    getTools: () => ctx.get?.('tools'),
+    getOrigin: () => webServer?.getOrigin?.(),
+  }))
+  const hostHealth = () => health(checkDependency(profileDirectory(ctx)), runtime)
 
   let sessionService
   function sessions() {
@@ -171,6 +184,7 @@ export function apply(ctx, options = {}) {
   }
 
   ctx.inject(['webServer'], (child) => {
+    webServer = child.webServer
     child.effect(() =>
       child.webServer.register({
         kind: 'prefix',

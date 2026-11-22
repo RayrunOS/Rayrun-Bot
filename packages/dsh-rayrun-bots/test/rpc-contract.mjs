@@ -20,9 +20,10 @@ const ROUTE = '/plugins/rayrun-bots'
 const MAX_BODY = 64 * 1024
 const VERSION = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version
 const DEPENDENCY_UNKNOWN = { name: 'dsh-rayrun-computer', required: '>=1.0.0 <2.0.0', version: null, status: 'unknown', code: null }
+const RUNTIME_UNAVAILABLE = { name: 'rayrun-agent', available: false }
 
 /** Mount the host half on a fake context and return the registered route. */
-function hostFor({ origin = 'http://127.0.0.1:59999', profileDir, runtime } = {}) {
+function hostFor({ origin = 'http://127.0.0.1:59999', profileDir, runtime, tools } = {}) {
   const routes = []
   const child = {
     effect(fn) {
@@ -40,7 +41,9 @@ function hostFor({ origin = 'http://127.0.0.1:59999', profileDir, runtime } = {}
   const ctx = {
     logger: { info() {} },
     get(name) {
-      return name === 'profileContext' && profileDir !== undefined ? { dir: profileDir } : undefined
+      if (name === 'profileContext' && profileDir !== undefined) return { dir: profileDir }
+      if (name === 'tools' && tools !== undefined) return tools
+      return undefined
     },
     inject(deps, callback) {
       if (Array.isArray(deps) && deps.includes('webServer')) callback(child)
@@ -95,14 +98,39 @@ check('GET health reports the loaded bundle, uncached and without secrets', asyn
   assert.equal(reply.status, 200)
   assert.match(reply.headers['Content-Type'], /^application\/json/)
   assert.equal(reply.headers['Cache-Control'], 'no-store')
-  assert.deepEqual(reply.json, { ok: true, plugin: NAME, version: VERSION, ready: false, dependency: DEPENDENCY_UNKNOWN })
+  assert.deepEqual(reply.json, {
+    ok: true,
+    plugin: NAME,
+    version: VERSION,
+    ready: false,
+    dependency: DEPENDENCY_UNKNOWN,
+    runtime: RUNTIME_UNAVAILABLE,
+  })
   assert.doesNotMatch(reply.text, /Bearer\s|RAYRUN_TOKEN|sk-[A-Za-z0-9]{16,}/)
 })
 
 check('POST health answers the same envelope', async () => {
   const reply = await request(hostFor().handler, { action: 'health' })
   assert.equal(reply.status, 200)
-  assert.deepEqual(reply.json, { ok: true, plugin: NAME, version: VERSION, ready: false, dependency: DEPENDENCY_UNKNOWN })
+  assert.deepEqual(reply.json, {
+    ok: true,
+    plugin: NAME,
+    version: VERSION,
+    ready: false,
+    dependency: DEPENDENCY_UNKNOWN,
+    runtime: RUNTIME_UNAVAILABLE,
+  })
+})
+
+check('health reports the runtime available when rayrun_agent is registered', async () => {
+  const tools = {
+    get(name) {
+      return name === 'rayrun_agent' ? { execute: async () => ({ finished: true, text: 'ok' }) } : undefined
+    },
+  }
+  const reply = await request(hostFor({ tools }).handler, { method: 'GET', action: 'health' })
+  assert.equal(reply.status, 200)
+  assert.deepEqual(reply.json.runtime, { name: 'rayrun-agent', available: true })
 })
 
 check('health reports a missing cloud-computer dependency', async () => {

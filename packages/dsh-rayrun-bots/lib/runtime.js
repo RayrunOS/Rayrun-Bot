@@ -2,42 +2,21 @@
  * Runtime adapter contract for one bot turn.
  *
  * The host half never talks to Rayrun directly and never reads a credential.
- * A runtime object executes one turn and returns the bot's reply; the cloud
- * bridge that will implement this contract is not wired in this build. The
- * default runtime refuses every turn with `E_RUNTIME_UNAVAILABLE`, so a page
- * cannot mistake a preview for a real reply. Tests and the next slice inject a
- * runtime through `apply(ctx, { runtime })`.
+ * The `rayrun_agent` adapter implements this contract when the dependency's
+ * tool is registered; without it the adapter reports unavailable and every send
+ * fails closed. Tests inject a runtime through `apply(ctx, { runtime })`.
  */
-import { ERROR_CODES } from './errors.js'
 
 export const RUNTIME_CONTRACT_VERSION = 1
-
-/**
- * A runtime that refuses every turn. Fail closed; never fabricate a reply.
- * @param {string} [reason] One actionable line for the user.
- * @returns {{ contract: number, name: string, available: false, run: Function }}
- */
-export function createUnavailableRuntime(reason = 'The cloud bot runtime is not wired in this build; no turn was sent.') {
-  return Object.freeze({
-    contract: RUNTIME_CONTRACT_VERSION,
-    name: 'unavailable',
-    available: false,
-    async run() {
-      const error = new Error(reason)
-      error.code = ERROR_CODES.runtimeUnavailable
-      throw error
-    },
-  })
-}
 
 /**
  * Check the shape of a runtime injected by the bridge or a test.
  *
  * A runtime runs one turn:
- *   `run({ bot, text, history, sessionId }) -> Promise<{ text: string }>`
- * where `text` is the turn to answer and `history` is the chronological
- * transcript, oldest first. The current message may already appear in history;
- * `text` is authoritative.
+ *   `run({ bot, text, history, sessionId, messageSeq }) -> Promise<{ text: string }>`
+ * where `text` is the turn to answer, `messageSeq` is its transcript sequence
+ * (when known), and `history` is the chronological transcript, oldest first.
+ * The current message may already appear in history; `text` is authoritative.
  * @param {unknown} runtime
  * @returns {object} The validated runtime.
  */

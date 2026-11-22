@@ -3,9 +3,11 @@
 The Rayrun Bot plugin package. Status: **client shell with a local roster and
 local sessions** — the bundle loads, the client half renders the v0.1 screens,
 and the host half answers health, persists the bot roster, and stores a durable
-per-bot session/transcript. The runtime bridge that executes a turn is not
-wired, so `session.send` fails closed with `E_RUNTIME_UNAVAILABLE`; the
-conversation UI, approvals, routines and settings are still an in-memory
+per-bot session/transcript. When `dsh-rayrun-computer`'s `rayrun_agent` tool is
+registered, the runtime adapter sends a turn to an existing cloud computer;
+without it `session.send` fails closed with `E_RUNTIME_UNAVAILABLE`. A live
+Rayrun turn has not been verified, approval enforcement is not implemented, and
+the conversation UI, approvals, routines and settings are still an in-memory
 preview. The page-level create/reload path was verified on 2026-11-21 in a local
 DSH page. Repository-level status and verified combinations live in
 [docs/12-status.md](../../docs/12-status.md).
@@ -13,11 +15,12 @@ DSH page. Repository-level status and verified combinations live in
 ## What it does today
 
 - Host half: `GET /plugins/rayrun-bots?action=health` returns
-  `{ ok: true, plugin: "rayrun-bots", version, ready: false, dependency }`.
+  `{ ok: true, plugin: "rayrun-bots", version, ready: false, dependency, runtime }`.
   `dependency` reports `dsh-rayrun-computer` as `ok`, `missing` (`E_DEP_MISSING`),
   `incompatible` (`E_DEP_VERSION`), or `unknown` when no profile context exists.
-  `POST` is same-origin gated: a browser `Origin` that does not match the request
-  `Host` is refused with 403. No credentials are touched.
+  `runtime` reports the adapter name and whether its tool is currently
+  registered. `POST` is same-origin gated: a browser `Origin` that does not
+  match the request `Host` is refused with 403. No credentials are touched.
 - Host half: `bots.list`, `bots.get`, `bots.create`, `bots.update` and
   `bots.delete` persist validated `bot.json` files under
   `$DSH_HOME/state/rayrun-bot/bots/<id>/` (atomic writes, private modes, stable
@@ -29,8 +32,11 @@ DSH page. Repository-level status and verified combinations live in
   per-bot `session.json` and append-only `transcript.jsonl` beside `bot.json`.
   Sends are queued one turn at a time; a runtime failure writes a redacted
   system line and leaves the transcript intact; a host restart marks a running
-  turn `interrupted` instead of replaying it. With no runtime bridge injected,
-  `session.send` returns `E_RUNTIME_UNAVAILABLE` and writes no session.
+  turn `interrupted` instead of replaying it. When the dependency's
+  `rayrun_agent` tool is registered, a queued turn is sent to the existing cloud
+  computer (the adapter refuses to auto-create one); a stopped or paused machine
+  is woken by the dependency, which may incur machine-hour charges. Without the
+  tool, `session.send` returns `E_RUNTIME_UNAVAILABLE` and writes no session.
 - Client half: a `Bots` sidebar entry and the three-column shell from
   [docs/design/ui-design.md](../../docs/design/ui-design.md) — chat list, conversation,
   details (Activity / Library), new bot, the four-step setup wizard, and
@@ -73,10 +79,10 @@ DSH page. Repository-level status and verified combinations live in
   language row writes the choice back to DSH so it survives a reload. The rest
   stays in the page, and the client keeps neither the token nor a DeepSeek key.
 
-Not built yet: the runtime bridge that executes a turn on the cloud computer,
-a Bots-page-level verified computer-creation success path, bot↔cloud session
-mapping, remote approvals, routines that run, and the npm release path. See the
-repo-level [MVP plan](../../docs/plans/mvp-plan.md) and [client plan](../../docs/plans/client-plan.md).
+Not built yet: a Rayrun-verified live turn, approval enforcement, a Bots-page-
+level verified computer-creation success path, bot↔cloud session mapping,
+remote approvals, routines that run, and the npm release path. See the repo-
+level [MVP plan](../../docs/plans/mvp-plan.md) and [client plan](../../docs/plans/client-plan.md).
 
 ## DSH compatibility
 
@@ -126,6 +132,7 @@ node test/client-contract.mjs
 node test/bot-schema.mjs
 node test/bot-store.mjs
 node test/session-runtime.mjs
+node test/rayrun-runtime.mjs
 node test/package-contents.mjs
 ```
 
@@ -150,6 +157,7 @@ lib/errors.js      # stable error codes (shared with docs/plans/mvp-plan.md §4.
 lib/local-store.js # state-directory resolution and atomic JSON writes
 lib/rpc.js         # JSON responses and request-body parsing
 lib/runtime.js     # one-turn runtime contract; unavailable by default
+lib/rayrun-runtime.js # rayrun_agent-backed runtime adapter
 lib/sessions.js    # per-bot session queue and append-only transcript
 locale/en.json     # source copy
 locale/zh.json     # mirror; keys must match
