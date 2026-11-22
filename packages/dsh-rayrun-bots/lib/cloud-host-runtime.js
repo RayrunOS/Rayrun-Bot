@@ -80,6 +80,7 @@ export function createCloudHostRuntime({
 } = {}) {
   const rpc = createRayrunRpc({ getOrigin, fetchImpl })
   const runtimeRpc = createRuntimeRpc({ getOrigin, fetchImpl })
+  let hostSetup = null
   if (!Array.isArray(credentials) || credentials.some((name) => typeof name !== 'string' || name === '')) {
     throw new TypeError('cloud host credentials must be an array of binding names')
   }
@@ -91,6 +92,23 @@ export function createCloudHostRuntime({
     } catch {
       return undefined
     }
+  }
+
+  async function setupHost() {
+    const machine = await ensureMachine()
+    const sandbox = machine.name || machine.id
+    let script = hostScript
+    if (script === null) {
+      const projected = await projectHost({
+        read: (relative) => readFile(sandbox, relative),
+        write: (relative, value) => writeFile(sandbox, relative, value),
+        version: HOST_ASSET_VERSION,
+      })
+      script = projected.script
+    }
+    const host = await ensureHost(machine, script)
+    await waitHostReady(host.ref)
+    return { machine, host }
   }
 
   async function ensureMachine() {
@@ -227,19 +245,11 @@ export function createCloudHostRuntime({
     },
     async start({ bot, text, history = [], messageSeq, botId, stateRoot } = {}) {
       if (typeof botId !== 'string' || botId === '') throw rayrunFailure(ERROR_CODES.runtimeUnavailable, 'botId is required.')
-      const machine = await ensureMachine()
-      const sandbox = machine.name || machine.id
-      let script = hostScript
-      if (script === null) {
-        const projected = await projectHost({
-          read: (relative) => readFile(sandbox, relative),
-          write: (relative, value) => writeFile(sandbox, relative, value),
-          version: HOST_ASSET_VERSION,
-        })
-        script = projected.script
-      }
-      const host = await ensureHost(machine, script)
-      await waitHostReady(host.ref)
+      hostSetup ??= setupHost().catch((error) => {
+        hostSetup = null
+        throw error
+      })
+      const { machine, host } = await hostSetup
       const taskId = `task-${randomUUID()}`
       const paths = filePaths(botId, taskId)
       const prompt = buildPrompt({ bot, text, history, messageSeq })

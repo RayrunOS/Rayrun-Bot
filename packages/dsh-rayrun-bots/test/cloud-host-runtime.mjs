@@ -124,6 +124,18 @@ check('projects the host assets before starting when no override is set', async 
   assert.equal(state.puts[0].spec.argv[1], '/workspace/.rayrun/host/0.1.0-alpha.0/host.mjs')
 })
 
+check('concurrent bots share one host setup', async () => {
+  const { root, runtime, state, uploads } = setup()
+  const second = { id: 'other-bot', name: 'Other', label: 'Other', instructions: 'Reply.' }
+  const [a, b] = await Promise.all([
+    runtime.start({ bot, text: 'a', messageSeq: 1, botId: bot.id, stateRoot: root }),
+    runtime.start({ bot: second, text: 'b', messageSeq: 1, botId: second.id, stateRoot: root }),
+  ])
+  assert.equal(state.puts.length, 1)
+  assert.notEqual(a.taskId, b.taskId)
+  assert.equal(uploads.filter((item) => item.path.includes('/inbox/')).length, 2)
+})
+
 check('status stays running until the outbox exists, then collect returns the reply', async () => {
   const { root, runtime, files } = setup()
   const started = await runtime.start({ bot, text: 'hello', messageSeq: 1, botId: bot.id, stateRoot: root })
