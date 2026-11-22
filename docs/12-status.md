@@ -43,7 +43,7 @@ session/transcript，以及按轮次的 runtime（依赖 1.1+ 用 detached
 | setup | Rayrun 步骤经云电脑插件的同源 RPC 接收粘贴的 token；云电脑步骤采用已有机器或经同一 RPC 创建第一台机器。 |
 | 电脑卡片 | Open / Take over 经同一 RPC 启动或恢复机器、等待 `Running`、修复桌面服务并打开 `desktop_url`；Stop 在确认后停止，永不 destroy。 |
 | 用量 | 详情面板的电脑块和用量块，以及 Settings 的用量行，读取真实机器状态、余额与机时。 |
-| 测试 | Host/client 名册接线、session/transcript、`rayrun_agent`/detached adapter、per-bot workspace 与审批协议由普通 Node 契约测试覆盖；客户端 session 失败路径、单轮真实一轮、页面关闭 + host 重启后的 detached 收取，以及机器 stop/start 后的第二轮续接另有本机页面 smoke。包清单、locale、RPC、客户端、名册、session、runtime、workspace、审批和 tarball 内容都有检查；云 bot host POC 和 runtime.* client 各有 5 项纯 Node 检查。 |
+| 测试 | Host/client 名册接线、session/transcript、`rayrun_agent`/detached adapter、per-bot workspace 与审批协议由普通 Node 契约测试覆盖；客户端 session 失败路径、单轮真实一轮、页面关闭 + host 重启后的 detached 收取，以及机器 stop/start 后的第二轮续接另有本机页面 smoke。包清单、locale、RPC、客户端、名册、session、runtime、workspace、审批和 tarball 内容都有检查；云 bot host POC 和 runtime.* client 各有 5 项纯 Node 检查，runtime.* client 另有 dev live 联调。 |
 | 远程审批 | 协议后端（request/decision schema、canonical actionHash、TTL、幂等/重放/错 bot 负向测试、审计、`approvals.list/get/decide`）已实现；**执行仍暂停**，等待平台权限隔离与 host-only 审批端点（ADR-001，2026-11-21 定），`decide` 只返回 `execution.available: false`。客户端审批卡仍是预览；`rayrun_agent` adapter 不拦截外部动作，prompt 指引不是安全边界。 |
 | 发布 | 没有可发布版本；npm 发布路径不存在。 |
 
@@ -80,7 +80,9 @@ session/transcript，以及按轮次的 runtime（依赖 1.1+ 用 detached
 - 依赖 1.2.0 的 `runtime.*` host RPC 已交付（`feat/runtime-rpc`，`fe965c1`，已推送、
   未合并/发布）：`runtime.put/list/get/start/stop/restart/delete`，sandbox 必须已存在，
   credentials 只传绑定名；依赖侧 fake-fetch 测试 12/12。Bots 侧 `lib/runtime-rpc.js`
-  client 5/5，错误码映射已接；尚未做 dev live 联调，也未接入 session path。
+  client 5/5，错误码映射已接；2026-11-22 在临时 DSH profile 里用 scoped dev token
+  做了 live 联调：`rayrun-bot` 启动后 `put → running`、`get/list`、`delete → null`，
+  测试后机器 stop。尚未接入 session path。
 - Bots 页面层 session 接线已在 2026-11-22 用本机 DSH web + Firefox/geckodriver
   （临时 profile，未安装云电脑依赖）验证：真实名册 bot 替换预览列表；空对话显示
   真实文案；`session.history` 返回 `session: null`；发送后显示用户消息与
@@ -103,7 +105,7 @@ session/transcript，以及按轮次的 runtime（依赖 1.1+ 用 detached
   保留；旧镜像 `ci@1` 负测 409 `guestd_outdated`）；生产未部署；bot 侧
   supervisor/session 尚未进入核心包（`tools/cloud-host-poc` POC 已通过
   queue/autostart/SIGKILL）。依赖 1.2.0 `runtime.*` client（`lib/runtime-rpc.js`）
-  已就绪并有 fake 测试，但尚未接 session path，也未做 dev live 联调。生产部署需授权。
+  已过 fake 测试和 dev live 联调，但尚未接 session path。生产部署需授权。
 - 机器上常驻的 DSH host。
 - 能拦住 worker 的远程审批执行（协议后端已有；执行阻塞于 Rayrun host/agent
   权限隔离；ADR-001）。

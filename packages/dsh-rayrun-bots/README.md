@@ -12,9 +12,9 @@ on 2026-11-22; the detached smoke closed the page and restarted the local DSH
 while the task ran, and the restarted host collected `reply.md`. A second-turn
 smoke stopped the machine, restarted DSH, and the next turn answered from the
 persisted transcript. With 1.2+, a host-side `runtime.*` client is ready for
-the platform-supervised bot host, but it is not yet wired into the session
-path. Approval execution is not implemented. The approval protocol and audit
-store
+the platform-supervised bot host; it was live-checked against the dev daemon,
+but it is not yet wired into the session path. Approval execution is not
+implemented. The approval protocol and audit store
 exist, but a decision explicitly reports `execution.available: false`. The
 conversation UI uses the host session for real roster bots while sample bots,
 approvals, routines and settings remain an in-memory preview. The page-level

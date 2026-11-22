@@ -251,6 +251,13 @@
   user,bot,user,bot,user,bot；state heartbeat/`hasCredential=true`；outbox 与日志
   正常；测试后删除 runtime、stop 机器。尚未接 DSH agent；核心 supervisor/session
   未实现。
+- 依赖 1.2.0 `runtime.*` + Bots client live 联调（2026-11-22，临时 DSH profile
+  `0.2.2-rc.5`，依赖 `feat/runtime-rpc` `fe965c1`，devcheck scoped token）：
+  `rayrun-bot` 从 Stopped 启动；`runtime.list` 空；`runtime.put rpc-live` →
+  `applied=true`、running（pid 635）；`runtime.get/list` 正常；`runtime.delete` →
+  `deleted=true`、get 为 null；测试后机器 stop，未 destroy；测试 token 已撤销，
+  临时 token 文件已删除。说明：依赖的 `settings.baseUrl` 优先于 `RAYRUN_API_URL`，
+  临时 profile 覆盖了 `rayrun-cloud.baseUrl` 指向 dev。
 - 打包产物安装（2026-11-22，本机 DSH `0.2.2-rc.5`；本地打包检查）：`npm pack` 生成
   15 个文件的 tarball（host/client、locale、`lib/*.js`、bundle patch、icon、README、
   LICENSE；54.6 kB），`test/`、`docs/`、`tools/` 未进入；`dsh plugin --profile

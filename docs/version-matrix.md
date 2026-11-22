@@ -33,6 +33,7 @@ host-callable `runtime.*`（`feat/runtime-rpc` 分支，尚未发布）。
 | `0.2.2-rc.5` | `1.0.0` | `0.1.0-alpha.0` | 24 | 本机页面层真实一轮 session：已有 `rayrun-bot-test` 机器、bot 回复 `SMOKE_OK`、刷新后 transcript 仍在 | [`10-rayrun-verification.md`](10-rayrun-verification.md) §3.1（2026-11-22） |
 | `0.2.2-rc.5` | `1.1.0`（main `720f30a`，未发布 npm） | `0.1.0-alpha.0` | 24 | Bots 页 detached `dsh.start/status/result`：task id 持久化，关闭页面并 kill 本地 DSH，重启后恢复 poll、收取 `reply.md`（`DETACHED_OK`），刷新后回复仍在 | [`10-rayrun-verification.md`](10-rayrun-verification.md) §3.1（2026-11-22） |
 | `0.2.2-rc.5` | `1.1.0`（main `720f30a`，未发布 npm） | `0.1.0-alpha.0` | 24 | A8 续接：第一轮 `TURN1_OK` 后机器 stop、host 重启，第二轮由依赖自动唤醒机器并从 transcript 回答 `ALPHA`；刷新后两轮仍在 | [`10-rayrun-verification.md`](10-rayrun-verification.md) §3.1（2026-11-22） |
+| `0.2.2-rc.5` | `1.2.0`（`feat/runtime-rpc` `fe965c1`，未合并/发布） | `0.1.0-alpha.0` | 24 | Bots `runtime.*` client 经依赖 host RPC live：dev 机器 start 后 put/list/get/delete，测试后 stop | [`10-rayrun-verification.md`](10-rayrun-verification.md) §3.1（2026-11-22） |
 | `0.2.2-rc.5` | `1.0.0` | `0.1.0-alpha.0` | 24 + Rayrun 沙盒 | 云端 ingress、`dsh web` 部署与 token URL | [`09-deployment.md`](09-deployment.md)、[`10-rayrun-verification.md`](10-rayrun-verification.md) §3.1 |
 
 “未安装”表示该 CI 矩阵只验证 Bots 包本身能安装和合成，不验证依赖或云端行为。
@@ -63,8 +64,8 @@ dsh plugin --profile web add /tmp/dsh-rayrun-bots-0.1.0-alpha.0.tgz
 - 官方 DSH 桌面（Electron）的创建、安装器、更新、卸载与再分发（R-G001）；
 - 依赖 1.1.0 发布到 npm 后安装（今天从 main `720f30a` checkout 验证）；同一
   host 不重启的连续两轮 detached；
-- 依赖 1.2.0 `runtime.*` 的 dev live 联调（`feat/runtime-rpc`，`fe965c1`，已推送，
-  未合并/发布）；Bots 侧目前只有 fake-fetch 测试；
+- 依赖 1.2.0 `runtime.*` 合并/发布后安装（今天从 `feat/runtime-rpc` `fe965c1`
+  checkout 验证）；
 - `dsh-rayrun-computer` 上 npm 与“一次安装带两个包”的依赖路径（S6）；
 - DSH `0.2.2-rc.5` 的 subprocess/terminal 完整安装路径（R-G005）；
 - 镜像 DSH `0.2.0-rc.2` 与本机/桌面 `0.2.2-rc.5` 的功能一致性（R-G007）；
