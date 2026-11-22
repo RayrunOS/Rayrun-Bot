@@ -297,7 +297,9 @@ replay 作为有文档的回退，并写清它的 UX 与成本。
 （[`lib/rayrun-detached-runtime.js`](../../packages/dsh-rayrun-bots/lib/rayrun-detached-runtime.js)）：
 每 turn 一个 task id、每 bot 一个本地 git checkout、`reply.md` 收取，task id 持久化，
 host 重启后恢复 poll。常驻 DSH host、session 续跑契约和监督进程凭据仍按本 ADR 的
-spike 处理；detached 的页面级 Rayrun 实测仍未做。
+spike 处理。detached 的页面级实测已完成：页面关闭 + host 重启后收取 `reply.md`，
+以及机器 stop/start 后的第二轮续接（[`10-rayrun-verification.md`](../10-rayrun-verification.md)
+§3.1，2026-11-22）。
 
 <a id="adr-008"></a>
 ### ADR-008 — Desktop 访问路径

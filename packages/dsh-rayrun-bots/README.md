@@ -9,8 +9,10 @@ collected from the task result directory; 1.0.x falls back to the single-turn
 `rayrun_agent` tool, and without either surface `session.send` fails closed with
 `E_RUNTIME_UNAVAILABLE`. One-turn and detached live Rayrun smokes were verified
 on 2026-11-22; the detached smoke closed the page and restarted the local DSH
-while the task ran, and the restarted host collected `reply.md`. Approval
-execution is not implemented. The approval protocol and audit store
+while the task ran, and the restarted host collected `reply.md`. A second-turn
+smoke stopped the machine, restarted DSH, and the next turn answered from the
+persisted transcript. Approval execution is not implemented. The approval
+protocol and audit store
 exist, but a decision explicitly reports `execution.available: false`. The
 conversation UI uses the host session for real roster bots while sample bots,
 approvals, routines and settings remain an in-memory preview. The page-level

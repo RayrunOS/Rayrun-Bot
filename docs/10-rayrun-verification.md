@@ -217,7 +217,17 @@
   新 host 从 `session.json` 恢复 poll，收取 `.dsh/results/<taskId>/reply.md`
   （内容 `DETACHED_OK`），session 回到 `idle`，transcript 有 user+bot，刷新页面后
   回复仍在。机时读数从 0.8114 增至 0.8244（约 47 秒，读数不是承诺）。审批未参与；
-  同一 host 连续两轮仍未验证。
+  同一 host 不重启的连续两轮未单独测试。
+- A8 续接（2026-11-22，同一本机 DSH 环境，独立临时 DSH_HOME，依赖 `1.1.0` 本地
+  checkout，Rayrun token 只经共享 Harness vault，从不打印）：第一轮发送
+  `Remember the word ALPHA. Reply with exactly TURN1_OK.`，bot 回复 `TURN1_OK`，
+  session `idle`；随后把 `rayrun-bot-test` 从 Running stop 到 Stopped，关闭页面并
+  SIGKILL 本地 DSH；用同一 `DSH_HOME` 重启后，页面仍显示第一轮。发送
+  `What word did I ask you to remember? Reply with exactly that word.` 时依赖自动把
+  机器从 Stopped 唤醒，bot 回复 `ALPHA`，证明 transcript 上下文跨 host 重启和机器
+  stop/start 仍在；`session.history` 为 user,bot,user,bot，session `idle`，刷新后
+  两轮仍在。测试后机器 stop 回 Stopped，未 destroy、未新建机器；机时读数从 0.9008
+  增至 0.9106（约 35 秒，读数不是承诺）。审批未参与。
 - 打包产物安装（2026-11-22，本机 DSH `0.2.2-rc.5`；本地打包检查）：`npm pack` 生成
   15 个文件的 tarball（host/client、locale、`lib/*.js`、bundle patch、icon、README、
   LICENSE；54.6 kB），`test/`、`docs/`、`tools/` 未进入；`dsh plugin --profile
@@ -253,7 +263,7 @@
 - bot 会话、审批往返、远程审批、队列与恢复（会话/常驻 runtime 受 R-G008 阻塞）；
   本地 session store、`session.*` RPC、`rayrun_agent`/detached adapter 已有 fake
   测试；页面层真实一轮，以及 detached 的页面关闭 + host 重启收取，已在本机 DSH +
-  已有 Rayrun 机器验证（§3.1）；同一 host 连续两轮、队列与恢复仍未验证；审批往返/
+  已有 Rayrun 机器验证（§3.1）；同一 host 不重启的连续两轮、队列与恢复仍未验证；审批往返/
   执行等待平台权限隔离（ADR-001，[`08-integration.md`](08-integration.md) §3.3），
   在平台提供前不做往返验证；
 - DeepSeek 模型调用（至今只创建了 model credential，没有发模型请求）；

@@ -87,8 +87,9 @@ roster 和每 bot 的 `session.json` / `transcript.jsonl` 已持久化，host ha
 依赖 1.1+ 时，adapter 用 detached `dsh.start/status/result` 把一轮 turn 发给已有的
 云电脑（没有机器时拒绝自动创建）；1.0.x 回退单轮 `rayrun_agent`；两者都不可用时
 `session.send` 返回 `E_RUNTIME_UNAVAILABLE`。发送一轮会让依赖启动已停止/暂停的机器，
-可能产生机时费用。真实一轮（单轮 adapter）和 detached 的页面关闭 + 本地 DSH 重启后
-继续，已在本机页面 + 已有 Rayrun 机器验证（2026-11-22）。host half 还提供
+可能产生机时费用。真实一轮（单轮 adapter）、detached 的页面关闭 + 本地 DSH 重启后
+继续，以及机器 stop/start 后的第二轮续接（A8），已在本机页面 + 已有 Rayrun 机器验证
+（2026-11-22）。host half 还提供
 `approvals.list/get/decide`；协议只记录请求/决定与审计，`decide` 返回
 `execution.available:false`，不执行动作，审批卡仍是页内预览。setup 的 Rayrun/电脑
 步骤，以及详情和 Settings 的用量读取，会真正调用云电脑插件。bot↔云端 session
