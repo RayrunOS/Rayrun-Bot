@@ -49,8 +49,8 @@
 | `exec` | 启动 runtime、watchdog、健康检查 | 超时/退出码/输出上限 |
 | 文件 read/write/list | 队列、审批、outbox、镜像 | 原子写/ETag/分页/大小上限 |
 | agent prompt + SSE | 发任务、流式回复 | session id、取消、`409 sandbox_busy` |
-| session create/continue | bot 续接 | 平台契约（P0 #1） |
-| credential 注入状态 | 确认模型 key 已注入 | 监督进程是否也能拿到（ADR-007） |
+| session create/continue | bot 续接 | 平台不提供 session 对象；bot host 自己写 `/workspace`（R-G008 已实现，待部署） |
+| credential 注入状态 | 确认模型 key 已注入 | runtime boot 时注入；runtime restart 不刷新，轮换需 sandbox stop→start（ADR-007） |
 | balance/usage | 成本栏 | 余额、机器小时；per-sandbox 是 beta |
 | worker projection | 把 bot runtime ship 到机器并启动 | 扩展点、hash、启动/重启 |
 
@@ -66,9 +66,9 @@ adapter 放在我们的包里，不改依赖。
 
 ### 3.1 Session 与常驻 runtime 契约（P0）
 
-今天：一台机器一次只跑一个 agent 任务（`409 sandbox_busy`，不排队）；文档没有说
-session id 能否跨 prompt 创建/续接；机器进程是否跨 stop/start 存活、是否有 startup
-hook，都没有文档。
+今天（2026-11-21 记录）：一台机器一次只跑一个 agent 任务（`409 sandbox_busy`，不
+排队）；文档没有说 session id 能否跨 prompt 创建/续接；机器进程是否跨 stop/start
+存活、是否有 startup hook，都没有文档。
 
 需要：
 
@@ -81,8 +81,31 @@ hook，都没有文档。
 没有它时的回退：逐次 headless + transcript replay（更慢、更贵），以及本地 watchdog
 通过 `exec` 重启 host。
 
-期望形状：prompt API 接受/返回 `session_id`；services/entrypoint API（`command`、
-`restart: on-failure`、开机启动）或文档化的 systemd 支持；机器启动事件。
+**Rayrun 答复（2026-11-22）。** 平台侧 R-G008 已实现并有本机验收（`rayrun` 仓库
+`rayrun-bot-gaps`，`4709ac0`），**生产尚未部署**，现在不能在 `api.rayrunos.com`
+使用。初步支持的契约：
+
+- `PUT/GET/POST/DELETE /v1/sandboxes/{id}/runtimes[/{name}]`；spec 包含 `argv`、
+  `workdir`、`env`、`credentials`、`restart`、`autostart`、`keep_alive`、
+  `stop_signal`、`stop_timeout_seconds`。
+- guestd 0.6.0 监督常驻进程：崩溃按 1s→60s 退避重启；sandbox `stop → start` 后
+  `autostart=true` 自动拉起；daemon 重启后重连并幂等同步；Paused/Resume 保留现场；
+  `keep_alive=true` 不被 idle sweeper 自动 stop。
+- **session 不是平台对象。** bot host 自己把 session/transcript 写到 `/workspace`
+  （tmp + rename + fsync）；平台保证 workspace 跨 stop/start 保留。session
+  create/continue 在 bot 进程内实现。
+- `credentials` 必须是沙箱创建时已绑定的凭证名子集；值只在 boot 注入，runtime
+  restart 不刷新；轮换需 sandbox `stop → start`；`argv` 不得放秘密。
+- 旧镜像（guestd < 0.6.0）调用 runtimes 返回 `409 guestd_outdated`。目标环境需部署
+  新 daemon + `builder@1`，bot 用 `POST /v1/builds` 构建含 guestd 0.6.0 的自定义镜像；
+  平台不接收本地 rootfs。
+- 验收：PUT 后 Running；sandbox stop→start 后 runtime 自动 Running、session 文件还在；
+  kill runtime 后按 restart 策略回来；凭证 env 注入但日志无明文；`keep_alive` 不被
+  idle 停；旧镜像 409；daemon 重启后 GET 仍 Running。
+- 前提与时间：部署到 bot 测试环境 + 联合验收约 2–3 天，需我方授权；bot 侧 host/session
+  实现是本仓库的工作量。
+
+审批隔离不在这个初步支持范围内，见 §3.3。
 
 ### 3.2 余额宽限与 spend 护栏（P0）
 
@@ -121,6 +144,18 @@ tmp+rename 和 checksum 只防半写，不防伪造。
 期望形状：host runtime 以独立身份启动；平台提供 host-only 的审批/决定 API；agent
 进程无法读取 host 状态目录或凭据；决定带 id、botId、actionId、nonce、actionHash 和
 TTL（schema 见 ADR-011）。
+
+**Rayrun 答复（2026-11-22）。** 同一沙箱内不能做隔离：runtime 与 agent 共享 root，
+agent 可读 `/proc/<pid>/environ`，放在沙箱里的任何 token/key 都可能被拿走；R-G011
+只收窄 scope，不创造信任域。平台 host-only 审批端点需要新 ADR（host principal 如何
+认证、agent 如何不能冒充、凭据放哪），约设计 1 周 + 实现 2–4 周，**不属于初步支持，
+也不属于 R-G011**。
+
+平台建议的最小路径（尚未成为本仓库决策）：审批权威放在 agent 沙箱之外——本地 DSH，
+或单独的 host 沙箱；agent 沙箱只执行，host 侧持有平台凭据并决定/执行受限动作。这样
+不需要新增平台审批端点，用现有 API 即可；代价是 bot 侧要拆 host/agent 两域，v0.1
+可先接受“合上笔记本时审批等待”。如果采用这条路径，需要新的 ADR 和代码设计；在那
+之前审批执行继续保持关闭。
 
 验收：从 agent 进程读写 host 审批目录和凭据失败；agent 伪造的 decision 被执行方拒绝
 并记录；用户决定经平台端点到达 host；超时/未知状态拒绝。证据记录在
@@ -229,7 +264,7 @@ SSO/SAML/SCIM、组织 RBAC、审计导出/SIEM、DPA 与数据驻留、marketpl
 
 | 需求 | 需要时间 | 今天阻塞发布？ |
 | --- | --- | --- |
-| 1. session + 常驻 runtime 契约 | v0.1 | 需要确认 |
+| 1. session + 常驻 runtime 契约 | v0.1 | 平台侧已实现（待部署）；bot 侧 host/session 未实现 |
 | 2. 余额宽限 / 护栏 | v0.1 | 风险接受并警告 |
 | host/agent 权限隔离 + 审批端点（§3.3） | v0.1 | 是（ADR-001；平台提供前审批不实现） |
 | 3. 文件通道语义 | v0.1 | 否（有 workaround） |

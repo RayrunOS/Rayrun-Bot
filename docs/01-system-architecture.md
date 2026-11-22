@@ -60,15 +60,16 @@
                  credentials · billing
                         ▼
         你的 Rayrun 云电脑（一人一台，bots 共享）
-          ├─ 常驻 DSH host（web profile）                      [计划；今天平台按
-          ├─ 每 bot 一个 session + 一个 profile 目录            每次 prompt 启动
-          ├─ /workspace · X11 desktop :99 · browser profile     `dsh --profile headless`]
+          ├─ 常驻 DSH host（web profile）                      [平台 runtimes API
+          ├─ 每 bot 一个 session + 一个 profile 目录            已实现，待部署；
+          ├─ /workspace · X11 desktop :99 · browser profile     bot host 未实现]
           └─ 模型调用 ──▶ DeepSeek API（你的 key，只注入
                             agent 进程）
 ```
 
-`*` = 未实现。常驻 bot runtime、session 续接和 bot 映射是 v0.1 的未验证项；见 §3、§9 与
-ADR-007。
+`*` = 未实现。常驻 bot runtime、session 续接和 bot 映射是 v0.1 的未验证项。平台答复
+（2026-11-22）：R-G008 runtimes API 已实现并有本机验收（待部署），session 由 bot host
+自己写 `/workspace`；bot 侧 host/session 尚未实现。见 §3、§9 与 ADR-007。
 
 ### 1.3 分层
 
@@ -84,11 +85,13 @@ ADR-007。
    billing 的单一 HTTPS API；token 只存在于本地 Harness vault，且只用在这里。
 4. **云电脑。** 一人一台，bots 共享：vCPU/内存、持久 `/workspace`、X11 `:99`、
    browser profile。设计要求一个常驻 **bot runtime**（ADR-015）监督 DSH host，每 bot
-   一个 session 与 profile 目录；当前平台按每次 prompt 启 headless，session 不能跨 run
-   存活，常驻 runtime 是 **TBD**。
+   一个 session 与 profile 目录。平台答复（2026-11-22）：R-G008 runtimes API 已实现并有
+   本机验收（待部署），提供受监督常驻进程、`autostart`、`keep_alive` 和 boot 时
+   credential injection；session 不是平台对象，由 bot host 自己写 `/workspace`。bot
+   侧 supervisor/session 仍是本仓库的工作。
 5. **Bot↔session 映射。** bot 是持久对象：名字、指令、skills、memory 目录和 session
-   id 在机器上。映射必须存在 supervisor 内存之外；DSH 如何从云路径恢复指定 session
-   尚未验证。
+   id 在机器上。映射必须存在 supervisor 内存之外；平台不提供 session 对象，session
+   的 create/continue 由 bot host 在 `/workspace` 内实现，端到端仍未验证。
 6. **审批通道。** 受控动作走 DSH 审批 seam → bot runtime 提案 → 本地控制面卡片 →
    决定写回；执行点见 ADR-001。失败即拒绝；浏览器先做，IM 是 v0.2。当前文件邮箱的
    信任边界见 §4.3。
@@ -163,9 +166,11 @@ host half 属于本地控制面。**ADR-015/016 目前是 Proposed**；在它们
 
 - 一人一台机器，bots 共享 `/workspace`、X11、browser profile 和文件；不是安全边界。
 - 平台同时只允许一个 agent 任务；第二个 prompt 返回 `409 sandbox_busy`，不排队。
-- v0.1 设计要常驻 DSH host + 每 bot session/profile；当前平台按次启动
-  `dsh --profile headless`，session 不跨 run。常驻 bot runtime 的进程、凭据注入、profile
-  模型见 ADR-007。
+- v0.1 设计要常驻 DSH host + 每 bot session/profile。平台答复（2026-11-22）：R-G008
+  runtimes API 已实现并有本机验收（待部署），提供受监督进程、`autostart`、
+  `keep_alive` 和 boot 时 credential injection；session 由 bot host 自己写
+  `/workspace`。bot 侧 supervisor/session 尚未实现；见 ADR-007 与
+  [`08-integration.md`](08-integration.md) §3.1。
 - 机器按秒计费；stop 保留磁盘，destroy 删除机器与 workspace；余额耗尽可能被平台
   force-destroy。成本模型见 §7。
 
@@ -333,7 +338,8 @@ tombstone，action hash 的 canonicalization 未定义；见 ADR-011/012。
 
 - 本地 watchdog 通过 `exec` 检查心跳，host 丢失后尝试重启（C6）。
 - bot runtime 重启后重读队列与审批状态，不丢已排队工作（C8）。
-- session 续接要求平台契约；未验证前回退到 transcript replay（ADR-007、D1–D5）。
+- 平台 runtimes API 已实现（待部署）；session 由 bot host 自己写 `/workspace`，端到端
+  未验证前回退到 transcript replay（ADR-007、D1–D5）。
 - 机器 stop/start 保留磁盘；destroy 删除一切，只能由人类明确请求。
 - A8/A9 的字段与状态机缺口见 ADR-012。
 
@@ -374,10 +380,11 @@ tombstone，action hash 的 canonicalization 未定义；见 ADR-011/012。
 
 **平台必须补**（细节与优先级见 [`08-integration.md`](08-integration.md)）：
 
-- host/agent 权限隔离与 host-only 审批端点：审批执行点的前提（ADR-001，已定）；
-  平台提供前不实现审批执行；
-- session 与常驻 runtime 契约：能否按 id 创建/续接 session，受监督进程如何跨
-  stop/start 存活，是否有 startup hook；
+- host/agent 权限隔离与 host-only 审批端点：审批执行点的前提（ADR-001，已定）。
+  平台答复（2026-11-22）：同沙箱内不可行，平台端点设计 1 周 + 实现 2–4 周、非首版；
+  可选的 host/agent 分域路径需要本项目新 ADR。平台提供前不实现审批执行；
+- R-G008 常驻 runtime：平台 runtimes API 已实现并有本机验收（`rayrun-bot-gaps`，
+  `4709ac0`），待部署到测试环境；bot 侧 host/session 未实现；
 - 余额宽限与 spend 护栏：余额耗尽今天会 force-destroy 机器和磁盘；
 - 安全的入站网络：token ingress 不可用，只有 `public`；
 - idle auto-stop 或 wake-on-request；

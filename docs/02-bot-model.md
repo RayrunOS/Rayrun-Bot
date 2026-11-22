@@ -156,8 +156,9 @@ v0.1 不提供“复制 bot”“模板市场”“bot 间 handoff”；这些�
 
 ## 6. 与 session / memory 的关系
 
-- **Session**：每个 bot 一个持久 DSH session id；第二次对话接着第一次。平台契约未
-  验证前，回退到逐次 headless + transcript replay（ADR-007）。
+- **Session**：每个 bot 一个持久 DSH session id；第二次对话接着第一次。平台不提供
+  session 对象，session 由 bot host 自己写 `/workspace`；端到端未验证前回退到逐次
+  headless + transcript replay（ADR-007）。
 - **Memory**：每 bot 一个目录，保存笔记、产物和会话日志；机器上权威，本地只读镜像。
 - **Transcript**：D3 计划写 `sessions/*.jsonl`，脱敏；v0.1 默认只镜像元数据，不镜像
   完整对话（[`06-local-state.md`](06-local-state.md)）。

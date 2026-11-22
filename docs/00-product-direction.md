@@ -175,7 +175,7 @@ v0.1 的完成标准是 [`plans/mvp-plan.md`](plans/mvp-plan.md) §2 的 A1–A1
 
 | 假设 | 为什么重要 | 如果不成立 |
 | --- | --- | --- |
-| 平台能提供 session / 常驻 runtime 契约 | “合上笔记本”和“续接”是核心卖点 | 回退到逐次 headless + transcript replay，并明确 UX/成本降级（ADR-007） |
+| 平台 runtimes API 能覆盖常驻 host（平台答复 2026-11-22：已实现，待部署） | “合上笔记本”和“续接”是核心卖点 | 回退到逐次 headless + transcript replay，并明确 UX/成本降级（ADR-007） |
 | 审批执行点在 agent 写不到的地方 | “失败即拒绝”才是安全边界，而不只是 UX | 已选平台权限隔离（ADR-001）；平台提供前 v0.1 不带审批执行，只保留同意/审计 |
 | 余额护栏可用 | 余额耗尽会 force-destroy 机器与磁盘，是数据丢失风险 | 只能本地预警 + idle stop，无法阻止平台销毁（平台需求 #2） |
 | 常开成本可接受 | 一人一台 2 vCPU / 2 GiB 约 ¥57.6/月（写入时的量级） | idle stop、max lifetime 或云端自停策略；产品页必须说清代价（ADR-006） |

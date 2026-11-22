@@ -100,7 +100,7 @@
 | R-G005 | 2026-11-21 | 完整安装 DSH 0.2.2-rc.5 的 subprocess/terminal 路径 | `npm install -g` 跳过 `dsh-subprocess-local`、`node-pty`、`koffi`、`protobufjs` 的 install scripts | **未验证**：Web UI 和 plugin manager 可用；terminal/子进程未测 | 需要在镜像里显式跑 allow-scripts 或换安装方式 |
 | R-G006 | 2026-11-21 | 把预装好的 web profile 烘进自定义镜像 | `POST /v1/images` 保存的是 rootfs overlay；`/workspace/.rayrun/dsh` 在 workspace 盘，不在镜像里 | **有 workaround**：镜像带 tarball + bootstrap，首启写入 workspace | 不能直接做“打开即带 profile”的镜像；需要 bootstrap 或平台支持 workspace 快照 |
 | R-G007 | 2026-11-21 | 与本地验证/桌面一致的 DSH 版本 | 官方镜像 pin `0.2.0-rc.2`；本机页面验证使用 `0.2.2-rc.5`；桌面 bundle `0.2.2-rc.5`（官方桌面未验证，见 R-G001） | **有 workaround**：镜像内可升级并验证；升级后 profile 保留；组合记录在 [`version-matrix.md`](version-matrix.md) | 镜像 pin 与本地/桌面仍不一致；镜像升级需要平台/构建支持 |
-| R-G008 | 2026-11-11 | 长驻 bot runtime、session 续接、启动钩子、prompt 队列 | 平台答复（2026-11-11）：均无；`409 sandbox_busy`；stop/start 不保进程；无 boot hook。2026-11-21 用户转述 Rayrun 正在评估，仍按阻塞处理 | **阻塞**（平台 P0，见 [`08-integration.md`](08-integration.md) §3.1） | “合上笔记本继续工作”的 Rayrun 验证暂不可做 |
+| R-G008 | 2026-11-22 | 长驻 bot runtime、session 续接、启动钩子、prompt 队列 | 平台答复（2026-11-22）：runtimes API 已实现并有本机验收（`rayrun` 仓库 `rayrun-bot-gaps`，`4709ac0`），**生产未部署**；契约含 `PUT/GET/POST/DELETE /v1/sandboxes/{id}/runtimes`、guestd 0.6.0、`autostart`/`restart=always`/`keep_alive`、boot 时 credential injection；session 不是平台对象，bot host 自己写 `/workspace`，workspace 跨 stop/start 保留；旧镜像 409 `guestd_outdated`。详见 [`08-integration.md`](08-integration.md) §3.1 | **平台实现待部署/待验证**（不再按纯阻塞处理）：部署到 bot 测试环境需授权，约 2–3 天；bot 侧 host/session 尚未实现。审批隔离不在初步支持内（§3.3） | 授权部署 + 构建 guestd 0.6.0 镜像 + bot host 联合验收；“合上笔记本继续工作”的端到端验证仍待做 |
 | R-G009 | 2026-11-11 | 零余额不丢盘、spend cap | 平台答复：线上仍可能 force-destroy；代码里的两步停/宽限未部署；无硬上限 | **风险接受**（见 [`08-integration.md`](08-integration.md) §3.2） | 不通过烧余额来验证；只做只读余额/告警检查 |
 | R-G010 | 2026-11-11 | 带鉴权的入站访问 | ingress `token` 档恒 403；`public` 档无鉴权；无 per-instance 证书 | **有 workaround**：public ingress + 应用层 DSH launch token/cookie；不暴露产品面板 | 手机审批/远程 UI 的 Rayrun 路径受限 |
 | R-G011 | 2026-11-21 | 只读、可撤销的测试 token | 生产 token 是账号身份，无 scope；当前测试 token 无过期时间 | **有 workaround**：专用账号/测试后撤销 | 测试 token 权限过大；不要放进沙箱 |
@@ -265,7 +265,8 @@
 - A11 本地 workspace 扫描发现 `tmp/` 下有未跟踪的本地 key 文件（`dp-code.key`、
   `rayrun-dev.key`）。它们被 `.gitignore` 忽略，且未进入 git 历史或 npm 包，但仍
   留在工作区；需轮换并移出/删除后才能声称 A11 通过。扫描未打印值；
-- bot 会话、审批往返、远程审批、队列与恢复（会话/常驻 runtime 受 R-G008 阻塞）；
+- bot 会话、审批往返、远程审批、队列与恢复（R-G008 平台实现待部署；bot 侧常驻 host
+  尚未实现）；
   本地 session store、`session.*` RPC、`rayrun_agent`/detached adapter 已有 fake
   测试；页面层真实一轮，以及 detached 的页面关闭 + host 重启收取，已在本机 DSH +
   已有 Rayrun 机器验证（§3.1）；同一 host 不重启的连续两轮、队列与恢复仍未验证；审批往返/

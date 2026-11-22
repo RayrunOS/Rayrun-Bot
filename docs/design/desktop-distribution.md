@@ -226,7 +226,7 @@ Desktop 包是 `0.2.2-rc.5`，本仓库的页面验证基线也是 `0.2.2-rc.5`�
 | 断网（egress 关闭）安装本地 tarball | 通过；pnpm store 已预热，未访问 registry |
 | 损坏 tarball 安装 | 失败（`ERR_PNPM_Z_BUF_ERROR`）；profile 依赖为空，无半装 |
 | DSH `0.2.0-rc.2 → 0.2.2-rc.5` 后插件与 profile | 保留，仍可加载 |
-| 沙箱 stop → start 后 profile 与插件 | 保留；进程不存活（符合平台契约） |
+| 沙箱 stop → start 后 profile 与插件 | 保留；进程不存活（2026-11-21 测试；R-G008 runtimes API 待部署后可由 `autostart` 拉起） |
 | 云电脑实际连接、bot 会话、审批 | 未测（没有把 Rayrun token 放进沙箱） |
 
 **与 D-S1a 清单的对应**

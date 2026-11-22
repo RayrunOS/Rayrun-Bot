@@ -33,7 +33,8 @@
 - **Bot 名册与 bot↔session 映射。** Bot 有名字、指令、技能、记忆目录和持久 session；
   映射在 DSH 重启后仍然存在，而不是住在 host 内存里。
 - **机器上的常驻 DSH host。** 把“每个 prompt 跑一次 `headless`”换成受监督的 host，
-  让 bot 在笔记本合上后继续工作。与 Rayrun 的 session 续跑契约是第一个 spike。
+  让 bot 在笔记本合上后继续工作。平台 R-G008 runtimes API 已实现（待部署）；用它
+  跑通常驻 host、并把 session 写进 `/workspace` 是第一个 spike。
 - **Fail-closed 审批。** DSH 审批 seam → host half → 浏览器卡片 → 决定写回。超时、
   未知或面板关闭都算拒绝。执行等待平台 host/agent 隔离（ADR-001）；在那之前，文件
   邮箱不是授权边界。
@@ -120,12 +121,15 @@ profile 持久化、完整品牌化或 analytics 让 B1 不够时才作为升级
 
 ## 被 Rayrun 平台阻塞
 
-有些项取决于平台，而不是本仓库。v0.1 需要前两项确认；其余是 v0.2/beta：
+有些项取决于平台，而不是本仓库。第一项已有平台实现、待部署；第二项仍待决策/平台
+端点；其余是 v0.2/beta：
 
-- session 与长驻 runtime 契约（session id 能否创建或续跑，受监督进程如何跨重启
-  存活）；
-- host/agent 权限隔离与 host-only 审批端点（ADR-001：审批执行点；没有它，v0.1
-  没有审批执行）；
+- R-G008 常驻 runtime：平台 runtimes API 已实现并有本机验收（`rayrun-bot-gaps`，
+  `4709ac0`），待部署到测试环境；session 由 bot host 写 `/workspace`，bot 侧
+  host/session 尚未实现；
+- host/agent 权限隔离与 host-only 审批端点（ADR-001：审批执行点）。平台答复
+  （2026-11-22）：同沙箱不可行，平台端点非首版；host/agent 分域路径需要本项目新
+  ADR；在此之前没有审批执行；
 - 余额宽限与护栏（今天唯一的生命周期上限是 stop；耗尽会 force-destroy 机器和磁盘）；
 - 带认证的安全入向网络（今天 token ingress 不可用，只有 `public` 可用）——v0.2；
 - 跨 session 和重启的持久浏览器 profile 与登录状态（老系统用例需要）——v0.2；

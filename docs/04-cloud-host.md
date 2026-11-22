@@ -34,8 +34,12 @@
 - 机器重启/进程被杀后能恢复队列与未完成工作；
 - 让“合上笔记本，bot 继续工作”成立（新任务和审批仍受本地/平台限制，见 01 §6.4）。
 
-当前平台按每次 prompt 启动 `dsh --profile headless`，session 不跨 run；常驻 runtime、
-凭据注入和 profile 模型都是 **TBD**（ADR-007）。
+当前平台按每次 prompt 启动 `dsh --profile headless`，session 不跨 run。平台答复
+（2026-11-22）：R-G008 的 runtimes API 已实现并有本机验收（`rayrun-bot-gaps`，
+`4709ac0`），**生产未部署**；它提供受监督常驻进程、autostart、keep_alive 和 boot 时
+credential injection。session 不是平台对象，由 bot host 自己写 `/workspace`；平台保证
+workspace 跨 stop/start 保留。bot 侧 supervisor/session 实现仍是本仓库的工作
+（ADR-007）；契约见 [`08-integration.md`](08-integration.md) §3.1。
 
 ### 1.1 在栈里的位置
 
@@ -77,14 +81,18 @@ DSH agent sessions（bot）
 └── DSH agent process(es)          # 实际思考与执行
 ```
 
-- **一个 supervisor** 管理队列与 session；agent 任务串行执行。
-- **每 bot 一个 session 与 profile 目录**：是否能在同一个 DSH 进程里承载多个 profile，
-  还是每 bot 一个进程/端口，尚未验证；见 ADR-007。
+- **一个 supervisor** 管理队列与 session；agent 任务串行执行。平台答复
+  （2026-11-22）：R-G008 runtimes API 已实现（待部署），用 `restart=always`、
+  `autostart`、`keep_alive` 启动/监督它。
+- **每 bot 一个 session 与 profile 目录**：平台不提供 session 对象，session 由 host
+  自己写 `/workspace`；是否能在同一个 DSH 进程里承载多个 profile，还是每 bot 一个
+  进程/端口，尚未验证；见 ADR-007。
 - **不把 Rayrun token 放进云电脑**：本地控制面通过 Rayrun API 写文件/读文件；bot runtime
-  只使用模型 key 与本地文件。它如何被启动/监督，取决于平台与依赖契约。
+  只使用模型 key 与本地文件。它如何被启动/监督，以
+  [`08-integration.md`](08-integration.md) §3.1 的 runtimes 契约为准。
 - **权限现实**：agent 以 root、`danger-full-access` 运行；host 与 agent 在同一台机器
-  上没有强隔离。ADR-001 已定（平台权限隔离）；平台提供隔离前审批不实现，也不是安全
-  边界。
+  上没有强隔离。平台答复（2026-11-22）：同沙箱内无法隔离，平台审批端点不是首版；
+  ADR-001 的关闭状态维持，host/agent 分域是新决策。
 
 ---
 

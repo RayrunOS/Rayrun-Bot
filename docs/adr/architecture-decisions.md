@@ -81,6 +81,13 @@ JSON 写回。请求带 nonce、bot id、action hash 和 TTL；bot runtime 读�
   本地执行器与凭据路径；
 - 同意型回退（选项 3）不作为 v0.1 的审批执行方式。
 
+**平台答复（2026-11-22）。** 同一沙箱内不能做隔离：runtime 与 agent 共享 root，agent
+可读 `/proc/<pid>/environ`；平台 host-only 审批端点需要新 ADR，设计 1 周 + 实现 2–4
+周，不属于初步支持。平台建议的最小路径是审批权威放在 agent 沙箱之外（本地 DSH 或
+单独的 host 沙箱），agent 只执行，host 侧持有凭据并决定/执行——这与选项 1 接近，
+但需要新的 ADR、host 执行器和凭据路径；在做出新决策前，本 ADR 的关闭状态维持不变
+（[`08-integration.md`](../08-integration.md) §3.3）。
+
 **影响。** E1–E7、A6/A7 阻塞于平台能力；安全页继续声明“审批不是安全边界”，直到平台
 隔离可用。ADR-011（schema/hash）与 ADR-012（恢复/限流）仍是 Proposed，恢复审批工作
 时先定。
@@ -275,18 +282,20 @@ C6、G3。
 **问题。** 受监督的 bot runtime 能否拿到模型凭据，并按 bot 运行 session/profile？
 
 **当前设计。** Rayrun 把 DeepSeek key 注入 agent 进程。设计想要一个常驻 DSH host，
-每个 bot 一个 session 和一个 profile 目录；今天平台按每次 prompt 启动
-`dsh --profile headless`（[系统架构](../01-system-architecture.md) “Layers”；[平台需求](../08-integration.md)
-§1）。
+每个 bot 一个 session 和一个 profile 目录。平台此前按每次 prompt 启动
+`dsh --profile headless`（[系统架构](../01-system-architecture.md) “Layers”；
+[平台需求](../08-integration.md) §1），2026-11-22 答复提供了 runtimes API（见下）。
 
 **问题。** 平台文档只保证 agent 进程的凭据注入，不保证 supervisor 再 spawn DSH
-session 时也能拿到。也没有验证一个 DSH 进程能否承载多个 bot profile，还是每个 bot
-需要独立进程和端口。这决定“合上笔记本”是否可能。
+session 时也能拿到。平台答复（2026-11-22）：受监督 runtime 在 boot 时注入 credential
+env；runtime restart 不刷新，轮换需 sandbox `stop → start`。一个 DSH 进程能否承载
+多个 bot profile，还是每个 bot 需要独立进程和端口，仍未验证；这决定“合上笔记本”
+是否可能。
 
-**建议。** 在 M2 前跑 spike S1/S2 并留下证据：session create/continue、受监督进程
-重启、监督进程的凭据注入、一个进程 vs 每 bot 一进程、CPU/内存、端口分配。把监督进程
-的凭据注入与重启语义加进[平台需求](../08-integration.md)。保留逐次 headless + transcript
-replay 作为有文档的回退，并写清它的 UX 与成本。
+**建议。** 平台侧 runtimes API 已就绪（待部署）；在 M2 前仍要跑 bot 侧 spike S1/S2
+并留下证据：session create/continue、受监督进程重启、一个进程 vs 每 bot 一进程、
+CPU/内存、端口分配。保留逐次 headless + transcript replay 作为有文档的回退，并写清
+它的 UX 与成本。
 
 **影响。** C1–C4、D1–D5、A5、A8。这是最大的未验证平台赌注。
 
@@ -296,10 +305,12 @@ replay 作为有文档的回退，并写清它的 UX 与成本。
 **实现（2026-11-22）。** 依赖 1.1 的 `dsh.start/status/result` 已接 detached adapter
 （[`lib/rayrun-detached-runtime.js`](../../packages/dsh-rayrun-bots/lib/rayrun-detached-runtime.js)）：
 每 turn 一个 task id、每 bot 一个本地 git checkout、`reply.md` 收取，task id 持久化，
-host 重启后恢复 poll。常驻 DSH host、session 续跑契约和监督进程凭据仍按本 ADR 的
-spike 处理。detached 的页面级实测已完成：页面关闭 + host 重启后收取 `reply.md`，
-以及机器 stop/start 后的第二轮续接（[`10-rayrun-verification.md`](../10-rayrun-verification.md)
-§3.1，2026-11-22）。
+host 重启后恢复 poll。常驻 DSH host 的 bot 侧实现仍按本 ADR 的 spike 处理；平台侧
+runtimes API（`rayrun-bot-gaps`，`4709ac0`，待部署）已提供受监督进程、`autostart`/
+`keep_alive` 和 boot 时 credential injection；session 由 bot host 自己写 `/workspace`
+（[`08-integration.md`](../08-integration.md) §3.1）。detached 的页面级实测已完成：
+页面关闭 + host 重启后收取 `reply.md`，以及机器 stop/start 后的第二轮续接
+（[`10-rayrun-verification.md`](../10-rayrun-verification.md) §3.1，2026-11-22）。
 
 <a id="adr-008"></a>
 ### ADR-008 — Desktop 访问路径
