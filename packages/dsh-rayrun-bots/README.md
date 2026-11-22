@@ -5,13 +5,13 @@ local sessions** — the bundle loads, the client half renders the v0.1 screens,
 and the host half answers health, persists the bot roster, and stores a durable
 per-bot session/transcript. When `dsh-rayrun-computer`'s `rayrun_agent` tool is
 registered, the runtime adapter sends a turn to an existing cloud computer;
-without it `session.send` fails closed with `E_RUNTIME_UNAVAILABLE`. A live
-Rayrun turn has not been verified, approval enforcement is not implemented, and
-the conversation UI uses the host session for real roster bots while sample
-bots, approvals, routines and settings remain an in-memory preview. The
-page-level create/reload path was verified on 2026-11-21 in a local DSH page.
-Repository-level status and verified combinations live in
-[docs/12-status.md](../../docs/12-status.md).
+without it `session.send` fails closed with `E_RUNTIME_UNAVAILABLE`. A one-turn
+live Rayrun smoke was verified on 2026-11-22; page-close continuation and
+approval enforcement are not implemented. The conversation UI uses the host
+session for real roster bots while sample bots, approvals, routines and settings
+remain an in-memory preview. The page-level create/reload path was verified on
+2026-11-21 in a local DSH page. Repository-level status and verified
+combinations live in [docs/12-status.md](../../docs/12-status.md).
 
 ## What it does today
 
@@ -81,10 +81,10 @@ Repository-level status and verified combinations live in
   language row writes the choice back to DSH so it survives a reload. The rest
   stays in the page, and the client keeps neither the token nor a DeepSeek key.
 
-Not built yet: a Rayrun-verified live turn, approval enforcement, a Bots-page-
-level verified computer-creation success path, bot↔cloud session mapping,
-remote approvals, routines that run, and the npm release path. See the repo-
-level [MVP plan](../../docs/plans/mvp-plan.md) and [client plan](../../docs/plans/client-plan.md).
+Not built yet: page-close continuation, approval enforcement, a Bots-page-level
+verified computer-creation success path, bot↔cloud session mapping, routines
+that run, and the npm release path. See the repo-level
+[MVP plan](../../docs/plans/mvp-plan.md) and [client plan](../../docs/plans/client-plan.md).
 
 ## DSH compatibility
 

@@ -35,11 +35,11 @@ runtime、bot↔云端 session 映射、远程审批执行、会运行的 routin
 | Bots 表面 | Client half 打开即进入 Bots，渲染 v0.1 壳：聊天列表、对话、详情、新建 bot、设置向导、设置页；中英双语，以中文为主并跟随 DSH 语言。 |
 | 对话与审批 | 客户端对话对真实名册 bot 读取并发送 `session.send/history/status`；示例 bot 仍走页内预览。审批卡和设置仍是**页内内存预览**，Deny / Allow once 不会发给 worker。 |
 | 本地名册 | Host half 持久化已校验的 bot 名册到 `$DSH_HOME/state/rayrun-bot/`，原子写入；聊天列表有名册时读取真实名册，新建 bot 会写回 host。 |
-| Session 与 transcript | Host half 持久化每 bot 的 `session.json` + `transcript.jsonl`，提供 `session.send/history/status`；队列单飞、失败脱敏、host 重启后把运行中的 turn 标为 interrupted。依赖的 `rayrun_agent` tool 存在时，adapter 选择已有云电脑并把一轮 turn 发给机器 agent；没有机器时拒绝自动创建，已停止/暂停的机器会按依赖的 wake 语义启动（计费）。真实 Rayrun 对话未验证；对话 UI 仍是页内预览。 |
+| Session 与 transcript | Host half 持久化每 bot 的 `session.json` + `transcript.jsonl`，提供 `session.send/history/status`；队列单飞、失败脱敏、host 重启后把运行中的 turn 标为 interrupted。依赖的 `rayrun_agent` tool 存在时，adapter 选择已有云电脑并把一轮 turn 发给机器 agent；没有机器时拒绝自动创建，已停止/暂停的机器会按依赖的 wake 语义启动（计费）。真实一轮已在本机 DSH + 已有 Rayrun 机器验证（2026-11-22）；页面关闭后继续未验证；示例 bot 仍是预览。 |
 | setup | Rayrun 步骤经云电脑插件的同源 RPC 接收粘贴的 token；云电脑步骤采用已有机器或经同一 RPC 创建第一台机器。 |
 | 电脑卡片 | Open / Take over 经同一 RPC 启动或恢复机器、等待 `Running`、修复桌面服务并打开 `desktop_url`；Stop 在确认后停止，永不 destroy。 |
 | 用量 | 详情面板的电脑块和用量块，以及 Settings 的用量行，读取真实机器状态、余额与机时。 |
-| 测试 | Host/client 名册接线、session/transcript 与 `rayrun_agent` adapter 由普通 Node 契约测试覆盖；客户端 session 失败路径另有本机页面 smoke。包清单、locale、RPC、客户端、名册、session、runtime 和 tarball 内容都有检查。 |
+| 测试 | Host/client 名册接线、session/transcript 与 `rayrun_agent` adapter 由普通 Node 契约测试覆盖；客户端 session 失败路径与真实一轮另有本机页面 smoke。包清单、locale、RPC、客户端、名册、session、runtime 和 tarball 内容都有检查。 |
 | 远程审批 | 暂停，等待平台权限隔离与 host-only 审批端点（ADR-001，2026-11-21 定）；审批执行未实现。`rayrun_agent` adapter 不拦截 bot 的外部动作；prompt 里的“先询问”只是指引，不是安全边界。 |
 | 发布 | 没有可发布版本；npm 发布路径不存在。 |
 
@@ -56,16 +56,18 @@ runtime、bot↔云端 session 映射、远程审批执行、会运行的 routin
 - Bots 页面层 session 接线已在 2026-11-22 用本机 DSH web + Firefox/geckodriver
   （临时 profile，未安装云电脑依赖）验证：真实名册 bot 替换预览列表；空对话显示
   真实文案；`session.history` 返回 `session: null`；发送后显示用户消息与
-  `E_RUNTIME_UNAVAILABLE` 错误行，composer 恢复可用，失败前不写 session。成功一轮
-  （真实 runtime）仍未验证。
+  `E_RUNTIME_UNAVAILABLE` 错误行，composer 恢复可用，失败前不写 session。
+- Bots 页面层真实一轮已在 2026-11-22 用本机 DSH web + 已有 Rayrun 机器
+  `rayrun-bot-test` 验证（独立临时 DSH_HOME，token 只经共享 Harness vault，未新建
+  机器）：bot 回复 `SMOKE_OK`；session 为 `idle`，transcript 有 user+bot；刷新后回复
+  仍在。机时读数增加约 0.0036 小时（读数不是承诺）；审批未参与。
 - 具体组合、环境和缺口以 [`10-rayrun-verification.md`](10-rayrun-verification.md)
   和 [`version-matrix.md`](version-matrix.md) 为准；未测试的组合不作承诺。
 
 ## 4. 尚未构建或验证
 
 - 页面层云电脑创建按钮的补验。
-- 真实一轮对话的 Rayrun 冒烟（adapter 已接；会消耗用户额度，需单独授权）。
-- 页面关闭后继续、失败与恢复的 Rayrun 验证。
+- 页面关闭后继续、真实失败与恢复的 Rayrun 验证（失败路径已有本机 smoke）。
 - 常驻云端 bot runtime 与 bot↔云端 session 映射：从停下的地方继续，然后回来汇报。
 - 机器上常驻的 DSH host。
 - 能拦住 worker 的远程审批（阻塞于 Rayrun host/agent 权限隔离；ADR-001）。

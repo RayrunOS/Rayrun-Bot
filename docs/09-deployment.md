@@ -86,7 +86,8 @@ roster 和每 bot 的 `session.json` / `transcript.jsonl` 已持久化，host ha
 `session.send/history/status`；
 依赖的 `rayrun_agent` tool 存在时，adapter 会把一轮 turn 发给已有的云电脑（没有机器时
 拒绝自动创建），否则 `session.send` 返回 `E_RUNTIME_UNAVAILABLE`。发送一轮会让依赖
-启动已停止/暂停的机器，可能产生机时费用。真实 Rayrun 对话尚未验证。setup 的 Rayrun/电脑步骤，以及详情和 Settings 的用量读取，会真正调用云电脑
+启动已停止/暂停的机器，可能产生机时费用。真实一轮已在本机页面 + 已有 Rayrun 机器
+验证（2026-11-22）；页面关闭后继续仍未验证。setup 的 Rayrun/电脑步骤，以及详情和 Settings 的用量读取，会真正调用云电脑
 插件。bot↔云端 session 映射、审批执行、routines 与独立成本栏尚未构建（审批执行等待
 平台权限隔离，ADR-001）；`rayrun_agent` adapter 不拦截外部动作，prompt 里的“先询问”
 只是指引。状态以 [`12-status.md`](12-status.md) 为准。

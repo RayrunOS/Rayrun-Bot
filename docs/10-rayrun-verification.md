@@ -198,7 +198,14 @@
   Firefox/geckodriver，临时 profile，未安装云电脑依赖）：真实名册 bot 替换预览列表；
   空对话显示真实文案；页面同源 `session.history` 返回 `session: null`；发送后显示
   用户消息与 `E_RUNTIME_UNAVAILABLE` 错误行，working 行消失、composer 恢复可用，失败
-  前没有写 session。成功一轮需要真实 runtime，未验证。
+  前没有写 session。
+- Bots 页面层真实一轮（2026-11-22，本机 DSH web `0.2.2-rc.5` + Firefox/geckodriver，
+  独立临时 DSH_HOME，Rayrun token 只经共享 Harness vault，从不打印；两个插件从
+  checkout 安装）：health 报 dependency `ok`、runtime `available`；overview 有已有
+  机器 `rayrun-bot-test`（开始时 `Stopped`，没有新建机器）；从 Bots 页发送
+  `Run the smoke.`，bot 回复 `SMOKE_OK`；`session.history` 为 `idle`，transcript 有
+  user+bot；刷新页面后回复仍在。机时读数从 0.1878 增至 0.1914（约 13 秒，读数不是
+  承诺）；机器随后由依赖的 idle stop 回到 sleeping。审批未参与。
 - 打包产物安装（2026-11-22，本机 DSH `0.2.2-rc.5`；本地打包检查）：`npm pack` 生成
   15 个文件的 tarball（host/client、locale、`lib/*.js`、bundle patch、icon、README、
   LICENSE；54.6 kB），`test/`、`docs/`、`tools/` 未进入；`dsh plugin --profile
@@ -233,8 +240,8 @@
   位置；
 - bot 会话、审批往返、远程审批、队列与恢复（会话/常驻 runtime 受 R-G008 阻塞）；
   本地 session store、`session.*` RPC 与 `rayrun_agent` adapter 已有 fake 测试，
-  页面层失败路径已在本机 smoke，但真实一轮对话尚未在 Rayrun 验证（会消耗用户额度，
-  需单独授权）；审批执行等待平台权限隔离（ADR-001，
+  页面层真实一轮已在本机 DSH + 已有 Rayrun 机器验证（§3.1）；页面关闭后继续、
+  审批往返、队列与恢复仍未验证；审批执行等待平台权限隔离（ADR-001，
   [`08-integration.md`](08-integration.md) §3.3），在平台提供前不做往返验证；
 - DeepSeek 模型调用（至今只创建了 model credential，没有发模型请求）；
 - 零余额宽限/force-destroy 行为（R-G009，不做破坏性验证）；
