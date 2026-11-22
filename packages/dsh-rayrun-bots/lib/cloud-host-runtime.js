@@ -1,0 +1,281 @@
+/**
+ * Runtime adapter for the persistent cloud bot host.
+ *
+ * The host process runs under the platform `runtimes` API and owns a per-bot
+ * queue under `/workspace/.rayrun/bots/<botId>`. This adapter:
+ *   1. ensures the sandbox is Running (never creates one);
+ *   2. ensures `bot-host-<botId>` exists with the host entry point;
+ *   3. uploads one task JSON into the host inbox;
+ *   4. polls the outbox for the reply.
+ *
+ * It uses the dependency's published `runtime.*` RPC and `rayrun_files` tool.
+ * The Rayrun token stays inside the dependency. The file tool can auto-create
+ * a missing sandbox when the dependency's `autoCreate` is enabled, so this
+ * adapter resolves and verifies an existing machine first and refuses when
+ * there is none; profiles for Bots should set `autoCreate: false`.
+ */
+import { createHash, randomUUID } from 'node:crypto'
+import path from 'node:path'
+import { assertBotId } from './bot-schema.js'
+import { ERROR_CODES } from './errors.js'
+import { buildPrompt } from './rayrun-runtime.js'
+import { createRayrunRpc, rayrunFailure } from './rayrun-rpc.js'
+import { createRuntimeRpc } from './runtime-rpc.js'
+import { RUNTIME_CONTRACT_VERSION } from './runtime.js'
+
+const TASK_TIMEOUT_SECONDS = 900
+const RUNTIME_MAX_NAME = 64
+const HOST_SCRIPT = '/workspace/.rayrun/bin/host.mjs'
+const HOST_PROFILE = 'bot'
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+/** Stable runtime name for one bot, within the platform's name limit. */
+export function hostRuntimeName(botId) {
+  const name = `bot-host-${assertBotId(botId)}`
+  if (name.length <= RUNTIME_MAX_NAME) return name
+  const digest = createHash('sha256').update(botId).digest('hex').slice(0, 16)
+  return `bot-host-${digest}`
+}
+
+/** True when a file-read error means "not uploaded yet", not a broken machine. */
+function missingFile(error) {
+  return error?.status === 404
+    || error?.code === 'not_found'
+    || error?.code === 'file_not_found'
+    || /not found|404/i.test(String(error?.message ?? ''))
+}
+
+/** Derive the bot id from the persisted localDir (`.../bots/<id>/workspace`). */
+function botIdFromDetached(detached) {
+  const parts = path.resolve(String(detached?.localDir ?? '')).split(path.sep)
+  const index = parts.lastIndexOf('bots')
+  if (index < 0 || index + 2 >= parts.length) {
+    throw rayrunFailure(ERROR_CODES.internal, 'The detached cloud host record has no bot workspace.')
+  }
+  try {
+    return assertBotId(parts[index + 1])
+  } catch {
+    throw rayrunFailure(ERROR_CODES.internal, 'The detached cloud host record has an invalid bot id.')
+  }
+}
+
+/**
+ * @param {{
+ *   getOrigin?: () => string | undefined,
+ *   getTools?: () => object,
+ *   fetchImpl?: Function,
+ *   supported?: boolean,
+ *   hostScript?: string,
+ *   profile?: string,
+ *   credentials?: string[],
+ *   machine?: string,
+ * }} options
+ */
+export function createCloudHostRuntime({
+  getOrigin,
+  getTools,
+  fetchImpl = globalThis.fetch,
+  supported = true,
+  hostScript = HOST_SCRIPT,
+  profile = HOST_PROFILE,
+  credentials = [],
+  machine: pinnedMachine,
+} = {}) {
+  const rpc = createRayrunRpc({ getOrigin, fetchImpl })
+  const runtimeRpc = createRuntimeRpc({ getOrigin, fetchImpl })
+  if (!Array.isArray(credentials) || credentials.some((name) => typeof name !== 'string' || name === '')) {
+    throw new TypeError('cloud host credentials must be an array of binding names')
+  }
+
+  function filesTool() {
+    try {
+      const tool = getTools?.()?.get?.('rayrun_files')
+      return typeof tool?.execute === 'function' ? tool : undefined
+    } catch {
+      return undefined
+    }
+  }
+
+  async function ensureMachine() {
+    const overview = await rpc.call('overview')
+    const machines = Array.isArray(overview.machines)
+      ? overview.machines.filter((item) => item?.status !== 'Terminated')
+      : []
+    const machine = pinnedMachine
+      ? machines.find((item) => item.name === pinnedMachine || item.id === pinnedMachine)
+      : (machines.find((item) => item.name === 'rayrun-bot')
+        ?? machines.find((item) => item.remote_desktop && item.desktop_url)
+        ?? machines[0])
+    if (!machine) {
+      throw rayrunFailure(ERROR_CODES.machineStopped, 'No cloud computer yet; create one in Bots setup first.')
+    }
+    if (machine.status === 'Running') return machine
+    const verb = machine.status === 'Paused' ? 'resume' : 'start'
+    await rpc.call('machine.action', { id: machine.id, verb }, { timeoutMs: 120_000 })
+    for (let attempt = 0; attempt < 60; attempt += 1) {
+      const next = await rpc.call('overview')
+      const found = (next.machines || []).find((item) => item.id === machine.id)
+      if (found?.status === 'Running') return found
+      await sleep(2000)
+    }
+    throw rayrunFailure(ERROR_CODES.machineStopped, 'The cloud computer did not start in time; no turn was sent.')
+  }
+
+  function spec(botId) {
+    const root = `/workspace/.rayrun/bots/${botId}`
+    return {
+      argv: ['node', hostScript],
+      workdir: '/workspace',
+      env: {
+        PATH: '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',
+        DSH_HOME: '/workspace/.rayrun/dsh',
+        HOME: '/workspace/.rayrun/home',
+        DSH_BOT_ROOT: root,
+        BOT_ID: botId,
+        DSH_BOT_AGENT: 'dsh',
+        DSH_BOT_PROFILE: profile,
+        DSH_BOT_LOG: `/workspace/.rayrun/logs/bot-host-${botId}.log`,
+      },
+      credentials: [...credentials],
+      restart: 'always',
+      autostart: true,
+      keep_alive: true,
+      stop_signal: 'SIGTERM',
+      stop_timeout_seconds: 10,
+    }
+  }
+
+  async function ensureHost(machine, botId) {
+    const ref = machine.name || machine.id
+    const name = hostRuntimeName(botId)
+    let current = (await runtimeRpc.get(ref, name)).runtime
+    if (!current) {
+      await runtimeRpc.put(ref, name, spec(botId))
+      current = (await runtimeRpc.get(ref, name)).runtime
+    }
+    if (current?.state !== 'running') {
+      await runtimeRpc.start(ref, name)
+      for (let attempt = 0; attempt < 20; attempt += 1) {
+        current = (await runtimeRpc.get(ref, name)).runtime
+        if (current?.state === 'running') break
+        await sleep(1000)
+      }
+    }
+    if (current?.state !== 'running') {
+      throw rayrunFailure(
+        ERROR_CODES.runtimeUnavailable,
+        `The cloud bot host did not start${current?.last_error ? `: ${String(current.last_error).slice(0, 200)}` : '.'}`,
+      )
+    }
+    return { name, ref }
+  }
+
+  function filePaths(botId, taskId) {
+    return {
+      inbox: `.rayrun/bots/${botId}/inbox/${taskId}.json`,
+      outbox: `.rayrun/bots/${botId}/outbox/${taskId}.json`,
+    }
+  }
+
+  async function writeTask(sandbox, relative, task) {
+    const tool = filesTool()
+    if (tool === undefined) {
+      throw rayrunFailure(ERROR_CODES.runtimeUnavailable, 'dsh-rayrun-computer is missing the rayrun_files tool; no turn was sent.')
+    }
+    await tool.execute({
+      action: 'upload',
+      sandbox,
+      path: relative,
+      text: JSON.stringify(task),
+    }, { signal: AbortSignal.timeout(60_000) })
+  }
+
+  async function readFile(sandbox, relative) {
+    const tool = filesTool()
+    if (tool === undefined) {
+      throw rayrunFailure(ERROR_CODES.runtimeUnavailable, 'dsh-rayrun-computer is missing the rayrun_files tool.')
+    }
+    try {
+      const text = await tool.execute({
+        action: 'download',
+        sandbox,
+        path: relative,
+      }, { signal: AbortSignal.timeout(60_000) })
+      return typeof text === 'string' ? text : null
+    } catch (error) {
+      if (missingFile(error)) return null
+      throw error
+    }
+  }
+
+  async function waitHostReady(sandbox, botId) {
+    const statePath = `.rayrun/bots/${botId}/host/state.json`
+    for (let attempt = 0; attempt < 15; attempt += 1) {
+      const text = await readFile(sandbox, statePath)
+      if (text !== null) {
+        let state
+        try { state = JSON.parse(text) } catch { state = null }
+        if (state?.state === 'running') return
+        if (state?.state === 'stopped') break
+      }
+      await sleep(1000)
+    }
+    throw rayrunFailure(ERROR_CODES.runtimeUnavailable, 'The cloud bot host did not become ready.')
+  }
+
+  return {
+    contract: RUNTIME_CONTRACT_VERSION,
+    name: 'rayrun-cloud-host',
+    detached: true,
+    get available() {
+      return supported && Boolean(getOrigin?.()) && filesTool() !== undefined
+    },
+    async start({ bot, text, history = [], messageSeq, botId, stateRoot } = {}) {
+      if (typeof botId !== 'string' || botId === '') throw rayrunFailure(ERROR_CODES.runtimeUnavailable, 'botId is required.')
+      const machine = await ensureMachine()
+      const host = await ensureHost(machine, botId)
+      await waitHostReady(host.ref, botId)
+      const taskId = `task-${randomUUID()}`
+      const paths = filePaths(botId, taskId)
+      const prompt = buildPrompt({ bot, text, history, messageSeq })
+      const startedAt = new Date().toISOString()
+      await writeTask(host.ref, paths.inbox, {
+        schema: 1,
+        id: taskId,
+        text: prompt,
+        at: startedAt,
+      })
+      return {
+        taskId,
+        sandbox: machine.name || machine.id,
+        localDir: path.join(path.resolve(stateRoot), 'bots', botId, 'workspace'),
+        timeoutSeconds: TASK_TIMEOUT_SECONDS,
+        startedAt,
+      }
+    },
+    async status({ detached } = {}) {
+      const botId = botIdFromDetached(detached)
+      const paths = filePaths(botId, detached.taskId)
+      const outbox = await readFile(detached.sandbox, paths.outbox)
+      return { running: outbox === null }
+    },
+    async collect({ detached } = {}) {
+      const botId = botIdFromDetached(detached)
+      const paths = filePaths(botId, detached.taskId)
+      const outbox = await readFile(detached.sandbox, paths.outbox)
+      if (outbox === null) return { running: true }
+      let value
+      try {
+        value = JSON.parse(outbox)
+      } catch {
+        throw rayrunFailure(ERROR_CODES.internal, 'The cloud bot host wrote an invalid outbox file.')
+      }
+      if (typeof value?.reply !== 'string' || value.reply.trim() === '') {
+        throw rayrunFailure(ERROR_CODES.internal, 'The cloud bot host returned no reply.')
+      }
+      return { text: value.reply }
+    },
+    ensureMachine,
+    ensureHost,
+  }
+}

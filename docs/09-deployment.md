@@ -1,6 +1,6 @@
 # 09 — 部署与运行
 
-> 状态：2026-11-22。本文说明依赖、安装、运行、配置、检查与故障处理，是安装与运行的
+> 状态：2026-11-23。本文说明依赖、安装、运行、配置、检查与故障处理，是安装与运行的
 > 操作页；实现状态以 [`12-status.md`](12-status.md) 为准。产品方向见
 > [`00-product-direction.md`](00-product-direction.md)；技术基线见
 > [`01-system-architecture.md`](01-system-architecture.md)；平台 handoff 见
@@ -146,8 +146,37 @@ patch、`lib/*.js`、图标、README 和 LICENSE；CI 会把打出的 tarball �
 | `credentials` | `[]` | 注入 agent 进程的模型 credential |
 | `baseUrl` | `https://api.rayrunos.com/v1` | Rayrun API 端点 |
 
-bot 级设置尚不存在；将来放在同一个 profile 文件。**永远不要把 Rayrun token 或模型
-key 写进会提交的配置文件。**
+### 5.1 Bots cloud host（预览）
+
+常驻 bot host 的 runtime adapter 是**预览**，默认关闭。启用时在同一个 profile 的
+`cordis.patch.yml` 里覆盖 **rayrun-bots** 行（不是云电脑行）：
+
+```yaml
+- id: rayrun-bots
+  name: 'dsh-rayrun-bots'
+  config:
+    cloudHost:
+      enabled: true
+      hostScript: /workspace/.rayrun/bin/host.mjs
+      credentials: ['deepseek-flash']
+      profile: bot
+```
+
+| 键 | 默认 | 含义 |
+| --- | --- | --- |
+| `enabled` | 未启用 | 启用后使用常驻 host adapter；`false` 回退 per-turn detached/agent |
+| `hostScript` | `/workspace/.rayrun/bin/host.mjs` | 机器上的 host 入口；目前需手工/镜像提供 |
+| `credentials` | `[]` | 传给 runtime spec 的沙箱凭证**名**，不是值 |
+| `profile` | `bot` | host 内 DSH 使用的 profile，由 host 从 headless 模板创建 |
+| `machine` | 自动选择 | 固定机器名/id；仍要求机器已存在 |
+
+要求依赖 1.2+（`runtime.*`）和 `rayrun_files` 工具；host 入口目前来自
+`tools/cloud-host-poc`（POC，不随包发布）。adapter 先解析已有机器，机器不存在时
+拒绝；由于 `rayrun_files` 会按依赖的 `autoCreate` 处理缺失机器，Bots 用 profile
+建议把云电脑行设为 `autoCreate: false`。每个 bot 一个 `bot-host-<botId>` runtime；
+尚未做多 bot 单 host 或镜像交付。状态以 [`12-status.md`](12-status.md) 为准。
+
+**永远不要把 Rayrun token 或模型 key 写进会提交的配置文件。**
 
 ---
 

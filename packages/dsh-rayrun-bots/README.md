@@ -12,9 +12,10 @@ on 2026-11-22; the detached smoke closed the page and restarted the local DSH
 while the task ran, and the restarted host collected `reply.md`. A second-turn
 smoke stopped the machine, restarted DSH, and the next turn answered from the
 persisted transcript. With 1.2+, a host-side `runtime.*` client is ready for
-the platform-supervised bot host; it was live-checked against the dev daemon,
-but it is not yet wired into the session path. Approval execution is not
-implemented. The approval protocol and audit store
+the platform-supervised bot host. The opt-in `cloudHost` runtime adapter wires
+that host into `session.*` through the dependency's `rayrun_files` tool; it is
+preview, and the host entry point must already be installed on the machine.
+Approval execution is not implemented. The approval protocol and audit store
 exist, but a decision explicitly reports `execution.available: false`. The
 conversation UI uses the host session for real roster bots while sample bots,
 approvals, routines and settings remain an in-memory preview. The page-level
@@ -154,6 +155,7 @@ node test/session-runtime.mjs
 node test/rayrun-runtime.mjs
 node test/rayrun-detached-runtime.mjs
 node test/runtime-rpc.mjs
+node test/cloud-host-runtime.mjs
 node test/bot-workspace.mjs
 node test/dependency.mjs
 node test/approvals.mjs
@@ -184,6 +186,7 @@ lib/local-store.js # state-directory resolution and atomic JSON writes
 lib/rpc.js         # JSON responses and request-body parsing
 lib/runtime.js     # single-turn and detached runtime contracts
 lib/runtime-rpc.js # host-side runtime.* client (cloud bot host)
+lib/cloud-host-runtime.js # opt-in persistent host runtime over runtime.* + rayrun_files
 lib/rayrun-rpc.js  # shared same-origin dependency RPC caller
 lib/rayrun-runtime.js # rayrun_agent-backed runtime adapter
 lib/rayrun-detached-runtime.js # dsh.start/status/result adapter

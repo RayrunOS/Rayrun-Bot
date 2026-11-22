@@ -17,7 +17,8 @@
 import { readFileSync } from 'node:fs'
 import { openApprovalStore } from './lib/approvals.js'
 import { openBotStore } from './lib/bots.js'
-import { checkDependency, supportsDetached } from './lib/dependency.js'
+import { createCloudHostRuntime } from './lib/cloud-host-runtime.js'
+import { checkDependency, supportsDetached, supportsRuntimeRpc } from './lib/dependency.js'
 import { ERROR_CODES } from './lib/errors.js'
 import { resolveStateRoot } from './lib/local-store.js'
 import { createRayrunDetachedRuntime } from './lib/rayrun-detached-runtime.js'
@@ -192,13 +193,30 @@ export function apply(ctx, options = {}) {
   let webServer
   const injectedRuntime = options.runtime === undefined ? undefined : validateRuntime(options.runtime)
   const installed = checkDependency(profileDirectory(ctx))
+  let cloudHostRuntime
+  if (options.cloudHost !== undefined && options.cloudHost !== null && options.cloudHost !== false) {
+    const config = options.cloudHost === true ? {} : options.cloudHost
+    if (typeof config !== 'object' || Array.isArray(config)) {
+      throw new TypeError('cloudHost config must be an object.')
+    }
+    if (config.enabled !== false) {
+      const hostOptions = { ...config }
+      delete hostOptions.enabled
+      cloudHostRuntime = createCloudHostRuntime({
+        getOrigin: () => webServer?.getOrigin?.(),
+        getTools: () => ctx.get?.('tools'),
+        ...hostOptions,
+        supported: supportsRuntimeRpc(installed.version),
+      })
+    }
+  }
   const runtime = injectedRuntime ?? validateRuntime(
-    supportsDetached(installed.version)
+    cloudHostRuntime ?? (supportsDetached(installed.version)
       ? createRayrunDetachedRuntime({ getOrigin: () => webServer?.getOrigin?.() })
       : createRayrunAgentRuntime({
         getTools: () => ctx.get?.('tools'),
         getOrigin: () => webServer?.getOrigin?.(),
-      }),
+      })),
   )
   const hostHealth = () => health(checkDependency(profileDirectory(ctx)), runtime)
 

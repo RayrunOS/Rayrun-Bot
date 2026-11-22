@@ -253,7 +253,7 @@
   正常；测试后删除 runtime、stop 机器。尚未接 DSH agent；核心 supervisor/session
   未实现。
 - 依赖 1.2.0 `runtime.*` + Bots client live 联调（2026-11-22，临时 DSH profile
-  `0.2.2-rc.5`，依赖 `feat/runtime-rpc` `fe965c1`，devcheck scoped token）：
+  `0.2.2-rc.5`，依赖 main `fe965c1`，devcheck scoped token）：
   `rayrun-bot` 从 Stopped 启动；`runtime.list` 空；`runtime.put rpc-live` →
   `applied=true`、running（pid 635）；`runtime.get/list` 正常；`runtime.delete` →
   `deleted=true`、get 为 null；测试后机器 stop，未 destroy；测试 token 已撤销，
