@@ -14,7 +14,8 @@ smoke stopped the machine, restarted DSH, and the next turn answered from the
 persisted transcript. With 1.2+, a host-side `runtime.*` client is ready for
 the platform-supervised bot host. The opt-in `cloudHost` runtime adapter wires
 that host into `session.*` through the dependency's `rayrun_files` tool; it is
-preview, and the host entry point must already be installed on the machine.
+preview and has passed a dev page E2E; the host entry point must already be
+installed on the machine.
 Approval execution is not implemented. The approval protocol and audit store
 exist, but a decision explicitly reports `execution.available: false`. The
 conversation UI uses the host session for real roster bots while sample bots,

@@ -100,7 +100,7 @@
 | R-G005 | 2026-11-21 | 完整安装 DSH 0.2.2-rc.5 的 subprocess/terminal 路径 | `npm install -g` 跳过 `dsh-subprocess-local`、`node-pty`、`koffi`、`protobufjs` 的 install scripts | **未验证**：Web UI 和 plugin manager 可用；terminal/子进程未测 | 需要在镜像里显式跑 allow-scripts 或换安装方式 |
 | R-G006 | 2026-11-21 | 把预装好的 web profile 烘进自定义镜像 | `POST /v1/images` 保存的是 rootfs overlay；`/workspace/.rayrun/dsh` 在 workspace 盘，不在镜像里 | **有 workaround**：镜像带 tarball + bootstrap，首启写入 workspace | 不能直接做“打开即带 profile”的镜像；需要 bootstrap 或平台支持 workspace 快照 |
 | R-G007 | 2026-11-21 | 与本地验证/桌面一致的 DSH 版本 | 官方镜像 pin `0.2.0-rc.2`；本机页面验证使用 `0.2.2-rc.5`；桌面 bundle `0.2.2-rc.5`（官方桌面未验证，见 R-G001） | **有 workaround**：镜像内可升级并验证；升级后 profile 保留；组合记录在 [`version-matrix.md`](version-matrix.md) | 镜像 pin 与本地/桌面仍不一致；镜像升级需要平台/构建支持 |
-| R-G008 | 2026-11-22 | 长驻 bot runtime、session 续接、启动钩子、prompt 队列 | 平台答复（2026-11-22）：runtimes API 已实现并本机 dev 全量验收通过（`rayrun` 仓库 `rayrun-bot-gaps`，`4709ac0`），**生产未部署**；契约含 `PUT/GET/POST/DELETE /v1/sandboxes/{id}/runtimes`、guestd 0.6.0、`autostart`/`restart=always`/`keep_alive`、boot 时 credential injection；session 不是平台对象，bot host 自己写 `/workspace`，workspace 跨 stop/start 保留；旧镜像 409 `guestd_outdated`。2026-11-22 本机 dev 全量验收通过，旧镜像 `ci@1` 负测通过（见 §3.1） | **平台实现本机 dev 全量验收通过；生产未部署；旧镜像 409 已验证**；bot 侧 host/session 尚未进入核心包（`tools/cloud-host-poc` POC 已通过 queue/autostart/SIGKILL、DSH session 续接）。审批隔离不在初步支持内（§3.3） | 生产部署 + bot host 联合验收；“合上笔记本继续工作”的端到端验证仍待做 |
+| R-G008 | 2026-11-22 | 长驻 bot runtime、session 续接、启动钩子、prompt 队列 | 平台答复（2026-11-22）：runtimes API 已实现并本机 dev 全量验收通过（`rayrun` 仓库 `rayrun-bot-gaps`，`4709ac0`），**生产未部署**；契约含 `PUT/GET/POST/DELETE /v1/sandboxes/{id}/runtimes`、guestd 0.6.0、`autostart`/`restart=always`/`keep_alive`、boot 时 credential injection；session 不是平台对象，bot host 自己写 `/workspace`，workspace 跨 stop/start 保留；旧镜像 409 `guestd_outdated`。2026-11-22 本机 dev 全量验收通过，旧镜像 `ci@1` 负测通过（见 §3.1） | **平台实现本机 dev 全量验收通过；生产未部署；旧镜像 409 已验证**；bot 侧本地 adapter 已进包预览并页面 E2E 通过（`HOST_E2E_OK`，2026-11-23）；host 入口仍 POC、镜像/生产未交付。审批隔离不在初步支持内（§3.3） | 生产部署 + host 镜像/联合验收；“合上笔记本继续工作”的端到端验证仍待做 |
 | R-G009 | 2026-11-11 | 零余额不丢盘、spend cap | 平台答复：线上仍可能 force-destroy；代码里的两步停/宽限未部署；无硬上限 | **风险接受**（见 [`08-integration.md`](08-integration.md) §3.2） | 不通过烧余额来验证；只做只读余额/告警检查 |
 | R-G010 | 2026-11-11 | 带鉴权的入站访问 | ingress `token` 档恒 403；`public` 档无鉴权；无 per-instance 证书 | **有 workaround**：public ingress + 应用层 DSH launch token/cookie；不暴露产品面板 | 手机审批/远程 UI 的 Rayrun 路径受限 |
 | R-G011 | 2026-11-21 | 只读、可撤销的测试 token | 生产 token 是账号身份，无 scope；当前测试 token 无过期时间 | **有 workaround**：专用账号/测试后撤销 | 测试 token 权限过大；不要放进沙箱 |
@@ -272,6 +272,13 @@
 - `dsh.start` 空结果（2026-11-22，devcheck 镜像）：任务完成但 `dsh.result` 返回
   `files: []`，`.dsh/results/<task>/reply.md` 不存在；同 profile 直接 DSH 正常。
   根因是 devcheck 镜像的 oneshot manifest 为 `/bin/sh -c`，不是 DSH；见 R-G014。
+- Cloud host adapter 页面 E2E（2026-11-23，本机 DSH 0.2.2-rc.5，依赖 main
+  `fe965c1`，Bots `rayrun-cloud-host` adapter + 机器镜像 `dsh-bot-devcheck@1` 的
+  host POC/DSH）：页面创建 bot 并发送；adapter 启动 `rayrun-bot`、确保
+  `bot-host-cloud-host` running（pid 635）、用 `rayrun_files` 投递 inbox；host 内
+  DSH 回复 `HOST_E2E_OK`；页面 session `idle`，transcript user+bot。测试后删除
+  runtime、stop 机器，未 destroy。host 入口仍是 `tools/cloud-host-poc` POC，未随包
+  发布；dev token 已撤销。
 - 打包产物安装（2026-11-22，本机 DSH `0.2.2-rc.5`；本地打包检查）：`npm pack` 生成
   15 个文件的 tarball（host/client、locale、`lib/*.js`、bundle patch、icon、README、
   LICENSE；54.6 kB），`test/`、`docs/`、`tools/` 未进入；`dsh plugin --profile

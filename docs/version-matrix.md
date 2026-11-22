@@ -35,6 +35,7 @@ host-callable `runtime.*`（main 已合并，尚未发布 npm）。
 | `0.2.2-rc.5` | `1.1.0`（main `720f30a`，未发布 npm） | `0.1.0-alpha.0` | 24 | A8 续接：第一轮 `TURN1_OK` 后机器 stop、host 重启，第二轮由依赖自动唤醒机器并从 transcript 回答 `ALPHA`；刷新后两轮仍在 | [`10-rayrun-verification.md`](10-rayrun-verification.md) §3.1（2026-11-22） |
 | `0.2.2-rc.5` | `1.2.0`（main `fe965c1`，未发布 npm） | `0.1.0-alpha.0` | 24 | Bots `runtime.*` client 经依赖 host RPC live：dev 机器 start 后 put/list/get/delete，测试后 stop | [`10-rayrun-verification.md`](10-rayrun-verification.md) §3.1（2026-11-22） |
 | `0.2.0-rc.2`（镜像 `dsh-bot-devcheck@1`） | `1.2.0`（main `fe965c1`，未发布 npm） | host POC（`tools/cloud-host-poc`） | 24 | DSH headless 直接 `--session-id` 续接：`RUN1_OK` → `ALPHA`；POC host 两轮 `HOST1_OK` → `BETA` | [`10-rayrun-verification.md`](10-rayrun-verification.md) §3.1（2026-11-22） |
+| `0.2.2-rc.5` | `1.2.0`（main `fe965c1`，未发布 npm） | `0.1.0-alpha.0`（`cloudHost` adapter）+ host POC | 24 | Bots 页面 → adapter → `rayrun_files` → host POC/DSH：`HOST_E2E_OK`；runtime 删除、机器 stop | [`10-rayrun-verification.md`](10-rayrun-verification.md) §3.1（2026-11-23） |
 | `0.2.2-rc.5` | `1.0.0` | `0.1.0-alpha.0` | 24 + Rayrun 沙盒 | 云端 ingress、`dsh web` 部署与 token URL | [`09-deployment.md`](09-deployment.md)、[`10-rayrun-verification.md`](10-rayrun-verification.md) §3.1 |
 
 “未安装”表示该 CI 矩阵只验证 Bots 包本身能安装和合成，不验证依赖或云端行为。

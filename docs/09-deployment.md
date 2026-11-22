@@ -174,7 +174,7 @@ patch、`lib/*.js`、图标、README 和 LICENSE；CI 会把打出的 tarball �
 `tools/cloud-host-poc`（POC，不随包发布）。adapter 先解析已有机器，机器不存在时
 拒绝；由于 `rayrun_files` 会按依赖的 `autoCreate` 处理缺失机器，Bots 用 profile
 建议把云电脑行设为 `autoCreate: false`。每个 bot 一个 `bot-host-<botId>` runtime；
-尚未做多 bot 单 host 或镜像交付。状态以 [`12-status.md`](12-status.md) 为准。
+2026-11-23 页面 E2E 已通过（`HOST_E2E_OK`）；尚未做多 bot 单 host 或镜像交付。状态以 [`12-status.md`](12-status.md) 为准。
 
 **永远不要把 Rayrun token 或模型 key 写进会提交的配置文件。**
 

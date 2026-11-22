@@ -123,7 +123,7 @@ adapter 放在我们的包里，不改依赖。
 等错误码透传。Bots 侧客户端 `lib/runtime-rpc.js` 已有 fake-fetch 测试（5/5），
 依赖侧契约测试 12/12；2026-11-22 在临时 DSH profile + scoped dev token 上做了
 live 联调：`rayrun-bot` 启动后 `put → running`、`get/list`、`delete → null`，测试后
-机器 stop。已接入 cloud host adapter（预览）；adapter 尚未 dev live。
+机器 stop。已接入 cloud host adapter（预览）；adapter 页面 E2E 已通过（2026-11-23，`HOST_E2E_OK`）。
 
 审批隔离不在这个初步支持范围内，见 §3.3。
 
