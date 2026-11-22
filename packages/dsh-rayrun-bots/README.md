@@ -11,8 +11,10 @@ collected from the task result directory; 1.0.x falls back to the single-turn
 on 2026-11-22; the detached smoke closed the page and restarted the local DSH
 while the task ran, and the restarted host collected `reply.md`. A second-turn
 smoke stopped the machine, restarted DSH, and the next turn answered from the
-persisted transcript. Approval execution is not implemented. The approval
-protocol and audit store
+persisted transcript. With 1.2+, a host-side `runtime.*` client is ready for
+the platform-supervised bot host, but it is not yet wired into the session
+path. Approval execution is not implemented. The approval protocol and audit
+store
 exist, but a decision explicitly reports `execution.available: false`. The
 conversation UI uses the host session for real roster bots while sample bots,
 approvals, routines and settings remain an in-memory preview. The page-level
@@ -151,6 +153,7 @@ node test/bot-store.mjs
 node test/session-runtime.mjs
 node test/rayrun-runtime.mjs
 node test/rayrun-detached-runtime.mjs
+node test/runtime-rpc.mjs
 node test/bot-workspace.mjs
 node test/dependency.mjs
 node test/approvals.mjs
@@ -175,11 +178,12 @@ lib/approvals.js   # approval request/decision protocol, TTL, action hash, audit
 lib/bots.js        # persistent roster: list/get/create/update/delete
 lib/bot-schema.js  # bot.json validation, defaults and creation
 lib/bot-workspace.js # per-bot local git checkout for detached tasks
-lib/dependency.js  # dsh-rayrun-computer detection, version and detached gate
+lib/dependency.js  # dsh-rayrun-computer detection, version, detached/runtime gates
 lib/errors.js      # stable error codes (shared with docs/plans/mvp-plan.md §4.3)
 lib/local-store.js # state-directory resolution and atomic JSON writes
 lib/rpc.js         # JSON responses and request-body parsing
 lib/runtime.js     # single-turn and detached runtime contracts
+lib/runtime-rpc.js # host-side runtime.* client (cloud bot host)
 lib/rayrun-rpc.js  # shared same-origin dependency RPC caller
 lib/rayrun-runtime.js # rayrun_agent-backed runtime adapter
 lib/rayrun-detached-runtime.js # dsh.start/status/result adapter

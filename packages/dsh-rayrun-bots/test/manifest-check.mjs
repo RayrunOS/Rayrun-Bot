@@ -28,7 +28,7 @@ if (pkg.engines?.dsh !== '>=0.2.0-rc.2 <0.3.0') {
   errors.push(`engines.dsh must be >=0.2.0-rc.2 <0.3.0 (got ${JSON.stringify(pkg.engines?.dsh)})`)
 }
 
-const requiredFiles = ['index.js', 'client.js', 'cordis.patch.yml', 'README.md', 'LICENSE', 'lib/approvals.js', 'lib/bot-schema.js', 'lib/bots.js', 'lib/bot-workspace.js', 'lib/dependency.js', 'lib/errors.js', 'lib/local-store.js', 'lib/rpc.js', 'lib/runtime.js', 'lib/rayrun-detached-runtime.js', 'lib/rayrun-rpc.js', 'lib/rayrun-runtime.js', 'lib/sessions.js', 'locale/en.json', 'locale/zh.json', 'icon.svg']
+const requiredFiles = ['index.js', 'client.js', 'cordis.patch.yml', 'README.md', 'LICENSE', 'lib/approvals.js', 'lib/bot-schema.js', 'lib/bots.js', 'lib/bot-workspace.js', 'lib/dependency.js', 'lib/errors.js', 'lib/local-store.js', 'lib/rpc.js', 'lib/runtime.js', 'lib/rayrun-detached-runtime.js', 'lib/rayrun-rpc.js', 'lib/rayrun-runtime.js', 'lib/runtime-rpc.js', 'lib/sessions.js', 'locale/en.json', 'locale/zh.json', 'icon.svg']
 
 function covered(entry, file) {
   if (entry === file) return true

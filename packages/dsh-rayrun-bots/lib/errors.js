@@ -8,6 +8,7 @@ export const ERROR_CODES = Object.freeze({
   tokenRequired: 'E_TOKEN_REQUIRED',
   keyRequired: 'E_KEY_REQUIRED',
   machineStopped: 'E_MACHINE_STOPPED',
+  machinePaused: 'E_MACHINE_PAUSED',
   machineBusy: 'E_MACHINE_BUSY',
   approvalExpired: 'E_APPROVAL_EXPIRED',
   approvalReplay: 'E_APPROVAL_REPLAY',
@@ -20,6 +21,10 @@ export const ERROR_CODES = Object.freeze({
   queueFull: 'E_QUEUE_FULL',
   sessionInvalid: 'E_SESSION_INVALID',
   runtimeUnavailable: 'E_RUNTIME_UNAVAILABLE',
+  runtimeInvalid: 'E_RUNTIME_INVALID',
+  runtimeNotFound: 'E_RUNTIME_NOT_FOUND',
+  runtimesUnavailable: 'E_RUNTIMES_UNAVAILABLE',
+  guestdOutdated: 'E_GUESTD_OUTDATED',
   balanceLow: 'E_BALANCE_LOW',
   internal: 'E_INTERNAL',
 })
