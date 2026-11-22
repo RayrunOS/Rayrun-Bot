@@ -57,7 +57,10 @@ DSH session spike on the same dev image (DSH 0.2.0-rc.2):
 - direct `dsh --profile headless --json` answered `RUN1_OK`;
 - the same session id via `--session-id` answered `ALPHA` on the next process;
 - the host with `DSH_BOT_AGENT=dsh` answered `HOST1_OK` then `BETA`, stored the
-  DSH session id, and wrote the expected transcript/outbox.
+  DSH session id, and wrote the expected transcript/outbox;
+- automatic projection (2026-11-23): the adapter uploaded these assets to
+  `/workspace/.rayrun/host/0.1.0-alpha.0/`, verified the SHA-256 manifest, and
+  the page E2E replied `HOST_E2E_OK`.
 
 The dependency's `dsh.start` produced no `reply.md` on this image because its
 oneshot manifest runs `/bin/sh -c`, not DSH. Use a DSH stdin/ndjson image for

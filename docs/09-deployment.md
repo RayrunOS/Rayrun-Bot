@@ -175,7 +175,7 @@ patch、`lib/*.js`、图标、README 和 LICENSE；CI 会把打出的 tarball �
 adapter 先解析已有机器，机器不存在时拒绝；由于 `rayrun_files` 会按依赖的
 `autoCreate` 处理缺失机器，Bots 用 profile 建议把云电脑行设为 `autoCreate: false`。
 每个 bot 一个 `bot-host-<botId>` runtime；2026-11-23 手动机器路径的页面 E2E 已通过
-（`HOST_E2E_OK`）；projection 路径的页面 E2E 待补；多 bot 单 host 与生产镜像未做。
+（`HOST_E2E_OK`）；自动 projection 页面 E2E 也已通过（2026-11-23）；多 bot 单 host 与生产镜像未做。
 状态以 [`12-status.md`](12-status.md) 为准。
 
 **永远不要把 Rayrun token 或模型 key 写进会提交的配置文件。**

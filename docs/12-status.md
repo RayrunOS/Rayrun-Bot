@@ -17,7 +17,7 @@ session/transcript，以及按轮次的 runtime（依赖 1.1+ 用 detached
 发布路径。平台侧 R-G008 runtimes API 已实现并本机 dev 全量验收通过
 （`rayrun-bot-gaps`，`4709ac0`，2026-11-22），但生产未部署；bot 侧常驻 host 的本地
 transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；host 资产已随包
-发布（`cloud-host/`），projection 路径待页面 E2E；镜像与生产交付未做。
+发布（`cloud-host/`），projection 页面 E2E 已通过（2026-11-23）；镜像与生产交付未做。
 
 ## 2. 依赖项目今天可用
 
@@ -44,7 +44,7 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
 | setup | Rayrun 步骤经云电脑插件的同源 RPC 接收粘贴的 token；云电脑步骤采用已有机器或经同一 RPC 创建第一台机器。 |
 | 电脑卡片 | Open / Take over 经同一 RPC 启动或恢复机器、等待 `Running`、修复桌面服务并打开 `desktop_url`；Stop 在确认后停止，永不 destroy。 |
 | 用量 | 详情面板的电脑块和用量块，以及 Settings 的用量行，读取真实机器状态、余额与机时。 |
-| 测试 | Host/client 名册接线、session/transcript、`rayrun_agent`/detached adapter、per-bot workspace 与审批协议由普通 Node 契约测试覆盖；客户端 session 失败路径、单轮真实一轮、页面关闭 + host 重启后的 detached 收取，以及机器 stop/start 后的第二轮续接另有本机页面 smoke。包清单、locale、RPC、客户端、名册、session、runtime、workspace、审批和 tarball 内容都有检查；cloud host 6 项、DSH agent 4 项、host projection 5 项、runtime.* client 5 项、cloud host runtime adapter 7 项纯 Node 检查，runtime.* client 与 cloud host 另有 dev live 联调，cloudHost adapter 另有页面 E2E。 |
+| 测试 | Host/client 名册接线、session/transcript、`rayrun_agent`/detached adapter、per-bot workspace 与审批协议由普通 Node 契约测试覆盖；客户端 session 失败路径、单轮真实一轮、页面关闭 + host 重启后的 detached 收取，以及机器 stop/start 后的第二轮续接另有本机页面 smoke。包清单、locale、RPC、客户端、名册、session、runtime、workspace、审批和 tarball 内容都有检查；cloud host 6 项、DSH agent 4 项、host projection 5 项、runtime.* client 5 项、cloud host runtime adapter 7 项纯 Node 检查，runtime.* client 与 cloud host 另有 dev live 联调，cloudHost adapter 另有页面 E2E（手动与自动 projection）。 |
 | 远程审批 | 协议后端（request/decision schema、canonical actionHash、TTL、幂等/重放/错 bot 负向测试、审计、`approvals.list/get/decide`）已实现；**执行仍暂停**，等待平台权限隔离与 host-only 审批端点（ADR-001，2026-11-21 定），`decide` 只返回 `execution.available: false`。客户端审批卡仍是预览；`rayrun_agent` adapter 不拦截外部动作，prompt 指引不是安全边界。 |
 | 发布 | 没有可发布版本；npm 发布路径不存在。 |
 
@@ -87,7 +87,7 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
   `session.*`；fake 测试 7/7（机器 start/resume、runtime 复用、projection、无机器/无文件工具失败
   关闭）。2026-11-23 页面 E2E 通过：adapter 启动机器、确保 `bot-host-cloud-host`
   runtime、经 `rayrun_files` 投递，host DSH 回复 `HOST_E2E_OK`；session idle。host
-  资产已随包发布；projection 路径待页面 E2E。
+  资产已随包发布；projection 页面 E2E 已通过（2026-11-23）。
 - 依赖 1.2.0 的 `runtime.*` host RPC 已合入 main（`fe965c1`，CI
   45041519563 在 Node 22/24 全绿；未发布 npm）：`runtime.put/list/get/start/stop/restart/delete`，sandbox 必须已存在，
   credentials 只传绑定名；依赖侧 fake-fetch 测试 12/12。Bots 侧 `lib/runtime-rpc.js`
@@ -116,9 +116,9 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
   注入、sandbox stop/start autostart、SIGKILL 重启、删除；keep_alive 与 daemon 重启
   保留；旧镜像 `ci@1` 负测 409 `guestd_outdated`）；生产未部署；本地 transport
   adapter（`lib/cloud-host-runtime.js`）已在包内预览并通过页面 E2E；host 资产已随包
-  发布，projection 路径待页面 E2E；镜像/生产交付未做。依赖 1.2.0 `runtime.*` client
+  发布，projection 页面 E2E 已通过（2026-11-23）；镜像/生产交付未做。依赖 1.2.0 `runtime.*` client
   （`lib/runtime-rpc.js`）已过 fake 测试和 dev live 联调，并已接 cloud host
-  adapter；adapter 页面 E2E 已通过。projection 页面 E2E、镜像/生产尚未交付。生产部署需授权。
+  adapter；adapter 页面 E2E 已通过。镜像/生产尚未交付。生产部署需授权。
 - 机器上常驻的 DSH host。
 - 能拦住 worker 的远程审批执行（协议后端已有；执行阻塞于 Rayrun host/agent
   权限隔离；ADR-001）。
