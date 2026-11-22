@@ -205,6 +205,62 @@ check('a detached turn survives a runner restart and is collected later', async 
   second.close()
 })
 
+check('a detached turn drains a queued turn in order', async () => {
+  const root = mkdtempSync(path.join(tmpdir(), 'rayrun-bots-session-'))
+  roots.push(root)
+  const bots = openBotStore(root)
+  const bot = bots.create({ name: 'Echo Bot', label: 'Echoes messages' })
+  const localDir = path.join(root, 'bots', bot.id, 'workspace')
+  const tasks = []
+  const runner = openSessionRunner({
+    stateRoot: root,
+    runtime: {
+      contract: 1,
+      name: 'fake-detached-queue',
+      available: true,
+      detached: true,
+      async start({ text }) {
+        const taskId = `task-${tasks.length + 1}`
+        tasks.push({ taskId, text, done: false })
+        return { taskId, sandbox: 'box', localDir, timeoutSeconds: 900 }
+      },
+      async status({ detached }) {
+        const task = tasks.find((item) => item.taskId === detached.taskId)
+        return { running: task ? !task.done : false }
+      },
+      async collect({ detached }) {
+        const task = tasks.find((item) => item.taskId === detached.taskId)
+        return task?.done ? { text: `reply:${task.text}` } : { running: true }
+      },
+    },
+    getBot: bots.get,
+    detachedPollMs: 10,
+  })
+  runner.send(bot.id, 'first')
+  await until(
+    () => runner.status(bot.id)?.detached?.taskId === 'task-1',
+    'first detached task did not attach',
+  )
+  runner.send(bot.id, 'second')
+  assert.equal(runner.status(bot.id).pending, 1)
+  assert.equal(runner.status(bot.id).state, 'queued')
+
+  tasks[0].done = true
+  await until(
+    () => tasks.length === 2 && runner.status(bot.id)?.detached?.taskId === 'task-2',
+    'queued detached task did not start after the first completed',
+  )
+  tasks[1].done = true
+  await runner.settled(bot.id)
+
+  assert.equal(runner.status(bot.id).state, 'idle')
+  assert.deepEqual(
+    runner.history(bot.id).messages.map((message) => message.text),
+    ['first', 'second', 'reply:first', 'reply:second'],
+  )
+  runner.close()
+})
+
 check('a detached task only completes while its id is still current', () => {
   const root = mkdtempSync(path.join(tmpdir(), 'rayrun-bots-session-'))
   roots.push(root)
