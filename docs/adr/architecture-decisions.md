@@ -22,7 +22,7 @@
 | [ADR-006](#adr-006) | “合上笔记本”意味着什么 | Proposed | 写清允许的工作、审批过期与计费后果 | A5, A6, G3 |
 | [ADR-007](#adr-007) | 常驻 bot runtime 的凭据与 DSH profile 模型 | Proposed | M2 前做 spike；回退到逐次 headless + transcript replay | C1–C4, D1–D5, A5, A8 |
 | [ADR-008](#adr-008) | Desktop 访问路径 | Proposed | 核实依赖的路径；没有安全路径就不要承诺 takeover | F5, security |
-| [ADR-009](#adr-009) | Routines / scheduler 范围 | Accepted（2026-11-23，本地调度 + cloudHost 预览） | 本地 host 定时入队普通 turn；cloudHost 模式由云 host 调度；云端队列串行执行 | M1, M4 |
+| [ADR-009](#adr-009) | Routines / scheduler 范围 | Accepted（2026-11-23；cloudHost dev live 2026-11-24） | 本地 host 定时入队普通 turn；cloudHost 模式由云 host 调度；云端队列串行执行 | M1, M4 |
 | [ADR-010](#adr-010) | RPC 路由与信封 | Proposed | 选定一个契约，代码、测试、文档一起对齐 | F2, F4 |
 | [ADR-011](#adr-011) | 审批 schema 与 canonical action hash | Accepted（2026-11-22，协议已实现；本地执行见 ADR-019） | canonical JSON、完整 decision 字段、本地重算 hash | E2–E6, C-S6 |
 | [ADR-012](#adr-012) | 恢复与运行语义 | Proposed | 补字段、时钟规则、限流与审计语义 | C8, D4, E5–E7, A8, A9 |
@@ -348,7 +348,7 @@ runtimes API（`rayrun-bot-gaps`，`4709ac0`，待部署）已提供受监督进
 <a id="adr-009"></a>
 ### ADR-009 — Routines / scheduler 范围
 
-**状态：** Accepted（2026-11-23，本地调度；同日补充 cloudHost 预览）.
+**状态：** Accepted（2026-11-23，本地调度；同日补充 cloudHost；2026-11-24 dev live）.
 
 **问题。** v0.1 里 scheduler 是 P0 还是 P1？本地 scheduler 与云端队列是什么关系？
 
@@ -376,7 +376,9 @@ prompt、间隔、开关和下一次运行时间。本地 DSH host 的 scheduler
   `bots/<id>/host/routines-state.json` 维护下一次运行时间，先 claim 再入队。它可以
   在本地 DSH 停止时运行，前提是机器和 cloudHost runtime 正在运行。结果写入
   `bots/<id>/routine-results/`，本地 `routines.sync` 导入，`session.history` 合并
-  展示。此路径有 fake E2E，尚未 live；机器停止时不会同步或运行。
+  展示。此路径有 fake E2E，并已在 Rayrun dev/test 环境完成 live E2E
+  （2026-11-24，本地 DSH 停止后云端执行）；生产仍待 R-G008 部署。机器停止时不会
+  同步或运行。
 - 机器停止期间编辑 routine 无法上传；机器启动后，云端可能先按旧定义跑一次，直到
   本地 `routines.sync` 覆盖。MVP 记录此限制，不声称强一致。
 - v0.1 只做每 N 分钟重复；cron 表达式和事件触发不在范围内。

@@ -1,6 +1,6 @@
 # 版本矩阵
 
-> 状态：2026-11-22。本文记录 DSH、云电脑依赖 `dsh-rayrun-computer` 与 Rayrun Bot
+> 状态：2026-11-24。本文记录 DSH、云电脑依赖 `dsh-rayrun-computer` 与 Rayrun Bot
 > 包的兼容范围，以及**实际验证过**的组合。它不承诺未测试的组合；实现状态仍以
 > [`12-status.md`](12-status.md) 为准。
 > 依赖边界见 [`08-integration.md`](08-integration.md)；验证环境缺口见
@@ -28,7 +28,7 @@ host-callable `runtime.*`（main 已合并，尚未发布 npm）。
 | `0.2.0-rc.2`（Rayrun 镜像 `deepseek-harness@1`） | `1.0.0` | `0.1.0-alpha.0` | 24.22.0 | 两插件安装、bundle 合成、Bots/云电脑页面渲染、health、同源 POST 拒绝 | [`10-rayrun-verification.md`](10-rayrun-verification.md) §3.1 |
 | `0.2.1-rc.5` | 未安装 | `0.1.0-alpha.0` | 24 | 只安装 Bots 包并合成配置；未启动 web、未调用云电脑插件 | `.github/workflows/checks.yml` 的 `dsh-plugin` job |
 | `0.2.2-rc.5` | 未安装 | `0.1.0-alpha.0` | 24 / 26 | 只安装 Bots 包并合成配置 | 同上 |
-| `0.2.2-rc.5` | 未安装 | `0.1.0-alpha.0` | 24 | 从 `npm pack` 的 tarball 安装并合成配置（当时 15 个文件；当前包 34 个文件由 `package-contents` 检查） | [`10-rayrun-verification.md`](10-rayrun-verification.md) §3.1（2026-11-22） |
+| `0.2.2-rc.5` | 未安装 | `0.1.0-alpha.0` | 24 | 从 `npm pack` 的 tarball 安装并合成配置（当时 15 个文件；当前包 40 个文件由 `package-contents` 检查） | [`10-rayrun-verification.md`](10-rayrun-verification.md) §3.1（2026-11-22） |
 | `0.2.2-rc.5` | `1.0.0` | `0.1.0-alpha.0` | 24 | 本机页面层 setup / Open / Stop / roster；依赖 RPC | [`10-rayrun-verification.md`](10-rayrun-verification.md) §3.1 |
 | `0.2.2-rc.5` | `1.0.0` | `0.1.0-alpha.0` | 24 | 本机页面层真实一轮 session：已有 `rayrun-bot-test` 机器、bot 回复 `SMOKE_OK`、刷新后 transcript 仍在 | [`10-rayrun-verification.md`](10-rayrun-verification.md) §3.1（2026-11-22） |
 | `0.2.2-rc.5` | `1.1.0`（main `720f30a`，未发布 npm） | `0.1.0-alpha.0` | 24 | Bots 页 detached `dsh.start/status/result`：task id 持久化，关闭页面并 kill 本地 DSH，重启后恢复 poll、收取 `reply.md`（`DETACHED_OK`），刷新后回复仍在 | [`10-rayrun-verification.md`](10-rayrun-verification.md) §3.1（2026-11-22） |
@@ -43,6 +43,7 @@ host-callable `runtime.*`（main 已合并，尚未发布 npm）。
 | `0.2.2-rc.5`（本机）/ `0.2.0-rc.2`（镜像 `dsh-bot-devcheck@1`） | `1.2.0`（main `fe965c1`，未发布 npm） | `0.1.0-alpha.0`（本地审批执行器 + cloud proposal bridge） | 24 | start 审批（幂等 done/Running）+ 下一轮 Recent approval outcomes context；runtime 删除、机器 stop | [`10-rayrun-verification.md`](10-rayrun-verification.md) §3.1（2026-11-23） |
 | `0.2.2-rc.5`（本机）/ `0.2.0-rc.2`（镜像 `dsh-bot-devcheck@1`） | `1.2.0`（main `fe965c1`，未发布 npm） | `0.1.0-alpha.0`（本地审批执行器 + cloud proposal bridge） | 24 | denial：denied/not_executed、机器 Running；Continue bot 从结果 context 回答 denied | [`10-rayrun-verification.md`](10-rayrun-verification.md) §3.1（2026-11-23） |
 | `0.2.2-rc.5`（本机）/ `0.2.0-rc.2`（镜像 `dsh-bot-devcheck@1`） | `1.2.0`（main `fe965c1`，未发布 npm） | `0.1.0-alpha.0`（本地审批执行器 + cloud proposal bridge） | 24 | pause：Paused + 停机 outbox → resume 后补传；resume 审批 done/Running；runtime 删除、机器 stop | [`10-rayrun-verification.md`](10-rayrun-verification.md) §3.1（2026-11-23） |
+| `0.2.2-rc.5`（本机）/ `0.2.0-rc.2`（镜像 `dsh-bot-devcheck@1`） | `1.2.0`（main `fe965c1`，未发布 npm） | `0.1.0-alpha.0`（cloudHost routine scheduler） | 24 + Rayrun dev | 本地 DSH 在 due 前停止；云 host 自动 enqueue/执行 routine，reply `CLOUD_ROUTINE_OK`；重启后 sync 导入 history；runtime 删除、机器 stop | [`10-rayrun-verification.md`](10-rayrun-verification.md) §3.1（2026-11-24） |
 | `0.2.2-rc.5` | `1.0.0` | `0.1.0-alpha.0` | 24 + Rayrun 沙盒 | 云端 ingress、`dsh web` 部署与 token URL | [`09-deployment.md`](09-deployment.md)、[`10-rayrun-verification.md`](10-rayrun-verification.md) §3.1 |
 
 “未安装”表示该 CI 矩阵只验证 Bots 包本身能安装和合成，不验证依赖或云端行为。

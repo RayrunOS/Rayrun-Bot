@@ -314,7 +314,25 @@
   “This Rayrun deployment does not expose the runtimes API”。测试在创建 bot/routine
   前中止；机器已 stop，本次未创建 runtime，token 未打印，临时 DSH profile（含
   vault token）已删除；保留的本地 token 文件未打印、未改动。该结果与 R-G008 的
-  生产部署状态一致，说明 cloudHost routine 的 live 验证仍被平台阻塞。
+  生产部署状态一致，说明**生产环境**的 cloudHost routine live 验证仍被平台阻塞；
+  dev/test 环境的 live E2E 见下一条。
+- 云端 routine dev live E2E（2026-11-24，Rayrun dev daemon
+  `http://192.168.3.75:8080/v1`，本机 DSH `0.2.2-rc.5`，依赖 checkout `1.2.0`，
+  Bots `0.1.0-alpha.0`，机器 `rayrun-bot-scoped`
+  （`01a20410-12f3-7004-9e7d-5cf7e6563e5b`，`dsh-bot-devcheck@1`，credential
+  `deepseek-flash`），scoped token）：页面连接 dev daemon，启动机器并完成
+  `BOOT_OK`；自动 projection 注册 `bot-host`（pid 636，running）。创建每 1 分钟
+  routine，镜像 `routines.json` + `bot.json` 到
+  `/workspace/.rayrun/bots/cloud-routine-live/`。在 due 前
+  `2026-11-23T23:51:26Z` 停止本地 DSH；机器上 host 于
+  `2026-11-23T23:52:20.428Z` `routine-enqueued`、`23:52:22.353Z` `task-done`，
+  `routine-results/` 中 reply=`CLOUD_ROUTINE_OK`，`routines-state.json` 的
+  lastRunAt/nextAt 前进。重启本地 DSH 后 `routines.sync` 导入（页面初始已导入，
+  sync duplicate=1），`session.history` 为 boot user/bot + routine user/bot，页面
+  显示 `CLOUD_ROUTINE_OK`。截图 `/tmp/bot/cloud-routine-live.png`（临时文件，不入库）。
+  测试后 runtime 删除、runtimes=[]、机器 stop（Stopped，未 destroy）；scoped token
+  已撤销（token_id `321a872f…`），临时 token/base-url 文件和临时 DSH profile 已
+  删除；保留的本地 token 文件未打印、未改动。
 - 真实 cloud proposal 闭环（2026-11-23，本机 DSH `0.2.2-rc.5`，依赖 main
   `fe965c1`，Bots `0.1.0-alpha.0`，`rayrun-bot-scoped`，私有 `deepseek-flash`）：
   真实云 bot 在回复末尾输出结构化 `rayrun-approval` block；cloud host 解析并写
@@ -384,8 +402,9 @@
 - A11 本地 workspace 扫描发现 `tmp/` 下有未跟踪的本地 key 文件（`dp-code.key`、
   `rayrun-dev.key`）。它们被 `.gitignore` 忽略，且未进入 git 历史或 npm 包，但仍
   留在工作区；需轮换并移出/删除后才能声称 A11 通过。扫描未打印值；
-- 云端 routine scheduler 的 live 验证：生产 API 的 `runtime.list` 仍缺失（R-G008
-  待部署；2026-11-24 尝试见 §3.1）；目前只有 fake E2E 和本地 mode 页面 smoke。
+- 生产环境的 cloudHost routine live 验证：dev daemon 的 live E2E 已通过（§3.1，
+  2026-11-24），但生产 API 的 `runtime.list` 仍缺失（R-G008 待部署；同日生产尝试
+  止于 404）；本地 mode 页面 smoke 也已通过。
 - bot 会话、审批往返、远程审批、队列与恢复：R-G008 平台实现待部署；bot 侧常驻
   host 已有 dev 预览（多 bot 单 host E2E 通过）；本地 typed 审批执行已通过拒绝/
   失败关闭的页面 E2E、真实 cloud proposal + start/stop/pause/resume、denial/Continue

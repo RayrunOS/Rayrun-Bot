@@ -1,6 +1,6 @@
 # 00 — 产品方向：定位与 v0.1 范围
 
-> 状态：2026-11-23。本文是**产品层的唯一真相源**：卖给谁、解决什么问题、v0.1 做什么、怎么算做完。
+> 状态：2026-11-24。本文是**产品层的唯一真相源**：卖给谁、解决什么问题、v0.1 做什么、怎么算做完。
 > 实现状态与进度只看 [`12-status.md`](12-status.md)；本文不复制状态。根
 > [`../README.md`](../README.md) 是营销页，不作为事实依据。
 > 技术方案见 [`01-system-architecture.md`](01-system-architecture.md)；工作分解与验收见
@@ -230,8 +230,9 @@ v0.1 的估算与排序见 [`plans/mvp-plan.md`](plans/mvp-plan.md)；里程碑�
 - **审批是安全边界还是用户同意？** 已定：本地 typed 动作由本地 DSH host 审批/执行
   （ADR-019）；云端凭据动作仍走平台隔离（ADR-001）。云提案 bridge、start/stop、denial/Continue 和下一轮 context 已 live 验证。
 - **routines / scheduler 进不进 v0.1？** 已定：v0.1 做最小 routines，本地
-  scheduler 入队普通 turn；cloudHost 模式另有一个云端调度预览（fake E2E，未
-  live）。cron 和事件触发不在 v0.1（ADR-009，2026-11-23）。
+  scheduler 入队普通 turn；cloudHost 模式的云端调度已在 Rayrun dev/test 环境
+  live 验证（2026-11-24），生产待 R-G008 部署。cron 和事件触发不在 v0.1
+  （ADR-009）。
 - **“合上笔记本”期间哪些工作继续、计费怎么处理？** 后台审批 30 分钟过期，本地 idle stop 不在运行（ADR-006）。
 - **desktop / takeover 的安全路径是什么？** public 端口不能当产品面板（ADR-008）。
 - **IM 审批何时做？** v0.2，用户自己的 bot token，无项目方中继。

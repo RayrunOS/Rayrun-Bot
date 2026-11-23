@@ -1,6 +1,6 @@
 # 02 — Bot 模型
 
-> 状态：2026-11-23。本文定义 bot 是什么、`bot.json` 的字段与校验、默认指令模板、
+> 状态：2026-11-24。本文定义 bot 是什么、`bot.json` 的字段与校验、默认指令模板、
 > 生命周期与身份边界。产品方向见 [`00-product-direction.md`](00-product-direction.md)；
 > 技术基线见 [`01-system-architecture.md`](01-system-architecture.md)；未决决策见
 > [`adr/architecture-decisions.md`](adr/architecture-decisions.md)。
@@ -119,7 +119,8 @@ revision，所以它单独存放：
 - 非 cloudHost 模式由本地 scheduler 执行。cloudHost 模式停用本地 scheduler，
   把定义镜像到云端；云 host 在 `host/routines-state.json` 维护自己的 claim，并在
   本地 DSH 停止时继续调度。云任务完成后写 `routine-results/`，本地
-  `routines.sync` 导入，`session.history` 合并展示。该云端路径是预览，尚未 live。
+  `routines.sync` 导入，`session.history` 合并展示。该云端路径已在 Rayrun
+  dev/test 环境 live 验证（2026-11-24）；生产待 R-G008 部署。
 - 机器停止期间不能同步定义；机器启动后，云端可能先按旧定义运行一次，直到本地
   sync 覆盖。MVP 不承诺强一致。
 - routine turn 走与手动发送相同的 runtime 路径。机器已停止或暂停时，依赖可能按

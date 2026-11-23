@@ -1,6 +1,6 @@
 # 04 — 云端 bot runtime（bot host）
 
-> 状态：2026-11-23。本文定义云电脑上的 **bot runtime**（历史名 bot host）：进程模型、
+> 状态：2026-11-24。本文定义云电脑上的 **bot runtime**（历史名 bot host）：进程模型、
 > 队列、session 映射、执行、心跳与恢复。本地 bot 控制面见
 > [`01-system-architecture.md`](01-system-architecture.md) §1.4 与 ADR-016；
 > 技术基线见 [`01-system-architecture.md`](01-system-architecture.md)；
@@ -141,7 +141,7 @@ DSH agent sessions（bot）
 `queue/state/<itemId>.json`。**每个文件一个写者，不做共享 JSONL 追加**；平台文件 API
 目前没有可用的 CAS（[`08-integration.md`](08-integration.md) §4）。详见 ADR-003。
 
-### 3.4 Routine 调度（预览）
+### 3.4 Routine 调度（dev live；生产待部署）
 
 cloudHost runtime 启用时，本地 DSH host 停用本地 scheduler，把每 bot 的
 `routines.json` 和 `bot.json` 镜像到 `/workspace/.rayrun/bots/<id>/`。云 host：
@@ -161,7 +161,8 @@ schema 校验后写本地 `routine-results/`（保留最近 400 个），由 `se
 按时间合并；它不修改 `session.json`，也不是审批/执行记录。失败任务写
 `state: failed` + `error`，本地 history 显示为 `E_ROUTINE_FAILED` system error。
 机器停止期间的定义编辑无法上传，启动后旧定义可能先运行一次，直到 sync 覆盖。该
-路径有 fake E2E，尚未 live。详见 ADR-009。
+路径有 fake E2E，并已在 Rayrun dev/test 环境 live 验证（2026-11-24）；生产待
+R-G008 部署。详见 ADR-009。
 
 ---
 

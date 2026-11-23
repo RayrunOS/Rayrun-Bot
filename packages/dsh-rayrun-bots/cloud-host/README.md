@@ -1,6 +1,6 @@
 # Cloud bot host
 
-> Status: 2026-11-23. **Preview.** This directory ships as a package asset and
+> Status: 2026-11-24. **Preview.** This directory ships as a package asset and
 > is projected to the user's machine by `lib/host-projection.js`; it is not
 > loaded by the DSH host half. The CLI can use a headless DSH agent; the library
 > still defaults to an echo stub for tests.
@@ -160,9 +160,11 @@ idle bot per tick:
 The local `routines.sync` bridge uploads definitions and imports results only
 while the machine is Running; it never wakes a stopped machine. Imported results
 are display history merged by `session.history`, not queue state. The cloud
-scheduler has fake end-to-end coverage but no live Rayrun run yet. A failed
-routine task writes `state: failed` + `error` to the same results directory, and
-local history shows it as an `E_ROUTINE_FAILED` system error.
+scheduler has fake end-to-end coverage and a Rayrun dev/test live E2E
+(2026-11-24; local DSH stopped before the due time); production is still waiting
+for deployment. A failed routine task writes `state: failed` + `error` to the
+same results directory, and local history shows it as an `E_ROUTINE_FAILED`
+system error.
 
 ## Not built yet
 

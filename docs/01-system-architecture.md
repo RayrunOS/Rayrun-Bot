@@ -1,6 +1,6 @@
 # 01 — 系统架构
 
-> 状态：2026-11-23。本文是**技术层的唯一真相源**：系统由什么组成、边界在哪、状态怎么
+> 状态：2026-11-24。本文是**技术层的唯一真相源**：系统由什么组成、边界在哪、状态怎么
 > 流转、信任模型是什么。
 > 产品范围与验收以 [`00-product-direction.md`](00-product-direction.md) 为准；当前实现
 > 状态以 [`12-status.md`](12-status.md) 为准；未决架构决策见
@@ -52,7 +52,7 @@
                         ▼
                  本地 DSH host + 插件 host half                  [现有 / 计划 *]
                  tools · 同源 RPC · tool guard
-                 bot registry* · bot↔session 映射* · routine scheduler（本地/云预览）
+                 bot registry* · bot↔session 映射* · routine scheduler（本地/云 dev live）
                         │  HTTPS；Rayrun token 不离开 host
                         ▼
                  Rayrun API · https://api.rayrunos.com/v1
@@ -101,8 +101,9 @@
    每 bot 的 `routines.json`，到期后入队一条普通 turn；cloudHost 模式停用本地
    scheduler，由云 host 读取镜像定义调度，并在本地 DSH 停止时继续运行（前提是
    机器和 runtime 正在运行）。结果通过 `routine-results/` 回导本地 history。两者
-   都不做 backfill、不新增审批绕过；云端路径是预览、尚未 live，cron 和事件触发
-   未实现。范围与限制见 ADR-009。
+   都不做 backfill、不新增审批绕过；云端路径已在 Rayrun dev/test 环境 live 验证
+   （2026-11-24），生产待 R-G008 部署；cron 和事件触发未实现。范围与限制见
+   ADR-009。
 8. **模型 provider。** v0.1 只接 DeepSeek；其他 provider 由 DSH 负责，不在本仓库设计
    provider 抽象。
 

@@ -62,9 +62,10 @@ status and verified combinations live in
   while the machine is Running, the cloud host claims schedule state and
   enqueues the task, expands it with the mirrored bot instructions and approval
   hint (the DSH session carries the conversation), and `routines.sync` imports
-  routine results into local history. That cloud path is
-  preview with a fake E2E, not live. A routine is a normal user turn and does
-  not bypass approval. Because it uses the normal send path, a due routine may
+  routine results into local history. That cloud path has a fake E2E and a
+  Rayrun dev/test live E2E (2026-11-24); production is still waiting for the
+  platform deployment. A routine is a normal user turn and does not bypass
+  approval. Because it uses the normal send path, a due routine may
   wake a stopped or paused machine and incur machine-hour charges; the interval
   and enabled switch are standing authorization, not per-run approval.
 - Host half: `session.send`, `session.history` and `session.status` persist a
@@ -143,12 +144,13 @@ status and verified combinations live in
 
 Not built yet: approval actions beyond machine start/stop/pause/resume, cloud-only
 credential approvals, a Bots-page-level verified computer-creation success path,
-live validation of the cloud-host routine scheduler, cron/event triggers, a
-production cloud image, and the npm release path. The local routine store/
+production validation of the cloud-host routine scheduler, cron/event triggers,
+a production cloud image, and the npm release path. The local routine store/
 scheduler, cloud routine bridge, cloud scheduler, failed-result history and
-result merge have plain-Node coverage and a fake end-to-end test; the
-detail-panel create, pause and remove paths passed a local DSH + Firefox smoke on
-2026-11-23 without a Rayrun token, but no scheduled turn was waited on. Approved
+result merge have plain-Node coverage, a fake end-to-end test, and a Rayrun
+dev/test live E2E (cloud run while local DSH was stopped); the detail-panel
+create, pause and remove paths passed a local DSH + Firefox smoke on 2026-11-23
+without a Rayrun token, but no local scheduled turn was waited on. Approved
 start/stop, denial/Continue, and the next-turn approval context were verified live
 on 2026-11-23; pause/resume is also live. See the repo-level
 [MVP plan](../../docs/plans/mvp-plan.md) and [client plan](../../docs/plans/client-plan.md).

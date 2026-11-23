@@ -1,6 +1,6 @@
 # 07 — 安全
 
-> 状态：2026-11-23。本文定义安全目标、威胁模型、凭据边界与“不保护什么”。
+> 状态：2026-11-24。本文定义安全目标、威胁模型、凭据边界与“不保护什么”。
 > 技术基线见 [`01-system-architecture.md`](01-system-architecture.md)；审批的信任
 > 边界见 [`05-approvals.md`](05-approvals.md)；本地状态见
 > [`06-local-state.md`](06-local-state.md)；平台 handoff 见
@@ -127,7 +127,8 @@ ADR-019（2026-11-23）把**本地 DSH host** 定为凭据/执行器在本地动
 - routine 结果只作为展示历史，不写 decision、execution claim 或 session 队列；
   它不能批准动作。routine 轮次产生的审批仍是 `background`，30 分钟过期。
 - routine turn 走普通 send 路径，可能唤醒停止/暂停的机器并产生费用；启用 routine
-  是持续授权，不是逐次审批。cloud routine scheduler 是预览，尚未 live。
+  是持续授权，不是逐次审批。cloud routine scheduler 已在 Rayrun dev/test 环境
+  live 验证（2026-11-24），生产待 R-G008 部署。
 - 被攻陷的云端 agent 仍能在自己的 workspace 内写定义/结果；本地校验失败即拒绝，
   不把 workspace 内容当作可信控制面。
 
