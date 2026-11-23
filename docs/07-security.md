@@ -1,6 +1,6 @@
 # 07 — 安全
 
-> 状态：2026-11-21。本文定义安全目标、威胁模型、凭据边界与“不保护什么”。
+> 状态：2026-11-23。本文定义安全目标、威胁模型、凭据边界与“不保护什么”。
 > 技术基线见 [`01-system-architecture.md`](01-system-architecture.md)；审批的信任
 > 边界见 [`05-approvals.md`](05-approvals.md)；本地状态见
 > [`06-local-state.md`](06-local-state.md)；平台 handoff 见
@@ -21,7 +21,7 @@
 | [`05-approvals.md`](05-approvals.md) | 审批的失败即拒绝与当前文件邮箱的诚实边界 |
 | [`06-local-state.md`](06-local-state.md) | 本地状态权限、日志与保留 |
 | [`08-integration.md`](08-integration.md) | 平台能力、依赖边界与版本契约 |
-| [`adr/architecture-decisions.md`](adr/architecture-decisions.md) | ADR-001（审批执行点）、ADR-005（副作用） |
+| [`adr/architecture-decisions.md`](adr/architecture-decisions.md) | ADR-001（平台隔离）、ADR-019（本地审批执行）、ADR-005（副作用） |
 
 ---
 
@@ -32,9 +32,9 @@
    Rayrun API。
 3. **DeepSeek key 只注入、不被读。** Rayrun 存储并注入 agent 进程；插件和工具不读它，
    机器内的 `exec` shell 看不到它。
-4. **审批失败即拒绝。** 外部副作用等人；超时或未知状态 = 拒绝。**注意**：ADR-001
-   已定为平台权限隔离；平台提供隔离前审批执行不实现，协议/审计也不构成对被控 bot
-   的安全边界，见 §4.4。
+4. **审批失败即拒绝。** 外部副作用等人；超时或未知状态 = 拒绝。ADR-019 让本地
+   DSH host 对 typed 本地动作做审批/执行；云端凭据动作仍等待平台隔离（ADR-001）。
+   协议/审计不构成对被控 bot 的通用安全边界，见 §4.4。
 5. **默认无遥测。** 项目不收集、不上传使用数据。
 6. **没有隐藏出网。** 新云电脑默认关闭出网；host 必须显式列白名单。
 7. **bot 层不新增云凭据。** 复用依赖的 token 路径，不引入新账号、key 或 secret。
@@ -93,55 +93,28 @@ agent 执行模型输出。文件、网页、邮件、工具输出里的 prompt 
 
 ### 4.4 审批的当前边界（重要）
 
-设计契约是失败即拒绝；但 v0.1 计划中的审批文件邮箱位于
-`/workspace/.rayrun/.../approvals/`，而 bot 以 root 运行、可读写该目录。它可以从请求
-文件读到 nonce/id，并写一个匹配的决定自批；也可以修改 host/queue 或绕过工具。
+ADR-019（2026-11-23）把**本地 DSH host** 定为凭据/执行器在本地动作的审批权威与执行
+方；云端 bot 只写提案。具体边界：
 
-ADR-001 已定（2026-11-21，选项 2：平台权限隔离）。平台提供 host/agent 隔离与审批
-端点之前：
-
-- **不实现审批执行**；文件邮箱只传提案与审计，不是授权边界。
-- 2026-11-22 起的协议后端只记录请求/决定与审计，`decide` 返回
-  `execution.available: false`；这不改变上述边界。
-- 审批仍是“用户同意/审计”，**不是对被控 bot 的安全边界**。
-- 不要声称“审批阻止了被攻陷的 bot”。
-- 平台能力清单见 [`08-integration.md`](08-integration.md) §3.3。
-
-### 4.5 公网入站
-
-Rayrun 机器的 desktop 端口可以 public；ingress 的 token 层目前不可用。不要把 public
-desktop URL 当产品面板，也不要假设它私密。bot 层自己的流量应走认证网关 + 短期 token
-（TBD；见 ADR-008）。
-
-### 4.6 供应链
-
-DSH bundle 的 host 代码以用户权限运行在 DSH 进程里；只从可信来源安装。两个 bundle
-来自两个仓库：`dsh-rayrun-bots`（本仓库）和 `dsh-rayrun-computer`（独立项目）。任一
-被篡改都是风险。两个包的版本兼容属于依赖契约；若未来加依赖或 installer，按代码审查，
-lockfile/provenance 实践 TBD。
-
-### 4.7 云与模型厂商条款
-
-Rayrun 运行机器，DeepSeek 服务模型；它们的条款、数据处理和可用性适用于到达它们的
-数据。本项目不能代它们承诺 DPA、SOC 2、区域驻留或删除请求，也不做这种承诺。
-
-### 4.8 CI 部署凭据（可选）
-
-main-only 的 Rayrun deploy job 需要把 Rayrun token 存成 GitHub Actions secret
-`RAYRUN_TOKEN`，把目标 sandbox id 存成仓库变量 `RAYRUN_SANDBOX_ID`。这是**维护者
-凭据**，不是产品运行时路径：它只用于上传包和重启指定沙盒的 `dsh web`，不会进入
-client、RPC、沙盒环境、工作区或日志；PR/fork 永远不运行这个 job。部署写入的
-`/workspace/dsh-web-url.txt` 含 DSH 进程 token，mode 600，取链接时按凭据处理。
-launch token 每个 `dsh web` 进程随机生成；token 交换后的签名 cookie 默认 30 天、
-绑定 host:port，签名 secret 存在沙盒 DSH 的 credential store，因此同一浏览器跨
-部署仍可用不带 token 的公网 URL。新浏览器/设备需要新的 token URL。
-
-残余风险：今天 Rayrun token 是账号级、无 scope；能改 main 的人可以触发部署并使用
-它。缓解：专用、可吊销的 Rayrun 账号/token；GitHub environment protection 或
-required reviewers；定期轮换；固定 sandbox id；只在 main 上运行。部署会把 DSH 暴露
-在 public 6080 ingress，唯一门禁是该进程 token；不用时 stop 沙盒。
-
----
+- **决定和执行只在本地。** 本地生成 request id、nonce、actionHash 和 risk；用户决定
+  写本地 decision；本地 executor 持 Rayrun token 并执行。云端 workspace/文件只传
+  提案和结果，不传 decision 或执行权限。
+- **云端 agent 不能自批本地动作。** 它即使被 prompt injection，也不能写本地 decision
+  或 `exec-<id>.json` claim；但**它仍能读/改自己的 workspace、提案和 transcript**，
+  所以 proposal 必须当不可信输入重新校验。
+- **首版只保护 typed 本地动作。** allowlist 只有 `rayrun.machine.start` /
+  `rayrun.machine.stop`；`destroy`、创建机器、shell、任意命令/URL 不在其中。其他
+  本地动作、云端凭据动作仍需后续工作。
+- **不是沙箱、不是每 bot 隔离。** 云端 agent 仍是 root、`danger-full-access`；多 bot
+  仍共享机器。审批只保护需要本地执行的动作，不使被攻陷的 bot 变得可信。
+- **本地不在线就等待。** chat 审批等待，background 按 TTL 拒绝；没有后台自动批准。
+- **云端凭据动作仍等待平台隔离。** ADR-001 仍适用于凭据只在云端、必须云端执行的动作；
+  平台 host/agent 隔离和 host-only 端点落地前，这些动作不执行。
+- **不要声称审批阻止了被攻陷的 bot。** 本机制阻止的是“云端 agent 直接伪造本地决定
+  并执行受控本地动作”；它不阻止 agent 在自己的 workspace 内做其他事。
+- **当前验证边界。** 本地 executor、拒绝/过期/重放/崩溃 claim 有 Node 测试；页面
+  E2E 只验证了“拒绝无执行、批准执行失败不假成功”。真实 Rayrun 成功执行、云端 bot
+  自主提案和云端凭据动作尚未 live 验证；见 [`12-status.md`](12-status.md)。
 
 ## 5. 不保护什么
 
@@ -149,8 +122,9 @@ required reviewers；定期轮换；固定 sandbox id；只在 main 上运行。
   填表的凭据 vault。
 - **云厂商对模型 key 的可见性。** 已验证 agent 的 `exec` 环境读不到 key；Rayrun 员工
   或平台本身是否能读存储的 credential **未验证**。不要写“Rayrun 看不到你的 key”。
-- **审批路径（平台权限隔离落地之前）。** 云 worker 目前 `approval: never`；审批执行
-  不实现，云 bot 是无人监督的。只在你准备失去的凭据和机器上运行。
+- **本地审批执行（首版）。** 只覆盖 typed 机器 start/stop；云端凭据动作、其他动作
+  仍未保护。云提案 bridge 已实现（fake 测试，真实云端提案 live 待验）。云 worker
+  仍是 `approval: never`，只在你准备失去的凭据和机器上运行。
 - **不可信模型输出。** 模型可能错、被操纵或恶意；审批降低影响面，不使模型可信。
 - **多 bot 隔离。** 没有；bots 共享一台电脑。
 - **破坏性误操作。** `destroy` 删除 workspace；没有恢复。
@@ -173,7 +147,7 @@ required reviewers；定期轮换；固定 sandbox id；只在 main 上运行。
 
 | 问题 | 影响 | 决策 |
 | --- | --- | --- |
-| 审批执行点与安全边界 | 失败即拒绝是否成立 | ADR-001：已定（平台权限隔离）；平台提供前不实现 |
+| 审批执行点与安全边界 | 失败即拒绝是否成立 | ADR-019：本地 typed 动作由本地 DSH host 执行；ADR-001 仍用于云端凭据动作；云提案 bridge 已实现（fake 测试，live 待验） |
 | 副作用崩溃/重试 | 重复发送/花钱 | ADR-005 |
 | desktop 安全路径 | watch/takeover | ADR-008 |
 | 本地审计是否 tamper-evident | 审计声明 | ADR-012 |

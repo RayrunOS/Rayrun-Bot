@@ -61,7 +61,7 @@ It is not a hosted SaaS, a bot marketplace or a multi-tenant platform. There is 
 | [Running what exists today](docs/09-deployment.md) | Install the dependency, load the plugin from a checkout, configure it. |
 | [Product direction](docs/00-product-direction.md) | Who it is for, the v0.1 scope and the product decisions. |
 | [System architecture](docs/01-system-architecture.md) | Layers, boundaries and the trust model. |
-| [Approvals](docs/05-approvals.md) | What needs a yes, who executes it, and why the cloud path is on hold. |
+| [Approvals](docs/05-approvals.md) | What needs a yes, who executes it locally, and what still waits for the platform. |
 | [Security](docs/07-security.md) | What is protected, what is not, and how to report a vulnerability. |
 | [FAQ](docs/faq.md) | Pricing, credentials, models, self-hosting and the honest limits. |
 | [Contributing](CONTRIBUTING.md) | How to propose a change and the local checks. |

@@ -14,7 +14,7 @@
 
 | 编号 | 决策 | 状态 | 建议 | 阻塞 |
 | --- | --- | --- | --- | --- |
-| [ADR-001](#adr-001) | 审批在哪里执行 | Decided（2026-11-21，平台权限隔离） | 平台提供 host/agent 隔离与审批端点；此前不实现审批执行 | C4, E1–E7, A6, A7 |
+| [ADR-001](#adr-001) | 审批在哪里执行 | Decided（2026-11-21，平台权限隔离；2026-11-23 由 ADR-019 窄化） | 平台提供 host/agent 隔离与审批端点；此前不实现审批执行 | C4, E1–E7, A6, A7（本地动作按 ADR-019 解阻） |
 | [ADR-002](#adr-002) | 所有权矩阵与单写者规则 | Proposed | 每个文件一个写者；本地负责意图，云端负责运行态；公布矩阵 | B1–B4, C3, C8, E2–E4 |
 | [ADR-003](#adr-003) | 基于 Rayrun 文件 API 的控制通道协议 | Proposed | 拆分 inbox/state；每项一个文件；不做共享 JSONL 追加 | C3, C5, C8 |
 | [ADR-004](#adr-004) | 与 `dsh-rayrun-computer` 的契约 | Proposed | 在依赖仓库写能力/版本契约；不复制 token | A2, C1–C5, D1, G1 |
@@ -24,7 +24,7 @@
 | [ADR-008](#adr-008) | Desktop 访问路径 | Proposed | 核实依赖的路径；没有安全路径就不要承诺 takeover | F5, security |
 | [ADR-009](#adr-009) | Routines / scheduler 范围 | Proposed | 除非 W3 有余量，否则定为 P1；从核心分层图移除 scheduler | M1, M4 |
 | [ADR-010](#adr-010) | RPC 路由与信封 | Proposed | 选定一个契约，代码、测试、文档一起对齐 | F2, F4 |
-| [ADR-011](#adr-011) | 审批 schema 与 canonical action hash | Accepted（2026-11-22，协议已实现；执行仍按 ADR-001 关闭） | canonical JSON、完整 decision 字段、本地重算 hash | E2–E6, C-S6 |
+| [ADR-011](#adr-011) | 审批 schema 与 canonical action hash | Accepted（2026-11-22，协议已实现；本地执行见 ADR-019） | canonical JSON、完整 decision 字段、本地重算 hash | E2–E6, C-S6 |
 | [ADR-012](#adr-012) | 恢复与运行语义 | Proposed | 补字段、时钟规则、限流与审计语义 | C8, D4, E5–E7, A8, A9 |
 | [ADR-013](#adr-013) | 文档清理 | Proposed | 与相关决策同批修正下文列出的矛盾 | docs |
 | [ADR-014](#adr-014) | 桌面发行版与更新单元 | Accepted（2026-11-21，B1） | v1.0 采用预配置 DSH 发行包（bootstrap 安装器）；B2 整包更新是升级路径；薄壳不做 | v1.0, 09-deployment |
@@ -32,6 +32,7 @@
 | [ADR-016](#adr-016) | 本地 bot 控制面 | Proposed（v0.1） | DSH host + 插件 host half；token/审批/成本/依赖；不做托管服务 | A2/A3, B1–B4, E3/E4, G1/G2 |
 | [ADR-017](#adr-017) | Bots 作为默认产品表面 | Accepted（2026-11-21） | Rayrun Bot 品牌；加载即激活 Bots；DSH 是宿主，Bots 内不返回 DSH | v0.1, v1.0 |
 | [ADR-018](#adr-018) | 文档事实源与语言 | Accepted（2026-11-22） | README 只做营销；`docs/12-status.md` 是实现状态唯一事实源；`docs/` 全中文 | docs |
+| [ADR-019](#adr-019) | 审批执行权威 | Accepted（2026-11-23，本地 DSH host） | 云端只提案；本地审批与执行；typed allowlist；平台隔离仍用于云端凭据动作 | E1–E7/A6/A7（本地动作解阻；云提案 bridge 已实现，live 待验） |
 
 ## P0 — bot runtime 与审批动工前必须定
 
@@ -39,6 +40,9 @@
 ### ADR-001 — 审批在哪里执行？
 
 **状态：** Decided（2026-11-21，选项 2：平台权限隔离）.
+
+> **2026-11-23 修订：** ADR-019 采纳“本地 DSH host 审批并执行”，对凭据/执行器在
+> 本地的 typed 动作生效；本 ADR 的平台隔离仍是云端凭据动作与 host-only 端点要求。
 
 **问题。** 在 bot 以 root、`danger-full-access` 运行于云电脑内的前提下，由哪个组件可信地执行审批？
 
@@ -74,7 +78,8 @@ JSON 写回。请求带 nonce、bot id、action hash 和 TTL；bot runtime 读�
 （不同 UID 或 mount namespace）和 host-only 的审批端点之前：
 
 - **不实现审批执行路径**，E1–E7、A6/A7 暂停；平台需求登记在
-  [`08-integration.md`](../08-integration.md) §3.3；
+  [`08-integration.md`](../08-integration.md) §3.3；（历史原文；本地 typed 动作由
+  ADR-019 例外解阻）
 - 文件邮箱可以继续作为提案/卡片/审计的传输，但**不是授权边界**；
 - 客户端审批卡保持预览，不声称审批已工作；
 - 评审建议的选项 1（用户侧执行）仍是长期方向；本次不选它，是因为 v0.1 还没有定义
@@ -124,8 +129,8 @@ channel”；[平台需求](../08-integration.md) §3–4。
 | 运行态：sessions、memory、transcript | bot runtime | 本地镜像与 UI | 云端赢；本地副本只读。 |
 | 队列 inbox（新工作） | 本地控制面 | bot runtime | 每项一个文件；机器接收前由本地持有。 |
 | 队列状态（`queued` → `done`） | bot runtime | 本地控制面 | 云端赢；本地只渲染。 |
-| 审批请求 | bot runtime，作为提案 | 本地控制面 | 提案，不是授权；执行点按 ADR-001。 |
-| 审批决定 | 本地控制面，或平台审批服务 | 执行方 | 每个 id 一个决定；执行方必须在 agent 写不到的地方。 |
+| 审批请求 | 本地 host（提案来自不可信云端） | 本地控制面 | 提案，不是授权；本地重新校验（ADR-019）。 |
+| 审批决定 / 执行 claim | 本地控制面 / 本地 executor | 本地 executor / client | 每个 id 一个决定/claim；只在 agent 写不到的地方（ADR-019）。 |
 | Outbox 事件 | bot runtime | 本地控制面 | 只追加；本地按 `seq` 读取。 |
 | 本地镜像 | 本地控制面（派生） | Client | 可丢弃；从云端重建。 |
 | Setup 与 cost 缓存 | 本地控制面 | Client | 有 TTL；永远不是权威。 |
@@ -397,7 +402,7 @@ runtimes API（`rayrun-bot-gaps`，`4709ac0`，待部署）已提供受监督进
 <a id="adr-011"></a>
 ### ADR-011 — 审批 schema 与 canonical action hash
 
-**状态：** Accepted（2026-11-22，协议已实现；执行仍按 ADR-001 关闭）。
+**状态：** Accepted（2026-11-22，协议已实现；本地 typed 执行见 ADR-019）。
 
 **问题。** 哪些字段和 hash 能让一个决定只绑定一个动作？
 
@@ -440,8 +445,9 @@ untrusted”；[客户端计划](../plans/client-plan.md) C-S6。
 
 **实现（2026-11-22）。** [`lib/approvals.js`](../../packages/dsh-rayrun-bots/lib/approvals.js)
 按本形状实现 request/decision 文件、canonical action hash、TTL、幂等/重放/错 bot
-负向测试和审计；`approvals.list/get/decide` 已接线。`decide` 返回
-`execution.available: false`；ADR-001 未满足前不执行动作。页面尚未消费真实审批列表。
+负向测试和审计；`approvals.list/get/decide/propose` 已接线。ADR-019（2026-11-23）
+起，本地 typed 动作（机器 start/stop）由本地 executor 执行；其他动作仍受 ADR-001
+限制。真实 bot 的页面已消费真实审批列表。
 
 <a id="adr-012"></a>
 ### ADR-012 — 恢复与运行语义
@@ -593,14 +599,14 @@ host 或 Rayrun adapter：
 **决策。** 采用一个**每用户云电脑内的 bot runtime**：
 
 - **拥有**：FIFO 队列/单飞、bot↔session/profile 映射、DSH 进程监督、心跳/恢复、
-  事件 outbox、审批提案、执行日志（ADR-005）。
-- **不拥有**：Rayrun token、机器生命周期/计费、审批决定（本地/人类，ADR-016）、
+  事件 outbox、审批提案（不是决定/执行，ADR-019）。
+- **不拥有**：Rayrun token、机器生命周期/计费、审批决定/执行（本地，ADR-019）、
   模型 key 存储（注入）、多 bot 安全隔离。
 - **向上**：与本地控制面通过版本化控制协议（queue inbox/state、approval、outbox；
   单写者 ADR-003）。
 - **向下**：DSH agent sessions/profile、workspace、模型调用。
-- **信任**：与 agent 同机、root/`danger-full-access`，**不是安全边界**；审批执行点
-  见 ADR-001（已定：平台权限隔离；平台提供前不实现）。
+- **信任**：与 agent 同机、root/`danger-full-access`，**不是安全边界**；本地 typed
+  审批由本地 DSH host 决定/执行（ADR-019），云端凭据动作仍按 ADR-001 等待平台隔离。
 - **生命周期**：由平台 worker projection 或本地 watchdog 启动；心跳写
   `host/state.json`；版本进入版本矩阵。
 - **不调用 Rayrun API 的账号 token**；由依赖的 worker projection ship/启动；平台
@@ -646,8 +652,8 @@ half，不是项目方托管服务。
 **替代方案。** 项目方托管控制面（违反不变量 3/4）；纯云端控制（丢失本地权威/
 token）；provider 抽象（v0.1 不做）。
 
-**影响。** A2/A3、B1–B4、E3/E4、G1/G2；ADR-002/004/010。审批执行点由 ADR-001 决定
-（已定：平台权限隔离；平台提供前不实现）。
+**影响。** A2/A3、B1–B4、E3/E4、G1/G2；ADR-002/004/010。本地 typed 审批执行由
+ADR-019 决定；云端凭据动作由 ADR-001 决定（平台隔离）。
 
 **证据。** [`01-system-architecture.md`](../01-system-architecture.md) §3.1；
 [`05-approvals.md`](../05-approvals.md)；[`08-integration.md`](../08-integration.md)；
@@ -730,6 +736,65 @@ README 的状态引用；不影响代码和 RPC 契约。
 
 **证据。** 本次文档重构；[`docs/12-status.md`](../12-status.md)；
 [`docs/README.md`](../README.md) §5 文档约定。
+
+<a id="adr-019"></a>
+### ADR-019 — 审批执行放在本地 DSH host
+
+**状态：** Accepted（2026-11-23，用户决定；参考 Grok Bot 的本地审批/执行形态）.
+
+**问题。** ADR-001 在 2026-11-21 选择“平台权限隔离”，在平台提供 host/agent 隔离与
+host-only 审批端点前不实现执行。平台 2026-11-22 答复：同一沙箱内无法隔离
+（runtime 与 agent 共享 root，agent 可读 `/proc/<pid>/environ`），平台审批端点不属于
+初步支持。结果是审批执行长期停摆，而产品示例和 v0.1 退出标准都需要它。
+
+Grok Bot 的设计提供另一条路：远端 box 只发出“ask”，桌面客户端是瘦的，本地
+daemon/原生 helper 持有执行权限与凭据，用户批准后本地执行。**在凭据所在处执行，
+在人类所在处审批。** 本仓库采纳这条路径，作用于凭据和执行器在本地的动作。
+
+**决策。** 对凭据/执行器在本地的受控动作，**本地 DSH host 是审批权威和执行方**；
+云端 bot 只能提案。ADR-001 的“平台隔离前不实现审批执行”不再阻塞这些本地动作；
+平台隔离仍保留给凭据只在云端、且必须在云端执行的动作。
+
+必须保持的规则：
+
+1. **决定只在本地。** 云端 workspace/文件只传提案和结果，绝不传 decision、执行
+   claim 或执行权限。云端写来的 decision 一律忽略。
+2. **提案不可信。** 本地用 typed allowlist 校验动作；risk 由本地推导；nonce、
+   actionHash 与 request id 由本地生成；显示内容与实际执行内容绑定。
+3. **首版动作最小。** 只允许 `rayrun.machine.start` 和 `rayrun.machine.stop`。
+   `destroy`、创建机器、shell、任意 URL/命令、任意可执行 payload 都不在 allowlist；
+   新增动作必须单独立项。
+4. **本地执行，失败即拒绝。** 执行器使用本地 Harness vault 中的 Rayrun token；token
+   不进入 action、response、日志或页面。pending/denied/expired 永不执行；批准后先写
+   `executing` claim，再执行；at-most-once；失败或崩溃不自动重试，也不重复副作用。
+5. **本地不在线就等待。** 本地 DSH 不在线时，chat 审批等待，background 审批按 TTL
+   过期拒绝；没有后台自动批准。
+6. **真实状态。** 客户端显示本地校验后的动作、目标和风险；执行失败显示失败，不把
+   “已批准”显示成“已完成”。
+
+**边界（必须和实现一起说）。** 云端 bot 仍是 `danger-full-access`，能在自己的
+workspace 内任意运行，也能写/改提案；本 ADR 只保护“需要本地执行的动作”，不是沙箱、
+不是每 bot 隔离，也不使被 prompt injection 的 agent 变得可信。多 bot 仍共享机器。
+云端凭据动作在平台隔离或 host-only 端点落地前继续不执行。
+
+**Grok Bot 参考。** 参考其“thin client + local execution daemon + approval gate”的
+形态、ask 不挂起半启动进程、审批记录绑定动作/目标、凭据不进入远端 box；不复制其
+实现、协议或客户端代码。本文档只引用公开调研结论，不把 Grok 的行为当作 Rayrun 的
+已验证保证。
+
+**后果。**
+
+- E1–E7、A6/A7 中依赖“在本地执行”的部分解阻；平台端点不再是唯一路径。
+- 云端提案 bridge 已实现：`propose.mjs` 写提案，本地 `rayrun_files` 导入并去重，
+  结果写回；fake 测试通过，真实云端提案 live E2E 待验。其他动作类型仍待做。
+- 本地 DSH 必须在线才能执行；关闭页面不等于批准，关闭后不会自动执行。
+- 云端凭据动作、host/agent 隔离和远程（手机）审批仍是平台/后续工作。
+
+**证据。** Grok Bot 调研见 [`docs/research/inspiration.md`](../research/inspiration.md)；
+平台答复见 [`08-integration.md`](../08-integration.md) §3.3；当前实现与测试见
+[`05-approvals.md`](../05-approvals.md)、[`12-status.md`](../12-status.md)；
+`lib/approval-actions.js`、`lib/approval-executor.js` 和
+`test/approval-executor.mjs`。
 
 ## 建议顺序
 

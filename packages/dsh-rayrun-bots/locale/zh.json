@@ -60,7 +60,21 @@
     "allowedLocal": "只记在这一页：已批准一次。没有发送到任何地方。",
     "deniedLocal": "只记在这一页：已拒绝。没有发送到任何地方。",
     "snippetAllowed": "已批准一次 · 未发送",
-    "snippetDenied": "已拒绝 · 未发送"
+    "snippetDenied": "已拒绝 · 未发送",
+    "realStart": "启动云电脑“{machine}”",
+    "realStop": "停止云电脑“{machine}”",
+    "realUnknown": "在“{machine}”上执行已批准动作",
+    "realMeta": "请求于 {time}",
+    "allowedReal": "已批准，并已在本机执行。",
+    "deniedReal": "已拒绝，没有执行任何动作。",
+    "executionPending": "已批准，等待本机执行。",
+    "executionFailed": "已批准，但本机执行失败。不会继续执行。",
+    "executionRefused": "已批准，但本地不支持该动作。没有执行任何动作。",
+    "riskCost": "消耗机时",
+    "allowedSide": "已批准",
+    "deniedSide": "已拒绝",
+    "waitingSide": "等待执行",
+    "failedSide": "执行失败"
   },
   "draft": {
     "send": "发送",

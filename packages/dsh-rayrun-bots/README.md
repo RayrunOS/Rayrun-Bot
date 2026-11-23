@@ -16,13 +16,18 @@ the platform-supervised bot host. The opt-in `cloudHost` runtime adapter ships
 the host assets in this package, projects them with a SHA-256 manifest through
 the dependency's `rayrun_files` tool, and wires one multi-bot host process into
 `session.*`. It is preview and has passed a dev page E2E.
-Approval execution is not implemented. The approval protocol and audit store
-exist, but a decision explicitly reports `execution.available: false`. The
-conversation UI uses the host session for real roster bots while sample bots,
-approvals, routines and settings remain an in-memory preview. The page-level
-create/reload path was verified on 2026-11-21 in a local DSH page. Repository-
-level status and verified combinations live in
-[docs/12-status.md](../../docs/12-status.md).
+Approval execution now follows ADR-019: the local host is the authority and
+executor for typed local actions, while the cloud side may only propose. The
+first allowlist is `rayrun.machine.start` and `rayrun.machine.stop`; an approved
+request gets a durable at-most-once execution claim, and denied, expired, or
+crashed requests never execute. Cloud-bot proposals arrive through the shipped
+`propose.mjs` and the local `approvals.sync` bridge; other action types and
+cloud-only credential actions are still pending. The conversation UI
+uses the host session and real approval cards for roster bots; sample bots,
+receipts, routines and settings remain an in-memory preview. The page-level
+create/reload path was verified on 2026-11-21, and the approval card deny/fail-
+closed path on 2026-11-23. Repository-level status and verified combinations
+live in [docs/12-status.md](../../docs/12-status.md).
 
 ## What it does today
 
@@ -49,23 +54,32 @@ level status and verified combinations live in
   computer (the adapter refuses to auto-create one); a stopped or paused machine
   is woken by the dependency, which may incur machine-hour charges. Without the
   tool, `session.send` returns `E_RUNTIME_UNAVAILABLE` and writes no session.
-- Host half: `approvals.list`, `approvals.get` and `approvals.decide` operate on
-  one request/decision file pair per approval under `bots/<id>/approvals/`.
+- Host half: `approvals.list/get/decide/propose/sync` operate on one request,
+  decision and execution claim per approval under `bots/<id>/approvals/`.
   Requests carry an action id, nonce and canonical SHA-256 action hash; background
   requests expire after 30 minutes, chat requests wait; duplicate decisions are
   idempotent and a conflicting or replayed decision is refused. Every request,
-  decision and refusal is appended to `logs/audit.log` without the action payload.
-  Decisions always return `execution: { available: false, reason:
-  "platform_isolation_pending" }`; this package never executes the action.
+  decision, refusal and execution is appended to `logs/audit.log` without the
+  action payload. `propose` is host-side only and validates a typed action
+  (`rayrun.machine.start` or `rayrun.machine.stop`). On approve, the local
+  executor writes an `exec-<id>.json` claim and calls the dependency's Rayrun RPC
+  with the token kept in the Harness vault; a failed execution is recorded and
+  not retried. `sync` imports typed proposals from the cloud workspace with
+  `rayrun_files`, validates them again and deduplicates by proposal id; decisions
+  and execution results are written back to `approval-results/` (a stopped
+  machine queues results locally for the next sync). Other action kinds are not
+  built; the proposal bridge has fake-tool tests, and a live cloud-bot proposal
+  E2E is still pending.
 - Client half: a `Bots` sidebar entry and the three-column shell from
   [docs/design/ui-design.md](../../docs/design/ui-design.md) — chat list, conversation,
   details (Activity / Library), new bot, the four-step setup wizard, and
   settings. When the host roster has entries, the chat list shows those bots
   instead of the sample list; creating a bot in the new-bot screen or the setup
   wizard writes through to the host and selects the saved bot. For real roster
-  bots, messages come from the host session; sample bots, receipts, the approval
-  card and settings still live in the page only. Deny / Allow once, the wizard,
-  and settings update that in-memory state. The client
+  bots, messages and approval cards come from the host session and approval
+  store; sample bots, receipts and settings still live in the page only. Deny /
+  Allow once for real approvals goes through the host and can execute a typed
+  local action; sample cards update in-memory state. The client
   activates Bots on load and covers the DSH
   sidebar and bottom bar; there is no in-product return to the Harness shell
   (ADR-017). The setup Rayrun step calls the cloud-computer plugin's
@@ -100,9 +114,10 @@ level status and verified combinations live in
   language row writes the choice back to DSH so it survives a reload. The rest
   stays in the page, and the client keeps neither the token nor a DeepSeek key.
 
-Not built yet: approval execution, a Bots-page-level verified computer-creation
-success path, bot↔cloud session mapping, routines that run, and the npm release
-path. See the repo-level
+Not built yet: approval actions beyond machine start/stop, cloud-only credential
+approvals, live verification of the cloud proposal bridge, a Bots-page-level verified
+computer-creation success path, routines that run, a production cloud image, and the
+npm release path. See the repo-level
 [MVP plan](../../docs/plans/mvp-plan.md) and [client plan](../../docs/plans/client-plan.md).
 
 ## DSH compatibility
@@ -163,6 +178,8 @@ node test/cloud-host-dsh-agent.mjs
 node test/bot-workspace.mjs
 node test/dependency.mjs
 node test/approvals.mjs
+node test/approval-executor.mjs
+node test/cloud-approval-bridge.mjs
 node test/package-contents.mjs
 ```
 
@@ -178,9 +195,12 @@ need real Rayrun credentials and never run in CI.
 ```
 package.json       # name, exports, dsh.bundle + dsh.client
 cordis.patch.yml   # the bundle row (id rayrun-bots -> package dsh-rayrun-bots)
-index.js           # host half: same-origin RPC route, health + bots.* + session.* actions
+index.js           # host half: same-origin RPC, health + bots.* + session.* + approvals.*
 client.js          # client half: v0.1 shell, roster read/write, preview conversation
 lib/approvals.js   # approval request/decision protocol, TTL, action hash, audit
+lib/approval-actions.js # typed local action allowlist (machine start/stop)
+lib/approval-executor.js # local at-most-once execution claim and audit
+lib/cloud-approval-bridge.js # import cloud proposals and write results
 lib/bots.js        # persistent roster: list/get/create/update/delete
 lib/bot-schema.js  # bot.json validation, defaults and creation
 lib/bot-workspace.js # per-bot local git checkout for detached tasks
@@ -195,6 +215,7 @@ lib/host-projection.js # SHA-256 manifest and projection of cloud-host assets
 cloud-host/host.mjs # cloud host entry point (projected to the machine)
 cloud-host/lib/host.mjs # queue/transcript/outbox/session id/DSH agent wiring
 cloud-host/lib/dsh-agent.mjs # headless DSH profile + --session-id runner
+cloud-host/bin/propose.mjs   # typed approval proposal writer for the bot
 lib/rayrun-rpc.js  # shared same-origin dependency RPC caller
 lib/rayrun-runtime.js # rayrun_agent-backed runtime adapter
 lib/rayrun-detached-runtime.js # dsh.start/status/result adapter

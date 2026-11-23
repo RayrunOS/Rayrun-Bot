@@ -80,10 +80,9 @@ dsh plugin --profile web add "<packages/dsh-rayrun-bots 的绝对路径>"
 ```
 
 安装后打开 **Bots** 会看到 v0.1 客户端壳：聊天列表、对话、详情、新建 bot、设置向导、
-设置。对话 UI 对真实名册 bot 读取并发送 `session.*`；示例 bot 仍走页内预览。审批卡和
-设置仍是**页内内存预览**：创建 bot 不会落到云电脑，Allow once 不会发给 worker。本地
-roster 和每 bot 的 `session.json` / `transcript.jsonl` 已持久化，host half 提供
-`session.send/history/status`；
+设置。对话 UI 对真实名册 bot 读取并发送 `session.*`；示例 bot 仍走页内预览。真实
+bot 的审批卡已接 host；示例 bot 卡片和设置仍是页内预览。本地 roster 和每 bot 的
+`session.json` / `transcript.jsonl` 已持久化，host half 提供 `session.send/history/status`；
 依赖 1.1+ 时，adapter 用 detached `dsh.start/status/result` 把一轮 turn 发给已有的
 云电脑（没有机器时拒绝自动创建）；1.0.x 回退单轮 `rayrun_agent`；两者都不可用时
 `session.send` 返回 `E_RUNTIME_UNAVAILABLE`。依赖 1.2+ 另有 host-side `runtime.*`
@@ -93,12 +92,15 @@ client（`lib/runtime-rpc.js`），cloudHost 预览用它在机器上注册常�
 可能产生机时费用。真实一轮（单轮 adapter）、detached 的页面关闭 + 本地 DSH 重启后
 继续，以及机器 stop/start 后的第二轮续接（A8），已在本机页面 + 已有 Rayrun 机器验证
 （2026-11-22）。host half 还提供
-`approvals.list/get/decide`；协议只记录请求/决定与审计，`decide` 返回
-`execution.available:false`，不执行动作，审批卡仍是页内预览。setup 的 Rayrun/电脑
-步骤，以及详情和 Settings 的用量读取，会真正调用云电脑插件。常驻 host 的
-bot↔云端 session 映射已有 dev 预览（多 bot 单 host E2E 通过），但生产镜像/部署未
-交付；审批执行、routines 与独立成本栏尚未构建（审批执行等待平台权限隔离，
-ADR-001）；`rayrun_agent` adapter 不拦截外部动作，prompt 里的“先询问”只是指引。
+`approvals.list/get/decide/propose/sync`。ADR-019（2026-11-23）起，本地 DSH host 对
+typed `rayrun.machine.start/stop` 做审批与执行：批准后写 `exec-<id>.json` claim，再用
+本地 Rayrun token 执行；拒绝/过期/重放/崩溃 claim 失败关闭。云端 proposal bridge
+已接：`propose.mjs` 写提案，本地 `rayrun_files` 导入并去重，结果写回
+`approval-results/`（停机时先落本地 outbox）。其他动作、真实云端提案 live E2E 和云端
+凭据动作仍未完成（后者仍等平台隔离，ADR-001）；示例 bot 卡片和设置仍是页内预览。setup 的 Rayrun/电脑步骤，以及详情和 Settings 的用量读取，会真正
+调用云电脑插件。常驻 host 的 bot↔云端 session 映射已有 dev 预览（多 bot 单 host
+E2E 通过），但生产镜像/部署未交付；routines 与独立成本栏尚未构建；`rayrun_agent`
+adapter 不拦截外部动作，prompt 里的“先询问”只是指引。
 状态以 [`12-status.md`](12-status.md) 为准。
 
 **从 tarball 安装**（发布产物的内容）：
@@ -130,8 +132,9 @@ patch、`lib/*.js`、图标、README 和 LICENSE；CI 会把打出的 tarball �
 5. 在面板里批准它的第一个受控动作。
 
 第 2 步的 Rayrun 登录和云电脑创建经云电脑插件的同源 RPC 真正到达 Rayrun；第 3–5 步
-（bot 落到云电脑、routine 唤醒、审批执行）尚未打通。host 的 `session.*` 已可执行一轮，
-但页面对话、审批和设置仍是页内预览。
+（routine 唤醒、云 bot 自主审批提案、更多受控动作）尚未打通。host 的 `session.*`
+已可执行一轮；真实 bot 的审批卡和本地 typed start/stop 执行已接，示例 bot 与设置
+仍是页内预览。
 详见 [`plans/roadmap.md`](plans/roadmap.md)、[`plans/mvp-plan.md`](plans/mvp-plan.md)
 和 [`12-status.md`](12-status.md)。
 
@@ -179,7 +182,9 @@ adapter 先解析已有机器，机器不存在时拒绝；由于 `rayrun_files`
 `autoCreate` 处理缺失机器，Bots 用 profile 建议把云电脑行设为 `autoCreate: false`。
 一台机器一个 `bot-host` runtime，内部是全局串行队列，每个 bot 独立 transcript/session；2026-11-23 手动机器路径的页面 E2E 已通过
 （`HOST_E2E_OK`）；自动 projection 页面 E2E 也已通过；多 bot 单 host 的页面 E2E 已通过
-（`MULTI_A_OK`/`MULTI_B_OK`，两个独立 session）；生产镜像未做。
+（`MULTI_A_OK`/`MULTI_B_OK`，两个独立 session）；生产镜像未做。cloudHost 的 prompt
+会给 bot 一个 typed `propose.mjs`；本地 approval bridge 通过 `rayrun_files` 导入并去重，
+结果写回 `approval-results/`（机器停机时先落本地 outbox）。真实云端提案 live E2E 未验证。
 状态以 [`12-status.md`](12-status.md) 为准。
 
 **永远不要把 Rayrun token 或模型 key 写进会提交的配置文件。**

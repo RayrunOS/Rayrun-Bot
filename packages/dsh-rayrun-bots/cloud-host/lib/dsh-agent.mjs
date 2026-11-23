@@ -58,9 +58,10 @@ export function createDshAgent({
   const baseEnv = { ...process.env, DSH_HOME: dshHome, HOME: home, ...env }
   let profileReady = null
 
-  function execDsh(args, timeout = timeoutMs) {
+  function execDsh(args, timeout = timeoutMs, extraEnv = undefined) {
     return new Promise((resolve, reject) => {
-      const child = spawn(command, args, { cwd, env: baseEnv, stdio: ['ignore', 'pipe', 'pipe'] })
+      const env = extraEnv === undefined ? baseEnv : { ...baseEnv, ...extraEnv }
+      const child = spawn(command, args, { cwd, env, stdio: ['ignore', 'pipe', 'pipe'] })
       let stdout = ''
       let stderr = ''
       let settled = false
@@ -99,13 +100,14 @@ export function createDshAgent({
     return profileReady
   }
 
-  async function run({ text, sessionId } = {}) {
+  async function run({ text, sessionId, botId } = {}) {
     if (typeof text !== 'string' || text.trim() === '') throw new Error('text is required')
     await ensureProfile()
     const args = ['--profile', profile, '--json']
     if (typeof sessionId === 'string' && sessionId !== '') args.push('--session-id', sessionId)
     args.push(text)
-    const { stdout, stderr } = await execDsh(args)
+    const extraEnv = typeof botId === 'string' && botId !== '' ? { DSH_BOT_ID: botId } : undefined
+    const { stdout, stderr } = await execDsh(args, timeoutMs, extraEnv)
     const events = []
     for (const line of stdout.split('\n')) {
       if (!line.trim()) continue

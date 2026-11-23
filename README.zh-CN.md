@@ -85,7 +85,7 @@ Rayrun Bot 适合这样的人：想要一位真正干活的个人 AI 同事，�
 | [运行今天已有的部分](docs/09-deployment.md) | 安装依赖、从 checkout 加载插件、配置。 |
 | [产品方向](docs/00-product-direction.md) | 为谁而做、v0.1 范围与产品决策。 |
 | [系统架构](docs/01-system-architecture.md) | 分层、边界与信任模型。 |
-| [审批](docs/05-approvals.md) | 什么需要点头、由谁执行，以及云端路径为什么暂停。 |
+| [审批](docs/05-approvals.md) | 什么需要点头、由谁在本机执行，以及哪些云端动作仍在等平台。 |
 | [安全](docs/07-security.md) | 保护什么、不保护什么，以及如何私下报告漏洞。 |
 | [FAQ](docs/faq.md) | 价格、凭据、模型、自托管与诚实边界。 |
 | [贡献](CONTRIBUTING.md) | 如何提议变更与本地检查。 |

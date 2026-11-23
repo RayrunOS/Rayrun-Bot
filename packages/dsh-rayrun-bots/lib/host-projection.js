@@ -7,10 +7,12 @@
  *   /workspace/.rayrun/host/<version>/host.mjs
  *   /workspace/.rayrun/host/<version>/lib/host.mjs
  *   /workspace/.rayrun/host/<version>/lib/dsh-agent.mjs
+ *   /workspace/.rayrun/host/<version>/bin/propose.mjs
  *
  * A SHA-256 manifest makes a partial or tampered projection fail closed. The
  * workspace is writable by the cloud agent; this is code delivery, not a
- * security boundary (approval execution remains closed per ADR-001).
+ * security boundary. ADR-019 keeps approval authority and local actions on the
+ * user's side.
  */
 import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
@@ -30,7 +32,7 @@ const PACKAGE = (() => {
 export const HOST_ASSET_VERSION = typeof PACKAGE.version === 'string' ? PACKAGE.version : '0.0.0'
 const VERSION_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/
 const HOST_ROOT = new URL('../cloud-host/', import.meta.url)
-const HOST_FILES = ['host.mjs', 'lib/host.mjs', 'lib/dsh-agent.mjs']
+const HOST_FILES = ['host.mjs', 'lib/host.mjs', 'lib/dsh-agent.mjs', 'bin/propose.mjs']
 
 function sha256(text) {
   return createHash('sha256').update(text).digest('hex')

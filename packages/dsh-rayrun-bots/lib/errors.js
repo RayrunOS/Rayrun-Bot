@@ -14,6 +14,8 @@ export const ERROR_CODES = Object.freeze({
   approvalReplay: 'E_APPROVAL_REPLAY',
   approvalUnknown: 'E_APPROVAL_UNKNOWN',
   approvalInvalid: 'E_APPROVAL_INVALID',
+  approvalUnsupported: 'E_APPROVAL_UNSUPPORTED',
+  approvalExecution: 'E_APPROVAL_EXECUTION',
   hostDown: 'E_HOST_DOWN',
   botUnknown: 'E_BOT_UNKNOWN',
   botInvalid: 'E_BOT_INVALID',

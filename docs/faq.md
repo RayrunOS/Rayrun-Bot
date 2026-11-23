@@ -67,7 +67,7 @@ host 和 client 两半，是 W0 spike S6，**未验证**。在那之前——以
 create/stop/pause/destroy 机器、跑命令、搬文件、驱动桌面、委派任务、同步 workspace、
 project worker 层。它是 Rayrun Bot 的依赖，不是本仓库的一部分。本仓库的
 `dsh-rayrun-bots` 也能从 checkout 装进同一个 profile，打开 Bots 壳并持久化本地名册；
-对话和审批仍是页内预览。[安装与运行](09-deployment.md)有确切命令和“还缺什么”表，
+真实 bot 的对话和审批卡已接 host，示例 bot 与设置仍是页内预览。[安装与运行](09-deployment.md)有确切命令和“还缺什么”表，
 实现状态见 [12-status.md](12-status.md)。
 
 ## 和 Grok Bot 有什么不同？
@@ -93,12 +93,13 @@ App。本项目与托管相反——开放代码、你的 Rayrun 账号、你的
 
 ## 审批在工作吗？
 
-云端路径上还没有，而且在平台能隔离审批者之前不会有。设计契约是 fail-closed（超时或
-未知 = 拒绝），DSH 内的审批卡是预览，但云端 worker profile 目前以 `approval: never`
-运行，因为无人值守的机器上没有人可以问。agent 可写工作区里的文件邮箱可能被攻陷的 bot
-读取并自批，所以 ADR-001（2026-11-21）决定等待 Rayrun 提供 host/agent 权限隔离和
-host-only 审批端点。平台提供之前，审批执行不实现，预览不授权任何动作，云端 bot 是
-无监督的。
+本地 typed 动作已能审批并执行（ADR-019，2026-11-23）：提案由本地 DSH host 重新
+校验，用户决定只写本地，批准后本地 executor 用你的 Rayrun token 执行
+`rayrun.machine.start/stop`；拒绝/过期/重放/崩溃 claim 都不执行。云端 proposal
+bridge 已接（fake 测试）：`propose.mjs` 写提案，本地 `rayrun_files` 导入，结果写回；
+真实云端提案 live E2E、其他动作和云端凭据动作仍未验证。云端 worker 仍是 `approval: never`，
+agent 在自己的 workspace 内不受审批约束。云端凭据动作仍需 Rayrun 提供 host/agent
+隔离或 host-only 端点（ADR-001）。云端 bot 仍应只跑在你准备失去的凭据和机器上。
 
 ## 能自托管吗？
 

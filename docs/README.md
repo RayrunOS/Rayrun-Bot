@@ -37,7 +37,7 @@
 | 状态与验证 | [实现状态](12-status.md)、[Rayrun 验证与缺口](10-rayrun-verification.md) | 实现状态事实源；测试资源政策、Rayrun 验证路径、缺口登记 |
 | 部署与操作 | [部署与运行](09-deployment.md)、[版本矩阵](version-matrix.md) | 安装、配置、检查、故障处理；DSH × 依赖 × 包的已验证组合 |
 | 调研 | [灵感](research/inspiration.md) | Grok Bot 等参考；不是真相源 |
-| 决策 | [架构决策](adr/architecture-decisions.md) | [ADR-001–ADR-018](#3-adr-登记册)；只有 Accepted / Decided 才算最终 |
+| 决策 | [架构决策](adr/architecture-decisions.md) | [ADR-001–ADR-019](#3-adr-登记册)；只有 Accepted / Decided 才算最终 |
 
 `00`–`12` 是编号顶层文档；`plans/`、`adr/`、`design/`、`research/` 放细节，
 `mockups/` 放视觉素材。`00`/`01` 分别是产品与技术的第一真相源；`12` 是实现状态的
@@ -47,11 +47,11 @@
 
 > 状态取 `Proposed` / `Accepted` / `Decided`；`Open` 表示还没有提案。本表只登记，
 > 决策细节、证据和修订以 [architecture-decisions.md](adr/architecture-decisions.md)
-> 为准。**下一个可用编号：ADR-019。** 编号一旦占用不再复用。
+> 为准。**下一个可用编号：ADR-020。** 编号一旦占用不再复用。
 
 | 编号 | 标题 | 状态 | 文件 |
 | --- | --- | --- | --- |
-| ADR-001 | 审批在哪里执行 | Decided（2026-11-21，平台权限隔离） | [architecture-decisions.md](adr/architecture-decisions.md#adr-001) |
+| ADR-001 | 审批在哪里执行 | Decided（2026-11-21，平台权限隔离；2026-11-23 由 ADR-019 窄化） | [architecture-decisions.md](adr/architecture-decisions.md#adr-001) |
 | ADR-002 | 所有权矩阵与单写者规则 | Proposed | [architecture-decisions.md](adr/architecture-decisions.md#adr-002) |
 | ADR-003 | 基于 Rayrun 文件 API 的控制通道协议 | Proposed | [architecture-decisions.md](adr/architecture-decisions.md#adr-003) |
 | ADR-004 | 与 `dsh-rayrun-computer` 的契约 | Proposed | [architecture-decisions.md](adr/architecture-decisions.md#adr-004) |
@@ -61,7 +61,7 @@
 | ADR-008 | Desktop 访问路径 | Proposed | [architecture-decisions.md](adr/architecture-decisions.md#adr-008) |
 | ADR-009 | Routines / scheduler 范围 | Proposed | [architecture-decisions.md](adr/architecture-decisions.md#adr-009) |
 | ADR-010 | RPC 路由与信封 | Proposed | [architecture-decisions.md](adr/architecture-decisions.md#adr-010) |
-| ADR-011 | 审批 schema 与 canonical action hash | Proposed | [architecture-decisions.md](adr/architecture-decisions.md#adr-011) |
+| ADR-011 | 审批 schema 与 canonical action hash | Accepted（2026-11-22） | [architecture-decisions.md](adr/architecture-decisions.md#adr-011) |
 | ADR-012 | 恢复与运行语义 | Proposed | [architecture-decisions.md](adr/architecture-decisions.md#adr-012) |
 | ADR-013 | 文档清理 | Proposed | [architecture-decisions.md](adr/architecture-decisions.md#adr-013) |
 | ADR-014 | 桌面发行版与更新单元 | Accepted（2026-11-21，B1） | [architecture-decisions.md](adr/architecture-decisions.md#adr-014) |
@@ -69,8 +69,9 @@
 | ADR-016 | 本地 bot 控制面 | Proposed（v0.1） | [architecture-decisions.md](adr/architecture-decisions.md#adr-016) |
 | ADR-017 | Bots 作为默认产品表面 | Accepted（2026-11-21） | [architecture-decisions.md](adr/architecture-decisions.md#adr-017) |
 | ADR-018 | 文档事实源与语言 | Accepted（2026-11-22） | [architecture-decisions.md](adr/architecture-decisions.md#adr-018) |
+| ADR-019 | 审批执行权威 | Accepted（2026-11-23，本地 DSH host） | [architecture-decisions.md](adr/architecture-decisions.md#adr-019) |
 
-**ADR-001 已定（平台权限隔离）；审批实现等待 08 §3.3 的平台能力。** ADR-015/016、
+**ADR-019 已定（本地 DSH host 审批/执行）；ADR-001 的平台隔离仍用于云端凭据动作。** ADR-015/016、
 ADR-002 等仍决定控制面/执行面的分层与产物所有权，未定前相应 C/E 工作流不动工。
 ADR-014 已定为 B1，属于 v1.0，不阻塞 v0.1。
 
@@ -83,7 +84,7 @@ ADR-014 已定为 B1，属于 v1.0，不阻塞 v0.1。
 | [MVP 计划](plans/mvp-plan.md) | A1–A12 验收、B/C/D/E 工作流 | §2、§5、§6 |
 | [客户端计划](plans/client-plan.md) | C-S1–C-S6 spike 与客户端接线 | Week 0、交付波次 |
 | [集成与平台需求](08-integration.md) | 会话/常驻 runtime、余额护栏 | §3 |
-| [架构决策](adr/architecture-decisions.md) | ADR-001–ADR-018 | 本文 §3 |
+| [架构决策](adr/architecture-decisions.md) | ADR-001–ADR-019 | 本文 §3 |
 
 ## 5. 文档约定
 

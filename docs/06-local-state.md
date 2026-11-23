@@ -107,14 +107,16 @@ $DSH_HOME/state/rayrun-bot/
 │   ├── session.json         # 本地 session 状态与队列
 │   ├── transcript.jsonl     # 用户/bot/system 消息，只追加
 │   ├── approvals/
-│   │   ├── req-<id>.json    # 审批提案；不是授权边界
-│   │   └── res-<id>.json    # 用户决定；执行按 ADR-001 关闭
+│   │   ├── req-<id>.json    # 本地校验后的审批提案；不是授权边界
+│   │   ├── res-<id>.json    # 本地用户决定
+│   │   └── exec-<id>.json   # 本地执行 claim/结果（at-most-once）
+│   ├── approval-results/    # 待上传云端的决定/执行结果 outbox
 │   └── workspace/           # detached task 的本地 git checkout；.dsh/ 被忽略
 ├── mirror/
 │   └── bots/<botId>/
 │       ├── bot.json         # 机器定义的副本（只读）
 │       ├── queue.json       # 最近队列快照
-│       └── approvals.jsonl  # 决定历史（id、时间；无 payload）
+│       └── approvals.jsonl  # 云端提案/执行状态镜像（不含本地决定）
 ├── cache/
 │   ├── dependency.json      # 依赖版本/路径，TTL 1h
 │   ├── cost.json            # 余额/小时，TTL 15s
@@ -124,7 +126,7 @@ $DSH_HOME/state/rayrun-bot/
 ├── tmp/                     # 原子写暂存；启动时清理
 └── logs/
     ├── host.log             # JSONL，5 MB 轮转，保留 3 份
-    └── audit.log            # 审批请求/决定，只追加
+    └── audit.log            # 审批请求/决定/执行，只追加
 ```
 
 | 路径 | 写者 | 读者 | 密钥 | 保留 | 可重建 |
@@ -133,8 +135,10 @@ $DSH_HOME/state/rayrun-bot/
 | `bots/<id>/bot.json` | host | client、host | 否 | 永久 | runtime 落地前否；之后是机器副本 |
 | `bots/<id>/session.json` | host | client、host | 否 | 永久 | session 镜像落地前否；之后可从机器重建 |
 | `bots/<id>/transcript.jsonl` | host | client、host | 否 | 永久 | session 镜像落地前否（本地对话历史）；之后可从机器重建 |
-| `bots/<id>/approvals/req-<id>.json` | bot runtime（提案；当前由协议 API/测试写入） | host、client | 否 | 永久/过期清理 | 否（审计） |
-| `bots/<id>/approvals/res-<id>.json` | host（用户决定） | host、执行方 | 否 | 永久 | 否（审计） |
+| `bots/<id>/approvals/req-<id>.json` | 本地 host（host-only propose/未来 bridge；proposal 不可信） | host、client | 否 | 永久/过期清理 | 否（审计） |
+| `bots/<id>/approvals/res-<id>.json` | 本地 host（用户决定） | 本地 executor、client | 否 | 永久 | 否（审计） |
+| `bots/<id>/approvals/exec-<id>.json` | 本地 executor（claim/结果） | host、client | 否 | 永久 | 否（审计） |
+| `bots/<id>/approval-results/<id>.json` | 本地 host（待上传云端的结果） | 本地 bridge | 否 | 上传后删除 | 否（审计） |
 | `bots/<id>/workspace/` | host（初始化）/依赖的 `dsh.start`（任务 push） | 依赖 worker | 否 | 任务生命周期 | 是（任务结果进入 transcript） |
 | `mirror/bots/<id>/` | host | client、host | 否 | 最近状态 | 是，从机器 |
 | `cache/*.json` | host | client、host | 否 | 上述 TTL | 是 |
@@ -152,7 +156,7 @@ $DSH_HOME/state/rayrun-bot/
   对话历史的唯一副本。
 - **锁是提示，不是权威。** 超过两个轮询间隔的锁可回收；机器侧队列仍是真相。
 - **日志不含 token、key、prompt 或 workspace 内容。** 只记 id、字节数、错误码和耗时；
-  审批 payload 留在机器上并会过期。
+  审批 action payload 留在本地 approval 文件并会过期/清理。
 - 启动时清理 `tmp/`；没人读它们。
 
 ---
@@ -174,12 +178,12 @@ $DSH_HOME/state/rayrun-bot/
 └── outbox/events.jsonl     # 给本地 UI 的事件，只追加
 ```
 
-方向规则：机器赢运行态（session、队列、待审批），本地赢用户意图（创建/编辑/删除、
-审批决定），仓库赢代码。本地镜像**不整体写回**机器；只发送明确动作。
+方向规则：机器赢运行态（session、队列），本地赢用户意图（创建/编辑/删除）、
+审批决定和执行 claim，仓库赢代码。本地镜像**不整体写回**机器；只发送明确动作。
 
-**授权边界：** ADR-001 已定为平台权限隔离；平台提供隔离前，`approvals/` 只作为
-提案/卡片/审计的传输，不是批准执行的依据（[`08-integration.md`](08-integration.md)
-§3.3）。
+**授权边界：** ADR-019 把本地 DSH host 定为本地 typed 动作的审批权威；`res-` 与
+`exec-` 只在本地状态目录，云端 agent 写不到，云端 proposal 只作为不可信请求。云端
+凭据动作仍受 ADR-001 平台隔离约束（[`08-integration.md`](08-integration.md) §3.3）。
 
 ---
 

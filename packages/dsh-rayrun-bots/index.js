@@ -15,6 +15,9 @@
  * token stays in the Harness vault on this side and never reaches the page.
  */
 import { readFileSync } from 'node:fs'
+import { createApprovalActionExecutor, normalizeApprovalAction } from './lib/approval-actions.js'
+import { createCloudApprovalBridge } from './lib/cloud-approval-bridge.js'
+import { openApprovalExecutor } from './lib/approval-executor.js'
 import { openApprovalStore } from './lib/approvals.js'
 import { openBotStore } from './lib/bots.js'
 import { createCloudHostRuntime } from './lib/cloud-host-runtime.js'
@@ -23,6 +26,7 @@ import { ERROR_CODES } from './lib/errors.js'
 import { resolveStateRoot } from './lib/local-store.js'
 import { createRayrunDetachedRuntime } from './lib/rayrun-detached-runtime.js'
 import { createRayrunAgentRuntime } from './lib/rayrun-runtime.js'
+import { createRayrunRpc } from './lib/rayrun-rpc.js'
 import { readJsonBody, sendError, sendJson } from './lib/rpc.js'
 import { validateRuntime } from './lib/runtime.js'
 import { openSessionRunner } from './lib/sessions.js'
@@ -97,9 +101,11 @@ const STATUS_BY_CODE = new Map([
   [ERROR_CODES.queueFull, 429],
   [ERROR_CODES.hostDown, 503],
   [ERROR_CODES.approvalInvalid, 400],
+  [ERROR_CODES.approvalUnsupported, 400],
   [ERROR_CODES.approvalExpired, 410],
   [ERROR_CODES.approvalReplay, 409],
   [ERROR_CODES.approvalUnknown, 404],
+  [ERROR_CODES.approvalExecution, 502],
 ])
 
 function sendActionError(res, error) {
@@ -132,19 +138,65 @@ function sessionAction(action, payload, getService) {
   }
 }
 
-/** Run one approval action. Decisions are recorded; execution stays closed. */
-function approvalAction(action, payload, ctx) {
-  const stateRoot = resolveStateRoot({ profileDir: profileDirectory(ctx) })
-  const bots = openBotStore(stateRoot)
+/** Run one approval action: record the decision, then execute locally if approved. */
+async function approvalAction(action, payload, service) {
+  const { bots, approvals, executor } = service
   const bot = bots.get(payload.botId)
-  const approvals = openApprovalStore(stateRoot)
   switch (action) {
     case 'approvals.list':
-      return { ok: true, approvals: approvals.list(bot.id) }
-    case 'approvals.get':
-      return { ok: true, approval: approvals.get(bot.id, payload.id) }
-    case 'approvals.decide':
-      return { ok: true, ...approvals.decide(bot.id, payload.id, payload.decision) }
+      return {
+        ok: true,
+        approvals: approvals.list(bot.id).map((approval) => {
+          const execution = executor.status(bot.id, approval.id)
+          return execution === null ? approval : { ...approval, execution }
+        }),
+      }
+    case 'approvals.get': {
+      const approval = approvals.get(bot.id, payload.id)
+      const execution = executor.status(bot.id, payload.id)
+      return { ok: true, approval: execution === null ? approval : { ...approval, execution } }
+    }
+    case 'approvals.sync': {
+      if (!service.bridge) {
+        const error = new Error('The cloudHost runtime is not enabled; no proposals were fetched.')
+        error.code = ERROR_CODES.runtimeUnavailable
+        throw error
+      }
+      return { ok: true, ...(await service.bridge.sync(bot.id)) }
+    }
+    case 'approvals.propose': {
+      const normalized = normalizeApprovalAction(payload.requestedAction)
+      return {
+        ok: true,
+        approval: approvals.createRequest({
+          botId: bot.id,
+          actionId: payload.actionId,
+          action: normalized.action,
+          risk: normalized.risk,
+          origin: payload.origin,
+          ...(payload.expiresAt === undefined ? {} : { expiresAt: payload.expiresAt }),
+        }),
+      }
+    }
+    case 'approvals.decide': {
+      const result = approvals.decide(bot.id, payload.id, payload.decision)
+      const execution = result.approval.state === 'approved'
+        ? await executor.run(bot.id, payload.id)
+        : { available: true, mode: 'local', state: 'not_executed', reason: result.approval.state }
+      if (service.bridge) {
+        void service.bridge.writeResult(bot.id, payload.id, {
+          state: result.approval.state,
+          execution,
+        }).catch((error) => {
+          try {
+            service.logger?.warn?.(`dsh-rayrun-bots: approval result write failed: ${String(error?.message ?? error).slice(0, 200)}`)
+          } catch {
+            // Logging must not change the local decision.
+          }
+        })
+      }
+      return { ok: true, ...result, execution }
+    }
     default: {
       const error = new Error(`Unknown action: ${action}`)
       error.status = 404
@@ -233,6 +285,29 @@ export function apply(ctx, options = {}) {
     return sessionService
   }
 
+  let approvalService
+  function approvals() {
+    if (approvalService === undefined) {
+      const stateRoot = resolveStateRoot({ profileDir: profileDirectory(ctx) })
+      const rpc = createRayrunRpc({ getOrigin: () => webServer?.getOrigin?.() })
+      approvalService = {
+        bots: openBotStore(stateRoot),
+        approvals: openApprovalStore(stateRoot),
+        executor: openApprovalExecutor({
+          stateRoot,
+          execute: createApprovalActionExecutor({ rpc }),
+        }),
+        bridge: cloudHostRuntime === undefined ? null : createCloudApprovalBridge({
+          stateRoot,
+          getTools: () => ctx.get?.('tools'),
+          getMachine: () => cloudHostRuntime.ensureMachine({ start: false }),
+        }),
+        logger: ctx.logger,
+      }
+    }
+    return approvalService
+  }
+
   ctx.inject(['webServer'], (child) => {
     webServer = child.webServer
     child.effect(() =>
@@ -287,7 +362,11 @@ export function apply(ctx, options = {}) {
               }
               if (typeof payload?.action === 'string' && payload.action.startsWith('approvals.')) {
                 try {
-                  sendJson(res, 200, approvalAction(payload.action, payload, ctx))
+                  if (payload.action === 'approvals.propose' && req.headers?.origin) {
+                    sendError(res, 403, ERROR_CODES.approvalInvalid, 'Proposals are accepted only from the local host.')
+                    return
+                  }
+                  sendJson(res, 200, await approvalAction(payload.action, payload, approvals()))
                 } catch (error) {
                   sendActionError(res, error)
                 }

@@ -31,6 +31,7 @@ token; `DEEPSEEK_API_KEY` is only observed as a boolean.
 | `lib/host.mjs` | Queue, transcript, outbox, state, session id and recovery; no timers |
 | `lib/dsh-agent.mjs` | Headless DSH profile bootstrap and `--json`/`--session-id` runner |
 | `host.mjs` | Process entry point: heartbeat and poll loops, SIGTERM/SIGINT |
+| `bin/propose.mjs` | Typed proposal writer for the bot workspace; no token, no network |
 | `test/cloud-host.mjs` | Host checks with a fake agent; no framework, no network |
 | `test/cloud-host-dsh-agent.mjs` | DSH agent checks with a fake `dsh` executable |
 
@@ -84,7 +85,9 @@ were removed.
     "DSH_BOT_PROFILE": "bot",
     "DSH_HOME": "/workspace/.rayrun/dsh",
     "HOME": "/workspace/.rayrun/home",
-    "DSH_BOT_LOG": "/workspace/.rayrun/logs/bot-host.log"
+    "DSH_BOT_LOG": "/workspace/.rayrun/logs/bot-host.log",
+    "DSH_BOT_PROPOSE": "/workspace/.rayrun/host/<package version>/bin/propose.mjs",
+    "DSH_BOT_MACHINE": "<cloud computer name>"
   },
   "credentials": ["deepseek-flash"],
   "restart": "always",
@@ -96,16 +99,36 @@ were removed.
 ```
 
 The multi-bot queue has plain-Node coverage (round-robin, independent session
-ids, recovery and state). The live E2E below used the earlier one-bot build;
-the multi-bot host still needs a live page E2E.
+ids, recovery and state), and the multi-bot single-host page E2E passed on
+2026-11-23 (`MULTI_A_OK`/`MULTI_B_OK`, independent sessions, one `bot-host`).
 
-The adapter projects the assets with `lib/host-projection.js` into
+The adapter sets `DSH_BOT_PROPOSE` and `DSH_BOT_MACHINE` in the runtime spec and
+passes `DSH_BOT_ID` to each agent process, so `bin/propose.mjs` can write the
+proposal under the current bot. The adapter projects the assets with `lib/host-projection.js` into
 `/workspace/.rayrun/host/<package version>/` and verifies the SHA-256 manifest
 before registering the runtime. An explicit `hostScript` config bypasses the
 projection for development.
 
+## Approval proposals
+
+`bin/propose.mjs` writes one typed proposal into
+`bots/<DSH_BOT_ID>/proposals/<id>.json`; the local DSH host imports it through
+the dependency's `rayrun_files` tool, re-validates it, and only a local human
+decision can execute it (ADR-019). The prompt tells the DSH agent to run the
+CLI and stop; the proposal file is not an authorization.
+
+```bash
+DSH_BOT_ROOT=/workspace/.rayrun DSH_BOT_ID=my-bot \
+  node bin/propose.mjs --kind rayrun.machine.stop --machine my-computer
+```
+
+The local bridge writes decisions/execution results to
+`bots/<id>/approval-results/`. A stopped machine queues results locally and
+uploads them on the next sync. The bridge has fake-tool tests; a live cloud-bot
+proposal E2E is still pending.
+
 ## Not built yet
 
 - a production guestd 0.6 + DSH image and build/deploy pipeline;
-- approval proposals or execution (ADR-001 remains closed);
+- live cloud-bot proposal E2E and approval actions beyond machine start/stop;
 - package release and the one-install path.

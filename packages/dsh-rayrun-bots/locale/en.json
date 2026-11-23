@@ -60,7 +60,21 @@
     "allowedLocal": "Allowed once, on this page only. Nothing was sent.",
     "deniedLocal": "Denied, on this page only. Nothing was sent.",
     "snippetAllowed": "Allowed once — not sent",
-    "snippetDenied": "Denied — not sent"
+    "snippetDenied": "Denied — not sent",
+    "realStart": "Start cloud computer “{machine}”",
+    "realStop": "Stop cloud computer “{machine}”",
+    "realUnknown": "Run an approved action on “{machine}”",
+    "realMeta": "Requested {time}",
+    "allowedReal": "Approved and executed on your local side.",
+    "deniedReal": "Denied. Nothing was executed.",
+    "executionPending": "Approved. Waiting for local execution.",
+    "executionFailed": "Approved, but local execution failed. Nothing more will run.",
+    "executionRefused": "Approved, but this action is not supported locally. Nothing was executed.",
+    "riskCost": "Spends machine time",
+    "allowedSide": "Approved",
+    "deniedSide": "Denied",
+    "waitingSide": "Waiting to execute",
+    "failedSide": "Execution failed"
   },
   "draft": {
     "send": "Send",

@@ -96,8 +96,8 @@ check('a decision binds the request, is idempotent and refuses a different decis
   const first = approvals.decide(bot.id, created.id, 'approve', { now: '2026-11-22T10:01:00.000Z' })
   assert.equal(first.approval.state, 'approved')
   assert.equal(first.idempotent, false)
-  assert.equal(first.execution.available, false)
-  assert.equal(first.execution.reason, 'platform_isolation_pending')
+  assert.equal(first.execution.available, true)
+  assert.equal(first.execution.mode, 'local')
 
   const rawDecision = readJson(path.join(root, 'bots', bot.id, 'approvals', `res-${created.id}.json`))
   assert.equal(rawDecision.id, rawRequest.id)

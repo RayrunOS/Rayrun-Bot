@@ -94,9 +94,9 @@
    的 create/continue 由 bot host 在 `/workspace` 内实现。2026-11-22 dev 验证了镜像
    DSH 0.2.0-rc.2 的 headless `--session-id` 可跨进程续接，host 资产已跑通两轮；
    核心 host 尚未进入包，生产未部署。
-6. **审批通道。** 受控动作走 DSH 审批 seam → bot runtime 提案 → 本地控制面卡片 →
-   决定写回；执行点见 ADR-001。失败即拒绝；浏览器先做，IM 是 v0.2。当前文件邮箱的
-   信任边界见 §4.3。
+6. **审批通道。** 受控动作由云端 bot 提案 → 本地控制面卡片 → 本地决定与执行；
+   云端不写 decision。ADR-019 决定本地 DSH host 为本地动作的审批权威；ADR-001 的
+   平台隔离仍用于云端凭据动作。失败即拒绝；浏览器先做，IM 是 v0.2。当前边界见 §4.3。
 7. **Routines / triggers。** 定时或事件唤醒 bot。DSH core 有 scheduling，web profile
    会挂载；headless cloud profile 不会。routines 依赖常驻 bot runtime，范围见 ADR-009。
 8. **模型 provider。** v0.1 只接 DeepSeek；其他 provider 由 DSH 负责，不在本仓库设计
@@ -139,7 +139,7 @@ host half 属于本地控制面。**ADR-015/016 目前是 Proposed**；在它们
 | 一人一台电脑 | 更便宜，更像人的桌面 | **bot 不是安全边界**；两个 bot 不能互相当沙箱 |
 | 云电脑插件独立 | 复用成熟云层，不 fork/合并仓库 | 两个包、版本契约、安装摩擦；特性请求跨仓库 |
 | Bot = 持久对象 | 不只是 session：指令、skills、memory、schedule | durable-object 契约（session 续接、每 bot 目录）未验证 |
-| 审批失败即拒绝 | 外部副作用需要人类同意 | UX 成本；云路径目前 `approval: never`，审批通道未落地 |
+| 审批失败即拒绝 | 外部副作用需要人类同意 | UX 成本；本地 typed 动作与云提案 bridge 已有预览，live 与云端凭据动作未落地 |
 | 成本护栏 | 常开机器有真实账单 | 平台没有 idle auto-stop 或 spend cap；插件只能 stop，不能强制执行预算 |
 | v0.1 只接 Rayrun | 一个集成做透 | 以后换后端是重写；provider 抽象是未决项 |
 
@@ -171,8 +171,8 @@ host half 属于本地控制面。**ADR-015/016 目前是 Proposed**；在它们
 - v0.1 设计要常驻 DSH host + 每 bot session/profile。平台答复（2026-11-22）：R-G008
   runtimes API 已实现并本机 dev 全量验收通过（待部署），提供受监督进程、`autostart`、
   `keep_alive` 和 boot 时 credential injection；session 由 bot host 自己写
-  `/workspace`。bot 侧 supervisor/session 尚未实现；见 ADR-007 与
-  [`08-integration.md`](08-integration.md) §3.1。
+  `/workspace`。bot 侧 supervisor/session 已有 dev 预览并通过多 bot live E2E；
+  生产镜像未交付；见 ADR-007 与 [`08-integration.md`](08-integration.md) §3.1。
 - 机器按秒计费；stop 保留磁盘，destroy 删除机器与 workspace；余额耗尽可能被平台
   force-destroy。成本模型见 §7。
 
@@ -215,6 +215,8 @@ billing。token 只在本地控制面使用；云端 agent 只拿模型 key，�
   prompt 或聊天。
 - **同源 RPC**：page→host 的动作保持同源、origin 校验；不把 token 交给页面来绕过。
 - **审批**：有外部副作用的动作必须请求并获批；超时/未知=拒绝；永不自动放行。
+  本地 DSH host 只执行 typed allowlist 并在本地写决定/claim（ADR-019）；云端凭据
+  动作仍等待平台隔离（ADR-001）。
 - **销毁**：`destroy` 只能由人类明确请求；idle 只能 stop/pause。
 - **网络**：不使用入站网络；public desktop 不作为产品面板；新机器默认无出网，按需
   allowlist。
@@ -222,20 +224,23 @@ billing。token 只在本地控制面使用；云端 agent 只拿模型 key，�
 
 ### 4.3 当前审批的诚实边界
 
-设计契约是失败即拒绝，但 v0.1 计划中的文件邮箱位于
-`/workspace/.rayrun/.../approvals/`，而 bot 以 root 运行、可读写该目录。它可以从请求
-文件读到 nonce/id，并写一个匹配的 `res-<id>.json` 自批；也可以修改 host、队列或直接
-绕过工具。唯一文件名、tmp+rename 和 checksum 只防半写，不防伪造。
+ADR-019（2026-11-23）把凭据/执行器在本地动作的审批权威移到**本地 DSH host**：
 
-因此：
-
-- **ADR-001 已定（2026-11-21，选项 2）：审批执行点必须是平台提供的 host/agent
-  权限隔离。** 平台提供隔离与审批端点之前，不实现审批执行；文件邮箱只能传提案与
-  审计，不能授权。
-- 平台提供之前，审批仍只是“用户同意/审计”，不能当成对被控 bot 的安全边界，也不能
-  声称它阻止了被攻陷的 bot。
+- 云端 bot 只能提案；本地重新校验并生成 request/decision/execution claim。云端
+  workspace 里的提案可被 root agent 读写，因此它是不可信输入，不是授权。
+- 本地 host 持 Rayrun token，按 typed allowlist 执行 `rayrun.machine.start/stop`；
+  token 不进 action、RPC 响应、日志或页面。
+- 云端 agent 不能写本地 decision/claim，所以不能自批这些本地动作；但它仍能在自己的
+  workspace 内任意运行，能改提案/transcript。**审批不是沙箱，也不是每 bot 隔离。**
+- 凭据只在云端、必须云端执行的动作仍适用 ADR-001：平台 host/agent 隔离与
+  host-only 端点落地前不执行。
+- 本地 DSH 不在线时，chat 审批等待，background 按 TTL 拒绝；没有后台自动批准。
 - 平台需求见 [`08-integration.md`](08-integration.md) §3.3；这与
   [`07-security.md`](07-security.md) “The model is untrusted” 一致。
+
+**当前缺口：** 云 bot 自主提案 bridge 已接（fake 测试），但真实云端提案 live E2E、
+其他动作类型和真实 Rayrun 成功执行尚未验证；不要把 host-only propose seam 当成完整
+闭环。
 
 ### 4.4 其他边界
 
@@ -260,8 +265,8 @@ billing。token 只在本地控制面使用；云端 agent 只拿模型 key，�
 | Bot 定义（`bot.json`） | 本地用户意图 | 机器上的副本 | 本地意图赢；云端应用后返回 revision；离线时留在本地 outbox（ADR-002） |
 | 运行态：session、memory、transcript | 云电脑 | 活的 session、profile/memory 目录 | 本地只读镜像；拉回用于审查与恢复 |
 | 队列 | 云端负责状态，本地负责新工作 | `queue/inbox/`、`queue/state/` | 每个文件一个写者；不做共享 JSONL 追加（ADR-003） |
-| 审批请求 | bot runtime 作为提案 | `approvals/req-<id>.json` | 提案不是授权；执行点按 ADR-001 |
-| 审批决定 | 本地控制面或平台审批服务 | `approvals/res-<id>.json` | 每个 id 一个决定；执行方在 agent 写不到的地方 |
+| 审批请求 | 本地 host 生成（提案来自不可信云端） | 本地 `approvals/req-<id>.json` | 提案不是授权；本地重新校验并绑定 actionHash（ADR-019） |
+| 审批决定 / 执行 claim | 本地控制面 / 本地 executor | 本地 `res-<id>.json` / `exec-<id>.json` | 只在本地；每个 id 一个决定/claim；agent 写不到 |
 | Outbox 事件 | bot runtime | `outbox/events.jsonl` | 本地按 `seq` 读；忽略旧 checkpoint 之前的空档 |
 | 本地镜像与缓存 | 本地控制面（派生） | `$DSH_HOME/state/rayrun-bot/` | 可丢弃；从机器重建；不写回机器 |
 
@@ -316,17 +321,19 @@ tombstone，action hash 的 canonicalization 未定义；见 ADR-011/012。
 
 ### 6.3 审批
 
-1. 受控动作在云侧生成 request（提案）：id、botId、actionId、nonce、actionHash、
-   action、risk、origin、TTL。
-2. 本地控制面轮询到 request，显示卡片；卡片内容来自结构化字段，不信任机器提供的
-   HTML/markdown。
-3. 用户 Deny / Allow once；决定写回 `res-<id>.json`（或由本地/平台执行，见 ADR-001）。
-4. 执行方校验 id、botId、nonce、actionHash；任何不匹配、过期、重放、错 bot 都拒绝。
-5. 后台卡 30 分钟过期即拒绝；chat 卡不设计时，一直等待。
-6. **当前文件邮箱可被 root agent 伪造；ADR-001 已定（平台权限隔离），平台提供隔离前
-   这条路径不是安全边界，也不实现执行。**
-7. 副作用执行后的崩溃/重试语义未定；ADR-005 要求 `actionId` + 执行日志 + 幂等/重试
-   规则。
+1. 受控动作由云端 bot 用 `propose.mjs` 生成 proposal；本地 host 通过 `rayrun_files`
+   导入，host-only `approvals.propose` 仍可作为本地 seam。proposal 是请求，不是授权。
+2. 本地 host 校验 typed allowlist，生成 request：本地 id、botId、actionId、nonce、
+   actionHash、action、risk、origin、TTL；写入本地 approval store。
+3. 本地控制面显示卡片；卡片内容来自结构化字段，不信任机器提供的 HTML/markdown。
+4. 用户 Deny / Allow once；决定只写本地 `res-<id>.json`。
+5. 本地 executor 校验 id、botId、actionId、nonce、actionHash、TTL 和 allowlist；任何
+   不匹配、过期、重放、错 bot 都拒绝；批准的本地动作先写 `exec-<id>.json` claim，再
+   执行。云端 agent 不能写这些文件。
+6. 后台卡 30 分钟过期即拒绝；chat 卡不设计时，一直等待；本地 DSH 不在线时不会自动
+   执行。云端凭据动作在平台隔离/host-only 端点落地前仍不执行。
+7. 副作用执行后的崩溃/重试语义见 ADR-005；本地 executor 已实现 at-most-once claim，
+   崩溃后不自动重试。云端提案 bridge 已实现（fake 测试，live 待验）；其他动作仍待做。
 
 ### 6.4 合上笔记本
 
@@ -357,7 +364,8 @@ tombstone，action hash 的 canonicalization 未定义；见 ADR-011/012。
 ## 7. 并发、成本与失败
 
 - **并发**：平台一台机器一次只跑一个 agent 任务（`409 sandbox_busy`）。bot runtime 拥有
-  FIFO 队列；第二项等待，不丢。公平性、超时、取消和队列上限尚未定义（ADR-012）。
+  全局串行队列；第二项等待，不丢。host 已实现 round-robin；host 侧任务超时、
+  取消和队列上限尚未定义（ADR-012）。
 - **成本**：按秒计费；stop 保留磁盘，destroy 删除机器与 workspace。余额耗尽可能
   force-destroy 整个组织的机器；平台没有 spend cap。本地可以轮询余额、警告、idle
   stop，但不能阻止平台销毁。
@@ -375,16 +383,16 @@ tombstone，action hash 的 canonicalization 未定义；见 ADR-011/012。
 
 - 云电脑插件的 adapter：能力调用、版本检查、缺失时的清晰错误；
 - bot 注册表、roster UI、bot↔session 持久化；
-- DSH 审批 seam → 浏览器卡的提案/卡片路由（执行点等平台隔离；IM 后续）；
+- 本地审批执行器与浏览器卡（typed 机器 start/stop；云提案 live E2E 与 IM 后续）；
 - routines/trigger 在 DSH scheduling 上的接线；
 - 成本栏与诚实的状态报告；
 - 打包、测试和文档。
 
 **平台必须补**（细节与优先级见 [`08-integration.md`](08-integration.md)）：
 
-- host/agent 权限隔离与 host-only 审批端点：审批执行点的前提（ADR-001，已定）。
-  平台答复（2026-11-22）：同沙箱内不可行，平台端点设计 1 周 + 实现 2–4 周、非首版；
-  可选的 host/agent 分域路径需要本项目新 ADR。平台提供前不实现审批执行；
+- host/agent 权限隔离与 host-only 审批端点：云端凭据动作的前提（ADR-001）。
+  平台答复（2026-11-22）：同沙箱内不可行，平台端点设计 1 周 + 实现 2–4 周、非首版。
+  本地 typed 动作已按 ADR-019 在本地执行；云端凭据动作仍等待平台；
 - R-G008 常驻 runtime：平台 runtimes API 已实现并本机 dev 全量验收通过（`rayrun-bot-gaps`，
   `4709ac0`），待生产部署；bot 侧 host/session 已在 dev 预览实现并通过多 bot live
   E2E（2026-11-23），生产镜像未交付；
@@ -405,15 +413,16 @@ ADR-004，未定之前 C1/D1 不应动工。
 
 完整的决策、选项和建议见
 [`adr/architecture-decisions.md`](adr/architecture-decisions.md)；登记册见
-[`docs/README.md`](README.md) §3。**ADR-001 已定**（平台权限隔离）；审批实现等待
-[`08-integration.md`](08-integration.md) §3.3 的平台能力。ADR-015/016（控制面/执行面）
-与 ADR-002（所有权）仍是相应工作的门槛：
+[`docs/README.md`](README.md) §3。**ADR-019 已定**（本地 DSH host 审批/执行本地 typed 动作）；ADR-001 的平台隔离
+仍用于云端凭据动作。ADR-015/016（控制面/执行面）与 ADR-002（所有权）仍是相应工作
+的门槛：
 
 | 编号 | 决策 | 为什么阻塞 |
 | --- | --- | --- |
 | ADR-015 | 云端 bot runtime 层 | 决定执行面落点 |
 | ADR-016 | 本地 bot 控制面 | 决定控制面权威 |
-| ADR-001 | 审批在哪里执行 | 已定（平台权限隔离）；平台提供前不实现 |
+| ADR-001 | 审批在哪里执行 | 已定（平台权限隔离）；ADR-019 窄化本地动作 |
+| ADR-019 | 审批执行权威 | 已定（本地 DSH host）；云提案 bridge 已实现，live 待验 |
 | ADR-002 | 所有权矩阵与单写者规则 | 决定 `bot.json`、队列、审批谁写 |
 | ADR-003 | 文件控制通道协议 | 决定队列/状态怎么交换，避免双写丢更新 |
 | ADR-004 | 与 `dsh-rayrun-computer` 的契约 | 决定 bot runtime 能否调用云能力 |

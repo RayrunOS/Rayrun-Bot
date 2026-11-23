@@ -87,7 +87,21 @@ window.__ModuleLoader__.load({
     "allowedLocal": "Allowed once, on this page only. Nothing was sent.",
     "deniedLocal": "Denied, on this page only. Nothing was sent.",
     "snippetAllowed": "Allowed once — not sent",
-    "snippetDenied": "Denied — not sent"
+    "snippetDenied": "Denied — not sent",
+    "realStart": "Start cloud computer “{machine}”",
+    "realStop": "Stop cloud computer “{machine}”",
+    "realUnknown": "Run an approved action on “{machine}”",
+    "realMeta": "Requested {time}",
+    "allowedReal": "Approved and executed on your local side.",
+    "deniedReal": "Denied. Nothing was executed.",
+    "executionPending": "Approved. Waiting for local execution.",
+    "executionFailed": "Approved, but local execution failed. Nothing more will run.",
+    "executionRefused": "Approved, but this action is not supported locally. Nothing was executed.",
+    "riskCost": "Spends machine time",
+    "allowedSide": "Approved",
+    "deniedSide": "Denied",
+    "waitingSide": "Waiting to execute",
+    "failedSide": "Execution failed"
   },
   "draft": {
     "send": "Send",
@@ -435,7 +449,21 @@ window.__ModuleLoader__.load({
     "allowedLocal": "只记在这一页：已批准一次。没有发送到任何地方。",
     "deniedLocal": "只记在这一页：已拒绝。没有发送到任何地方。",
     "snippetAllowed": "已批准一次 · 未发送",
-    "snippetDenied": "已拒绝 · 未发送"
+    "snippetDenied": "已拒绝 · 未发送",
+    "realStart": "启动云电脑“{machine}”",
+    "realStop": "停止云电脑“{machine}”",
+    "realUnknown": "在“{machine}”上执行已批准动作",
+    "realMeta": "请求于 {time}",
+    "allowedReal": "已批准，并已在本机执行。",
+    "deniedReal": "已拒绝，没有执行任何动作。",
+    "executionPending": "已批准，等待本机执行。",
+    "executionFailed": "已批准，但本机执行失败。不会继续执行。",
+    "executionRefused": "已批准，但本地不支持该动作。没有执行任何动作。",
+    "riskCost": "消耗机时",
+    "allowedSide": "已批准",
+    "deniedSide": "已拒绝",
+    "waitingSide": "等待执行",
+    "failedSide": "执行失败"
   },
   "draft": {
     "send": "发送",
@@ -1064,6 +1092,78 @@ window.__ModuleLoader__.load({
       }
     }
 
+    /** Map a host approval into the card shape without trusting display fields. */
+    function realApproval(approval, t) {
+      const action = approval?.action && typeof approval.action === 'object' ? approval.action : {}
+      const machine = typeof action.machine === 'string' ? action.machine : ''
+      const kind = action.kind
+      const execution = approval?.execution ?? null
+      let state = approval?.state ?? 'pending'
+      if (state === 'approved') {
+        if (execution?.state === 'done') state = 'allowed'
+        else if (execution?.state === 'failed' || execution?.state === 'refused') state = 'execution-failed'
+        else state = 'approved-waiting'
+      }
+      let expiresMin
+      if (state === 'pending' && approval?.expiresAt) {
+        const remaining = Date.parse(approval.expiresAt) - Date.now()
+        expiresMin = Number.isFinite(remaining) ? Math.max(0, Math.ceil(remaining / 60000)) : undefined
+      }
+      return {
+        id: approval.id,
+        real: true,
+        title: t(kind === 'rayrun.machine.start'
+          ? 'approval.realStart'
+          : kind === 'rayrun.machine.stop' ? 'approval.realStop' : 'approval.realUnknown', { machine }),
+        meta: t('approval.realMeta', { time: timeOf(approval.createdAt) }),
+        state,
+        origin: approval.origin,
+        target: machine,
+        risk: Array.isArray(approval.risk) ? approval.risk : [],
+        execution,
+        ...(expiresMin === undefined ? {} : { expiresMin }),
+      }
+    }
+
+    /** Replace the bot's real approval cards; other messages stay in place. */
+    function applyApprovals(bot, list, t) {
+      if (!Array.isArray(list)) return bot
+      const entries = list.filter((approval) => approval && typeof approval.id === 'string')
+      const approvals = { ...bot.approvals }
+      const cards = []
+      for (const approval of entries) {
+        const mapped = realApproval(approval, t)
+        approvals[mapped.id] = mapped
+        cards.push({ id: `approval-${mapped.id}`, kind: 'approval', approvalId: mapped.id })
+      }
+      const messages = [...bot.messages.filter((entry) => entry.kind !== 'approval'), ...cards]
+      const pending = cards.some((card) => approvals[card.approvalId]?.state === 'pending')
+      return {
+        ...bot,
+        approvals,
+        messages,
+        attention: pending ? 'needs' : bot.attention === 'needs' ? null : bot.attention,
+      }
+    }
+
+    /** Apply one decision/execution result without moving the card to the end twice. */
+    function applyApprovalResult(bot, approval, t) {
+      if (!approval || typeof approval.id !== 'string') return bot
+      const mapped = realApproval(approval, t)
+      const approvals = { ...bot.approvals, [mapped.id]: mapped }
+      const exists = bot.messages.some((entry) => entry.kind === 'approval' && entry.approvalId === mapped.id)
+      const messages = exists
+        ? bot.messages
+        : [...bot.messages, { id: `approval-${mapped.id}`, kind: 'approval', approvalId: mapped.id }]
+      const pending = Object.values(approvals).some((item) => item.state === 'pending')
+      return {
+        ...bot,
+        approvals,
+        messages,
+        attention: pending ? 'needs' : bot.attention === 'needs' ? null : bot.attention,
+      }
+    }
+
     let seq = 0
     function uid(prefix) {
       seq += 1
@@ -1132,6 +1232,11 @@ window.__ModuleLoader__.load({
       const messages = []
       for (const entry of base) {
         if (seen.has(entry.id)) continue
+        seen.add(entry.id)
+        messages.push(entry)
+      }
+      for (const entry of bot.messages) {
+        if (entry.kind !== 'approval' || seen.has(entry.id)) continue
         seen.add(entry.id)
         messages.push(entry)
       }
@@ -1841,11 +1946,17 @@ window.__ModuleLoader__.load({
         let cancelled = false
         void (async () => {
           try {
-            const body = await hostRpc('session.history', { botId: selected.id, tail: true })
+            const [body, approvalBody] = await Promise.all([
+              hostRpc('session.history', { botId: selected.id, tail: true }),
+              hostRpc('approvals.list', { botId: selected.id }).catch(() => null),
+            ])
             if (cancelled) return
-            updateBot(selected.id, (bot) => (
-              bot.messages.length > 0 ? { ...bot, historyLoaded: true } : applySession(bot, body, t)
-            ))
+            updateBot(selected.id, (bot) => {
+              const next = bot.messages.length > 0
+                ? { ...bot, historyLoaded: true }
+                : applySession(bot, body, t)
+              return approvalBody?.approvals ? applyApprovals(next, approvalBody.approvals, t) : next
+            })
             if (sessionWorking(body.session)) startPolling(selected.id, body.session.lastSeq ?? 0)
           } catch (error) {
             if (cancelled) return
@@ -1855,6 +1966,29 @@ window.__ModuleLoader__.load({
         })()
         return () => { cancelled = true }
       }, [selected?.id, selected?.source, selected?.historyLoaded, host.status])
+
+      useEffect(() => {
+        if (!selected || selected.source !== 'real' || host.status !== 'loaded') return undefined
+        let cancelled = false
+        let timer
+        const load = async () => {
+          try {
+            await hostRpc('approvals.sync', { botId: selected.id })
+            if (cancelled) return
+            const body = await hostRpc('approvals.list', { botId: selected.id })
+            if (cancelled) return
+            updateBot(selected.id, (bot) => applyApprovals(bot, body.approvals, t))
+          } catch {
+            if (timer) clearInterval(timer)
+          }
+        }
+        timer = setInterval(load, 5000)
+        void load()
+        return () => {
+          cancelled = true
+          if (timer) clearInterval(timer)
+        }
+      }, [selected?.id, selected?.source, host.status])
 
       const send = () => {
         const text = state.composer.trim()
@@ -1948,6 +2082,35 @@ window.__ModuleLoader__.load({
       const decide = (approvalId, decision) => {
         if (!selected) return
         const allowed = decision === 'allowed'
+        const currentApproval = selected.approvals[approvalId]
+        if (selected.source === 'real' && currentApproval?.real) {
+          const botId = selected.id
+          void (async () => {
+            try {
+              const body = await hostRpc('approvals.decide', {
+                botId,
+                id: approvalId,
+                decision: allowed ? 'approve' : 'deny',
+              })
+              const approval = body.approval
+                ? { ...body.approval, execution: body.execution ?? body.approval.execution }
+                : null
+              let sentence
+              if (!allowed) sentence = t('approval.deniedReal')
+              else if (body.execution?.state === 'done') sentence = t('approval.allowedReal')
+              else if (body.execution?.state === 'refused') sentence = t('approval.executionRefused')
+              else if (body.execution?.state === 'failed') sentence = t('approval.executionFailed')
+              else sentence = t('approval.executionPending')
+              updateBot(botId, (bot) => (approval ? applyApprovalResult(bot, approval, t) : bot))
+              setState((current) => ({ ...current, flash: sentence, live: sentence }))
+            } catch (error) {
+              const message = sessionErrorText(t, error?.code, t('approval.executionFailed'))
+              updateBot(botId, (bot) => appendSessionError(bot, message, error?.code ?? 'E_INTERNAL'))
+              setState((current) => ({ ...current, flash: message, live: message }))
+            }
+          })()
+          return
+        }
         const sentence = t(allowed ? 'approval.allowedLocal' : 'approval.deniedLocal')
         const snippet = t(allowed ? 'approval.snippetAllowed' : 'approval.snippetDenied')
         setState((current) => ({
@@ -2326,8 +2489,11 @@ window.__ModuleLoader__.load({
     function ApprovalCard({ t, approval, onDecide }) {
       const pending = approval.state === 'pending'
       const expired = approval.state === 'expired'
-      const title = fieldText(approval, t, 'titleKey')
-      const meta = fieldText(approval, t, 'metaKey')
+      const real = approval.real === true
+      const executionFailed = approval.state === 'execution-failed'
+      const waiting = approval.state === 'approved-waiting'
+      const title = approval.title || fieldText(approval, t, 'titleKey')
+      const meta = approval.meta || fieldText(approval, t, 'metaKey')
       const origin = approval.origin === 'background'
         ? t('approval.originBackground')
         : approval.origin === 'chat'
@@ -2336,15 +2502,30 @@ window.__ModuleLoader__.load({
       const target = approval.targetKey ? t(approval.targetKey) : approval.target || ''
       const risks = Array.isArray(approval.risk)
         ? approval.risk
-          .map((risk) => risk === 'outside' ? t('approval.riskOutside') : risk === 'irreversible' ? t('approval.riskIrreversible') : null)
+          .map((risk) => risk === 'outside'
+            ? t('approval.riskOutside')
+            : risk === 'irreversible'
+              ? t('approval.riskIrreversible')
+              : risk === 'cost' ? t('approval.riskCost') : null)
           .filter(Boolean)
         : []
       const riskLine = risks.length ? risks.join(' · ') : t('approval.warning')
       let side = t('approval.waits')
       if (pending && Number.isFinite(approval.expiresMin)) side = t('approval.expires', { n: approval.expiresMin })
-      if (approval.state === 'allowed') side = t('approval.snippetAllowed')
-      if (approval.state === 'denied') side = t('approval.snippetDenied')
+      if (approval.state === 'allowed') side = t(real ? 'approval.allowedSide' : 'approval.snippetAllowed')
+      if (approval.state === 'denied') side = t(real ? 'approval.deniedSide' : 'approval.snippetDenied')
+      if (waiting) side = t('approval.waitingSide')
+      if (executionFailed) side = t('approval.failedSide')
       if (expired) side = t('approval.expired')
+      let resultText = t(approval.state === 'allowed' ? 'approval.allowedLocal' : 'approval.deniedLocal')
+      if (real && approval.state === 'allowed') resultText = t('approval.allowedReal')
+      if (real && approval.state === 'denied') resultText = t('approval.deniedReal')
+      if (real && waiting) resultText = t('approval.executionPending')
+      if (real && executionFailed) {
+        resultText = t(approval.execution?.code === 'E_APPROVAL_UNSUPPORTED'
+          ? 'approval.executionRefused'
+          : 'approval.executionFailed')
+      }
       return h(
         'div',
         { className: expired ? 'rb-card rb-card-expired' : 'rb-card', 'data-state': approval.state, role: 'group', 'aria-label': title },
@@ -2360,7 +2541,7 @@ window.__ModuleLoader__.load({
           origin ? h('span', { className: 'rb-chip' }, origin) : null,
           target ? h('span', { className: 'rb-chip rb-chip-target' }, target) : null,
         ) : null,
-        pending ? h('div', { className: 'rb-warnline' }, riskLine) : expired ? null : h('div', { className: 'rb-result' }, t(approval.state === 'allowed' ? 'approval.allowedLocal' : 'approval.deniedLocal')),
+        pending ? h('div', { className: 'rb-warnline' }, riskLine) : expired ? null : h('div', { className: 'rb-result' }, resultText),
         h('div', { className: 'rb-meta' }, meta),
         pending ? h(
           'div',

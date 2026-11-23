@@ -117,8 +117,8 @@ If something is unclear, ask one question instead of guessing.
 ```
 
 模板只定义工作方式和边界，不替代审批：模型仍可能忽略提示，真正的门是审批层
-（[`05-approvals.md`](05-approvals.md)）。执行点见 ADR-001：已定平台权限隔离，
-平台提供前审批不实现。
+（[`05-approvals.md`](05-approvals.md)）。ADR-019 让本地 DSH host 对 typed 本地动作
+做审批/执行；云端凭据动作仍按 ADR-001 等待平台隔离。
 
 ---
 

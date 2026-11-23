@@ -293,6 +293,18 @@
   processed 2。测试后 runtime 删除、机器 stop（Stopped，runtimes 空），未 destroy；
   scoped token 已撤销（旧 token 401），临时 token 文件已清理；`rayrun-bot-scoped`
   保持 Stopped，销毁需用户明确授权。
+- 本地审批执行页面 E2E（2026-11-23，本机 DSH `0.2.2-rc.5`，依赖 main `fe965c1`，
+  Bots `0.1.0-alpha.0`，临时 DSH profile，**无 Rayrun token**）：本地 store 创建两条
+  真实 proposal（机器 `box` 的 stop/start）；页面从 `approvals.list` 显示动作、目标
+  （`box`）和风险（stop: outside；start: outside+cost）。点击 Deny 后本地 decision 为
+  denied，且没有 `exec` 记录；点击 Allow start 后本地 executor 写 `exec-<id>.json`
+  claim 并尝试本地 Rayrun RPC，因没有可用连接/机器记录 `failed`（`E_MACHINE_STOPPED`
+  路径），页面显示“已批准，但本地执行失败”，不假成功。截图
+  `/tmp/bot/approval-ui.png`（临时文件，不入库）。未验证真实 Rayrun start/stop 成功、
+  真实云端 bot 提案或云端凭据动作；`approvals.propose` 的 host-only 门由
+  `test/rpc-contract.mjs` 覆盖，云端 proposal bridge 由
+  `test/cloud-approval-bridge.mjs` 用 fake file tool/machine 覆盖（CLI、去重、非法/超限
+  提案、停机不唤醒、结果 outbox/补传）。
 - 打包产物安装（2026-11-22，本机 DSH `0.2.2-rc.5`；本地打包检查）：`npm pack` 生成
   15 个文件的 tarball（host/client、locale、`lib/*.js`、bundle patch、icon、README、
   LICENSE；54.6 kB），`test/`、`docs/`、`tools/` 未进入；`dsh plugin --profile
@@ -328,13 +340,13 @@
 - A11 本地 workspace 扫描发现 `tmp/` 下有未跟踪的本地 key 文件（`dp-code.key`、
   `rayrun-dev.key`）。它们被 `.gitignore` 忽略，且未进入 git 历史或 npm 包，但仍
   留在工作区；需轮换并移出/删除后才能声称 A11 通过。扫描未打印值；
-- bot 会话、审批往返、远程审批、队列与恢复（R-G008 平台实现待部署；bot 侧常驻 host
-  尚未实现）；
+- bot 会话、审批往返、远程审批、队列与恢复：R-G008 平台实现待部署；bot 侧常驻
+  host 已有 dev 预览（多 bot 单 host E2E 通过）；本地 typed 审批执行已通过拒绝/
+  失败关闭的页面 E2E；云提案 bridge 只有 fake 测试，真实 Rayrun 成功执行与真实云提案未验证；云端凭据动作
+  仍等待平台隔离（ADR-001，[`08-integration.md`](08-integration.md) §3.3）。
   本地 session store、`session.*` RPC、`rayrun_agent`/detached adapter 已有 fake
   测试；页面层真实一轮，以及 detached 的页面关闭 + host 重启收取，已在本机 DSH +
-  已有 Rayrun 机器验证（§3.1）；同一 host 不重启的连续两轮、队列与恢复仍未验证；审批往返/
-  执行等待平台权限隔离（ADR-001，[`08-integration.md`](08-integration.md) §3.3），
-  在平台提供前不做往返验证；
+  已有 Rayrun 机器验证（§3.1）；同一 host 不重启的连续两轮、队列与恢复仍未验证；
 - DeepSeek 模型调用（至今只创建了 model credential，没有发模型请求）；
 - 零余额宽限/force-destroy 行为（R-G009，不做破坏性验证）；
 - 在 Rayrun 上构建自定义 Dockerfile 镜像（R-G013）。

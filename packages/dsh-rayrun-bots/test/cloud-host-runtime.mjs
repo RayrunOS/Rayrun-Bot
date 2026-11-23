@@ -105,6 +105,8 @@ check('start uploads one task and returns a detached record', async () => {
   assert.equal(task.id, started.taskId)
   assert.match(task.text, /Echo Bot/)
   assert.match(task.text, /hello/)
+  assert.match(task.text, /Approval requests:/)
+  assert.match(task.text, /DSH_BOT_PROPOSE/)
 
   const spec = state.puts[0].spec
   assert.deepEqual(spec.argv, ['node', '/workspace/.rayrun/bin/host.mjs'])
@@ -112,6 +114,8 @@ check('start uploads one task and returns a detached record', async () => {
   assert.equal(spec.keep_alive, true)
   assert.equal(spec.restart, 'always')
   assert.equal(spec.env.DSH_BOT_ROOT, '/workspace/.rayrun')
+  assert.equal(spec.env.DSH_BOT_MACHINE, 'box')
+  assert.equal(spec.env.DSH_BOT_PROPOSE, '/workspace/.rayrun/bin/bin/propose.mjs')
   assert.equal(Object.hasOwn(spec.env, 'BOT_ID'), false)
   assert.equal(hostRuntimeName(), 'bot-host')
 })
@@ -122,6 +126,7 @@ check('projects the host assets before starting when no override is set', async 
   const hostUploads = uploads.filter((item) => String(item.path).startsWith('.rayrun/host/'))
   assert.ok(hostUploads.length >= 4)
   assert.equal(state.puts[0].spec.argv[1], '/workspace/.rayrun/host/0.1.0-alpha.0/host.mjs')
+  assert.equal(state.puts[0].spec.env.DSH_BOT_PROPOSE, '/workspace/.rayrun/host/0.1.0-alpha.0/bin/propose.mjs')
 })
 
 check('concurrent bots share one host setup', async () => {
@@ -144,6 +149,13 @@ check('status stays running until the outbox exists, then collect returns the re
   files.set(outbox, JSON.stringify({ taskId: started.taskId, reply: 'host reply' }))
   assert.deepEqual(await runtime.status({ detached: started }), { running: false })
   assert.deepEqual(await runtime.collect({ detached: started }), { text: 'host reply' })
+})
+
+check('can resolve a stopped machine without starting it for approval sync', async () => {
+  const { runtime, calls } = setup({ machineStatus: 'Stopped' })
+  const machine = await runtime.ensureMachine({ start: false })
+  assert.equal(machine.status, 'Stopped')
+  assert.equal(calls.some((call) => call.action === 'machine.action'), false)
 })
 
 check('starts a stopped machine and resumes a paused one', async () => {

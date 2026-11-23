@@ -492,7 +492,7 @@ check('session replies expose no credential shape', () => withState(async () => 
   }
 }))
 
-check('approvals RPC lists, gets and records decisions without execution', () => withState(async (home) => {
+check('approvals RPC lists, gets and refuses an unsupported local action', () => withState(async (home) => {
   const { handler } = hostFor()
   const created = await request(handler, post('bots.create', {
     name: 'Approval Bot', label: 'Needs approvals', instructions: 'Ask first.',
@@ -529,8 +529,10 @@ check('approvals RPC lists, gets and records decisions without execution', () =>
   const decided = await request(handler, post('approvals.decide', { botId, id: pending.id, decision: 'approve' }))
   assert.equal(decided.status, 200)
   assert.equal(decided.json.approval.state, 'approved')
-  assert.equal(decided.json.execution.available, false)
-  assert.equal(decided.json.execution.reason, 'platform_isolation_pending')
+  assert.equal(decided.json.execution.available, true)
+  assert.equal(decided.json.execution.mode, 'local')
+  assert.equal(decided.json.execution.state, 'refused')
+  assert.equal(decided.json.execution.code, 'E_APPROVAL_UNSUPPORTED')
   assert.equal(decided.json.idempotent, false)
 
   const again = await request(handler, post('approvals.decide', { botId, id: pending.id, decision: 'approve' }))
@@ -570,6 +572,56 @@ check('approvals RPC lists, gets and records decisions without execution', () =>
     assert.doesNotMatch(reply.text, /Bearer\s|RAYRUN_TOKEN|sk-[A-Za-z0-9]{16,}|api[_-]?key\s*[:=]/i)
   }
 }))
+
+check('approvals.sync fails closed when the cloudHost bridge is not enabled', () => withState(async () => {
+  const { handler } = hostFor()
+  const created = await request(handler, post('bots.create', {
+    name: 'No Bridge Bot', label: 'No cloud host', instructions: 'Ask first.',
+  }))
+  const botId = created.json.bot.id
+  const synced = await request(handler, post('approvals.sync', { botId }))
+  assert.equal(synced.status, 503)
+  assert.equal(synced.json.error.code, 'E_RUNTIME_UNAVAILABLE')
+}))
+
+check('a host proposal can approve a typed action and fails closed without Rayrun', () => withState(async () => {
+  const { handler } = hostFor()
+  const created = await request(handler, post('bots.create', {
+    name: 'Local Action Bot', label: 'Stops a computer', instructions: 'Ask first.',
+  }))
+  const botId = created.json.bot.id
+  const proposal = {
+    botId,
+    actionId: 'act-local-1',
+    requestedAction: { kind: 'rayrun.machine.stop', machine: 'box' },
+    origin: 'chat',
+  }
+
+  const browser = await request(handler, post('approvals.propose', proposal, {
+    origin: 'http://127.0.0.1:59999',
+    host: '127.0.0.1:59999',
+  }))
+  assert.equal(browser.status, 403)
+
+  const proposed = await request(handler, post('approvals.propose', proposal))
+  assert.equal(proposed.status, 200)
+  assert.equal(proposed.json.approval.state, 'pending')
+  assert.deepEqual(proposed.json.approval.risk, ['outside'])
+
+  const decided = await request(handler, post('approvals.decide', {
+    botId, id: proposed.json.approval.id, decision: 'approve',
+  }))
+  assert.equal(decided.status, 200)
+  assert.equal(decided.json.approval.state, 'approved')
+  assert.equal(decided.json.execution.available, true)
+  assert.equal(decided.json.execution.state, 'failed')
+  assert.equal(decided.json.execution.code, 'E_APPROVAL_EXECUTION')
+
+  const got = await request(handler, post('approvals.get', { botId, id: proposed.json.approval.id }))
+  assert.equal(got.status, 200)
+  assert.equal(got.json.approval.execution.state, 'failed')
+}))
+
 
 let failed = 0
 for (const { name, fn } of checks) {

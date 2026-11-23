@@ -26,7 +26,7 @@ function memory() {
 
 check('the package ships the host files and a deterministic manifest', () => {
   const files = hostAssetFiles()
-  assert.deepEqual(files.map((file) => file.path), ['host.mjs', 'lib/host.mjs', 'lib/dsh-agent.mjs'])
+  assert.deepEqual(files.map((file) => file.path), ['host.mjs', 'lib/host.mjs', 'lib/dsh-agent.mjs', 'bin/propose.mjs'])
   for (const file of files) {
     assert.match(file.sha256, /^[a-f0-9]{64}$/)
     assert.ok(file.bytes > 0)
@@ -49,6 +49,7 @@ check('projects the files once and then serves them from the verified cache', as
     '.rayrun/host/1.2.3/host.mjs',
     '.rayrun/host/1.2.3/lib/host.mjs',
     '.rayrun/host/1.2.3/lib/dsh-agent.mjs',
+    '.rayrun/host/1.2.3/bin/propose.mjs',
     '.rayrun/host/1.2.3/manifest.json',
   ])
 

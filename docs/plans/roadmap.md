@@ -4,8 +4,9 @@
 `RayrunOS/dsh-rayrun-computer` 保持独立，并作为依赖被消费。下面的里程碑来自塑造本
 仓库的产品调研；它们是方向，不是承诺。v0.1 客户端壳、health 路由、持久化本地名册
 和按轮次的 runtime（依赖 1.1+ 用 detached，1.0.x 用单轮 `rayrun_agent`）已经存在；
-常驻云端 runtime 与 bot↔云端 session 映射已有 dev 预览（多 bot 单 host E2E 通过），
-远程审批执行和 routines 尚未构建，生产镜像/部署未交付。实现状态以
+常驻云端 runtime 与 bot↔云端 session 映射已有 dev 预览（多 bot 单 host E2E 通过）；
+本地 typed 审批执行（机器 start/stop）与云提案 bridge 已有预览（fake 测试），但真实
+云端提案 live E2E、远程审批执行和 routines 尚未构建，生产镜像/部署未交付。实现状态以
 [12-status.md](../12-status.md) 为准。日期刻意省略。*
 
 ## 我们在哪（M0 — bootstrap）
@@ -36,9 +37,10 @@
 - **机器上的常驻 DSH host。** 把“每个 prompt 跑一次 `headless`”换成受监督的 host，
   让 bot 在笔记本合上后继续工作。平台 R-G008 runtimes API 已实现并本机 dev 全量验收通过（待生产部署）；用它
   跑通常驻 host、并把 session 写进 `/workspace` 是第一个 spike。
-- **Fail-closed 审批。** DSH 审批 seam → host half → 浏览器卡片 → 决定写回。超时、
-  未知或面板关闭都算拒绝。执行等待平台 host/agent 隔离（ADR-001）；在那之前，文件
-  邮箱不是授权边界。
+- **Fail-closed 审批。** 云端 proposal → 本地 host 的决定/执行 claim → 浏览器卡片。
+  超时、未知或面板关闭都算拒绝。ADR-019 首版允许本地执行机器 start/stop；云端凭据
+  动作仍等待平台 host/agent 隔离（ADR-001）；云提案 bridge 已实现，真实云端提案
+  live E2E 待验。文件邮箱不是授权边界。
 - **Routines，最小版（P1；决策未定，ADR-009）。** 一个定时 prompt 唤醒 bot；不做
   触发器市场。
 - **成本栏。** 机时与余额可见；idle stop 仍是插件选项（只停，永不 destroy）。
@@ -128,9 +130,9 @@ profile 持久化、完整品牌化或 analytics 让 B1 不够时才作为升级
 - R-G008 常驻 runtime：平台 runtimes API 已实现并本机 dev 全量验收通过（`rayrun-bot-gaps`，
   `4709ac0`），待生产部署；session 由 bot host 写 `/workspace`，bot 侧
   host 资产已进包（`cloud-host/`）；projection 路径待页面 E2E；
-- host/agent 权限隔离与 host-only 审批端点（ADR-001：审批执行点）。平台答复
+- host/agent 权限隔离与 host-only 审批端点（ADR-001：云端凭据动作）。平台答复
   （2026-11-22）：同沙箱不可行，平台端点非首版；host/agent 分域路径需要本项目新
-  ADR；在此之前没有审批执行；
+  ADR；本地 typed 审批执行已按 ADR-019 走本地路径，云端凭据动作仍无执行；
 - 余额宽限与护栏（今天唯一的生命周期上限是 stop；耗尽会 force-destroy 机器和磁盘）；
 - 带认证的安全入向网络（今天 token ingress 不可用，只有 `public` 可用）——v0.2；
 - 跨 session 和重启的持久浏览器 profile 与登录状态（老系统用例需要）——v0.2；

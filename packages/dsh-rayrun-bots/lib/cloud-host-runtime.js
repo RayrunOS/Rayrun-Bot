@@ -111,7 +111,7 @@ export function createCloudHostRuntime({
     return { machine, host }
   }
 
-  async function ensureMachine() {
+  async function ensureMachine({ start = true } = {}) {
     const overview = await rpc.call('overview')
     const machines = Array.isArray(overview.machines)
       ? overview.machines.filter((item) => item?.status !== 'Terminated')
@@ -124,7 +124,7 @@ export function createCloudHostRuntime({
     if (!machine) {
       throw rayrunFailure(ERROR_CODES.machineStopped, 'No cloud computer yet; create one in Bots setup first.')
     }
-    if (machine.status === 'Running') return machine
+    if (machine.status === 'Running' || !start) return machine
     const verb = machine.status === 'Paused' ? 'resume' : 'start'
     await rpc.call('machine.action', { id: machine.id, verb }, { timeoutMs: 120_000 })
     for (let attempt = 0; attempt < 60; attempt += 1) {
@@ -136,7 +136,7 @@ export function createCloudHostRuntime({
     throw rayrunFailure(ERROR_CODES.machineStopped, 'The cloud computer did not start in time; no turn was sent.')
   }
 
-  function spec(script) {
+  function spec(script, machine) {
     return {
       argv: ['node', script],
       workdir: '/workspace',
@@ -148,6 +148,10 @@ export function createCloudHostRuntime({
         DSH_BOT_AGENT: 'dsh',
         DSH_BOT_PROFILE: profile,
         DSH_BOT_LOG: '/workspace/.rayrun/logs/bot-host.log',
+        DSH_BOT_PROPOSE: `${path.posix.dirname(String(script))}/bin/propose.mjs`,
+        DSH_BOT_MACHINE: /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(String(machine.name ?? ''))
+          ? String(machine.name)
+          : String(machine.id),
       },
       credentials: [...credentials],
       restart: 'always',
@@ -163,7 +167,7 @@ export function createCloudHostRuntime({
     const name = HOST_RUNTIME
     let current = (await runtimeRpc.get(ref, name)).runtime
     if (!current) {
-      await runtimeRpc.put(ref, name, spec(script))
+      await runtimeRpc.put(ref, name, spec(script, machine))
       current = (await runtimeRpc.get(ref, name)).runtime
     }
     if (current?.state !== 'running') {
@@ -252,7 +256,7 @@ export function createCloudHostRuntime({
       const { machine, host } = await hostSetup
       const taskId = `task-${randomUUID()}`
       const paths = filePaths(botId, taskId)
-      const prompt = buildPrompt({ bot, text, history, messageSeq })
+      const prompt = buildPrompt({ bot, text, history, messageSeq, proposalHint: true })
       const startedAt = new Date().toISOString()
       await writeFile(host.ref, paths.inbox, JSON.stringify({
         schema: 1,

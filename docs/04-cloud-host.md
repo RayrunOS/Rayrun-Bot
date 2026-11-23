@@ -64,11 +64,11 @@ DSH agent sessions（bot）
 | bot↔session/profile/memory 映射 | 机器生命周期、billing |
 | DSH agent 进程启动/监督/重启 | 审批决定（本地/人类，ADR-016） |
 | 心跳、恢复、事件 outbox | 模型 key 存储（由平台注入） |
-| 审批**提案**、执行日志（ADR-005） | 多 bot 之间的安全隔离 |
+| 审批**提案**（不是决定/执行；ADR-019） | 多 bot 之间的安全隔离 |
 
-它与 agent 同机、以 root/`danger-full-access` 运行，**不是安全边界**；ADR-001 已定
-为平台权限隔离，平台提供隔离前不实现审批执行（[`08-integration.md`](08-integration.md)
-§3.3）。
+它与 agent 同机、以 root/`danger-full-access` 运行，**不是安全边界**；本地 typed
+审批由本地 DSH host 决定/执行（ADR-019），云端凭据动作仍等待平台隔离（ADR-001），
+见 [`08-integration.md`](08-integration.md) §3.3。
 
 ---
 

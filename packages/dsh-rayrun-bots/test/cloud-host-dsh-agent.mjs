@@ -27,7 +27,7 @@ const args = process.argv.slice(2)
 const profileIndex = args.indexOf('--profile')
 const profile = profileIndex >= 0 ? args[profileIndex + 1] : 'bot'
 const home = process.env.DSH_HOME
-appendFileSync(process.env.FAKE_DSH_LOG, JSON.stringify({ args, dshHome: home, home: process.env.HOME }) + '\\n')
+appendFileSync(process.env.FAKE_DSH_LOG, JSON.stringify({ args, dshHome: home, home: process.env.HOME, botId: process.env.DSH_BOT_ID ?? null }) + '\\n')
 if (args.includes('--dump-config')) {
   const dir = path.join(home, 'profiles', profile)
   mkdirSync(dir, { recursive: true })
@@ -91,6 +91,13 @@ check('passes the persisted session id on the next task', async () => {
   const run = invocations(log).at(-1)
   assert.deepEqual(run.args.slice(-4), ['--json', '--session-id', 'session-fake-1', 'second task'])
   assert.equal(run.args.includes('--session-id'), true)
+})
+
+check('passes the bot id to the agent process for proposal routing', async () => {
+  const { log, agent } = setup()
+  await agent.run({ text: 'propose', botId: 'alpha-bot' })
+  const run = invocations(log).at(-1)
+  assert.equal(run.botId, 'alpha-bot')
 })
 
 check('a failing dsh rejects with a redacted error', async () => {

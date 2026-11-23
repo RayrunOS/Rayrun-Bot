@@ -141,7 +141,7 @@ live 联调：`rayrun-bot` 启动后 `put → running`、`get/list`、`delete �
 期望形状：`balance.low` / `sandbox.suspended` 事件、destroy 前宽限期、每机器 budget
 字段。
 
-### 3.3 Host/agent 权限隔离与审批端点（P0，ADR-001）
+### 3.3 Host/agent 权限隔离与云端审批端点（P0，ADR-001；本地路径见 ADR-019）
 
 今天：云镜像以 root 运行，worker profile 是 `danger-full-access`；host 与 agent 同
 用户、同工作区、同凭据面。任何放在 `/workspace/.rayrun/.../approvals/` 的文件邮箱都
@@ -155,11 +155,13 @@ tmp+rename 和 checksum 只防半写，不防伪造。
 2. 平台审批端点或 host-only 通道：人类决定只进入隔离侧，agent 只能提交提案；
 3. 受控动作需要的凭据只在 host 侧可用，agent 不可读。
 
-为什么：ADR-001（2026-11-21）选择平台权限隔离。没有它，审批只能是“用户同意/审计”，
-被 prompt injection 或攻陷的 bot 可以自批；我们不把这种回退当成 v0.1 的审批执行。
+为什么：ADR-001（2026-11-21）仍要求云端凭据动作由平台隔离/端点保护。ADR-019
+（2026-11-23）已把**凭据/执行器在本地的 typed 动作**改为本地 DSH host 审批并执行；
+这不解决云端凭据动作，也不使云端 agent 可信。
 
-回退：不实现审批执行；云端 bot 继续 `approval: never`，客户端审批卡保持预览。状态
-文档必须继续写明审批未工作，不能声称它阻止了被攻陷的 bot。
+回退：云端凭据动作继续不执行，云端 bot 保持 `approval: never`；本地 typed 动作走
+ADR-019 的本地 executor。状态文档必须分别写明两者的边界，不能声称审批阻止了被攻陷
+的 bot。
 
 期望形状：host runtime 以独立身份启动；平台提供 host-only 的审批/决定 API；agent
 进程无法读取 host 状态目录或凭据；决定带 id、botId、actionId、nonce、actionHash 和
@@ -171,15 +173,19 @@ agent 可读 `/proc/<pid>/environ`，放在沙箱里的任何 token/key 都可�
 认证、agent 如何不能冒充、凭据放哪），约设计 1 周 + 实现 2–4 周，**不属于初步支持，
 也不属于 R-G011**。
 
-平台建议的最小路径（尚未成为本仓库决策）：审批权威放在 agent 沙箱之外——本地 DSH，
-或单独的 host 沙箱；agent 沙箱只执行，host 侧持有平台凭据并决定/执行受限动作。这样
-不需要新增平台审批端点，用现有 API 即可；代价是 bot 侧要拆 host/agent 两域，v0.1
-可先接受“合上笔记本时审批等待”。如果采用这条路径，需要新的 ADR 和代码设计；在那
-之前审批执行继续保持关闭。
+平台建议的最小路径已被本项目采纳（ADR-019，2026-11-23）：审批权威放在 agent
+沙箱之外——本地 DSH；agent 只提案，本地 host 持有 Rayrun token 并决定/执行受限的
+typed 动作。这样不需要新增平台审批端点，用现有 API 即可；代价是本地 DSH 不在线时
+审批等待。首版只覆盖机器的 start/stop；云端提案 bridge 已接（`propose.mjs` 写入、
+本地 `rayrun_files` 导入），真实云端 live 待验；云端凭据动作仍需要本节第 2 项的
+隔离/端点。
 
 验收：从 agent 进程读写 host 审批目录和凭据失败；agent 伪造的 decision 被执行方拒绝
 并记录；用户决定经平台端点到达 host；超时/未知状态拒绝。证据记录在
 [`10-rayrun-verification.md`](10-rayrun-verification.md) 或平台答复记录中。
+
+本地 typed 动作不走这个平台端点，其验收见 [`12-status.md`](12-status.md) 和
+[`05-approvals.md`](05-approvals.md) §9；平台隔离仍只用于云端凭据动作。
 
 ---
 
@@ -195,7 +201,7 @@ agent 可读 `/proc/<pid>/environ`，放在沙箱里的任何 token/key 都可�
 为什么：读到半写的审批文件是正确性 bug；轮询有请求预算。
 
 回退：唯一文件名、write-then-rename、payload 内 checksum。**注意 checksum 只防损坏，
-不防伪造**；ADR-001 已定（平台权限隔离），文件邮箱不是授权边界，见
+不防伪造**；ADR-019 已把本地决定/执行移出 agent 可写区，云端文件仍不是授权边界，见
 [`05-approvals.md`](05-approvals.md) §2。
 
 ### 4.2 出站控制通道（P1，推荐）
@@ -286,7 +292,7 @@ SSO/SAML/SCIM、组织 RBAC、审计导出/SIEM、DPA 与数据驻留、marketpl
 | --- | --- | --- |
 | 1. session + 常驻 runtime 契约 | v0.1 | 平台侧已实现并本机 dev 全量验收；待生产部署；bot 侧 host/session 已有 dev 预览（多 bot live E2E 通过），生产镜像未交付 |
 | 2. 余额宽限 / 护栏 | v0.1 | 风险接受并警告 |
-| host/agent 权限隔离 + 审批端点（§3.3） | v0.1 | 是（ADR-001；平台提供前审批不实现） |
+| host/agent 权限隔离 + 云端审批端点（§3.3） | v0.1 | 云端凭据动作是（ADR-001）；本地 typed 动作已按 ADR-019 解阻 |
 | 3. 文件通道语义 | v0.1 | 否（有 workaround） |
 | 4. 出站控制通道 | v0.1 质量 | 否（轮询） |
 | 5. 动态调整资源（resize） | v0.1 质量 | 否（创建时选规格） |

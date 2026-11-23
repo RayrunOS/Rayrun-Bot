@@ -1,10 +1,11 @@
 /**
  * Approval request/decision protocol and its append-only audit.
  *
- * This module is transport and audit only. ADR-001 keeps execution on the
- * platform side until Rayrun provides host/agent isolation and a host-only
- * approval endpoint; `decide()` records a human decision and explicitly reports
- * that execution is unavailable. It never performs the proposed action.
+ * This module is transport and audit only. ADR-019 makes the local DSH host the
+ * approval authority and executor for typed local actions; `decide()` records
+ * the local human decision, and `lib/approval-executor.js` performs the action
+ * at most once. The cloud side may propose actions but never writes decisions
+ * or execution claims.
  *
  * Requests and decisions are separate files under
  * `bots/<botId>/approvals/`, written once (no overwrite) with the atomic
@@ -39,10 +40,10 @@ const DECISION_FIELDS = new Set([
   'decision', 'decidedAt', 'decisionId',
 ])
 
-/** Execution is not implemented until ADR-001 is satisfied. */
+/** The protocol records decisions; the local executor runs approved actions. */
 export const EXECUTION = Object.freeze({
-  available: false,
-  reason: 'platform_isolation_pending',
+  available: true,
+  mode: 'local',
 })
 
 /** A rejected approval operation. `field` names the offending input when known. */
@@ -288,7 +289,7 @@ function readJsonFile(filename, { missing = null } = {}) {
   }
 }
 
-function appendAudit(root, line) {
+export function appendAudit(root, line) {
   const directory = ensureDirectory(path.join(root, 'logs'))
   appendFileSync(path.join(directory, 'audit.log'), `${JSON.stringify(line)}\n`, { mode: 0o600 })
 }

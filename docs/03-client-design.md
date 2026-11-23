@@ -113,11 +113,13 @@
 - 列表上的 attention 点标记“等你”；不显示未读 bait。
 - 本地侧对“实际显示的内容”重算 action hash；任何不匹配 = 拒绝。
 
-ADR-001 已定（平台权限隔离）：平台提供隔离前，卡片是“用户同意/审计”，不能授权执行，
-文件邮箱也不是对被控 bot 的安全边界。
+ADR-019（2026-11-23）：本地 DSH host 对 typed 本地动作做审批与执行；真实 bot 的卡片
+读取本地 approval store，批准后可执行 `rayrun.machine.start/stop`。云端凭据动作仍等待
+平台隔离（ADR-001）；云端 proposal/决定/claim 不是授权边界。
 
-页内预览：发送消息后先显示 working row；约 1.2 秒后出现模拟回复和 pending 审批卡，
-不调用 host，也不发送任何东西。对话在发送、回复和切换 bot 时滚动到最新一条。
+真实 bot：对话和审批卡走 host。示例 bot 仍是页内预览：发送消息后先显示 working row，
+约 1.2 秒后出现模拟回复和 pending 审批卡，不调用 host，也不发送任何东西。对话在发送、
+回复和切换 bot 时滚动到最新一条。
 
 带 `expiresMin` 的后台审批每分钟递减一次；归零后转为 expired、去掉动作，并同步列表的
 attention、snippet 与时间。chat 来源没有 TTL，显示 `waits for you`。预览里的后台审批从
@@ -220,7 +222,7 @@ receipts、routines、library 和消息仍是页内样本，Preview 药丸继续
 | RPC 路由与信封 | 客户端接线 | ADR-010 |
 | desktop 访问路径 | Computer view P0 | ADR-008 |
 | C-S2/C-S3 能否复用 DSH chat/审批 | MVP 形态 | Week 0 spike |
-| 审批卡的信任边界 | 卡片安全 | ADR-001（已定，平台权限隔离）、ADR-011 |
+| 审批卡的信任边界 | 卡片安全 | ADR-019（本地审批/执行）、ADR-001（云端凭据）、ADR-011 |
 | SSE vs 轮询 | 传输复杂度 | C-S4 |
 
 ---
