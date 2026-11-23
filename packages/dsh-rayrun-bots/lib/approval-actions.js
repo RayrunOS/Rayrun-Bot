@@ -12,12 +12,14 @@ const MACHINE = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/
 const ACTION_FIELDS = new Set(['kind', 'machine'])
 
 /**
- * Every first-version action is a typed Rayrun machine lifecycle change.
+ * Every allowed action is a typed Rayrun machine lifecycle change.
  * `destroy` and machine creation are deliberately absent.
  */
 export const APPROVAL_ACTIONS = Object.freeze([
   Object.freeze({ kind: 'rayrun.machine.start', verb: 'start', risk: Object.freeze(['outside', 'cost']) }),
   Object.freeze({ kind: 'rayrun.machine.stop', verb: 'stop', risk: Object.freeze(['outside']) }),
+  Object.freeze({ kind: 'rayrun.machine.pause', verb: 'pause', risk: Object.freeze(['outside']) }),
+  Object.freeze({ kind: 'rayrun.machine.resume', verb: 'resume', risk: Object.freeze(['outside', 'cost']) }),
 ])
 
 const BY_KIND = new Map(APPROVAL_ACTIONS.map((entry) => [entry.kind, entry]))

@@ -62,6 +62,16 @@ check('normalizes only typed machine actions and derives risk locally', () => {
     risk: ['outside', 'cost'],
   })
   assert.deepEqual(normalizeApprovalAction({ kind: 'rayrun.machine.stop', machine: 'box-1' }).risk, ['outside'])
+  assert.deepEqual(normalizeApprovalAction({ kind: 'rayrun.machine.pause', machine: 'box' }), {
+    action: { kind: 'rayrun.machine.pause', machine: 'box' },
+    verb: 'pause',
+    risk: ['outside'],
+  })
+  assert.deepEqual(normalizeApprovalAction({ kind: 'rayrun.machine.resume', machine: 'box' }), {
+    action: { kind: 'rayrun.machine.resume', machine: 'box' },
+    verb: 'resume',
+    risk: ['outside', 'cost'],
+  })
   for (const value of [
     { kind: 'rayrun.machine.destroy', machine: 'box' },
     { kind: 'shell', machine: 'box' },

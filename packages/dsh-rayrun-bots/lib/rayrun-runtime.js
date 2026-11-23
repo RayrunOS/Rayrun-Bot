@@ -35,7 +35,7 @@ function resultDetail(result) {
  * Compose one prompt. History stops before the turn being answered so a later
  * queued message cannot leak into this prompt; the turn text is authoritative.
  */
-export function buildPrompt({ bot, text, history = [], messageSeq, proposalHint = false, proposalMachine = '' } = {}) {
+export function buildPrompt({ bot, text, history = [], messageSeq, proposalHint = false, proposalMachine = '', approvalContext = '' } = {}) {
   const name = typeof bot?.name === 'string' && bot.name.trim() ? bot.name.trim() : 'the bot'
   const label = typeof bot?.label === 'string' ? bot.label.trim() : ''
   const instructions = typeof bot?.instructions === 'string' ? bot.instructions.trim() : ''
@@ -70,6 +70,7 @@ export function buildPrompt({ bot, text, history = [], messageSeq, proposalHint 
     '',
     'Conversation so far:',
     transcript,
+    ...(approvalContext ? ['', 'Recent approval outcomes:', approvalContext] : []),
     '',
     `User: ${String(text ?? '').trim()}`,
     '',
@@ -80,7 +81,7 @@ export function buildPrompt({ bot, text, history = [], messageSeq, proposalHint 
       '```rayrun-approval',
       JSON.stringify({ kind: 'rayrun.machine.stop', machine: proposalMachine || '<machine>' }),
       '```',
-      'Allowed kinds: rayrun.machine.start, rayrun.machine.stop. Tell the user it is waiting for approval. Approval results appear under "$DSH_BOT_ROOT/bots/$DSH_BOT_ID/approval-results/"; read them, and never assume approval.',
+      'Allowed kinds: rayrun.machine.start, rayrun.machine.stop, rayrun.machine.pause, rayrun.machine.resume. Tell the user it is waiting for approval. Recent approval outcomes are included in this prompt when available; you may also read "$DSH_BOT_ROOT/bots/$DSH_BOT_ID/approval-results/". Never assume approval.',
     ] : []),
   ].join('\n')
 }

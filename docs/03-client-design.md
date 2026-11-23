@@ -109,12 +109,13 @@
   TTL；来源与目标用 chips，风险用一行短标签，元数据不再重复来源；不渲染机器提供的
   HTML 或 markdown。
 - 两个动作：Deny、Allow once；没有“永远允许”或默认放行。
-- 过期、已答、stale、错 bot 显示明确状态，并刷新列表。
+- 过期、已答、stale、错 bot 显示明确状态，并刷新列表。真实卡决定后提供 Continue bot，
+  由用户决定是否发送下一轮。
 - 列表上的 attention 点标记“等你”；不显示未读 bait。
 - 本地侧对“实际显示的内容”重算 action hash；任何不匹配 = 拒绝。
 
 ADR-019（2026-11-23）：本地 DSH host 对 typed 本地动作做审批与执行；真实 bot 的卡片
-读取本地 approval store，批准后可执行 `rayrun.machine.start/stop`。云端凭据动作仍等待
+读取本地 approval store，批准后可执行 `rayrun.machine.start/stop/pause/resume`。云端凭据动作仍等待
 平台隔离（ADR-001）；云端 proposal/决定/claim 不是授权边界。
 
 真实 bot：对话和审批卡走 host。示例 bot 仍是页内预览：发送消息后先显示 working row，

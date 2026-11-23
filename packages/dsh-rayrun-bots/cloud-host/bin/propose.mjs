@@ -18,7 +18,7 @@ import path from 'node:path'
 const BOT_ID = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 const ID = /^[A-Za-z0-9._-]{1,80}$/
 const MACHINE = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/
-const KINDS = new Set(['rayrun.machine.start', 'rayrun.machine.stop'])
+const KINDS = new Set(['rayrun.machine.start', 'rayrun.machine.stop', 'rayrun.machine.pause', 'rayrun.machine.resume'])
 const ORIGINS = new Set(['chat', 'background'])
 const FIELDS = new Set(['kind', 'machine', 'id', 'origin'])
 

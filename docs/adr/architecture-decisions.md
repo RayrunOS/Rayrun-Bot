@@ -32,7 +32,7 @@
 | [ADR-016](#adr-016) | 本地 bot 控制面 | Proposed（v0.1） | DSH host + 插件 host half；token/审批/成本/依赖；不做托管服务 | A2/A3, B1–B4, E3/E4, G1/G2 |
 | [ADR-017](#adr-017) | Bots 作为默认产品表面 | Accepted（2026-11-21） | Rayrun Bot 品牌；加载即激活 Bots；DSH 是宿主，Bots 内不返回 DSH | v0.1, v1.0 |
 | [ADR-018](#adr-018) | 文档事实源与语言 | Accepted（2026-11-22） | README 只做营销；`docs/12-status.md` 是实现状态唯一事实源；`docs/` 全中文 | docs |
-| [ADR-019](#adr-019) | 审批执行权威 | Accepted（2026-11-23，本地 DSH host） | 云端只提案；本地审批与执行；typed allowlist；平台隔离仍用于云端凭据动作 | E1–E7/A6/A7（本地动作解阻；云提案 bridge + stop 已 live） |
+| [ADR-019](#adr-019) | 审批执行权威 | Accepted（2026-11-23，本地 DSH host） | 云端只提案；本地审批与执行；typed allowlist；平台隔离仍用于云端凭据动作 | E1–E7/A6/A7（本地动作解阻；云提案 bridge、start/stop、denial/Continue 与 context 已 live） |
 
 ## P0 — bot runtime 与审批动工前必须定
 
@@ -446,7 +446,7 @@ untrusted”；[客户端计划](../plans/client-plan.md) C-S6。
 **实现（2026-11-22）。** [`lib/approvals.js`](../../packages/dsh-rayrun-bots/lib/approvals.js)
 按本形状实现 request/decision 文件、canonical action hash、TTL、幂等/重放/错 bot
 负向测试和审计；`approvals.list/get/decide/propose` 已接线。ADR-019（2026-11-23）
-起，本地 typed 动作（机器 start/stop）由本地 executor 执行；其他动作仍受 ADR-001
+起，本地 typed 动作（机器 start/stop/pause/resume）由本地 executor 执行；其他动作仍受 ADR-001
 限制。真实 bot 的页面已消费真实审批列表。
 
 <a id="adr-012"></a>
@@ -786,8 +786,8 @@ workspace 内任意运行，也能写/改提案；本 ADR 只保护“需要本�
 
 - E1–E7、A6/A7 中依赖“在本地执行”的部分解阻；平台端点不再是唯一路径。
 - 云端提案 bridge 已实现并 live：bot 输出结构化 block，cloud host 写提案，本地
-  `rayrun_files` 导入并去重，结果写回；真实 cloud proposal + stop 闭环已通过。
-  其他动作类型仍待做。
+  `rayrun_files` 导入并去重，结果写回；真实 start/stop、denial/Continue 和下一轮结果
+  context、pause/resume 已通过；其他动作类型仍待做。
 - 本地 DSH 必须在线才能执行；关闭页面不等于批准，关闭后不会自动执行。
 - 云端凭据动作、host/agent 隔离和远程（手机）审批仍是平台/后续工作。
 

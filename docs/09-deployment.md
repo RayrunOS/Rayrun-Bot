@@ -93,13 +93,14 @@ client（`lib/runtime-rpc.js`），cloudHost 预览用它在机器上注册常�
 继续，以及机器 stop/start 后的第二轮续接（A8），已在本机页面 + 已有 Rayrun 机器验证
 （2026-11-22）。host half 还提供
 `approvals.list/get/decide/propose/sync`。ADR-019（2026-11-23）起，本地 DSH host 对
-typed `rayrun.machine.start/stop` 做审批与执行：批准后写 `exec-<id>.json` claim，再用
+typed `rayrun.machine.start/stop/pause/resume` 做审批与执行：批准后写 `exec-<id>.json` claim，再用
 本地 Rayrun token 执行；拒绝/过期/重放/崩溃 claim 失败关闭。云端 proposal bridge
 已接：cloud host 解析结构化 `rayrun-approval` block 写提案（`propose.mjs` 可选），
 本地 `rayrun_files` 导入并去重，结果写回
 `approval-results/`（停机时先落本地 outbox）。真实 cloud proposal → Allow → 真实 stop
-→ 停机 outbox → 重启补传已 live 通过（2026-11-23）；真实机器 start 审批动作、其他
-动作和云端凭据动作仍未完成（后者仍等平台隔离，ADR-001）；示例 bot 卡片和设置仍是
+→ 停机 outbox → 重启补传，以及 start、denial/Continue 和下一轮结果 context 已 live
+通过（2026-11-23）；其他动作和云端凭据动作仍未完成（后者仍等
+平台隔离，ADR-001）；示例 bot 卡片和设置仍是
 页内预览。setup 的 Rayrun/电脑步骤，以及详情和 Settings 的用量读取，会真正
 调用云电脑插件。常驻 host 的 bot↔云端 session 映射已有 dev 预览（多 bot 单 host
 E2E 通过），但生产镜像/部署未交付；routines 与独立成本栏尚未构建；`rayrun_agent`
@@ -136,7 +137,7 @@ patch、`lib/*.js`、图标、README 和 LICENSE；CI 会把打出的 tarball �
 
 第 2 步的 Rayrun 登录和云电脑创建经云电脑插件的同源 RPC 真正到达 Rayrun；第 3–5 步
 （routine 唤醒、云 bot 自主审批提案、更多受控动作）尚未打通。host 的 `session.*`
-已可执行一轮；真实 bot 的审批卡和本地 typed start/stop 执行已接，示例 bot 与设置
+已可执行一轮；真实 bot 的审批卡和本地 typed start/stop/pause/resume 执行已接，示例 bot 与设置
 仍是页内预览。
 详见 [`plans/roadmap.md`](plans/roadmap.md)、[`plans/mvp-plan.md`](plans/mvp-plan.md)
 和 [`12-status.md`](12-status.md)。
@@ -189,7 +190,8 @@ adapter 先解析已有机器，机器不存在时拒绝；由于 `rayrun_files`
 会让 bot 在回复末尾输出结构化 `rayrun-approval` block，cloud host 解析后写 proposal
 （`propose.mjs` 是可选 shell 路径）；本地 approval bridge 通过 `rayrun_files` 导入并
 去重，结果写回 `approval-results/`（机器停机时先落本地 outbox）。真实 cloud proposal
-→ stop 闭环已 live 通过；`propose.mjs` shell 路径未 live。
+→ start/stop/pause/resume、denial/Continue 与下一轮 context 已 live 通过；
+`propose.mjs` shell 路径未 live。
 状态以 [`12-status.md`](12-status.md) 为准。
 
 **永远不要把 Rayrun token 或模型 key 写进会提交的配置文件。**

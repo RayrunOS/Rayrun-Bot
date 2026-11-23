@@ -90,6 +90,8 @@ window.__ModuleLoader__.load({
     "snippetDenied": "Denied — not sent",
     "realStart": "Start cloud computer “{machine}”",
     "realStop": "Stop cloud computer “{machine}”",
+    "realPause": "Pause cloud computer “{machine}”",
+    "realResume": "Resume cloud computer “{machine}”",
     "realUnknown": "Run an approved action on “{machine}”",
     "realMeta": "Requested {time}",
     "allowedReal": "Approved and executed on your local side.",
@@ -101,7 +103,9 @@ window.__ModuleLoader__.load({
     "allowedSide": "Approved",
     "deniedSide": "Denied",
     "waitingSide": "Waiting to execute",
-    "failedSide": "Execution failed"
+    "failedSide": "Execution failed",
+    "continue": "Continue bot",
+    "continuePrompt": "Continue from the approval result above. Do not repeat the approved action; ask before another controlled action."
   },
   "draft": {
     "send": "Send",
@@ -452,6 +456,8 @@ window.__ModuleLoader__.load({
     "snippetDenied": "已拒绝 · 未发送",
     "realStart": "启动云电脑“{machine}”",
     "realStop": "停止云电脑“{machine}”",
+    "realPause": "暂停云电脑“{machine}”",
+    "realResume": "恢复云电脑“{machine}”",
     "realUnknown": "在“{machine}”上执行已批准动作",
     "realMeta": "请求于 {time}",
     "allowedReal": "已批准，并已在本机执行。",
@@ -463,7 +469,9 @@ window.__ModuleLoader__.load({
     "allowedSide": "已批准",
     "deniedSide": "已拒绝",
     "waitingSide": "等待执行",
-    "failedSide": "执行失败"
+    "failedSide": "执行失败",
+    "continue": "让 bot 继续",
+    "continuePrompt": "根据上面的审批结果继续。不要重复已批准的动作；下一个受控动作前先询问。"
   },
   "draft": {
     "send": "发送",
@@ -1114,7 +1122,11 @@ window.__ModuleLoader__.load({
         real: true,
         title: t(kind === 'rayrun.machine.start'
           ? 'approval.realStart'
-          : kind === 'rayrun.machine.stop' ? 'approval.realStop' : 'approval.realUnknown', { machine }),
+          : kind === 'rayrun.machine.stop'
+            ? 'approval.realStop'
+            : kind === 'rayrun.machine.pause'
+              ? 'approval.realPause'
+              : kind === 'rayrun.machine.resume' ? 'approval.realResume' : 'approval.realUnknown', { machine }),
         meta: t('approval.realMeta', { time: timeOf(approval.createdAt) }),
         state,
         origin: approval.origin,
@@ -1990,8 +2002,8 @@ window.__ModuleLoader__.load({
         }
       }, [selected?.id, selected?.source, host.status])
 
-      const send = () => {
-        const text = state.composer.trim()
+      const send = (override) => {
+        const text = typeof override === 'string' ? override.trim() : state.composer.trim()
         if (!text || !selected || selected.working) return
         const botId = selected.id
         const workingId = uid('working')
@@ -2000,7 +2012,7 @@ window.__ModuleLoader__.load({
         const snippet = text.length > 48 ? `${text.slice(0, 47)}…` : text
         setState((current) => ({
           ...current,
-          composer: '',
+          composer: typeof override === 'string' ? current.composer : '',
           flash: null,
           live: t('chat.sending'),
           bots: current.bots.map((bot) => {
@@ -2269,6 +2281,7 @@ window.__ModuleLoader__.load({
         onComposer: (composer) => patch({ composer }),
         onSend: send,
         onDecide: decide,
+        onContinue: () => send(t('approval.continuePrompt')),
         onView: () => flash(t('computer.desktopLater')),
         onAttach: () => flash(t('notice.attach')),
         onCreate: createBot,
@@ -2486,7 +2499,7 @@ window.__ModuleLoader__.load({
       )
     }
 
-    function ApprovalCard({ t, approval, onDecide }) {
+    function ApprovalCard({ t, approval, onDecide, onContinue }) {
       const pending = approval.state === 'pending'
       const expired = approval.state === 'expired'
       const real = approval.real === true
@@ -2548,6 +2561,10 @@ window.__ModuleLoader__.load({
           { className: 'rb-actions' },
           h('button', { type: 'button', className: 'rb-btn rb-ghost', onClick: () => onDecide(approval.id, 'denied') }, t('approval.deny')),
           h('button', { type: 'button', className: 'rb-btn rb-primary', onClick: () => onDecide(approval.id, 'allowed') }, t('approval.allowOnce')),
+        ) : real && !expired ? h(
+          'div',
+          { className: 'rb-actions' },
+          h('button', { type: 'button', className: 'rb-btn rb-primary', onClick: () => onContinue(approval.id) }, t('approval.continue')),
         ) : null,
       )
     }
@@ -2576,7 +2593,7 @@ window.__ModuleLoader__.load({
       )
     }
 
-    function Conversation({ t, state, bot, composerRef, onComposer, onSend, onDecide, onView, onAttach, showListButton, showDetailButton, onToggleList, onToggleDetail }) {
+    function Conversation({ t, state, bot, composerRef, onComposer, onSend, onDecide, onContinue, onView, onAttach, showListButton, showDetailButton, onToggleList, onToggleDetail }) {
       const name = botName(bot, t)
       const job = botJob(bot, t)
       const threadRef = useRef(null)
@@ -2622,7 +2639,7 @@ window.__ModuleLoader__.load({
             if (entry.kind === 'approval') {
               const approval = bot.approvals[entry.approvalId]
               if (!approval) return null
-              return h(ApprovalCard, { key: entry.id, t, approval, onDecide })
+              return h(ApprovalCard, { key: entry.id, t, approval, onDecide, onContinue })
             }
             return h(
               'div',
@@ -2965,6 +2982,7 @@ window.__ModuleLoader__.load({
         onComposer: ctx.onComposer,
         onSend: ctx.onSend,
         onDecide: ctx.onDecide,
+        onContinue: ctx.onContinue,
         onView: ctx.onView,
         onAttach: ctx.onAttach,
         showListButton: width < 900,

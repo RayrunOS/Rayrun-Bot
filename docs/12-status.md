@@ -13,8 +13,9 @@ Pre-alpha。没有可发布版本。本项目依赖的云电脑插件
 是独立、可用的项目；本仓库的 bot 层已有可加载的插件壳、持久化本地名册、本地
 session/transcript，以及按轮次的 runtime（依赖 1.1+ 用 detached
 `dsh.start/status/result`，1.0.x 用 `rayrun_agent`）；常驻云端 bot host 与本地审批
-执行都有预览实现（runtimes + projection + 每 bot session 映射；typed 机器 start/stop
-在本地执行；云端 proposal bridge 已接，live E2E 通过）。但其他审批动作、会运行的
+执行都有预览实现（runtimes + projection + 每 bot session 映射；typed 机器
+start/stop/pause/resume 在本地执行且均已 live；云端 proposal bridge 已接，
+live E2E 通过）。但其他审批动作、会运行的
 routines 和发布路径仍未打通。平台侧 R-G008 runtimes API 已实现并本机 dev 全量验收通过
 （`rayrun-bot-gaps`，`4709ac0`，2026-11-22），但生产未部署；bot 侧常驻 host 的本地
 transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；host 资产已随包
@@ -40,14 +41,14 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
 | --- | --- |
 | 插件加载 | `packages/dsh-rayrun-bots` 作为 DSH bundle 加载；host half 提供同源 health 动作、`bots.*` 和 `session.*` RPC；health 报告 runtime 名称与可用性。 |
 | Bots 表面 | Client half 打开即进入 Bots，渲染 v0.1 壳：聊天列表、对话、详情、新建 bot、设置向导、设置页；中英双语，以中文为主并跟随 DSH 语言。 |
-| 对话与审批 | 客户端对话对真实名册 bot 读取并发送 `session.send/history/status`；示例 bot 仍走页内预览。真实 bot 的审批卡已接 host：显示 typed 动作、目标、风险和执行结果；Deny / Allow once 只写本地决定，批准后由本地 executor 执行。示例 bot 卡片和设置仍是页内预览。 |
+| 对话与审批 | 客户端对话对真实名册 bot 读取并发送 `session.send/history/status`；示例 bot 仍走页内预览。真实 bot 的审批卡已接 host：显示 typed 动作、目标、风险和执行结果；Deny / Allow once 只写本地决定，批准后由本地 executor 执行；决定后卡片提供 Continue bot，下一轮 prompt 带最近结果。示例 bot 卡片和设置仍是页内预览。 |
 | 本地名册 | Host half 持久化已校验的 bot 名册到 `$DSH_HOME/state/rayrun-bot/`，原子写入；聊天列表有名册时读取真实名册，新建 bot 会写回 host。 |
 | Session 与 transcript | Host half 持久化每 bot 的 `session.json` + `transcript.jsonl`，提供 `session.send/history/status`；队列单飞、失败脱敏、host 重启后普通 running turn 标为 interrupted。依赖 1.1+ 时使用 detached `dsh.start/status/result`：每 turn 一个 task id、每 bot 一个本地 git checkout、`reply.md` 收取，task id 持久化，host 重启后恢复 poll；页面关闭 + 本地 DSH 重启后继续，以及机器 stop/start 后的第二轮续接（A8），已在本机 DSH + 已有 Rayrun 机器验证（2026-11-22）；1.0.x 回退单轮 `rayrun_agent`。常驻 `cloudHost` host 是预览、默认关闭；2026-11-23 多 bot 单 host 页面 E2E 已通过，生产镜像/部署未交付。单轮真实一轮已在本机 DSH + 已有 Rayrun 机器验证（2026-11-22）；示例 bot 仍是预览。 |
 | setup | Rayrun 步骤经云电脑插件的同源 RPC 接收粘贴的 token；云电脑步骤采用已有机器或经同一 RPC 创建第一台机器。 |
 | 电脑卡片 | Open / Take over 经同一 RPC 启动或恢复机器、等待 `Running`、修复桌面服务并打开 `desktop_url`；Stop 在确认后停止，永不 destroy。 |
 | 用量 | 详情面板的电脑块和用量块，以及 Settings 的用量行，读取真实机器状态、余额与机时。 |
-| 测试 | Host/client 名册接线、session/transcript、`rayrun_agent`/detached adapter、per-bot workspace 与审批协议由普通 Node 契约测试覆盖；客户端 session 失败路径、单轮真实一轮、页面关闭 + host 重启后的 detached 收取，以及机器 stop/start 后的第二轮续接另有本机页面 smoke。包清单、locale、RPC、客户端、名册、session、runtime、workspace、审批和 tarball 内容都有检查；cloud host 7 项、DSH agent 5 项、host projection 5 项、runtime.* client 5 项、cloud host runtime adapter 9 项、cloud host proposal 4 项、approval executor 7 项、cloud approval bridge 6 项纯 Node 检查，runtime.* client 与 cloud host 另有 dev live 联调，cloudHost adapter 另有页面 E2E（手动、自动 projection 与多 bot 单 host），审批卡另有拒绝/失败关闭的页面 E2E。 |
-| 审批执行 | 协议后端（request/decision schema、canonical actionHash、TTL、幂等/重放/错 bot 负向测试、审计、`approvals.list/get/decide/propose/sync`）已实现。ADR-019（2026-11-23）把本地 DSH host 定为本地 typed 动作的审批权威与执行方：`approvals.decide` 批准后由本地 executor 执行 `rayrun.machine.start/stop`，先写 `executing` claim，拒绝/过期/重放/崩溃 claim 失败关闭；客户端真实卡片已接。云端 proposal bridge 已接并 live 验证：云 bot 在回复末尾输出结构化 `rayrun-approval` block，cloud host 解析后写 proposal（`propose.mjs` 保留为可选 shell 路径），本地用 `rayrun_files` 导入并去重，结果写回 `approval-results/`；机器停机时结果先落本地 outbox，下次 Running 补传。其他动作和云端凭据动作仍未完成；平台隔离仍用于云端凭据（ADR-001）。`rayrun_agent` adapter 不拦截外部动作，prompt 指引不是安全边界。 |
+| 测试 | Host/client 名册接线、session/transcript、`rayrun_agent`/detached adapter、per-bot workspace 与审批协议由普通 Node 契约测试覆盖；客户端 session 失败路径、单轮真实一轮、页面关闭 + host 重启后的 detached 收取，以及机器 stop/start 后的第二轮续接另有本机页面 smoke。包清单、locale、RPC、客户端、名册、session、runtime、workspace、审批和 tarball 内容都有检查；cloud host 7 项、DSH agent 5 项、host projection 5 项、runtime.* client 5 项、cloud host runtime adapter 10 项、cloud host proposal 4 项、approval executor 7 项、cloud approval bridge 6 项纯 Node 检查，runtime.* client 与 cloud host 另有 dev live 联调，cloudHost adapter 另有页面 E2E（手动、自动 projection 与多 bot 单 host），审批卡另有拒绝/失败关闭与 Continue 按钮的页面 E2E。 |
+| 审批执行 | 协议后端（request/decision schema、canonical actionHash、TTL、幂等/重放/错 bot 负向测试、审计、`approvals.list/get/decide/propose/sync`）已实现。ADR-019（2026-11-23）把本地 DSH host 定为本地 typed 动作的审批权威与执行方：`approvals.decide` 批准后由本地 executor 执行 `rayrun.machine.start/stop/pause/resume`，先写 `executing` claim，拒绝/过期/重放/崩溃 claim 失败关闭；客户端真实卡片已接。云端 proposal bridge 已接并 live 验证：云 bot 在回复末尾输出结构化 `rayrun-approval` block，cloud host 解析后写 proposal（`propose.mjs` 保留为可选 shell 路径），本地用 `rayrun_files` 导入并去重，结果写回 `approval-results/`；机器停机时结果先落本地 outbox，下次 Running 补传。start/stop/pause/resume、denial、Continue 均真机通过。下一轮 prompt 会带最近审批结果，bot 无工具直接回答 approved/done/Running 或 denied/not_executed。其他动作和云端凭据动作仍未完成；平台隔离仍用于云端凭据（ADR-001）。`rayrun_agent` adapter 不拦截外部动作，prompt 指引不是安全边界。 |
 | 发布 | 没有可发布版本；npm 发布路径不存在。 |
 
 ### 3.1 验证记录
@@ -63,13 +64,15 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
 - 审批协议由 `test/approvals.mjs` 和 `test/rpc-contract.mjs` 覆盖：schema、canonical
   actionHash、TTL、幂等/重放、错 bot、篡改、损坏文件、审计不含 action payload。
   ADR-019 的本地执行器由 `test/approval-executor.mjs`（7 项）覆盖 typed allowlist、
-  start/stop、at-most-once claim、拒绝/过期不执行、未知动作、目标缺失、执行失败脱敏
-  和崩溃 claim；`approvals.propose` 的 host-only 门与执行失败关闭由 RPC 契约覆盖。
+  start/stop/pause/resume、at-most-once claim、拒绝/过期不执行、未知动作、目标缺失、执行失败脱敏
+  和崩溃 claim；cloud host runtime adapter 还覆盖下一次 prompt 带上最近审批结果
+  （kind/target/state/execution/status，不含 payload）；`approvals.propose` 的 host-only
+  门与执行失败关闭由 RPC 契约覆盖。
   云端 proposal bridge 由 `test/cloud-approval-bridge.mjs`（6 项）覆盖 CLI 写提案、
   `rayrun_files` 列表/下载、去重、非法/超限提案拒绝、待审批上限、停机不唤醒、结果
   脱敏、停机 result outbox 与恢复补传；`cloud-host-proposal` 4 项覆盖结构化 block
   解析/剥离、默认机器、非法 block 拒绝和非覆盖写。真实 cloud proposal live E2E 已
-  通过；真实机器 start 审批动作和云端凭据动作仍未验证。
+  通过；machine.start 审批和下一轮结果 context 也已 live；云端凭据动作仍未验证。
 - 审批页面 E2E（2026-11-23，临时 DSH profile，无 Rayrun token）：本地创建两条真实
   proposal；页面卡片正确显示 `Start cloud computer “box”` / `Stop cloud computer
   “box”`、目标和风险；拒绝条目写本地 decision 且无 execution 记录；批准条目因无
@@ -85,6 +88,17 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
   同轮修复：host 的 bot profile patch 模板带注释时未被识别，导致 DSH 仍用
   `workspace-write`；现在按有效行判断，已有测试覆盖。`propose.mjs` shell 路径未做
   live 验证，结构化 block 是主路径。
+- 真实 denial + Continue（2026-11-23，同一 `rayrun-bot-scoped`）：真实云 bot 提案
+  machine.stop；页面 Deny，机器保持 Running，无 exec claim；云端 result 为
+  denied/not_executed。随后点击真实卡片的 Continue bot，触发下一轮；bot 从
+  Recent approval outcomes 回答 denied / 未停止 / 仍 Running，未调用工具。测试后
+  runtime 删除、机器 stop，未 destroy；scoped token 已撤销。截图
+  `/tmp/bot/approval-denial-continue.png`（临时文件，不入库）。
+- pause/resume live（2026-11-23，同一 `rayrun-bot-scoped`）：bot 提案 pause → Allow
+  → 机器 Paused；结果落本地 outbox，手动 resume 后 sync 补传（flushed=1）→ 再提案
+  resume → Allow → done/Running；云端两条结果均 approved/done。测试后 runtime 删除、
+  机器 stop，未 destroy；scoped token 已撤销。截图
+  `/tmp/bot/approval-pause-resume.png`（临时文件，不入库）。
 - Detached runtime 由 `test/rayrun-detached-runtime.mjs`（5 项）和
   `test/session-runtime.mjs`（跨 runner 恢复、队列排空）覆盖；依赖 1.1.0
   （main `720f30a`，未发布 npm）的 `dsh.start/status/result` 页面路径
@@ -147,10 +161,11 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
   已在 dev 页面 E2E 通过（2026-11-23）；生产未部署，镜像/生产交付未做。依赖 1.2.0
   `runtime.*` client（`lib/runtime-rpc.js`）已过 fake 测试和 dev live 联调。生产部署
   需授权。
-- 能拦住 worker 的远程审批执行：ADR-019 已让本地 host 对 typed 机器 start/stop
-  做审批/执行，真实 cloud proposal + stop live E2E 已通过；其他动作和云端凭据动作
-  仍未完成；云端 agent 本身仍不受审批 containment（ADR-001 的平台隔离仍缺）。
-- A7/A11 的完整审批验收：真实机器 start 动作、更多动作类型和云端凭据动作。
+- 能拦住 worker 的远程审批执行：ADR-019 已让本地 host 对 typed 机器
+  start/stop/pause/resume 做审批/执行，真实 cloud proposal、denial/Continue 和下一轮
+  context live E2E 已通过；其他动作和云端凭据动作仍未完成；云端 agent 本身仍不受
+  审批 containment（ADR-001 的平台隔离仍缺）。
+- A7/A11 的完整审批验收：更多动作类型和云端凭据动作。
 - 真正会运行的 routines 与触发器。
 - 按 bot 的花费归因。
 - A11 工作区扫描（2026-11-22）：`tmp/` 下有未跟踪的本地 key 文件

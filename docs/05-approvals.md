@@ -11,14 +11,15 @@
 > 实现状态以 [`12-status.md`](12-status.md) 为准。
 >
 > **实现状态（2026-11-23）：** 协议后端与 `approvals.list/get/decide/propose/sync`
-> RPC 已实现；本地 typed 执行器允许 `rayrun.machine.start` / `rayrun.machine.stop`，
+> RPC 已实现；本地 typed 执行器允许 `rayrun.machine.start/stop/pause/resume`，
 > 批准后在本机使用 Rayrun token 执行，先写 `executing` claim，再写结果与审计。云端
 > proposal bridge 已接：cloud host 解析 bot 回复末尾的结构化 `rayrun-approval` block
 > （`propose.mjs` 为可选 shell 路径），本地用 `rayrun_files` 导入并去重；结果写回
 > `approval-results/`，机器停机时先落本地 outbox。客户端真实
-> 卡片已接入。真实 cloud proposal → 本地 sync → Allow → 真实 stop → 停机 outbox →
-> 重启补传已 live 通过（2026-11-23）；真实机器 start 审批动作、其他动作类型和云端
-> 凭据动作尚未验证；host-only `approvals.propose` 仍作为本地/测试 seam。
+> 卡片已接入。真实 cloud proposal → 本地 sync → Allow/Deny → 真实
+> start/stop/pause/resume、denial 与 Continue → 停机 outbox → 重启补传，以及下一轮
+> 结果 context 已 live 通过（2026-11-23）；其他动作类型和云端凭据动作尚未验证；
+> host-only `approvals.propose` 仍作为本地/测试 seam。
 
 ## 0. 与现有文档的关系
 
@@ -70,9 +71,10 @@ ADR-019 的本地权威模型：
 - **云端凭据动作仍等待平台。** 凭据只在云端、必须云端执行的动作，在平台提供
   host/agent 隔离或 host-only 端点前继续不执行（ADR-001 仍适用）。
 
-**当前验证：** 真实云端 bot 提案 → 本地导入 → Allow → 真实 stop → 停机 outbox →
-重启补传已 live 通过（2026-11-23）。真实机器 start 审批动作、其他动作和云端凭据
-动作仍未验证；host-only `approvals.propose` 只作为本地/测试 seam。
+**当前验证：** 真实云端 bot 提案 → 本地导入 → Allow/Deny → 真实
+start/stop/pause/resume、denial 与 Continue → 停机 outbox → 重启补传、下一轮结果
+context 已 live 通过（2026-11-23）。其他动作和云端凭据动作仍未验证；host-only
+`approvals.propose` 只作为本地/测试 seam。
 
 ## 3. 流程
 
@@ -89,7 +91,8 @@ ADR-019 的本地权威模型：
    写 `exec-<id>.json` 的 `executing` 状态，然后调用本地 Rayrun RPC。失败不自动重试。
 6. **完成**：写 execution 结果与 audit 行；客户端显示真实状态。结果写回云端
    `bots/<id>/approval-results/<id>.json`；机器停机时先落本地 outbox，下次 Running
-   时补传。失败给稳定错误码与一句可读信息，不假成功。
+   时补传。下一次 bot turn 的 prompt 还会带上最近审批结果（kind/target/state/
+   execution/status），避免依赖 shell 读文件。失败给稳定错误码与一句可读信息，不假成功。
 
 **TTL**：
 
@@ -140,14 +143,14 @@ ADR-019 的本地权威模型：
 }
 ```
 
-- 首版只接受两个 typed action：`rayrun.machine.start`、`rayrun.machine.stop`，字段只有
-  `kind` 和 `machine`（机器名或 id）。`destroy`、创建机器、shell、任意命令/URL 不在
-  allowlist。
-- `risk` 由本地 action registry 推导：start 为 `["outside","cost"]`，stop 为
-  `["outside"]`；不信任提案里自报的 risk。
+- allowlist 只接受 typed machine action：`rayrun.machine.start`、`stop`、`pause`、
+  `resume`，字段只有 `kind` 和 `machine`（机器名或 id）。`destroy`、创建机器、shell、
+  任意命令/URL 不在 allowlist。
+- `risk` 由本地 action registry 推导：start/resume 为 `["outside","cost"]`，
+  stop/pause 为 `["outside"]`；不信任提案里自报的 risk。
 - `approvals.propose` 只接受 host-side 调用（无浏览器 `Origin`）；浏览器请求返回 403。
-  它把 `requestedAction` 交给本地校验，生成上面的 request。云端 bridge 以后走同一
-  路由。
+  它把 `requestedAction` 交给本地校验，生成上面的 request。云端 bridge 通过 proposal
+  文件导入，不走这个页面路由。
 
 ### 5.2 决定（Decision）
 
@@ -174,7 +177,7 @@ ADR-019 的本地权威模型：
 
 - **本地执行器**：`lib/approval-actions.js` 只做 typed allowlist；`lib/approval-executor.js`
   写 `exec-<id>.json` claim 后执行。执行使用本地 `runtime.*`/Rayrun RPC，token 留在
-  Harness vault。首版动作是机器 start/stop；不是任意云命令。
+  Harness vault。动作是机器 start/stop/pause/resume；不是任意云命令。
 - **at-most-once**：claim 在执行前写入；同一 id 的重复 approve 返回已有 claim，不重复
   调用外部 API。崩溃后 claim 可能停在 `executing`；不自动重试；客户端显示等待/失败。
 - **actionId**：执行方生成；重试时不变；request/decision/execution 都引用它。
@@ -203,6 +206,8 @@ ADR-019 的本地权威模型：
 - 两个动作：**Deny**、**Allow once**；没有“永远允许”。
 - 已答/过期/重放显示明确状态并刷新；不要静默变成成功。批准后本地执行失败必须显示
   “已批准，但执行失败”，不能显示成已完成。
+- 真实审批卡在决定后提供 **Continue bot**；点击才发下一轮，不自动消耗模型调用。下一轮
+  prompt 带最近审批结果，不依赖 shell 读文件。
 - 列表 attention 点标记“等你”；不显示未读 bait。
 - 多个标签页同时决策：第一个有效决定赢，其余显示 stale/duplicate。
 - 卡片安全测试见 C-S6；审批拒绝、超时、重放、错 bot 的负向测试是 A7/A11 的强制项。
@@ -235,8 +240,9 @@ ADR-019 的本地权威模型：
 > 2026-11-23：协议测试（8 项）、executor 测试（7 项）、cloud proposal bridge 测试
 > （6 项）、cloud host proposal 测试（4 项）和 RPC 契约覆盖上述大部分；页面 E2E
 > 用无 Rayrun 凭证的临时 profile 验证了“拒绝无执行、批准执行失败不假成功”。真实
-> cloud proposal → Allow → 真实 machine.stop → 停机 outbox → 重启补传已 live 通过；
-> **真实机器 start 审批动作和云端凭据动作仍未验证。** 见 `test/approvals.mjs`、
+> cloud proposal → Allow/Deny → 真实 machine.start/stop/pause/resume、denial 与
+> Continue → 停机 outbox → 重启补传，以及下一轮 recent-approval context 已 live
+> 通过；**其他动作和云端凭据动作仍未验证。** 见 `test/approvals.mjs`、
 > `test/approval-executor.mjs`、`test/cloud-approval-bridge.mjs`、
 > `test/cloud-host-proposal.mjs`、`test/rpc-contract.mjs`。
 
@@ -246,12 +252,12 @@ ADR-019 的本地权威模型：
 | --- | --- | --- |
 | 审批在哪里执行？ | 它是不是安全边界 | ADR-019：本地 DSH host 执行本地动作；ADR-001 的平台隔离仍用于云端凭据动作 |
 | 云端 bot 如何提案？ | 自主审批闭环 | 结构化 block + host 解析已 live 验证；`propose.mjs` shell 路径未 live；host-only `approvals.propose` 仍为本地 seam |
-| 首版支持哪些动作？ | allowlist 与风险 | start/stop 已定义；其他动作逐项加，默认拒绝 |
+| 首版支持哪些动作？ | allowlist 与风险 | start/stop/pause/resume 已定义；其他动作逐项加，默认拒绝 |
 | decision 字段与 canonical hash | 绑定动作、负向测试 | ADR-011：Accepted（2026-11-22，协议已实现） |
 | 副作用崩溃/重试语义 | 重复发送/花钱 | ADR-005；本地 executor 已写 claim、不自动重试 |
 | TTL/时钟/限流/多客户端 | 状态机与恢复 | ADR-012 |
 | 审计是否 tamper-evident | 安全声明 | ADR-012 |
-| 真实 Rayrun 执行 E2E | 证明成功路径 | machine.stop 审批执行已 live；machine.start 审批动作未验证 |
+| 真实 Rayrun 执行 E2E | 证明成功路径 | machine.start/stop/pause/resume、denial、Continue 和下一轮结果 context 均已 live |
 
 ## 11. 相关文档
 

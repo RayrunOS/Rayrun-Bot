@@ -18,12 +18,13 @@ the dependency's `rayrun_files` tool, and wires one multi-bot host process into
 `session.*`. It is preview and has passed a dev page E2E.
 Approval execution now follows ADR-019: the local host is the authority and
 executor for typed local actions, while the cloud side may only propose. The
-first allowlist is `rayrun.machine.start` and `rayrun.machine.stop`; an approved
+first allowlist is `rayrun.machine.start/stop/pause/resume`; an approved
 request gets a durable at-most-once execution claim, and denied, expired, or
 crashed requests never execute. A cloud bot emits a structured `rayrun-approval`
 block; the cloud host writes the proposal and the local `approvals.sync` bridge
 imports it. A live cloud proposal -> local approve -> real machine stop -> stopped
-result outbox -> restart flush passed on 2026-11-23. Other action types and
+result outbox -> restart flush, plus a start approval and next-turn outcome
+context, passed on 2026-11-23. Other action types and
 cloud-only credential actions are still pending. The conversation UI
 uses the host session and real approval cards for roster bots; sample bots,
 receipts, routines and settings remain an in-memory preview. The page-level
@@ -63,13 +64,14 @@ live in [docs/12-status.md](../../docs/12-status.md).
   idempotent and a conflicting or replayed decision is refused. Every request,
   decision, refusal and execution is appended to `logs/audit.log` without the
   action payload. `propose` is host-side only and validates a typed action
-  (`rayrun.machine.start` or `rayrun.machine.stop`). On approve, the local
+  (`rayrun.machine.start`, `stop`, `pause`, `resume`). On approve, the local
   executor writes an `exec-<id>.json` claim and calls the dependency's Rayrun RPC
   with the token kept in the Harness vault; a failed execution is recorded and
   not retried. `sync` imports typed proposals from the cloud workspace with
   `rayrun_files`, validates them again and deduplicates by proposal id; decisions
   and execution results are written back to `approval-results/` (a stopped
-  machine queues results locally for the next sync). Other action kinds are not
+  machine queues results locally for the next sync). The next cloud prompt also
+  includes recent approval kind/target/state/execution/status, without payloads. Other action kinds are not
   built; the proposal bridge has fake-tool tests, and a live cloud-bot proposal
   E2E is still pending.
 - Client half: a `Bots` sidebar entry and the three-column shell from
@@ -81,7 +83,8 @@ live in [docs/12-status.md](../../docs/12-status.md).
   bots, messages and approval cards come from the host session and approval
   store; sample bots, receipts and settings still live in the page only. Deny /
   Allow once for real approvals goes through the host and can execute a typed
-  local action; sample cards update in-memory state. The client
+  local action; after a decision the real card offers Continue bot, which sends
+  the next turn only when the user clicks it. Sample cards update in-memory state. The client
   activates Bots on load and covers the DSH
   sidebar and bottom bar; there is no in-product return to the Harness shell
   (ADR-017). The setup Rayrun step calls the cloud-computer plugin's
@@ -116,9 +119,11 @@ live in [docs/12-status.md](../../docs/12-status.md).
   language row writes the choice back to DSH so it survives a reload. The rest
   stays in the page, and the client keeps neither the token nor a DeepSeek key.
 
-Not built yet: approval actions beyond machine start/stop (approved start is not
-live), cloud-only credential approvals, a Bots-page-level verified computer-creation
-success path, routines that run, a production cloud image, and the npm release path. See the repo-level
+Not built yet: approval actions beyond machine start/stop/pause/resume, cloud-only
+credential approvals, a Bots-page-level verified computer-creation success path,
+routines that run, a production cloud image, and the npm release path. Approved
+start/stop, denial/Continue, and the next-turn approval context were verified live on
+2026-11-23; pause/resume is also live. See the repo-level
 [MVP plan](../../docs/plans/mvp-plan.md) and [client plan](../../docs/plans/client-plan.md).
 
 ## DSH compatibility
@@ -200,7 +205,7 @@ cordis.patch.yml   # the bundle row (id rayrun-bots -> package dsh-rayrun-bots)
 index.js           # host half: same-origin RPC, health + bots.* + session.* + approvals.*
 client.js          # client half: v0.1 shell, roster read/write, preview conversation
 lib/approvals.js   # approval request/decision protocol, TTL, action hash, audit
-lib/approval-actions.js # typed local action allowlist (machine start/stop)
+lib/approval-actions.js # typed local action allowlist (machine start/stop/pause/resume)
 lib/approval-executor.js # local at-most-once execution claim and audit
 lib/cloud-approval-bridge.js # import cloud proposals and write results
 lib/bots.js        # persistent roster: list/get/create/update/delete

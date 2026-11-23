@@ -63,6 +63,8 @@
     "snippetDenied": "已拒绝 · 未发送",
     "realStart": "启动云电脑“{machine}”",
     "realStop": "停止云电脑“{machine}”",
+    "realPause": "暂停云电脑“{machine}”",
+    "realResume": "恢复云电脑“{machine}”",
     "realUnknown": "在“{machine}”上执行已批准动作",
     "realMeta": "请求于 {time}",
     "allowedReal": "已批准，并已在本机执行。",
@@ -74,7 +76,9 @@
     "allowedSide": "已批准",
     "deniedSide": "已拒绝",
     "waitingSide": "等待执行",
-    "failedSide": "执行失败"
+    "failedSide": "执行失败",
+    "continue": "让 bot 继续",
+    "continuePrompt": "根据上面的审批结果继续。不要重复已批准的动作；下一个受控动作前先询问。"
   },
   "draft": {
     "send": "发送",

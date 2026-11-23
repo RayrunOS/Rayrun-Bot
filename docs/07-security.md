@@ -114,8 +114,9 @@ ADR-019（2026-11-23）把**本地 DSH host** 定为凭据/执行器在本地动
   并执行受控本地动作”；它不阻止 agent 在自己的 workspace 内做其他事。
 - **当前验证边界。** 本地 executor、拒绝/过期/重放/崩溃 claim 有 Node 测试；页面
   E2E 验证了“拒绝无执行、批准执行失败不假成功”；真实 cloud proposal → Allow →
-  machine.stop → 停机 outbox → 重启补传已 live 通过（2026-11-23）。真实机器 start
-  审批动作和云端凭据动作尚未 live 验证；见 [`12-status.md`](12-status.md)。
+  machine.stop → 停机 outbox → 重启补传，以及 machine.start 审批和下一轮
+  recent-approval context 已 live 通过（2026-11-23）。云端凭据动作尚未 live 验证；
+  见 [`12-status.md`](12-status.md)。
 
 ## 5. 不保护什么
 
@@ -123,10 +124,10 @@ ADR-019（2026-11-23）把**本地 DSH host** 定为凭据/执行器在本地动
   填表的凭据 vault。
 - **云厂商对模型 key 的可见性。** 已验证 agent 的 `exec` 环境读不到 key；Rayrun 员工
   或平台本身是否能读存储的 credential **未验证**。不要写“Rayrun 看不到你的 key”。
-- **本地审批执行（首版）。** 只覆盖 typed 机器 start/stop；云端凭据动作、其他动作
-  仍未保护。云提案 bridge 已 live 验证（真实 cloud proposal + stop 闭环）；真实机器
-  start 审批动作、其他动作和云端凭据动作仍未保护。云 worker 仍是 `approval: never`，
-  只在你准备失去的凭据和机器上运行。
+- **本地审批执行（首版）。** 覆盖 typed 机器 start/stop/pause/resume；云端凭据动作
+  和其他动作仍未保护。云提案 bridge、start/stop、denial/Continue 和下一轮结果 context
+  已 live。云 worker 仍是 `approval: never`，只在你准备失去的
+  凭据和机器上运行。
 - **不可信模型输出。** 模型可能错、被操纵或恶意；审批降低影响面，不使模型可信。
 - **多 bot 隔离。** 没有；bots 共享一台电脑。
 - **破坏性误操作。** `destroy` 删除 workspace；没有恢复。
@@ -149,7 +150,7 @@ ADR-019（2026-11-23）把**本地 DSH host** 定为凭据/执行器在本地动
 
 | 问题 | 影响 | 决策 |
 | --- | --- | --- |
-| 审批执行点与安全边界 | 失败即拒绝是否成立 | ADR-019：本地 typed 动作由本地 DSH host 执行；ADR-001 仍用于云端凭据动作；云提案 bridge + stop 已 live |
+| 审批执行点与安全边界 | 失败即拒绝是否成立 | ADR-019：本地 typed 动作由本地 DSH host 执行；ADR-001 仍用于云端凭据动作；云提案 bridge、start/stop、denial/Continue 和下一轮 context 已 live |
 | 副作用崩溃/重试 | 重复发送/花钱 | ADR-005 |
 | desktop 安全路径 | watch/takeover | ADR-008 |
 | 本地审计是否 tamper-evident | 审计声明 | ADR-012 |

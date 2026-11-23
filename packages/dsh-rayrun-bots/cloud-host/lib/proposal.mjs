@@ -15,7 +15,7 @@ import path from 'node:path'
 
 const BOT_ID = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 const MACHINE = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/
-const KINDS = new Set(['rayrun.machine.start', 'rayrun.machine.stop'])
+const KINDS = new Set(['rayrun.machine.start', 'rayrun.machine.stop', 'rayrun.machine.pause', 'rayrun.machine.resume'])
 const MARKER = /```rayrun-approval\s*\r?\n([\s\S]*?)\r?\n```/
 
 function invalid(message) {

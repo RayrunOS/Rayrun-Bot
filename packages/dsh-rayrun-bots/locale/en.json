@@ -63,6 +63,8 @@
     "snippetDenied": "Denied — not sent",
     "realStart": "Start cloud computer “{machine}”",
     "realStop": "Stop cloud computer “{machine}”",
+    "realPause": "Pause cloud computer “{machine}”",
+    "realResume": "Resume cloud computer “{machine}”",
     "realUnknown": "Run an approved action on “{machine}”",
     "realMeta": "Requested {time}",
     "allowedReal": "Approved and executed on your local side.",
@@ -74,7 +76,9 @@
     "allowedSide": "Approved",
     "deniedSide": "Denied",
     "waitingSide": "Waiting to execute",
-    "failedSide": "Execution failed"
+    "failedSide": "Execution failed",
+    "continue": "Continue bot",
+    "continuePrompt": "Continue from the approval result above. Do not repeat the approved action; ask before another controlled action."
   },
   "draft": {
     "send": "Send",

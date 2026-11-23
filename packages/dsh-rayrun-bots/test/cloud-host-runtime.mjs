@@ -4,9 +4,11 @@
  *   node test/cloud-host-runtime.mjs
  */
 import assert from 'node:assert/strict'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
+import { openApprovalStore } from '../lib/approvals.js'
+import { openBotStore } from '../lib/bots.js'
 import { createCloudHostRuntime, hostRuntimeName } from '../lib/cloud-host-runtime.js'
 import { ERROR_CODES } from '../lib/errors.js'
 
@@ -108,6 +110,7 @@ check('start uploads one task and returns a detached record', async () => {
   assert.match(task.text, /Approval requests:/)
   assert.match(task.text, /rayrun-approval/)
   assert.match(task.text, /"machine":"box"/)
+  assert.match(task.text, /rayrun\.machine\.pause/)
 
   const spec = state.puts[0].spec
   assert.deepEqual(spec.argv, ['node', '/workspace/.rayrun/bin/host.mjs'])
@@ -119,6 +122,33 @@ check('start uploads one task and returns a detached record', async () => {
   assert.equal(spec.env.DSH_BOT_PROPOSE, '/workspace/.rayrun/bin/bin/propose.mjs')
   assert.equal(Object.hasOwn(spec.env, 'BOT_ID'), false)
   assert.equal(hostRuntimeName(), 'bot-host')
+})
+
+check('includes recent local approval outcomes in the next prompt', async () => {
+  const { root, runtime, uploads } = setup()
+  const bot = openBotStore(root).create({ id: 'context-bot', name: 'Context Bot', label: 'Context' })
+  const approvals = openApprovalStore(root)
+  const created = approvals.createRequest({
+    botId: bot.id,
+    actionId: 'act-context',
+    action: { kind: 'rayrun.machine.stop', machine: 'box' },
+    risk: ['outside'],
+    origin: 'chat',
+  })
+  approvals.decide(bot.id, created.id, 'approve')
+  writeFileSync(
+    path.join(root, 'bots', bot.id, 'approvals', `exec-${created.id}.json`),
+    JSON.stringify({
+      schema: 1, id: created.id, botId: bot.id, actionId: 'act-context', state: 'done',
+      startedAt: '2026-11-23T10:00:00.000Z', finishedAt: '2026-11-23T10:00:01.000Z',
+      result: { kind: 'rayrun.machine.stop', machine: 'box', status: 'Stopped' },
+    }),
+  )
+  await runtime.start({ bot, text: 'continue', messageSeq: 1, botId: bot.id, stateRoot: root })
+  const task = JSON.parse(uploads[0].text)
+  assert.match(task.text, /Recent approval outcomes:/)
+  assert.match(task.text, /rayrun\.machine\.stop on box: approved; execution done \(Stopped\)/)
+  assert.doesNotMatch(task.text, /act-context|createdAt|finishedAt/)
 })
 
 check('projects the host assets before starting when no override is set', async () => {

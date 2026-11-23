@@ -15,7 +15,9 @@
  * there is none; profiles for Bots should set `autoCreate: false`.
  */
 import { randomUUID } from 'node:crypto'
+import { readFileSync } from 'node:fs'
 import path from 'node:path'
+import { openApprovalStore } from './approvals.js'
 import { assertBotId } from './bot-schema.js'
 import { ERROR_CODES } from './errors.js'
 import { HOST_ASSET_VERSION, projectHost } from './host-projection.js'
@@ -32,6 +34,40 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 /** One host process serves every bot on the machine. */
 export function hostRuntimeName() {
   return HOST_RUNTIME
+}
+
+/** Recent local approval outcomes, without payloads, for the next bot turn. */
+function approvalContextFor(stateRoot, botId) {
+  if (typeof stateRoot !== 'string' || typeof botId !== 'string') return ''
+  const root = path.resolve(stateRoot)
+  let list
+  try {
+    list = openApprovalStore(root).list(botId)
+  } catch {
+    return ''
+  }
+  const lines = []
+  for (const approval of list) {
+    if (approval.state !== 'approved' && approval.state !== 'denied') continue
+    const action = approval.action && typeof approval.action === 'object' ? approval.action : {}
+    const kind = typeof action.kind === 'string' ? action.kind : 'action'
+    const machine = typeof action.machine === 'string' ? action.machine : ''
+    let execution = null
+    try {
+      execution = JSON.parse(readFileSync(
+        path.join(root, 'bots', botId, 'approvals', `exec-${approval.id}.json`),
+        'utf8',
+      ))
+    } catch {
+      execution = null
+    }
+    const state = execution?.state ? `; execution ${execution.state}` : ''
+    const status = typeof execution?.result?.status === 'string' ? ` (${execution.result.status})` : ''
+    const code = typeof execution?.code === 'string' ? ` [${execution.code}]` : ''
+    lines.push(`- ${kind}${machine ? ` on ${machine}` : ''}: ${approval.state}${state}${status}${code}`)
+    if (lines.length >= 5) break
+  }
+  return lines.join('\n')
 }
 
 /** True when a file-read error means "not uploaded yet", not a broken machine. */
@@ -260,7 +296,13 @@ export function createCloudHostRuntime({
       const taskId = `task-${randomUUID()}`
       const paths = filePaths(botId, taskId)
       const prompt = buildPrompt({
-        bot, text, history, messageSeq, proposalHint: true, proposalMachine: machineRef(machine),
+        bot,
+        text,
+        history,
+        messageSeq,
+        proposalHint: true,
+        proposalMachine: machineRef(machine),
+        approvalContext: approvalContextFor(stateRoot, botId),
       })
       const startedAt = new Date().toISOString()
       await writeFile(host.ref, paths.inbox, JSON.stringify({

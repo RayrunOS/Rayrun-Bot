@@ -52,7 +52,7 @@ Alpha 第一天我们必须能录下来的演示：
 | A12 | 发布 | 干净机器上验证三分钟安装路径；npm tarball 包含 host half、client half、locale 和 bundle patch；CI 全绿 |
 
 A6/A7 中“本地 typed 动作”已由 ADR-019 解阻；云端凭据动作仍受 [08 §3.3](../08-integration.md)
-限制，云提案 bridge + stop 已 live；它们仍是签收
+限制，云提案 bridge、start/stop、denial/Continue 与下一轮 context 已 live；它们仍是签收
 标准。
 
 A1–A12 之后的 alpha 门：10–20 名种子用户；首个 bot 成功率 ≥ 80%；第 2 周留存 ≥ 40%；
@@ -68,7 +68,7 @@ A1–A12 之后的 alpha 门：10–20 名种子用户；首个 bot 成功率 �
 | 聊天列表、对话和每 bot 详情面板 | Grok Bot 三栏壳；在 API 允许的地方复用 DSH 聊天 |
 | Bot↔session 映射 | 持久化在机器上，本地镜像 |
 | 云端 bot runtime：队列、inbox/outbox、watchdog | 一次一个 agent 任务 |
-| Fail-closed 审批门 | TTL 30 分钟、防重放、本地执行 claim、审计行；ADR-019 本地 typed 动作与云提案 bridge 已实现，真实 cloud proposal + stop 已 live |
+| Fail-closed 审批门 | TTL 30 分钟、防重放、本地执行 claim、审计行；ADR-019 本地 typed 动作与云提案 bridge 已实现，真实 start/stop/pause/resume、denial/Continue 与下一轮 context 已 live |
 | 内联审批卡 | 对话里的卡片；聊天列表的点标记关注 |
 | 云电脑依赖集成 | 依赖声明、版本检查、缺插件错误 |
 | 成本栏：余额和机时 | 按 bot 归因是 P1 |
@@ -96,9 +96,10 @@ A1–A12 之后的 alpha 门：10–20 名种子用户；首个 bot 成功率 �
    运行队列和 DSH session；本地 watchdog 通过 `exec` 重启它。
 5. **审批执行采用本地权威（ADR-019，2026-11-23 定）。** 云端只提案；本地 DSH host
    生成并保存决定/执行 claim，用本地 Rayrun token 执行 typed 动作。首版允许机器
-   start/stop，`destroy`/创建/shell/任意命令不在 allowlist。云端凭据动作仍等待平台
+   start/stop/pause/resume，`destroy`/创建/shell/任意命令不在 allowlist。云端凭据动作仍等待平台
    host/agent 隔离和 host-only 端点（[08-integration.md](../08-integration.md) §3.3）。
-   云提案 bridge + stop 已 live 验证；文件邮箱不是授权路径。
+   云提案 bridge、start/stop、denial/Continue 与下一轮 context 已 live 验证；文件邮箱
+   不是授权路径。
 6. **Session 策略由 spike S1 决定**：优先机器上的长驻 DSH 进程；回退到每轮 headless
    加 session id；最后手段是 transcript 重放。
 7. **独立项目，一条依赖边。** `dsh-rayrun-computer` 留在自己的仓库，作为 npm 依赖
@@ -219,8 +220,8 @@ spike S6 决定。
 （`restart=always`、`autostart`、`keep_alive`），不再依赖本地 `exec` watchdog；C1 仍需
 把 host 代码送进镜像。D1 的 session 由 host 自己写 `/workspace`，平台不提供 session
 对象。host 资产已在 `cloud-host/`；自动 projection 页面 E2E 已通过（2026-11-23）。
-本地 typed 审批执行与云提案 bridge 已按 ADR-019 实现，真实 cloud proposal + stop 已
-live；云端凭据动作仍待做；见
+本地 typed 审批执行与云提案 bridge 已按 ADR-019 实现，真实 start/stop、denial/Continue
++ 下一轮 context 已 live；云端凭据动作仍待做；见
 [`../08-integration.md`](../08-integration.md) §3.1/§3.3。
 
 ### D. Session（会话）
@@ -237,9 +238,10 @@ live；云端凭据动作仍待做；见
 
 **本地执行（ADR-019，2026-11-23）。** E2/E4/E5/E6/E7 的协议、RPC、TTL、负向
 测试和审计已实现；E1 的本地 typed executor（`lib/approval-actions.js`、
-`lib/approval-executor.js`）允许机器 start/stop，带 at-most-once claim；E3 的云提案
+`lib/approval-executor.js`）允许机器 start/stop/pause/resume，带 at-most-once claim；E3 的云提案
 poller 已由 `approvals.sync` + `cloud-approval-bridge` 实现（fake 测试和真实 cloud
-proposal 闭环均通过；host-only `approvals.propose` 仍为本地 seam）。云端凭据动作仍等待平台
+proposal、denial/Continue 闭环均通过；host-only `approvals.propose` 仍为本地 seam）。
+云端凭据动作仍等待平台
 隔离/端点（[08 §3.3](../08-integration.md)）。
 
 | ID | 任务 | 交付物 | 依赖 | 估算 | 完成条件 |
@@ -291,7 +293,7 @@ H 6.5 ≈ **74 工程师日**，外加 W0 3 天和 2 周 alpha。两名工程师
 | M0 | W0（3 天） | spike S1–S6，平台问题发出 | 决策记录，go/no-go | 书面决策日志 |
 | M1 | W1 | A1–A3、B1–B3、F1、G1 | 名册从 stub 数据只读 | 面板里从空到 stub 聊天列表 |
 | M2 | W2 | C1–C5、B4、D1–D2、F2 | bot 端到端回复 | 创建 bot、发任务、得到回复 |
-| M3 | W3 | E1–E4、D3、F3、G2–G3（本地 typed 执行与云提案 bridge 已实现，真实 stop live） | 审批闭环工作 | 受限动作 → 卡 → 批准 → 继续 |
+| M3 | W3 | E1–E4、D3、F3、G2–G3（本地 typed 执行、云提案 bridge、start/stop、denial/Continue 与结果 context 已 live） | 审批闭环工作 | 受限动作 → 卡 → 批准 → 继续 |
 | M4 | W4 | E5–E7、D4–D5、C6–C8、F4–F5 | 续接与恢复通过 | 合上笔记本、重开、仍在工作 |
 | M5 | W5 | C9、G4–G6、F6、H1–H4 | 干净机器上 A1–A12 通过 | 验收运行录像 |
 | Alpha | W6–W7 | H6、修复 | alpha 门 | 10–20 名用户跑闭环 |

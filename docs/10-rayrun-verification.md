@@ -299,8 +299,9 @@
   （`box`）和风险（stop: outside；start: outside+cost）。点击 Deny 后本地 decision 为
   denied，且没有 `exec` 记录；点击 Allow start 后本地 executor 写 `exec-<id>.json`
   claim 并尝试本地 Rayrun RPC，因没有可用连接/机器记录 `failed`（`E_MACHINE_STOPPED`
-  路径），页面显示“已批准，但本地执行失败”，不假成功。截图
-  `/tmp/bot/approval-ui.png`（临时文件，不入库）。该次未验证真实 Rayrun 动作、真实
+  路径），页面显示“已批准，但本地执行失败”，不假成功；决定后的真实卡片显示
+  Continue bot。截图 `/tmp/bot/approval-ui.png`（临时文件，不入库）。该次未验证真实
+  Rayrun 动作、真实
   云端 bot 提案或云端凭据动作；`approvals.propose` 的 host-only 门由
   `test/rpc-contract.mjs` 覆盖，云端 proposal bridge 由
   `test/cloud-approval-bridge.mjs` 用 fake file tool/machine 覆盖（CLI、去重、非法/超限
@@ -319,6 +320,26 @@
   profile patch 模板含注释时旧逻辑不写入，DSH 仍用 `workspace-write`；现在按有效行
   判断，`test/cloud-host-dsh-agent.mjs` 覆盖带注释模板。`propose.mjs` shell 路径
   未做 live 验证；结构化 block 是主路径。
+- start 审批 + 下一轮结果 context（2026-11-23，同一 `rayrun-bot-scoped`）：真实云 bot
+  输出 `rayrun.machine.start` 的结构化 block；本地 sync 导入，页面 Allow 后本地
+  executor 真实执行 start（幂等，结果 done/Running），云端 `approval-results/` 为
+  approved/done（machine start, status Running）。随后一条普通用户消息触发下一轮，
+  prompt 自动带 `Recent approval outcomes: rayrun.machine.start on rayrun-bot-scoped:
+  approved; execution done (Running)`；bot 未调用工具，直接回答 approved / execution
+  completed / Running。测试后 runtime 删除、机器 stop，未 destroy；scoped token 已
+  撤销。截图 `/tmp/bot/approval-start-context.png`（临时文件，不入库）。
+- denial + Continue（2026-11-23，同一 `rayrun-bot-scoped`）：真实云 bot 提案
+  `rayrun.machine.stop`；页面 Deny，机器保持 Running，无 exec claim，云端
+  `approval-results/` 为 denied/not_executed。点击真实卡片的 Continue bot 后，下一轮
+  bot 从 `Recent approval outcomes` 回答 denied / 未停止 / 仍 Running，未调用工具。
+  测试后 runtime 删除、机器 stop，未 destroy；scoped token 已撤销。截图
+  `/tmp/bot/approval-denial-continue.png`（临时文件，不入库）。
+- pause/resume（2026-11-23，同一 `rayrun-bot-scoped`）：bot 提案 machine.pause →
+  本地 Allow → 机器 Paused；结果先落本地 outbox；手动 resume 后 sync 补传
+  （flushed=1），云端 pause 结果为 approved/done（Paused）。随后 bot 再提案
+  machine.resume → Allow → done/Running，云端结果 approved/done。测试后 runtime
+  删除、机器 stop，未 destroy；scoped token 已撤销。截图
+  `/tmp/bot/approval-pause-resume.png`（临时文件，不入库）。
 - 打包产物安装（2026-11-22，本机 DSH `0.2.2-rc.5`；本地打包检查）：`npm pack` 生成
   15 个文件的 tarball（host/client、locale、`lib/*.js`、bundle patch、icon、README、
   LICENSE；54.6 kB），`test/`、`docs/`、`tools/` 未进入；`dsh plugin --profile
@@ -356,8 +377,8 @@
   留在工作区；需轮换并移出/删除后才能声称 A11 通过。扫描未打印值；
 - bot 会话、审批往返、远程审批、队列与恢复：R-G008 平台实现待部署；bot 侧常驻
   host 已有 dev 预览（多 bot 单 host E2E 通过）；本地 typed 审批执行已通过拒绝/
-  失败关闭的页面 E2E 和真实 cloud proposal + stop 闭环；真实机器 start 审批动作与
-  云端凭据动作未验证；云端凭据动作仍等待平台隔离（ADR-001，
+  失败关闭的页面 E2E、真实 cloud proposal + start/stop/pause/resume、denial/Continue
+  和下一轮结果 context 已 live；云端凭据动作仍未验证，仍等待平台隔离（ADR-001，
   [`08-integration.md`](08-integration.md) §3.3）。
   本地 session store、`session.*` RPC、`rayrun_agent`/detached adapter 已有 fake
   测试；页面层真实一轮，以及 detached 的页面关闭 + host 重启收取，已在本机 DSH +

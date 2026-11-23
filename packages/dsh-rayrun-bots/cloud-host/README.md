@@ -127,12 +127,13 @@ DSH_BOT_ROOT=/workspace/.rayrun DSH_BOT_ID=my-bot \
 
 The local bridge writes decisions/execution results to
 `bots/<id>/approval-results/`. A stopped machine queues results locally and
-uploads them on the next sync. A live cloud-bot proposal -> local approve ->
-real `machine.stop` -> stopped outbox -> restart flush passed on 2026-11-23;
+uploads them on the next sync. A live cloud-bot proposal -> local approve -> real
+`machine.stop` -> stopped outbox -> restart flush, and a live start approval
+whose next-turn prompt carried the recent outcome, both passed on 2026-11-23;
 the live bot used the structured block, not the optional CLI.
 
 ## Not built yet
 
 - a production guestd 0.6 + DSH image and build/deploy pipeline;
-- approved `machine.start` and approval actions beyond machine start/stop;
+- approval actions beyond machine start/stop/pause/resume;
 - package release and the one-install path.

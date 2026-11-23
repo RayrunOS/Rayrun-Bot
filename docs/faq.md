@@ -95,10 +95,11 @@ App。本项目与托管相反——开放代码、你的 Rayrun 账号、你的
 
 本地 typed 动作已能审批并执行（ADR-019，2026-11-23）：提案由本地 DSH host 重新
 校验，用户决定只写本地，批准后本地 executor 用你的 Rayrun token 执行
-`rayrun.machine.start/stop`；拒绝/过期/重放/崩溃 claim 都不执行。云端 proposal
+`rayrun.machine.start/stop/pause/resume`；拒绝/过期/重放/崩溃 claim 都不执行。云端 proposal
 bridge 已 live：bot 输出结构化 block，cloud host 写提案，本地 `rayrun_files` 导入，
-Allow 后真实 stop，停机时结果落本地 outbox、重启后补传。真实机器 start 审批动作、
-其他动作和云端凭据动作仍未验证。云端 worker 仍是 `approval: never`，
+Allow 后真实 stop，停机时结果落本地 outbox、重启后补传；start、denial/Continue 和
+下一轮结果 context 也已真机通过。pause/resume 也已 live；其他动作和云端凭据动作仍未
+验证。云端 worker 仍是 `approval: never`，
 agent 在自己的 workspace 内不受审批约束。云端凭据动作仍需 Rayrun 提供 host/agent
 隔离或 host-only 端点（ADR-001）。云端 bot 仍应只跑在你准备失去的凭据和机器上。
 
