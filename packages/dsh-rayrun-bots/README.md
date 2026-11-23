@@ -20,8 +20,10 @@ Approval execution now follows ADR-019: the local host is the authority and
 executor for typed local actions, while the cloud side may only propose. The
 first allowlist is `rayrun.machine.start` and `rayrun.machine.stop`; an approved
 request gets a durable at-most-once execution claim, and denied, expired, or
-crashed requests never execute. Cloud-bot proposals arrive through the shipped
-`propose.mjs` and the local `approvals.sync` bridge; other action types and
+crashed requests never execute. A cloud bot emits a structured `rayrun-approval`
+block; the cloud host writes the proposal and the local `approvals.sync` bridge
+imports it. A live cloud proposal -> local approve -> real machine stop -> stopped
+result outbox -> restart flush passed on 2026-11-23. Other action types and
 cloud-only credential actions are still pending. The conversation UI
 uses the host session and real approval cards for roster bots; sample bots,
 receipts, routines and settings remain an in-memory preview. The page-level
@@ -114,10 +116,9 @@ live in [docs/12-status.md](../../docs/12-status.md).
   language row writes the choice back to DSH so it survives a reload. The rest
   stays in the page, and the client keeps neither the token nor a DeepSeek key.
 
-Not built yet: approval actions beyond machine start/stop, cloud-only credential
-approvals, live verification of the cloud proposal bridge, a Bots-page-level verified
-computer-creation success path, routines that run, a production cloud image, and the
-npm release path. See the repo-level
+Not built yet: approval actions beyond machine start/stop (approved start is not
+live), cloud-only credential approvals, a Bots-page-level verified computer-creation
+success path, routines that run, a production cloud image, and the npm release path. See the repo-level
 [MVP plan](../../docs/plans/mvp-plan.md) and [client plan](../../docs/plans/client-plan.md).
 
 ## DSH compatibility
@@ -180,6 +181,7 @@ node test/dependency.mjs
 node test/approvals.mjs
 node test/approval-executor.mjs
 node test/cloud-approval-bridge.mjs
+node test/cloud-host-proposal.mjs
 node test/package-contents.mjs
 ```
 
@@ -215,6 +217,7 @@ lib/host-projection.js # SHA-256 manifest and projection of cloud-host assets
 cloud-host/host.mjs # cloud host entry point (projected to the machine)
 cloud-host/lib/host.mjs # queue/transcript/outbox/session id/DSH agent wiring
 cloud-host/lib/dsh-agent.mjs # headless DSH profile + --session-id runner
+cloud-host/lib/proposal.mjs  # structured approval block parser/writer
 cloud-host/bin/propose.mjs   # typed approval proposal writer for the bot
 lib/rayrun-rpc.js  # shared same-origin dependency RPC caller
 lib/rayrun-runtime.js # rayrun_agent-backed runtime adapter

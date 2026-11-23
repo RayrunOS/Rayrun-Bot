@@ -93,8 +93,12 @@ export function createDshAgent({
         await execDsh(['--profile', profile, '--from-default-profile', 'headless', '--dump-config'], 60_000)
       }
       const patch = path.join(profileDir, 'cordis.patch.yml')
-      const current = existsSync(patch) ? readFileSync(patch, 'utf8').trim() : ''
-      if (current === '' || current === '[]') writeFileSync(patch, PROFILE_PATCH, { mode: 0o600 })
+      const current = existsSync(patch) ? readFileSync(patch, 'utf8') : ''
+      const active = current.split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter((line) => line !== '' && !line.startsWith('#'))
+        .join('\n')
+      if (active === '' || active === '[]') writeFileSync(patch, PROFILE_PATCH, { mode: 0o600 })
       return profileDir
     })()
     return profileReady

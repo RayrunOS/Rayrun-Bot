@@ -31,7 +31,8 @@ token; `DEEPSEEK_API_KEY` is only observed as a boolean.
 | `lib/host.mjs` | Queue, transcript, outbox, state, session id and recovery; no timers |
 | `lib/dsh-agent.mjs` | Headless DSH profile bootstrap and `--json`/`--session-id` runner |
 | `host.mjs` | Process entry point: heartbeat and poll loops, SIGTERM/SIGINT |
-| `bin/propose.mjs` | Typed proposal writer for the bot workspace; no token, no network |
+| `lib/proposal.mjs` | Parse the structured approval block and write one typed proposal |
+| `bin/propose.mjs` | Optional CLI proposal writer for shell-capable bots; no token, no network |
 | `test/cloud-host.mjs` | Host checks with a fake agent; no framework, no network |
 | `test/cloud-host-dsh-agent.mjs` | DSH agent checks with a fake `dsh` executable |
 
@@ -111,11 +112,13 @@ projection for development.
 
 ## Approval proposals
 
-`bin/propose.mjs` writes one typed proposal into
-`bots/<DSH_BOT_ID>/proposals/<id>.json`; the local DSH host imports it through
-the dependency's `rayrun_files` tool, re-validates it, and only a local human
-decision can execute it (ADR-019). The prompt tells the DSH agent to run the
-CLI and stop; the proposal file is not an authorization.
+The primary path is structured: the bot ends its reply with a fenced
+`rayrun-approval` block; the cloud host parses it and writes one typed proposal
+into `bots/<DSH_BOT_ID>/proposals/<id>.json`. The local DSH host imports it
+through `rayrun_files`, re-validates it, and only a local human decision can
+execute it (ADR-019). `bin/propose.mjs` remains an optional shell path for
+images where the agent can run commands. The prompt uses the structured block;
+the live E2E did not rely on shell execution. A proposal file is not an authorization.
 
 ```bash
 DSH_BOT_ROOT=/workspace/.rayrun DSH_BOT_ID=my-bot \
@@ -124,11 +127,12 @@ DSH_BOT_ROOT=/workspace/.rayrun DSH_BOT_ID=my-bot \
 
 The local bridge writes decisions/execution results to
 `bots/<id>/approval-results/`. A stopped machine queues results locally and
-uploads them on the next sync. The bridge has fake-tool tests; a live cloud-bot
-proposal E2E is still pending.
+uploads them on the next sync. A live cloud-bot proposal -> local approve ->
+real `machine.stop` -> stopped outbox -> restart flush passed on 2026-11-23;
+the live bot used the structured block, not the optional CLI.
 
 ## Not built yet
 
 - a production guestd 0.6 + DSH image and build/deploy pipeline;
-- live cloud-bot proposal E2E and approval actions beyond machine start/stop;
+- approved `machine.start` and approval actions beyond machine start/stop;
 - package release and the one-install path.

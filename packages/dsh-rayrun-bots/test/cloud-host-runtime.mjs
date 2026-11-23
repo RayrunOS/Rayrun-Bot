@@ -106,7 +106,8 @@ check('start uploads one task and returns a detached record', async () => {
   assert.match(task.text, /Echo Bot/)
   assert.match(task.text, /hello/)
   assert.match(task.text, /Approval requests:/)
-  assert.match(task.text, /DSH_BOT_PROPOSE/)
+  assert.match(task.text, /rayrun-approval/)
+  assert.match(task.text, /"machine":"box"/)
 
   const spec = state.puts[0].spec
   assert.deepEqual(spec.argv, ['node', '/workspace/.rayrun/bin/host.mjs'])

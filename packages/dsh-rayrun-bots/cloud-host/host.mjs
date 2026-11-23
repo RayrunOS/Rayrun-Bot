@@ -10,6 +10,7 @@
  */
 import { createCloudHost } from './lib/host.mjs'
 import { createDshAgent } from './lib/dsh-agent.mjs'
+import { extractProposal, writeProposal } from './lib/proposal.mjs'
 
 const root = process.env.DSH_BOT_ROOT || '/workspace/.rayrun'
 const logPath = process.env.DSH_BOT_LOG || '/workspace/.rayrun/logs/bot-host.log'
@@ -21,11 +22,30 @@ const dshAgent = process.env.DSH_BOT_AGENT === 'dsh'
       cwd: '/workspace',
     })
   : undefined
-const host = createCloudHost({
+let host
+const agent = dshAgent === undefined ? undefined : async (input) => {
+  const result = await dshAgent.run(input)
+  const parsed = extractProposal(result.text, {
+    botId: input.botId,
+    defaultMachine: process.env.DSH_BOT_MACHINE || '',
+  })
+  if (parsed.proposal) {
+    try {
+      writeProposal(root, input.botId, parsed.proposal)
+      host?.log('proposal', { botId: input.botId, proposalId: parsed.proposal.id })
+    } catch (error) {
+      host?.log('proposal-failed', { botId: input.botId, message: String(error?.message ?? error).slice(0, 200) })
+    }
+  } else if (parsed.error) {
+    host?.log('proposal-invalid', { botId: input.botId, message: String(parsed.error).slice(0, 200) })
+  }
+  return { ...result, text: parsed.text }
+}
+host = createCloudHost({
   root,
   logPath,
   credentialPresent: Boolean(process.env.DEEPSEEK_API_KEY),
-  ...(dshAgent === undefined ? {} : { agent: dshAgent.run }),
+  ...(agent === undefined ? {} : { agent }),
 })
 const recovered = host.recover()
 host.log('started', { pid: process.pid, recovered, bots: host.listBots().length, hasCredential: Boolean(process.env.DEEPSEEK_API_KEY) })

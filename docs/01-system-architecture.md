@@ -139,7 +139,7 @@ host half 属于本地控制面。**ADR-015/016 目前是 Proposed**；在它们
 | 一人一台电脑 | 更便宜，更像人的桌面 | **bot 不是安全边界**；两个 bot 不能互相当沙箱 |
 | 云电脑插件独立 | 复用成熟云层，不 fork/合并仓库 | 两个包、版本契约、安装摩擦；特性请求跨仓库 |
 | Bot = 持久对象 | 不只是 session：指令、skills、memory、schedule | durable-object 契约（session 续接、每 bot 目录）未验证 |
-| 审批失败即拒绝 | 外部副作用需要人类同意 | UX 成本；本地 typed 动作与云提案 bridge 已有预览，live 与云端凭据动作未落地 |
+| 审批失败即拒绝 | 外部副作用需要人类同意 | UX 成本；本地 typed 动作与云提案 bridge + stop 已 live；其他动作与云端凭据动作未落地 |
 | 成本护栏 | 常开机器有真实账单 | 平台没有 idle auto-stop 或 spend cap；插件只能 stop，不能强制执行预算 |
 | v0.1 只接 Rayrun | 一个集成做透 | 以后换后端是重写；provider 抽象是未决项 |
 
@@ -238,9 +238,9 @@ ADR-019（2026-11-23）把凭据/执行器在本地动作的审批权威移到**
 - 平台需求见 [`08-integration.md`](08-integration.md) §3.3；这与
   [`07-security.md`](07-security.md) “The model is untrusted” 一致。
 
-**当前缺口：** 云 bot 自主提案 bridge 已接（fake 测试），但真实云端提案 live E2E、
-其他动作类型和真实 Rayrun 成功执行尚未验证；不要把 host-only propose seam 当成完整
-闭环。
+**当前缺口：** 云 bot 结构化提案 + 本地导入 + 真实 stop 已 live 通过（2026-11-23）；
+真实机器 start 审批动作、其他动作类型和云端凭据动作尚未验证；不要把 host-only
+propose seam 当成完整闭环。
 
 ### 4.4 其他边界
 
@@ -333,7 +333,7 @@ tombstone，action hash 的 canonicalization 未定义；见 ADR-011/012。
 6. 后台卡 30 分钟过期即拒绝；chat 卡不设计时，一直等待；本地 DSH 不在线时不会自动
    执行。云端凭据动作在平台隔离/host-only 端点落地前仍不执行。
 7. 副作用执行后的崩溃/重试语义见 ADR-005；本地 executor 已实现 at-most-once claim，
-   崩溃后不自动重试。云端提案 bridge 已实现（fake 测试，live 待验）；其他动作仍待做。
+   崩溃后不自动重试。云端提案 bridge + stop 已 live 验证；其他动作仍待做。
 
 ### 6.4 合上笔记本
 
@@ -422,7 +422,7 @@ ADR-004，未定之前 C1/D1 不应动工。
 | ADR-015 | 云端 bot runtime 层 | 决定执行面落点 |
 | ADR-016 | 本地 bot 控制面 | 决定控制面权威 |
 | ADR-001 | 审批在哪里执行 | 已定（平台权限隔离）；ADR-019 窄化本地动作 |
-| ADR-019 | 审批执行权威 | 已定（本地 DSH host）；云提案 bridge 已实现，live 待验 |
+| ADR-019 | 审批执行权威 | 已定（本地 DSH host）；云提案 bridge + stop 已 live |
 | ADR-002 | 所有权矩阵与单写者规则 | 决定 `bot.json`、队列、审批谁写 |
 | ADR-003 | 文件控制通道协议 | 决定队列/状态怎么交换，避免双写丢更新 |
 | ADR-004 | 与 `dsh-rayrun-computer` 的契约 | 决定 bot runtime 能否调用云能力 |

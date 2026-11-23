@@ -13,10 +13,12 @@
 > **实现状态（2026-11-23）：** 协议后端与 `approvals.list/get/decide/propose/sync`
 > RPC 已实现；本地 typed 执行器允许 `rayrun.machine.start` / `rayrun.machine.stop`，
 > 批准后在本机使用 Rayrun token 执行，先写 `executing` claim，再写结果与审计。云端
-> proposal bridge 已接：`cloud-host/bin/propose.mjs` 写提案，本地用 `rayrun_files`
-> 导入并去重；结果写回 `approval-results/`，机器停机时先落本地 outbox。客户端真实
-> 卡片已接入。其他动作类型、真实云端提案 live E2E 和真实 Rayrun 成功执行尚未验证；
-> host-only `approvals.propose` 仍作为本地/测试 seam。
+> proposal bridge 已接：cloud host 解析 bot 回复末尾的结构化 `rayrun-approval` block
+> （`propose.mjs` 为可选 shell 路径），本地用 `rayrun_files` 导入并去重；结果写回
+> `approval-results/`，机器停机时先落本地 outbox。客户端真实
+> 卡片已接入。真实 cloud proposal → 本地 sync → Allow → 真实 stop → 停机 outbox →
+> 重启补传已 live 通过（2026-11-23）；真实机器 start 审批动作、其他动作类型和云端
+> 凭据动作尚未验证；host-only `approvals.propose` 仍作为本地/测试 seam。
 
 ## 0. 与现有文档的关系
 
@@ -52,9 +54,10 @@
 
 ADR-019 的本地权威模型：
 
-- **云端只写提案。** 云端 bot 通过 `cloud-host/bin/propose.mjs` 把 typed proposal 写进
-  `bots/<id>/proposals/`；proposal 是请求，不是授权。云端 agent 可以读、改、重放或
-  伪造 proposal，因此本地 bridge 必须把它当不可信输入重新校验。
+- **云端只写提案。** 云端 bot 在回复末尾输出结构化 `rayrun-approval` block；cloud
+  host 解析后写 `bots/<id>/proposals/`（`propose.mjs` 保留为可选 shell 路径）。
+  proposal 是请求，不是授权。云端 agent 可以读、改、重放或伪造 proposal，因此本地
+  bridge 必须把它当不可信输入重新校验。
 - **决定只在本地。** 本地 host 生成 request id、nonce、actionHash 和 risk，用户决定
   写本地 `res-<id>.json`；云端写来的 decision 一律忽略。
 - **执行只在本地。** 本地 executor 持有 Rayrun token，按 typed allowlist 执行；token
@@ -67,16 +70,17 @@ ADR-019 的本地权威模型：
 - **云端凭据动作仍等待平台。** 凭据只在云端、必须云端执行的动作，在平台提供
   host/agent 隔离或 host-only 端点前继续不执行（ADR-001 仍适用）。
 
-**当前缺口：** 云端 proposal bridge 已实现并有 fake 测试，但真实云端 bot 提案的
-live E2E 尚未验证；host-only `approvals.propose` 只作为本地/测试 seam。不要把 fake
-测试说成真实云端提案已经 live 通过。
+**当前验证：** 真实云端 bot 提案 → 本地导入 → Allow → 真实 stop → 停机 outbox →
+重启补传已 live 通过（2026-11-23）。真实机器 start 审批动作、其他动作和云端凭据
+动作仍未验证；host-only `approvals.propose` 只作为本地/测试 seam。
 
 ## 3. 流程
 
-1. **提案**：云端 bot 用 `propose.mjs` 生成 typed proposal（`bots/<id>/proposals/`）；
-   本地 host 通过 `rayrun_files` 导入，重新校验 typed action，生成 request：本地 id、
-   botId、actionId、nonce、actionHash、action、risk、origin、createdAt、expiresAt。
-   host-only `approvals.propose` 保留为本地/测试 seam。
+1. **提案**：云端 bot 在回复末尾输出结构化 `rayrun-approval` block；cloud host 解析
+   并写 `bots/<id>/proposals/`（`propose.mjs` 是可选 shell 路径）。本地 host 通过
+   `rayrun_files` 导入，重新校验 typed action，生成 request：本地 id、botId、actionId、
+   nonce、actionHash、action、risk、origin、createdAt、expiresAt。host-only
+   `approvals.propose` 保留为本地/测试 seam。
 2. **送达**：request 写入本地 approval store；云端不持有 request/decision 的授权。
 3. **卡片**：客户端读取 `approvals.list/get`，显示结构化字段；Deny / Allow once。
    卡片内容不信任机器提供的 HTML/markdown。
@@ -98,7 +102,7 @@ live E2E 尚未验证；host-only `approvals.propose` 只作为本地/测试 sea
 
 | 文件 | 写者 | 读者 | 规则 |
 | --- | --- | --- | --- |
-| 云端 `proposals/<id>.json` | 云端 bot（`propose.mjs`） | 本地 bridge（`rayrun_files`） | 不可信输入；不是授权；本地重新校验并生成 request |
+| 云端 `proposals/<id>.json` | cloud host（解析结构化 block；`propose.mjs` 可选） | 本地 bridge（`rayrun_files`） | 不可信输入；不是授权；本地重新校验并生成 request |
 | `approvals/req-<id>.json` | 本地 host（提案 seam/bridge） | 本地控制面 | 本地生成 id/nonce/hash/risk；原子写；不覆盖 |
 | `approvals/res-<id>.json` | 本地控制面（用户决定） | 本地 executor | 只在本地；每个 id 一个决定；重复按 id 幂等 |
 | `approvals/exec-<id>.json` | 本地 executor | 本地控制面 | 先写 `executing` claim；结果 `done`/`failed`；不自动重试 |
@@ -114,7 +118,7 @@ live E2E 尚未验证；host-only `approvals.propose` 只作为本地/测试 sea
 - **当前实现路径（2026-11-23）。** 本地 request/decision/claim/audit 在
   `$DSH_HOME/state/rayrun-bot/bots/<botId>/approvals/` 和
   `$DSH_HOME/state/rayrun-bot/logs/audit.log`；待传结果在 `approval-results/`。
-  云端 proposal bridge 已实现，live 未验证。
+  云端 proposal bridge 已 live 验证（2026-11-23）。
 
 ## 5. Schema 与 action hash
 
@@ -229,23 +233,25 @@ live E2E 尚未验证；host-only `approvals.propose` 只作为本地/测试 sea
 - 执行失败/缺少本地 Rayrun 连接 → 记录失败，不假成功；错误脱敏。
 
 > 2026-11-23：协议测试（8 项）、executor 测试（7 项）、cloud proposal bridge 测试
-> （6 项）和 RPC 契约覆盖上述大部分；页面 E2E 用无 Rayrun 凭证的临时 profile 验证了
-> “拒绝无执行、批准执行失败不假成功”。**真实 Rayrun 成功执行、真实云端 bot 提案
-> live E2E 和云端凭据动作仍未验证。** 见 `test/approvals.mjs`、
-> `test/approval-executor.mjs`、`test/cloud-approval-bridge.mjs`、`test/rpc-contract.mjs`。
+> （6 项）、cloud host proposal 测试（4 项）和 RPC 契约覆盖上述大部分；页面 E2E
+> 用无 Rayrun 凭证的临时 profile 验证了“拒绝无执行、批准执行失败不假成功”。真实
+> cloud proposal → Allow → 真实 machine.stop → 停机 outbox → 重启补传已 live 通过；
+> **真实机器 start 审批动作和云端凭据动作仍未验证。** 见 `test/approvals.mjs`、
+> `test/approval-executor.mjs`、`test/cloud-approval-bridge.mjs`、
+> `test/cloud-host-proposal.mjs`、`test/rpc-contract.mjs`。
 
 ## 10. 未决项
 
 | 问题 | 影响 | 决策 |
 | --- | --- | --- |
 | 审批在哪里执行？ | 它是不是安全边界 | ADR-019：本地 DSH host 执行本地动作；ADR-001 的平台隔离仍用于云端凭据动作 |
-| 云端 bot 如何提案？ | 自主审批闭环 | bridge 已实现（fake 测试）；真实云端 live E2E 待验；host-only `approvals.propose` 仍为本地 seam |
+| 云端 bot 如何提案？ | 自主审批闭环 | 结构化 block + host 解析已 live 验证；`propose.mjs` shell 路径未 live；host-only `approvals.propose` 仍为本地 seam |
 | 首版支持哪些动作？ | allowlist 与风险 | start/stop 已定义；其他动作逐项加，默认拒绝 |
 | decision 字段与 canonical hash | 绑定动作、负向测试 | ADR-011：Accepted（2026-11-22，协议已实现） |
 | 副作用崩溃/重试语义 | 重复发送/花钱 | ADR-005；本地 executor 已写 claim、不自动重试 |
 | TTL/时钟/限流/多客户端 | 状态机与恢复 | ADR-012 |
 | 审计是否 tamper-evident | 安全声明 | ADR-012 |
-| 真实 Rayrun 执行 E2E | 证明成功路径 | 未验证；需可用 token/机器与受控动作 |
+| 真实 Rayrun 执行 E2E | 证明成功路径 | machine.stop 审批执行已 live；machine.start 审批动作未验证 |
 
 ## 11. 相关文档
 

@@ -35,7 +35,7 @@ function resultDetail(result) {
  * Compose one prompt. History stops before the turn being answered so a later
  * queued message cannot leak into this prompt; the turn text is authoritative.
  */
-export function buildPrompt({ bot, text, history = [], messageSeq, proposalHint = false } = {}) {
+export function buildPrompt({ bot, text, history = [], messageSeq, proposalHint = false, proposalMachine = '' } = {}) {
   const name = typeof bot?.name === 'string' && bot.name.trim() ? bot.name.trim() : 'the bot'
   const label = typeof bot?.label === 'string' ? bot.label.trim() : ''
   const instructions = typeof bot?.instructions === 'string' ? bot.instructions.trim() : ''
@@ -76,7 +76,11 @@ export function buildPrompt({ bot, text, history = [], messageSeq, proposalHint 
     `Reply as ${name} to the user's latest message. Work inside the cloud computer. Do not send, publish, spend, create or destroy computers, or touch another machine without an explicit user decision; if the decision is missing, ask and stop. Never claim work you have not verified.`,
     ...(proposalHint ? [
       '',
-      'Approval requests: for a controlled action, run `node "$DSH_BOT_PROPOSE" --kind rayrun.machine.stop --machine "$DSH_BOT_MACHINE"` (allowed kinds: rayrun.machine.start, rayrun.machine.stop), then stop and tell the user it is waiting. Never perform the action yourself. Approval results appear under "$DSH_BOT_ROOT/bots/$DSH_BOT_ID/approval-results/"; read them, and never assume approval.',
+      'Approval requests: to request one controlled action, end your reply with exactly this fenced block (the host submits it; never perform the action yourself):',
+      '```rayrun-approval',
+      JSON.stringify({ kind: 'rayrun.machine.stop', machine: proposalMachine || '<machine>' }),
+      '```',
+      'Allowed kinds: rayrun.machine.start, rayrun.machine.stop. Tell the user it is waiting for approval. Approval results appear under "$DSH_BOT_ROOT/bots/$DSH_BOT_ID/approval-results/"; read them, and never assume approval.',
     ] : []),
   ].join('\n')
 }

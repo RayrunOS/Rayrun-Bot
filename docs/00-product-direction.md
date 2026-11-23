@@ -228,7 +228,7 @@ v0.1 的估算与排序见 [`plans/mvp-plan.md`](plans/mvp-plan.md)；里程碑�
 这些会改变产品范围或承诺；未决细节见 [`adr/architecture-decisions.md`](adr/architecture-decisions.md)：
 
 - **审批是安全边界还是用户同意？** 已定：本地 typed 动作由本地 DSH host 审批/执行
-  （ADR-019）；云端凭据动作仍走平台隔离（ADR-001）。云提案 bridge 已实现（fake 测试，live 待验）。
+  （ADR-019）；云端凭据动作仍走平台隔离（ADR-001）。云提案 bridge + stop 已 live 验证。
 - **routines / scheduler 进不进 v0.1？** 架构层写了 scheduler，MVP 计划标 P1，需统一（ADR-009）。
 - **“合上笔记本”期间哪些工作继续、计费怎么处理？** 后台审批 30 分钟过期，本地 idle stop 不在运行（ADR-006）。
 - **desktop / takeover 的安全路径是什么？** public 端口不能当产品面板（ADR-008）。

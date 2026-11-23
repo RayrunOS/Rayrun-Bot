@@ -136,6 +136,11 @@ export function createCloudHostRuntime({
     throw rayrunFailure(ERROR_CODES.machineStopped, 'The cloud computer did not start in time; no turn was sent.')
   }
 
+  function machineRef(machine) {
+    const name = String(machine.name ?? '')
+    return /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(name) ? name : String(machine.id)
+  }
+
   function spec(script, machine) {
     return {
       argv: ['node', script],
@@ -149,9 +154,7 @@ export function createCloudHostRuntime({
         DSH_BOT_PROFILE: profile,
         DSH_BOT_LOG: '/workspace/.rayrun/logs/bot-host.log',
         DSH_BOT_PROPOSE: `${path.posix.dirname(String(script))}/bin/propose.mjs`,
-        DSH_BOT_MACHINE: /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(String(machine.name ?? ''))
-          ? String(machine.name)
-          : String(machine.id),
+        DSH_BOT_MACHINE: machineRef(machine),
       },
       credentials: [...credentials],
       restart: 'always',
@@ -256,7 +259,9 @@ export function createCloudHostRuntime({
       const { machine, host } = await hostSetup
       const taskId = `task-${randomUUID()}`
       const paths = filePaths(botId, taskId)
-      const prompt = buildPrompt({ bot, text, history, messageSeq, proposalHint: true })
+      const prompt = buildPrompt({
+        bot, text, history, messageSeq, proposalHint: true, proposalMachine: machineRef(machine),
+      })
       const startedAt = new Date().toISOString()
       await writeFile(host.ref, paths.inbox, JSON.stringify({
         schema: 1,

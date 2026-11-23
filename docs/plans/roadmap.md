@@ -5,8 +5,9 @@
 仓库的产品调研；它们是方向，不是承诺。v0.1 客户端壳、health 路由、持久化本地名册
 和按轮次的 runtime（依赖 1.1+ 用 detached，1.0.x 用单轮 `rayrun_agent`）已经存在；
 常驻云端 runtime 与 bot↔云端 session 映射已有 dev 预览（多 bot 单 host E2E 通过）；
-本地 typed 审批执行（机器 start/stop）与云提案 bridge 已有预览（fake 测试），但真实
-云端提案 live E2E、远程审批执行和 routines 尚未构建，生产镜像/部署未交付。实现状态以
+本地 typed 审批执行（机器 start/stop）与云提案 bridge 已有预览；真实 cloud proposal
+→ stop 闭环已 live 通过，但真实机器 start 审批动作、远程审批执行和 routines 尚未
+构建，生产镜像/部署未交付。实现状态以
 [12-status.md](../12-status.md) 为准。日期刻意省略。*
 
 ## 我们在哪（M0 — bootstrap）
@@ -39,8 +40,8 @@
   跑通常驻 host、并把 session 写进 `/workspace` 是第一个 spike。
 - **Fail-closed 审批。** 云端 proposal → 本地 host 的决定/执行 claim → 浏览器卡片。
   超时、未知或面板关闭都算拒绝。ADR-019 首版允许本地执行机器 start/stop；云端凭据
-  动作仍等待平台 host/agent 隔离（ADR-001）；云提案 bridge 已实现，真实云端提案
-  live E2E 待验。文件邮箱不是授权边界。
+  动作仍等待平台 host/agent 隔离（ADR-001）；云提案 bridge + stop 已 live 验证。
+  文件邮箱不是授权边界。
 - **Routines，最小版（P1；决策未定，ADR-009）。** 一个定时 prompt 唤醒 bot；不做
   触发器市场。
 - **成本栏。** 机时与余额可见；idle stop 仍是插件选项（只停，永不 destroy）。

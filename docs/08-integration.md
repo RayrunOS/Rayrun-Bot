@@ -176,9 +176,9 @@ agent 可读 `/proc/<pid>/environ`，放在沙箱里的任何 token/key 都可�
 平台建议的最小路径已被本项目采纳（ADR-019，2026-11-23）：审批权威放在 agent
 沙箱之外——本地 DSH；agent 只提案，本地 host 持有 Rayrun token 并决定/执行受限的
 typed 动作。这样不需要新增平台审批端点，用现有 API 即可；代价是本地 DSH 不在线时
-审批等待。首版只覆盖机器的 start/stop；云端提案 bridge 已接（`propose.mjs` 写入、
-本地 `rayrun_files` 导入），真实云端 live 待验；云端凭据动作仍需要本节第 2 项的
-隔离/端点。
+审批等待。首版只覆盖机器的 start/stop；云端提案 bridge 已 live（结构化 block →
+host 解析写 proposal → 本地 `rayrun_files` 导入 → 真实 stop）；真实 start 审批动作
+和云端凭据动作仍需后续/平台隔离。
 
 验收：从 agent 进程读写 host 审批目录和凭据失败；agent 伪造的 decision 被执行方拒绝
 并记录；用户决定经平台端点到达 host；超时/未知状态拒绝。证据记录在
