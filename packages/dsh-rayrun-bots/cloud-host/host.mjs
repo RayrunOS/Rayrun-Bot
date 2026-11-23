@@ -8,8 +8,10 @@
  * DEEPSEEK_API_KEY (injected by the platform through a sandbox credential; never
  * read as a value here).
  */
+import path from 'node:path'
 import { createCloudHost } from './lib/host.mjs'
 import { createDshAgent } from './lib/dsh-agent.mjs'
+import { buildRoutinePrompt, readBotFile } from './lib/prompt.mjs'
 import { extractProposal, writeProposal } from './lib/proposal.mjs'
 
 const root = process.env.DSH_BOT_ROOT || '/workspace/.rayrun'
@@ -28,6 +30,7 @@ const agent = dshAgent === undefined ? undefined : async (input) => {
   const parsed = extractProposal(result.text, {
     botId: input.botId,
     defaultMachine: process.env.DSH_BOT_MACHINE || '',
+    origin: input.origin === 'routine' ? 'background' : 'chat',
   })
   if (parsed.proposal) {
     try {
@@ -41,10 +44,19 @@ const agent = dshAgent === undefined ? undefined : async (input) => {
   }
   return { ...result, text: parsed.text }
 }
+const promptFor = ({ botId, task }) => {
+  const bot = readBotFile(path.join(root, 'bots', botId))
+  return buildRoutinePrompt({
+    bot,
+    text: task.text,
+    machine: process.env.DSH_BOT_MACHINE || '',
+  })
+}
 host = createCloudHost({
   root,
   logPath,
   credentialPresent: Boolean(process.env.DEEPSEEK_API_KEY),
+  promptFor,
   ...(agent === undefined ? {} : { agent }),
 })
 const recovered = host.recover()
@@ -73,6 +85,7 @@ async function tick() {
   if (busy || stopping) return
   busy = true
   try {
+    host.enqueueDueRoutines()
     await host.processNext()
   } finally {
     busy = false

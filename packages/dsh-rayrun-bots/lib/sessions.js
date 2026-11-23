@@ -23,6 +23,7 @@ import { randomUUID } from 'node:crypto'
 import { assertBotId } from './bot-schema.js'
 import { ERROR_CODES } from './errors.js'
 import { writeJsonAtomic } from './local-store.js'
+import { ROUTINE_SYNTHETIC_SEQ_BASE, readRoutineResults } from './routine-results.js'
 
 export const SESSION_SCHEMA_VERSION = 1
 export const MESSAGE_MAX_BYTES = 16 * 1024
@@ -30,6 +31,7 @@ export const QUEUE_MAX = 32
 export const HISTORY_DEFAULT_LIMIT = 200
 export const HISTORY_MAX_LIMIT = 500
 export const SESSION_STATES = Object.freeze(['idle', 'queued', 'running', 'failed', 'interrupted'])
+export const SESSION_ORIGINS = Object.freeze(['chat', 'routine'])
 
 /** Control characters that would break one-line JSON or terminal output. */
 const CONTROL = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/
@@ -86,6 +88,12 @@ function textOf(value, field = 'text') {
   return result
 }
 
+function originOf(value, field) {
+  if (value === undefined || value === 'chat') return undefined
+  if (!SESSION_ORIGINS.includes(value)) fail(`${field} is invalid.`, { field })
+  return value
+}
+
 function validateMessage(value) {
   if (!isObject(value)) fail('A transcript message must be a JSON object.')
   if (!Number.isInteger(value.seq) || value.seq < 1) fail('message.seq must be a positive integer.')
@@ -99,13 +107,24 @@ function validateMessage(value) {
     }
     message.code = value.code
   }
+  const origin = originOf(value.origin, 'message.origin')
+  if (origin !== undefined) {
+    if (value.role !== 'user') fail('Only a user message may carry an origin.')
+    message.origin = origin
+  }
   return message
 }
 
 function validateQueueItem(value) {
   if (!isObject(value)) fail('A session queue item must be a JSON object.')
   if (!Number.isInteger(value.seq) || value.seq < 1) fail('queue.seq must be a positive integer.')
-  return { seq: value.seq, at: isoOf(value.at, 'queue.at'), text: textOf(value.text, 'queue.text') }
+  const origin = originOf(value.origin, 'queue.origin')
+  return {
+    seq: value.seq,
+    at: isoOf(value.at, 'queue.at'),
+    text: textOf(value.text, 'queue.text'),
+    ...(origin === undefined ? {} : { origin }),
+  }
 }
 
 function validateDetached(value) {
@@ -213,6 +232,30 @@ function appendMessage(stateRoot, botId, message) {
   })
 }
 
+function routineMessages(stateRoot, botId) {
+  const results = readRoutineResults(stateRoot, botId)
+  return results.flatMap((result, index) => [
+    {
+      seq: ROUTINE_SYNTHETIC_SEQ_BASE + index * 2,
+      at: result.at,
+      role: 'user',
+      text: result.text,
+      origin: 'routine',
+    },
+    {
+      seq: ROUTINE_SYNTHETIC_SEQ_BASE + index * 2 + 1,
+      at: result.at,
+      role: 'bot',
+      text: result.reply,
+    },
+  ])
+}
+
+function pageMessages(messages, { after, limit, tail }) {
+  const filtered = messages.filter((message) => message.seq > after)
+  return tail ? filtered.slice(-limit) : filtered.slice(0, limit)
+}
+
 function readTranscript(stateRoot, botId) {
   const file = path.join(stateRoot, 'bots', botId, 'transcript.jsonl')
   let text
@@ -274,18 +317,25 @@ export function openSessionStore(stateRoot) {
     }
     if (typeof tail !== 'boolean') fail('tail must be a boolean.', { field: 'tail' })
     const session = load(botId)
-    if (session === null) return { session: null, messages: [] }
-    const all = readTranscript(root, botId)
-    const last = all.length === 0 ? 0 : all[all.length - 1].seq
+    const routine = routineMessages(root, botId)
+    if (session === null) {
+      return { session: null, messages: pageMessages(routine, { after, limit, tail }) }
+    }
+    const local = readTranscript(root, botId)
+    const last = local.length === 0 ? 0 : local[local.length - 1].seq
     if (last !== session.lastSeq) {
       fail(`transcript.jsonl for ${botId} is out of sync with session.json.`)
     }
-    const filtered = all.filter((message) => message.seq > after)
-    const messages = tail ? filtered.slice(-limit) : filtered.slice(0, limit)
-    return { session: publicSession(session), messages }
+    const all = [...local, ...routine].sort((a, b) => (
+      a.at.localeCompare(b.at) || a.seq - b.seq
+    ))
+    return {
+      session: publicSession(session),
+      messages: pageMessages(all, { after, limit, tail }),
+    }
   }
 
-  function enqueue(id, text, { now = Date.now() } = {}) {
+  function enqueue(id, text, { now = Date.now(), origin = 'chat' } = {}) {
     const botId = assertBotId(id)
     if (!botExists(botId)) {
       const error = new Error(`Unknown bot: ${botId}.`)
@@ -294,6 +344,7 @@ export function openSessionStore(stateRoot) {
     }
     const at = isoNow(now)
     const content = textOf(text)
+    const messageOrigin = originOf(origin, 'origin') ?? 'chat'
     let session = load(botId)
     if (session === null) {
       session = {
@@ -312,7 +363,13 @@ export function openSessionStore(stateRoot) {
       error.code = ERROR_CODES.queueFull
       throw error
     }
-    const message = { seq: session.lastSeq + 1, at, role: 'user', text: content }
+    const message = {
+      seq: session.lastSeq + 1,
+      at,
+      role: 'user',
+      text: content,
+      ...(messageOrigin === 'chat' ? {} : { origin: messageOrigin }),
+    }
     appendMessage(root, botId, message)
     const next = {
       schema: SESSION_SCHEMA_VERSION,
@@ -320,7 +377,10 @@ export function openSessionStore(stateRoot) {
       sessionId: session.sessionId,
       state: 'queued',
       lastSeq: message.seq,
-      queue: [...session.queue, { seq: message.seq, at, text: content }],
+      queue: [
+        ...session.queue,
+        { seq: message.seq, at, text: content, ...(messageOrigin === 'chat' ? {} : { origin: messageOrigin }) },
+      ],
       createdAt: session.createdAt,
       updatedAt: at,
       ...(session.detached === undefined ? {} : { detached: session.detached }),
@@ -578,6 +638,7 @@ export function openSessionRunner({ stateRoot, runtime, getBot, logger, detached
             history: messages,
             sessionId: next.session.sessionId,
             messageSeq: next.item.seq,
+            origin: next.item.origin,
             botId,
             stateRoot,
           })
@@ -599,6 +660,7 @@ export function openSessionRunner({ stateRoot, runtime, getBot, logger, detached
           history: messages,
           sessionId: next.session.sessionId,
           messageSeq: next.item.seq,
+          origin: next.item.origin,
         })
         if (typeof reply?.text !== 'string' || reply.text.trim() === '') {
           const error = new Error('The runtime returned no text.')
@@ -703,13 +765,13 @@ export function openSessionRunner({ stateRoot, runtime, getBot, logger, detached
     for (const item of pending) startDetachedPoll(item.botId, item.detached.taskId)
   }
 
-  function send(botId, text) {
+  function send(botId, text, options = {}) {
     if (runtime.available !== true) {
       const error = new Error('The cloud bot runtime is not wired in this build; no turn was sent.')
       error.code = ERROR_CODES.runtimeUnavailable
       throw error
     }
-    const result = store.enqueue(botId, text)
+    const result = store.enqueue(botId, text, options)
     kick(botId)
     return result
   }

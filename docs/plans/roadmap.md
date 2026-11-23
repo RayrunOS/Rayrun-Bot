@@ -7,8 +7,9 @@
 常驻云端 runtime 与 bot↔云端 session 映射已有 dev 预览（多 bot 单 host E2E 通过）；
 本地 typed 审批执行（机器 start/stop/pause/resume）与云提案 bridge 已有预览；真实
 cloud proposal、start/stop/pause/resume、denial/Continue 与下一轮 context 已 live；
-远程审批执行和 routines 尚未构建，生产镜像/部署未交付。实现状态以
-[12-status.md](../12-status.md) 为准。日期刻意省略。*
+本地最小 routines（本地 scheduler 入队普通 turn）与 cloudHost 模式的云端 routine
+调度预览（fake E2E）已实现；云端 routine 的 live 验证、远程审批执行和生产镜像/
+部署尚未交付。实现状态以 [12-status.md](../12-status.md) 为准。日期刻意省略。*
 
 ## 我们在哪（M0 — bootstrap）
 
@@ -43,8 +44,11 @@ cloud proposal、start/stop/pause/resume、denial/Continue 与下一轮 context 
   resume；云端凭据动作仍等待平台 host/agent 隔离（ADR-001）；云提案 bridge、
   start/stop/pause/resume、denial/Continue 与下一轮 context 已 live。文件邮箱
   不是授权边界。
-- **Routines，最小版（P1；决策未定，ADR-009）。** 一个定时 prompt 唤醒 bot；不做
-  触发器市场。
+- **Routines，最小版（ADR-009，2026-11-23）。** 默认由本地 scheduler 按间隔把
+  普通 prompt 入队 bot 的 session；cloudHost 模式改由云 host 读取镜像定义调度，
+  可在本地 DSH 停止时运行（机器/runtime 需 Running），结果回导本地 history。
+  支持创建、启停、删除，不做 cron、事件触发或触发器市场；云端路径是预览，未
+  live。
 - **成本栏。** 机时与余额可见；idle stop 仍是插件选项（只停，永不 destroy）。
 - **打包与 CI。** npm 包、与 DSH 的版本兼容、测试和发布路径。
 

@@ -103,8 +103,9 @@ ADR-019（2026-11-23）把**本地 DSH host** 定为凭据/执行器在本地动
   或 `exec-<id>.json` claim；但**它仍能读/改自己的 workspace、提案和 transcript**，
   所以 proposal 必须当不可信输入重新校验。
 - **首版只保护 typed 本地动作。** allowlist 只有 `rayrun.machine.start` /
-  `rayrun.machine.stop`；`destroy`、创建机器、shell、任意命令/URL 不在其中。其他
-  本地动作、云端凭据动作仍需后续工作。
+  `rayrun.machine.stop` / `rayrun.machine.pause` / `rayrun.machine.resume`；
+  `destroy`、创建机器、shell、任意命令/URL 不在其中。其他本地动作、云端凭据动作
+  仍需后续工作。
 - **不是沙箱、不是每 bot 隔离。** 云端 agent 仍是 root、`danger-full-access`；多 bot
   仍共享机器。审批只保护需要本地执行的动作，不使被攻陷的 bot 变得可信。
 - **本地不在线就等待。** chat 审批等待，background 按 TTL 拒绝；没有后台自动批准。
@@ -117,6 +118,18 @@ ADR-019（2026-11-23）把**本地 DSH host** 定为凭据/执行器在本地动
   machine.stop → 停机 outbox → 重启补传，以及 machine.start 审批和下一轮
   recent-approval context 已 live 通过（2026-11-23）。云端凭据动作尚未 live 验证；
   见 [`12-status.md`](12-status.md)。
+
+### 4.5 Routine 定义与结果
+
+- routine 定义是用户意图，但云端镜像 `routines.json`、`routines-state.json` 和
+  `routine-results/` 都在 agent 可写 workspace 内，必须当不可信输入重新校验。
+  cloud host 校验定义并维护自己的 claim；本地 bridge 校验每个结果后才写本地。
+- routine 结果只作为展示历史，不写 decision、execution claim 或 session 队列；
+  它不能批准动作。routine 轮次产生的审批仍是 `background`，30 分钟过期。
+- routine turn 走普通 send 路径，可能唤醒停止/暂停的机器并产生费用；启用 routine
+  是持续授权，不是逐次审批。cloud routine scheduler 是预览，尚未 live。
+- 被攻陷的云端 agent 仍能在自己的 workspace 内写定义/结果；本地校验失败即拒绝，
+  不把 workspace 内容当作可信控制面。
 
 ## 5. 不保护什么
 

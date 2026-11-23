@@ -103,6 +103,21 @@ const required = [
   'details.usage',
   'routine.emptyHint',
   'routine.paused',
+  'routine.every',
+  'routine.everyHours',
+  'routine.everyDays',
+  'routine.origin',
+  'routine.add',
+  'routine.titleLabel',
+  'routine.promptLabel',
+  'routine.minutesLabel',
+  'routine.costHint',
+  'routine.create',
+  'routine.cancel',
+  'routine.remove',
+  'routine.createFailed',
+  'routine.updateFailed',
+  'routine.removeFailed',
   'library.emptyHint',
   'computer.live',
   'computer.reconnecting',
@@ -339,5 +354,19 @@ assert.match(client, /const routinesPaused = bot\.routines\.length > 0 && bot\.r
 assert.equal(client.includes("'data-paused': 'true'"), true)
 assert.match(client, /t\('routine\.paused'\)/)
 assert.match(client, /rb-paused/)
+assert.match(client, /function realRoutine/)
+assert.match(client, /hostRpc\('routines\.sync'/)
+assert.match(client, /hostRpc\('routines\.create'/)
+assert.match(client, /hostRpc\('routines\.update'/)
+assert.match(client, /hostRpc\('routines\.remove'/)
+assert.match(client, /function intervalLabel/)
+assert.match(client, /intervalLabel\(t, routine\.everyMinutes\)/)
+assert.match(client, /routine\.everyDays/)
+assert.match(client, /routine\.everyHours/)
+assert.match(client, /t\('routine\.costHint'\)/)
+assert.match(client, /message\.origin === 'routine'/)
+assert.match(client, /t\('routine\.origin'\)/)
+assert.match(client, /onCreateRoutine/)
+assert.match(client, /onRemoveRoutine/)
 
 console.log('client contract ok')

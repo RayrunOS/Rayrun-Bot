@@ -96,7 +96,8 @@ context 已 live 通过（2026-11-23）。其他动作和云端凭据动作仍�
 
 **TTL**：
 
-- background（routines/后台任务）：30 分钟后过期即拒绝。
+- background（routines/后台任务）：30 分钟后过期即拒绝。本地 routine 轮次把
+  `origin: routine` 传到 cloud task，cloud host 写出的提案标为 `background`。
 - chat（用户刚发起的对话）：不设计时，一直等待；面板关闭不等于同意；本地 DSH 不在线
   时也不会自动执行。
 - 过期/未知/损坏：拒绝，不重试为“已批准”。

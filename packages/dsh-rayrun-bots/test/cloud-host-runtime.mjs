@@ -124,6 +124,22 @@ check('start uploads one task and returns a detached record', async () => {
   assert.equal(hostRuntimeName(), 'bot-host')
 })
 
+check('carries routine origin into the cloud task', async () => {
+  const { root, runtime, uploads } = setup()
+  const started = await runtime.start({
+    bot,
+    text: 'routine prompt',
+    history: [],
+    messageSeq: 1,
+    origin: 'routine',
+    botId: bot.id,
+    stateRoot: root,
+  })
+  const task = JSON.parse(uploads[0].text)
+  assert.equal(task.id, started.taskId)
+  assert.equal(task.origin, 'routine')
+})
+
 check('includes recent local approval outcomes in the next prompt', async () => {
   const { root, runtime, uploads } = setup()
   const bot = openBotStore(root).create({ id: 'context-bot', name: 'Context Bot', label: 'Context' })

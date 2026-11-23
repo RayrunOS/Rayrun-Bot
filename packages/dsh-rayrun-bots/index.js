@@ -17,6 +17,7 @@
 import { readFileSync } from 'node:fs'
 import { createApprovalActionExecutor, normalizeApprovalAction } from './lib/approval-actions.js'
 import { createCloudApprovalBridge } from './lib/cloud-approval-bridge.js'
+import { createCloudRoutineBridge } from './lib/cloud-routine-bridge.js'
 import { openApprovalExecutor } from './lib/approval-executor.js'
 import { openApprovalStore } from './lib/approvals.js'
 import { openBotStore } from './lib/bots.js'
@@ -28,6 +29,8 @@ import { createRayrunDetachedRuntime } from './lib/rayrun-detached-runtime.js'
 import { createRayrunAgentRuntime } from './lib/rayrun-runtime.js'
 import { createRayrunRpc } from './lib/rayrun-rpc.js'
 import { readJsonBody, sendError, sendJson } from './lib/rpc.js'
+import { createRoutineScheduler } from './lib/routine-scheduler.js'
+import { openRoutineStore } from './lib/routines.js'
 import { validateRuntime } from './lib/runtime.js'
 import { openSessionRunner } from './lib/sessions.js'
 
@@ -68,21 +71,86 @@ function profileDirectory(ctx) {
 
 /** Run one roster action and return the success body. */
 function botAction(action, payload, ctx) {
-  const store = openBotStore(resolveStateRoot({ profileDir: profileDirectory(ctx) }))
+  const stateRoot = resolveStateRoot({ profileDir: profileDirectory(ctx) })
+  const store = openBotStore(stateRoot)
+  const routines = openRoutineStore(stateRoot)
   switch (action) {
-    case 'bots.list':
-      return { ok: true, bots: store.list() }
-    case 'bots.get':
-      return { ok: true, bot: store.get(payload.id) }
+    case 'bots.list': {
+      const bots = store.list()
+      return {
+        ok: true,
+        bots,
+        routines: Object.fromEntries(bots.map((bot) => [bot.id, routines.list(bot.id)])),
+      }
+    }
+    case 'bots.get': {
+      const bot = store.get(payload.id)
+      return { ok: true, bot, routines: routines.list(bot.id) }
+    }
     case 'bots.create': {
       const input = { ...payload }
       delete input.action
-      return { ok: true, bot: store.create(input) }
+      const bot = store.create(input)
+      return { ok: true, bot, routines: [] }
     }
-    case 'bots.update':
-      return { ok: true, bot: store.update(payload.id, payload.patch) }
+    case 'bots.update': {
+      const bot = store.update(payload.id, payload.patch)
+      return { ok: true, bot, routines: routines.list(bot.id) }
+    }
     case 'bots.delete':
       return { ok: true, deleted: store.remove(payload.id) }
+    default: {
+      const error = new Error(`Unknown action: ${action}`)
+      error.status = 404
+      throw error
+    }
+  }
+}
+
+/** Mirror a routine mutation to the cloud host without delaying the local write. */
+function syncRoutineDefinitions(service, botId) {
+  if (!service.bridge) return
+  void service.bridge.sync(botId).catch((error) => {
+    try {
+      service.logger?.warn?.(`dsh-rayrun-bots: routine sync failed: ${String(error?.message ?? error).slice(0, 200)}`)
+    } catch {
+      // Logging must not change the local mutation.
+    }
+  })
+}
+
+/** Run one routine action for a real bot. All times and IDs are host-owned. */
+async function routineAction(action, payload, service) {
+  const bot = service.bots.get(payload.botId)
+  switch (action) {
+    case 'routines.list':
+      return { ok: true, routines: service.routines.list(bot.id) }
+    case 'routines.sync': {
+      if (!service.bridge) {
+        return { ok: true, uploaded: false, imported: 0, skipped: 'cloud_host_disabled' }
+      }
+      return { ok: true, ...(await service.bridge.sync(bot.id)) }
+    }
+    case 'routines.create': {
+      const routine = service.routines.create(bot.id, {
+        title: payload.title,
+        prompt: payload.prompt,
+        everyMinutes: payload.everyMinutes,
+        ...(payload.enabled === undefined ? {} : { enabled: payload.enabled }),
+      })
+      syncRoutineDefinitions(service, bot.id)
+      return { ok: true, routine, routines: service.routines.list(bot.id) }
+    }
+    case 'routines.update': {
+      const routine = service.routines.update(bot.id, payload.id, payload.patch)
+      syncRoutineDefinitions(service, bot.id)
+      return { ok: true, routine, routines: service.routines.list(bot.id) }
+    }
+    case 'routines.remove': {
+      const removed = service.routines.remove(bot.id, payload.id)
+      syncRoutineDefinitions(service, bot.id)
+      return { ok: true, removed, routines: service.routines.list(bot.id) }
+    }
     default: {
       const error = new Error(`Unknown action: ${action}`)
       error.status = 404
@@ -96,6 +164,8 @@ const STATUS_BY_CODE = new Map([
   [ERROR_CODES.botUnknown, 404],
   [ERROR_CODES.botInvalid, 400],
   [ERROR_CODES.botExists, 409],
+  [ERROR_CODES.routineUnknown, 404],
+  [ERROR_CODES.routineInvalid, 400],
   [ERROR_CODES.sessionInvalid, 400],
   [ERROR_CODES.runtimeUnavailable, 503],
   [ERROR_CODES.queueFull, 429],
@@ -308,6 +378,44 @@ export function apply(ctx, options = {}) {
     return approvalService
   }
 
+  let routineSchedulerService
+  function routineScheduler() {
+    if (routineSchedulerService === undefined) {
+      const stateRoot = resolveStateRoot({ profileDir: profileDirectory(ctx) })
+      routineSchedulerService = createRoutineScheduler({
+        stateRoot,
+        // The cloud host owns scheduling when it is enabled; the local
+        // scheduler is the non-cloudHost fallback.
+        canRun: () => runtime.available === true && cloudHostRuntime === undefined,
+        isBusy: (botId) => {
+          const state = sessions().runner.status(botId)
+          return state?.state === 'running' || state?.state === 'queued'
+        },
+        send: (botId, text, options) => sessions().runner.send(botId, text, options),
+        logger: ctx.logger,
+      })
+    }
+    return routineSchedulerService
+  }
+
+  let routineService
+  function routines() {
+    if (routineService === undefined) {
+      const stateRoot = resolveStateRoot({ profileDir: profileDirectory(ctx) })
+      routineService = {
+        bots: openBotStore(stateRoot),
+        routines: openRoutineStore(stateRoot),
+        bridge: cloudHostRuntime === undefined ? null : createCloudRoutineBridge({
+          stateRoot,
+          getTools: () => ctx.get?.('tools'),
+          getMachine: () => cloudHostRuntime.ensureMachine({ start: false }),
+        }),
+        logger: ctx.logger,
+      }
+    }
+    return routineService
+  }
+
   ctx.inject(['webServer'], (child) => {
     webServer = child.webServer
     child.effect(() =>
@@ -360,6 +468,14 @@ export function apply(ctx, options = {}) {
                 }
                 return
               }
+              if (typeof payload?.action === 'string' && payload.action.startsWith('routines.')) {
+                try {
+                  sendJson(res, 200, await routineAction(payload.action, payload, routines()))
+                } catch (error) {
+                  sendActionError(res, error)
+                }
+                return
+              }
               if (typeof payload?.action === 'string' && payload.action.startsWith('approvals.')) {
                 try {
                   if (payload.action === 'approvals.propose' && req.headers?.origin) {
@@ -384,5 +500,14 @@ export function apply(ctx, options = {}) {
         },
       }),
     )
+    const hasStateRoot = profileDirectory(ctx) !== undefined
+      || (typeof process.env.DSH_HOME === 'string' && process.env.DSH_HOME.trim() !== '')
+    if (hasStateRoot) {
+      child.effect(() => {
+        const scheduler = routineScheduler()
+        scheduler.start()
+        return () => scheduler.stop()
+      })
+    }
   })
 }

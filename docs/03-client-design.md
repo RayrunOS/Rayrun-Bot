@@ -1,6 +1,6 @@
 # 03 — 客户端设计
 
-> 状态：2026-11-21。本文定义 DSH 客户端半区的表面、交互、RPC 分组与失败状态。
+> 状态：2026-11-23。本文定义 DSH 客户端半区的表面、交互、RPC 分组与失败状态。
 > 产品方向见 [`00-product-direction.md`](00-product-direction.md)；技术基线见
 > [`01-system-architecture.md`](01-system-architecture.md)；视觉规范见
 > [`design/ui-design.md`](design/ui-design.md)；交付计划见
@@ -168,7 +168,9 @@ Open → live → Stop → sleeping 已在同一本机 DSH 页面验证。
 机器名与状态（Running → live，Starting/Stopping → reconnecting，Stopped/Paused →
 sleeping），用量块显示真实余额与机时；未连接时显示 `—` / `Not connected` 和
 `Connect Rayrun to see usage.`，不再显示样本数字。`?computer=` 预览仍可覆盖状态；
-receipts、routines、library 和消息仍是页内样本，Preview 药丸继续标注。
+receipts、library、示例 bot 的 routines 和消息仍是页内样本；真实 bot 的 routines
+已接 host，可创建、启停和删除，轮询时 `routines.sync` 会把云端结果导入并在对话中
+显示，Preview 药丸继续标注页内样本。
 
 **空 roster**：列表和中心区显示 `No bots yet` + `Create bot`；新建 bot 后进入空对话
 欢迎态并聚焦 composer，details 面板的 Recent / Upcoming / Library 显示空态和一句内容

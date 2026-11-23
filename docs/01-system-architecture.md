@@ -1,6 +1,6 @@
 # 01 — 系统架构
 
-> 状态：2026-11-20。本文是**技术层的唯一真相源**：系统由什么组成、边界在哪、状态怎么
+> 状态：2026-11-23。本文是**技术层的唯一真相源**：系统由什么组成、边界在哪、状态怎么
 > 流转、信任模型是什么。
 > 产品范围与验收以 [`00-product-direction.md`](00-product-direction.md) 为准；当前实现
 > 状态以 [`12-status.md`](12-status.md) 为准；未决架构决策见
@@ -52,7 +52,7 @@
                         ▼
                  本地 DSH host + 插件 host half                  [现有 / 计划 *]
                  tools · 同源 RPC · tool guard
-                 bot registry* · bot↔session 映射* · scheduler*
+                 bot registry* · bot↔session 映射* · routine scheduler（本地/云预览）
                         │  HTTPS；Rayrun token 不离开 host
                         ▼
                  Rayrun API · https://api.rayrunos.com/v1
@@ -97,8 +97,12 @@
 6. **审批通道。** 受控动作由云端 bot 提案 → 本地控制面卡片 → 本地决定与执行；
    云端不写 decision。ADR-019 决定本地 DSH host 为本地动作的审批权威；ADR-001 的
    平台隔离仍用于云端凭据动作。失败即拒绝；浏览器先做，IM 是 v0.2。当前边界见 §4.3。
-7. **Routines / triggers。** 定时或事件唤醒 bot。DSH core 有 scheduling，web profile
-   会挂载；headless cloud profile 不会。routines 依赖常驻 bot runtime，范围见 ADR-009。
+7. **Routines / triggers。** 非 cloudHost 模式由本地 DSH host 的 scheduler 检查
+   每 bot 的 `routines.json`，到期后入队一条普通 turn；cloudHost 模式停用本地
+   scheduler，由云 host 读取镜像定义调度，并在本地 DSH 停止时继续运行（前提是
+   机器和 runtime 正在运行）。结果通过 `routine-results/` 回导本地 history。两者
+   都不做 backfill、不新增审批绕过；云端路径是预览、尚未 live，cron 和事件触发
+   未实现。范围与限制见 ADR-009。
 8. **模型 provider。** v0.1 只接 DeepSeek；其他 provider 由 DSH 负责，不在本仓库设计
    provider 抽象。
 
@@ -385,7 +389,7 @@ tombstone，action hash 的 canonicalization 未定义；见 ADR-011/012。
 - 云电脑插件的 adapter：能力调用、版本检查、缺失时的清晰错误；
 - bot 注册表、roster UI、bot↔session 持久化；
 - 本地审批执行器与浏览器卡（typed 机器 start/stop/pause/resume；云提案 live E2E 与 IM 后续）；
-- routines/trigger 在 DSH scheduling 上的接线；
+- routines 的本地调度（MVP）与未来 trigger 接线；
 - 成本栏与诚实的状态报告；
 - 打包、测试和文档。
 

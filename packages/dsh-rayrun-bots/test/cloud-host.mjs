@@ -72,6 +72,26 @@ check('processes one task and writes per-bot transcript, outbox and global state
   assert.equal(state.bots[0].botId, 'bot-a')
 })
 
+check('keeps a routine origin on the transcript and passes it to the agent', async () => {
+  let seen = null
+  const { host } = makeHost({
+    agent: async (input) => {
+      seen = input
+      return 'routine reply'
+    },
+  })
+  inbox(host, 'bot-a', '0001.json', { id: 'r1', text: 'routine prompt', origin: 'routine' })
+  await host.processNext()
+  assert.equal(seen.origin, 'routine')
+  const transcript = messages(host, 'bot-a')
+  assert.equal(transcript[0].origin, 'routine')
+  assert.equal(transcript[1].origin, undefined)
+
+  inbox(host, 'bot-a', '0002.json', { id: 'r2', text: 'bad origin', origin: 'shell' })
+  const failed = await host.processNext()
+  assert.match(failed.error, /origin/)
+})
+
 check('recovers an in-flight task without duplicating the user message', async () => {
   const { host } = makeHost()
   const paths = host.pathsFor('bot-a')

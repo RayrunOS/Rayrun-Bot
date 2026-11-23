@@ -103,8 +103,9 @@ typed `rayrun.machine.start/stop/pause/resume` 做审批与执行：批准后写
 平台隔离，ADR-001）；示例 bot 卡片和设置仍是
 页内预览。setup 的 Rayrun/电脑步骤，以及详情和 Settings 的用量读取，会真正
 调用云电脑插件。常驻 host 的 bot↔云端 session 映射已有 dev 预览（多 bot 单 host
-E2E 通过），但生产镜像/部署未交付；routines 与独立成本栏尚未构建；`rayrun_agent`
-adapter 不拦截外部动作，prompt 里的“先询问”只是指引。
+E2E 通过），但生产镜像/部署未交付；routines 默认由本地 DSH host 调度，
+cloudHost 模式改由云 host 调度并回导结果（预览、fake E2E、未 live）；独立成本栏
+尚未构建；`rayrun_agent` adapter 不拦截外部动作，prompt 里的“先询问”只是指引。
 状态以 [`12-status.md`](12-status.md) 为准。
 
 **从 tarball 安装**（发布产物的内容）：
@@ -132,13 +133,15 @@ patch、`lib/*.js`、图标、README 和 LICENSE；CI 会把打出的 tarball �
    依赖。
 2. 登录 Rayrun 一次；向导创建云电脑。
 3. 创建 bot：名字、职责、指令、skills；它在电脑上有自己的 session。
-4. 和它对话，或让 routine 在你离开时唤醒它。
+4. 和它对话，或创建一个 routine 让 bot 按间隔运行（本地 DSH host 需保持运行）。
 5. 在面板里批准它的第一个受控动作。
 
-第 2 步的 Rayrun 登录和云电脑创建经云电脑插件的同源 RPC 真正到达 Rayrun；第 3–5 步
-（routine 唤醒、云 bot 自主审批提案、更多受控动作）尚未打通。host 的 `session.*`
-已可执行一轮；真实 bot 的审批卡和本地 typed start/stop/pause/resume 执行已接，示例 bot 与设置
-仍是页内预览。
+第 2 步的 Rayrun 登录和云电脑创建经云电脑插件的同源 RPC 真正到达 Rayrun；本地
+routine 已能在 host 存活时入队普通 turn，详情面板的创建/暂停/删除已在本地 DSH
+页面验证，但尚未等待一次自动触发；cloudHost 模式的云端 routine 调度有 fake E2E，
+尚未 live。云 bot 自主审批提案和更多受控动作已部分打通。
+host 的 `session.*` 已可执行一轮；真实 bot 的审批卡和本地 typed
+start/stop/pause/resume 执行已接，示例 bot 与设置仍是页内预览。
 详见 [`plans/roadmap.md`](plans/roadmap.md)、[`plans/mvp-plan.md`](plans/mvp-plan.md)
 和 [`12-status.md`](12-status.md)。
 

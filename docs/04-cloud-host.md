@@ -1,6 +1,6 @@
 # 04 — 云端 bot runtime（bot host）
 
-> 状态：2026-11-20。本文定义云电脑上的 **bot runtime**（历史名 bot host）：进程模型、
+> 状态：2026-11-23。本文定义云电脑上的 **bot runtime**（历史名 bot host）：进程模型、
 > 队列、session 映射、执行、心跳与恢复。本地 bot 控制面见
 > [`01-system-architecture.md`](01-system-architecture.md) §1.4 与 ADR-016；
 > 技术基线见 [`01-system-architecture.md`](01-system-architecture.md)；
@@ -130,14 +130,37 @@ DSH agent sessions（bot）
 }
 ```
 
-完整字段、状态机与恢复规则见 ADR-012；在执行日志/幂等定稿前不要实现副作用重试
-（ADR-005）。
+当前预览 host 的任务文件是 `{ schema, id, text, at, origin?, routineId? }`；
+`origin: "routine"` 由本地 scheduler 或云端 routine scheduler 设置，host 保留它，
+并把该轮产生的审批提案标为 `background`（30 分钟过期）。完整字段、状态机与恢复
+规则见 ADR-012；在执行日志/幂等定稿前不要实现副作用重试（ADR-005）。
 
 ### 3.3 控制通道
 
 本地 → 云端的任务写入 `queue/inbox/<itemId>.json`；云端状态写
 `queue/state/<itemId>.json`。**每个文件一个写者，不做共享 JSONL 追加**；平台文件 API
 目前没有可用的 CAS（[`08-integration.md`](08-integration.md) §4）。详见 ADR-003。
+
+### 3.4 Routine 调度（预览）
+
+cloudHost runtime 启用时，本地 DSH host 停用本地 scheduler，把每 bot 的
+`routines.json` 和 `bot.json` 镜像到 `/workspace/.rayrun/bots/<id>/`。云 host：
+
+- 读取并重新校验镜像定义；损坏或未知字段只记录，不阻塞其他 bot；
+- 在 `bots/<id>/host/routines-state.json` 保存 `updatedAt`、`lastRunAt`、
+  `nextAt`；定义 `updatedAt` 变化时从新定义的 `nextAt` 重新开始；
+- 先写 state claim，再写 inbox task；崩溃不会重放同一间隔；
+- bot 有 inbox/processing 工作时跳过，下一 tick 再试；
+- 任务带 `origin: "routine"`、`routineId`；任务文本只是 routine prompt，执行前
+  `lib/prompt.mjs` 用镜像的 `bot.json` 组合完整 prompt（含 instructions 和结构化
+  审批提示），再交给 DSH；持久 DSH session 已带对话，prompt 不重放 transcript。
+  完成后写 `bots/<id>/routine-results/<taskId>.json`（保留最近 200 个）。
+
+本地 `routines.sync` 只在机器 Running 时上传定义和下载结果，不唤醒机器。结果经
+schema 校验后写本地 `routine-results/`（保留最近 400 个），由 `session.history`
+按时间合并；它不修改 `session.json`，也不是审批/执行记录。机器停止期间的定义编辑
+无法上传，启动后旧定义可能先运行一次，直到 sync 覆盖。该路径有 fake E2E，尚未
+live；失败任务目前只进 host 日志，不进入本地聊天。详见 ADR-009。
 
 ---
 

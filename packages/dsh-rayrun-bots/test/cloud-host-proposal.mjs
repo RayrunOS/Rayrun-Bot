@@ -39,6 +39,21 @@ check('extracts a typed block, strips it from the reply and writes the proposal'
   assert.deepEqual(stored, parsed.proposal)
 })
 
+check('marks a routine proposal as background', () => {
+  const parsed = extractProposal(BLOCK('{"kind":"rayrun.machine.stop","machine":"box"}'), {
+    botId: 'cloud-bot',
+    origin: 'background',
+  })
+  assert.equal(parsed.error, null)
+  assert.equal(parsed.proposal.origin, 'background')
+  const invalid = extractProposal(BLOCK('{"kind":"rayrun.machine.stop","machine":"box"}'), {
+    botId: 'cloud-bot',
+    origin: 'shell',
+  })
+  assert.equal(invalid.proposal, null)
+  assert.match(invalid.error, /origin/)
+})
+
 check('uses the default machine and returns a non-empty reply when only the block is present', () => {
   const parsed = extractProposal('```rayrun-approval\n{"kind":"rayrun.machine.start"}\n```', {
     botId: 'cloud-bot',

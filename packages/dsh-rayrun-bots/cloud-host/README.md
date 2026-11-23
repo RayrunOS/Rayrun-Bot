@@ -16,6 +16,9 @@ the machine** with one serial queue, round-robin across bots:
 - duplicate task ids are idempotent;
 - a DSH session id persisted per bot in `bots/<id>/host/session-id` and reused
   for that bot's next task;
+- an optional task `origin` (`chat` or `routine`); routine tasks keep the origin
+  in the transcript, and a structured approval block from one is written with
+  `origin: background` so the local approval TTL applies;
 - stdout/state logs do not contain credential values.
 
 The library agent defaults to `echo:<text>` for tests. `host.mjs` uses
@@ -32,14 +35,18 @@ token; `DEEPSEEK_API_KEY` is only observed as a boolean.
 | `lib/dsh-agent.mjs` | Headless DSH profile bootstrap and `--json`/`--session-id` runner |
 | `host.mjs` | Process entry point: heartbeat and poll loops, SIGTERM/SIGINT |
 | `lib/proposal.mjs` | Parse the structured approval block and write one typed proposal |
+| `lib/routines.mjs` | Validate mirrored routine definitions and claim cloud schedule state |
+| `lib/prompt.mjs` | Validate mirrored `bot.json` and build the full routine prompt |
 | `bin/propose.mjs` | Optional CLI proposal writer for shell-capable bots; no token, no network |
 | `test/cloud-host.mjs` | Host checks with a fake agent; no framework, no network |
+| `test/cloud-host-routines.mjs` | Cloud routine scheduler checks with a fake agent |
 | `test/cloud-host-dsh-agent.mjs` | DSH agent checks with a fake `dsh` executable |
 
 ## Run the checks
 
 ```bash
 node test/cloud-host.mjs
+node test/cloud-host-routines.mjs
 node test/cloud-host-dsh-agent.mjs
 ```
 
@@ -132,8 +139,34 @@ uploads them on the next sync. A live cloud-bot proposal -> local approve -> rea
 whose next-turn prompt carried the recent outcome, both passed on 2026-11-23;
 the live bot used the structured block, not the optional CLI.
 
+## Routine scheduling (preview)
+
+The local host mirrors each bot's `routines.json` and `bot.json` into the
+workspace while the machine is Running. The cloud host validates it, keeps its own claim in
+`bots/<id>/host/routines-state.json`, and enqueues at most one due routine per
+idle bot per tick:
+
+- the run is claimed before the inbox task is written, so a crash cannot replay
+  the same interval;
+- a bot with queued/processing work is skipped until a later tick;
+- missed intervals are not backfilled;
+- a routine task carries `origin: routine` and `routineId`; the task text is the
+  routine prompt, and `lib/prompt.mjs` expands it with the mirrored `bot.json`
+  and the structured approval hint before the DSH run; the persistent DSH session
+  carries the conversation, so the prompt does not replay the transcript;
+- its approval proposal is `background` and its successful reply is written to
+  `bots/<id>/routine-results/<taskId>.json` (latest 200 kept).
+
+The local `routines.sync` bridge uploads definitions and imports results only
+while the machine is Running; it never wakes a stopped machine. Imported results
+are display history merged by `session.history`, not queue state. The cloud
+scheduler has fake end-to-end coverage but no live Rayrun run yet. A failed
+routine task is logged but does not produce a local result file.
+
 ## Not built yet
 
 - a production guestd 0.6 + DSH image and build/deploy pipeline;
 - approval actions beyond machine start/stop/pause/resume;
+- live validation of the routine scheduler, routine failure display and
+  cron/event triggers;
 - package release and the one-install path.

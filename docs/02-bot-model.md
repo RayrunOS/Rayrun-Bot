@@ -1,6 +1,6 @@
 # 02 — Bot 模型
 
-> 状态：2026-11-20。本文定义 bot 是什么、`bot.json` 的字段与校验、默认指令模板、
+> 状态：2026-11-23。本文定义 bot 是什么、`bot.json` 的字段与校验、默认指令模板、
 > 生命周期与身份边界。产品方向见 [`00-product-direction.md`](00-product-direction.md)；
 > 技术基线见 [`01-system-architecture.md`](01-system-architecture.md)；未决决策见
 > [`adr/architecture-decisions.md`](adr/architecture-decisions.md)。
@@ -32,6 +32,7 @@
 | Skills | DSH skills 列表；v0.1 只登记，不提供市场 |
 | Memory | 机器上的每 bot 目录，保存笔记、产物与会话日志 |
 | Session | 持久 DSH session id；续接而不是重启 |
+| Routines | 每 bot 的定时 prompt；存在单独的 `routines.json`，不塞进 `bot.json` |
 | Computer | 用户的一台 Rayrun 云电脑；bots 共享，不是安全边界 |
 
 Bot 的定义是**用户意图**，运行态（session、memory、queue）在云电脑上。两者谁写、
@@ -85,6 +86,48 @@ Bot 的定义是**用户意图**，运行态（session、memory、queue）在云
 - `name` 是显示名，可在后续版本修改；`id` 不变，避免 session/审批/目录迁移。
 - 删除后用同一个 `id` 重建会与旧 session/审批混淆；建议 tombstone + 新 id，而不是
   复用（ADR-012）。
+
+### 2.4 `routines.json`
+
+Routine 的调度状态（`nextAt`、`lastRunAt`）会变化，但不应该 bump `bot.json` 的
+revision，所以它单独存放：
+
+```json
+{
+  "schema": 1,
+  "botId": "weekly-watch",
+  "routines": [
+    {
+      "id": "routine-<uuid>",
+      "title": "Morning inbox",
+      "prompt": "Summarize anything urgent in the inbox.",
+      "everyMinutes": 15,
+      "enabled": true,
+      "nextAt": "2026-11-23T10:15:00.000Z",
+      "createdAt": "2026-11-23T10:00:00.000Z",
+      "updatedAt": "2026-11-23T10:00:00.000Z"
+    }
+  ]
+}
+```
+
+- 每 bot 最多 32 条；`everyMinutes` 为 1–10080 的整数；`title` 单行，`prompt` 上限
+  8 KB；未知字段和错误类型失败关闭（`E_ROUTINE_INVALID`）。
+- 本地 host 是定义的唯一写者；到期后 scheduler 先 claim（写 `lastRunAt` 和下一个
+  `nextAt`），再把一条普通 turn 入队。错过多个间隔只补一次；claim 后入队失败不
+  重放，等待下一间隔。
+- 非 cloudHost 模式由本地 scheduler 执行。cloudHost 模式停用本地 scheduler，
+  把定义镜像到云端；云 host 在 `host/routines-state.json` 维护自己的 claim，并在
+  本地 DSH 停止时继续调度。云任务完成后写 `routine-results/`，本地
+  `routines.sync` 导入，`session.history` 合并展示。该云端路径是预览，尚未 live。
+- 机器停止期间不能同步定义；机器启动后，云端可能先按旧定义运行一次，直到本地
+  sync 覆盖。MVP 不承诺强一致。
+- routine turn 走与手动发送相同的 runtime 路径。机器已停止或暂停时，依赖可能按
+  普通 send 的行为唤醒它，产生机时费用；routine 的间隔和开关是持续授权，不是逐次
+  审批。
+- 删除 bot 时整个目录（含 `routines.json`）一起删除。Routine 不新增权限或审批绕过；
+  外部动作仍按 ADR-019 处理，routine 轮次产生的审批标记为 `background`，30 分钟后
+  过期。范围见 ADR-009。
 
 ---
 

@@ -138,6 +138,21 @@ window.__ModuleLoader__.load({
     "empty": "No routines yet.",
     "emptyHint": "Routines run on a schedule and stop for approval before acting outside your computer.",
     "paused": "All routines are paused.",
+    "origin": "Scheduled routine",
+    "every": "Every {minutes} min",
+    "everyHours": "Every {hours} h",
+    "everyDays": "Every {days} d",
+    "add": "New routine",
+    "titleLabel": "Routine name",
+    "promptLabel": "What should the bot do?",
+    "minutesLabel": "Every (minutes)",
+    "costHint": "A due run may wake a stopped computer and incur machine-hour charges.",
+    "create": "Create routine",
+    "cancel": "Cancel",
+    "remove": "Remove",
+    "createFailed": "Could not create the routine: {message}",
+    "updateFailed": "Could not update the routine: {message}",
+    "removeFailed": "Could not remove the routine: {message}",
     "on": "on",
     "off": "off"
   },
@@ -504,6 +519,21 @@ window.__ModuleLoader__.load({
     "empty": "还没有日程。",
     "emptyHint": "日程按计划运行；在电脑之外执行动作前会停下来等审批。",
     "paused": "所有日程都已暂停。",
+    "origin": "定时任务",
+    "every": "每 {minutes} 分钟",
+    "everyHours": "每 {hours} 小时",
+    "everyDays": "每 {days} 天",
+    "add": "新建日程",
+    "titleLabel": "日程名称",
+    "promptLabel": "Bot 要做什么？",
+    "minutesLabel": "间隔（分钟）",
+    "costHint": "到期运行可能会唤醒已停止的电脑，并产生机时费用。",
+    "create": "创建日程",
+    "cancel": "取消",
+    "remove": "删除",
+    "createFailed": "创建日程失败：{message}",
+    "updateFailed": "更新日程失败：{message}",
+    "removeFailed": "删除日程失败：{message}",
     "on": "开",
     "off": "关"
   },
@@ -876,6 +906,7 @@ window.__ModuleLoader__.load({
 .rb-card-expired { opacity: .72; }
 .rb-card-fields { display: flex; flex-wrap: wrap; gap: 6px; }
 .rb-chip { border: 1px solid #e4e8f0; border-radius: 999px; padding: 1px 7px; color: #5b6472; font-size: 10.5px; line-height: 1.6; }
+.rb-bubble .rb-chip { display: inline-block; margin-bottom: 4px; }
 .rb-chip-target { color: #3a4351; background: #f6f8fb; }
 .rb-card-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 .rb-card-title { font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; min-width: 0; }
@@ -928,6 +959,8 @@ window.__ModuleLoader__.load({
 .rb-routine { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 7px 0; border-bottom: 1px solid #eef1f6; }
 .rb-routine:last-child { border-bottom: 0; }
 .rb-routine .rb-t { font-size: 12px; }
+.rb-routine-head, .rb-routine-actions { display: flex; align-items: center; gap: 8px; }
+.rb-routine-form { margin-top: 12px; padding-top: 12px; border-top: 1px solid #eef1f6; }
 .rb-toggle { width: 34px; height: 19px; border-radius: 10px; border: 0; background: #cbd5e1; position: relative; flex: none; padding: 0; }
 .rb-toggle::after { content: ""; position: absolute; top: 2px; left: 2px; width: 15px; height: 15px; border-radius: 50%; background: #fff; transition: left .12s; }
 .rb-toggle.rb-on { background: #0e2050; }
@@ -1078,8 +1111,34 @@ window.__ModuleLoader__.load({
       return { color, background }
     }
 
+    /** Map one host routine to the client's display shape. */
+    function realRoutine(routine) {
+      return {
+        id: routine.id,
+        title: routine.title,
+        everyMinutes: routine.everyMinutes,
+        nextAt: routine.nextAt,
+        on: routine.enabled === true,
+        real: true,
+      }
+    }
+
+    function realRoutines(list) {
+      return Array.isArray(list) ? list.map(realRoutine) : []
+    }
+
+    function intervalLabel(t, minutes) {
+      if (Number.isInteger(minutes) && minutes > 0 && minutes % 1440 === 0) {
+        return t('routine.everyDays', { days: minutes / 1440 })
+      }
+      if (Number.isInteger(minutes) && minutes > 0 && minutes % 60 === 0) {
+        return t('routine.everyHours', { hours: minutes / 60 })
+      }
+      return t('routine.every', { minutes })
+    }
+
     /** Map one host roster entry to the client's bot shape; its session comes from the host. */
-    function realBot(bot) {
+    function realBot(bot, routines = []) {
       return {
         id: bot.id,
         name: bot.name,
@@ -1091,7 +1150,7 @@ window.__ModuleLoader__.load({
         messages: [],
         approvals: {},
         receipts: [],
-        routines: [],
+        routines: realRoutines(routines),
         library: [],
         session: null,
         sessionCursor: 0,
@@ -1218,7 +1277,9 @@ window.__ModuleLoader__.load({
 
     function sessionEntry(message, t) {
       const entry = { id: `session-${message.seq}`, at: message.at, text: message.text }
-      if (message.role === 'user') return { ...entry, kind: 'user' }
+      if (message.role === 'user') {
+        return { ...entry, kind: 'user', ...(message.origin === 'routine' ? { origin: 'routine' } : {}) }
+      }
       if (message.role === 'bot') return { ...entry, kind: 'bot' }
       return {
         ...entry,
@@ -1843,7 +1904,7 @@ window.__ModuleLoader__.load({
             const bots = Array.isArray(body.bots) ? body.bots : []
             if (cancelled || bots.length === 0) return
             setState((current) => {
-              const roster = bots.map(realBot)
+              const roster = bots.map((bot) => realBot(bot, body.routines?.[bot.id]))
               const selectedId = roster.some((bot) => bot.id === current.selectedId)
                 ? current.selectedId
                 : roster[0].id
@@ -1958,6 +2019,7 @@ window.__ModuleLoader__.load({
         let cancelled = false
         void (async () => {
           try {
+            void hostRpc('routines.sync', { botId: selected.id }).catch(() => null)
             const [body, approvalBody] = await Promise.all([
               hostRpc('session.history', { botId: selected.id, tail: true }),
               hostRpc('approvals.list', { botId: selected.id }).catch(() => null),
@@ -1983,15 +2045,31 @@ window.__ModuleLoader__.load({
         if (!selected || selected.source !== 'real' || host.status !== 'loaded') return undefined
         let cancelled = false
         let timer
+        let running = false
         const load = async () => {
+          if (running) return
+          running = true
           try {
             await hostRpc('approvals.sync', { botId: selected.id })
             if (cancelled) return
-            const body = await hostRpc('approvals.list', { botId: selected.id })
+            await hostRpc('routines.sync', { botId: selected.id }).catch(() => null)
             if (cancelled) return
-            updateBot(selected.id, (bot) => applyApprovals(bot, body.approvals, t))
+            const [body, history] = await Promise.all([
+              hostRpc('approvals.list', { botId: selected.id }),
+              hostRpc('session.history', { botId: selected.id, tail: true }),
+            ])
+            if (cancelled) return
+            updateBot(selected.id, (bot) => {
+              if (bot.working || sessionWorking(history.session)) {
+                return applyApprovals(bot, body.approvals, t)
+              }
+              const next = applySession(bot, history, t, { append: true })
+              return applyApprovals(next, body.approvals, t)
+            })
           } catch {
             if (timer) clearInterval(timer)
+          } finally {
+            running = false
           }
         }
         timer = setInterval(load, 5000)
@@ -2036,11 +2114,15 @@ window.__ModuleLoader__.load({
               const cursor = Number.isInteger(body.message?.seq)
                 ? body.message.seq
                 : Number.isInteger(body.session?.lastSeq) ? body.session.lastSeq : 0
+              const serverId = Number.isInteger(body.message?.seq) ? `session-${body.message.seq}` : null
               updateBot(botId, (bot) => ({
                 ...bot,
                 session: body.session ?? bot.session,
                 sessionCursor: cursor,
                 historyLoaded: true,
+                messages: serverId
+                  ? bot.messages.map((entry) => (entry.id === userId ? { ...entry, id: serverId } : entry))
+                  : bot.messages,
               }))
               startPolling(botId, cursor)
             } catch (error) {
@@ -2166,6 +2248,51 @@ window.__ModuleLoader__.load({
       }
 
       const flash = (text) => patch({ flash: text, live: text })
+
+      const toggleRoutine = async (bot, index) => {
+        const routine = bot.routines[index]
+        if (!routine) return
+        if (bot.source !== 'real') {
+          updateBot(bot.id, (current) => ({
+            ...current,
+            routines: current.routines.map((item, routineIndex) => (
+              routineIndex === index ? { ...item, on: !item.on } : item
+            )),
+          }))
+          return
+        }
+        try {
+          const body = await hostRpc('routines.update', {
+            botId: bot.id,
+            id: routine.id,
+            patch: { enabled: !routine.on },
+          })
+          updateBot(bot.id, (current) => ({ ...current, routines: realRoutines(body.routines) }))
+        } catch (error) {
+          flash(t('routine.updateFailed', { message: String(error?.message ?? error) }))
+        }
+      }
+
+      const createRoutine = async (bot, draft) => {
+        const body = await hostRpc('routines.create', {
+          botId: bot.id,
+          title: draft.title,
+          prompt: draft.prompt,
+          everyMinutes: draft.everyMinutes,
+        })
+        updateBot(bot.id, (current) => ({ ...current, routines: realRoutines(body.routines) }))
+      }
+
+      const removeRoutine = async (bot, index) => {
+        const routine = bot.routines[index]
+        if (!routine) return
+        try {
+          const body = await hostRpc('routines.remove', { botId: bot.id, id: routine.id })
+          updateBot(bot.id, (current) => ({ ...current, routines: realRoutines(body.routines) }))
+        } catch (error) {
+          flash(t('routine.removeFailed', { message: String(error?.message ?? error) }))
+        }
+      }
 
       const openComputer = async () => {
         const win = window.open('', '_blank')
@@ -2357,10 +2484,9 @@ window.__ModuleLoader__.load({
             usagePreview: LOW_BALANCE_PREVIEW,
             low,
             idle: idleLabel(t, state.settings.idle),
-            onToggleRoutine: (index) => updateBot(selected.id, (bot) => ({
-              ...bot,
-              routines: bot.routines.map((routine, routineIndex) => (routineIndex === index ? { ...routine, on: !routine.on } : routine)),
-            })),
+            onToggleRoutine: (index) => toggleRoutine(selected, index),
+            onCreateRoutine: (draft) => createRoutine(selected, draft),
+            onRemoveRoutine: (index) => removeRoutine(selected, index),
             onComputer: openComputer,
             onStop: stopComputer,
           }) : null,
@@ -2625,7 +2751,16 @@ window.__ModuleLoader__.load({
             }
             if (entry.kind === 'day') return h('div', { key: entry.id, className: 'rb-day' }, textOf(entry, t))
             if (entry.kind === 'user') {
-              return h('div', { key: entry.id, className: 'rb-msg rb-user' }, h('div', { className: 'rb-bubble' }, textOf(entry, t)))
+              return h(
+                'div',
+                { key: entry.id, className: 'rb-msg rb-user' },
+                h(
+                  'div',
+                  { className: 'rb-bubble' },
+                  entry.origin === 'routine' ? h('div', { className: 'rb-chip' }, t('routine.origin')) : null,
+                  textOf(entry, t),
+                ),
+              )
             }
             if (entry.kind === 'computer') {
               return h(
@@ -2694,9 +2829,35 @@ window.__ModuleLoader__.load({
       )
     }
 
-    function Details({ t, catalog, bot, tab, onTab, computer, machine, configured, overview, usageError, usagePreview, low, idle, onToggleRoutine, onComputer, onStop }) {
+    function Details({ t, catalog, bot, tab, onTab, computer, machine, configured, overview, usageError, usagePreview, low, idle, onToggleRoutine, onCreateRoutine, onRemoveRoutine, onComputer, onStop }) {
       const name = botName(bot, t)
       const job = botJob(bot, t)
+      const [routineOpen, setRoutineOpen] = useState(false)
+      const [routineTitle, setRoutineTitle] = useState('')
+      const [routinePrompt, setRoutinePrompt] = useState('')
+      const [routineMinutes, setRoutineMinutes] = useState('15')
+      const [routineBusy, setRoutineBusy] = useState(false)
+      const [routineError, setRoutineError] = useState('')
+      const canEditRoutines = bot.source === 'real'
+      const submitRoutine = async () => {
+        const title = routineTitle.trim()
+        const prompt = routinePrompt.trim()
+        const everyMinutes = Number(routineMinutes)
+        if (!title || !prompt || routineBusy) return
+        setRoutineBusy(true)
+        setRoutineError('')
+        try {
+          await onCreateRoutine({ title, prompt, everyMinutes })
+          setRoutineTitle('')
+          setRoutinePrompt('')
+          setRoutineMinutes('15')
+          setRoutineOpen(false)
+        } catch (error) {
+          setRoutineError(t('routine.createFailed', { message: String(error?.message ?? error) }))
+        } finally {
+          setRoutineBusy(false)
+        }
+      }
       const count = (n) => (n ? h('span', { className: 'rb-count' }, String(n)) : null)
       const routinesPaused = bot.routines.length > 0 && bot.routines.every((routine) => !routine.on)
       const groups = [
@@ -2739,21 +2900,110 @@ window.__ModuleLoader__.load({
           h(
             'section',
             { className: 'rb-sec' },
-            h('h3', null, t('details.upcoming'), count(bot.routines.length)),
+            h(
+              'h3',
+              null,
+              t('details.upcoming'),
+              h(
+                'span',
+                { className: 'rb-routine-head' },
+                count(bot.routines.length),
+                canEditRoutines ? h('button', {
+                  type: 'button',
+                  className: 'rb-textbtn',
+                  onClick: () => {
+                    setRoutineOpen((open) => !open)
+                    setRoutineError('')
+                  },
+                }, t('routine.add')) : null,
+              ),
+            ),
             routinesPaused ? h('div', { className: 'rb-paused', 'data-paused': 'true', role: 'status' }, t('routine.paused')) : null,
             bot.routines.length ? bot.routines.map((routine, index) => {
-              const title = t(routine.titleKey)
+              const title = routine.titleKey ? t(routine.titleKey) : routine.title
+              const schedule = routine.scheduleKey
+                ? t(routine.scheduleKey)
+                : intervalLabel(t, routine.everyMinutes)
               return h(
                 'div',
-                { key: title, className: 'rb-routine' },
-                h('div', null, h('div', { className: 'rb-t' }, title), h('div', { className: 'rb-s' }, t(routine.scheduleKey))),
-                h(Toggle, {
-                  on: routine.on,
-                  label: `${title} ${routine.on ? t('routine.on') : t('routine.off')}`,
-                  onClick: () => onToggleRoutine(index),
-                }),
+                { key: routine.id ?? title, className: 'rb-routine' },
+                h('div', null, h('div', { className: 'rb-t' }, title), h('div', { className: 'rb-s' }, schedule)),
+                h(
+                  'div',
+                  { className: 'rb-routine-actions' },
+                  h(Toggle, {
+                    on: routine.on,
+                    label: `${title} ${routine.on ? t('routine.on') : t('routine.off')}`,
+                    onClick: () => onToggleRoutine(index),
+                  }),
+                  canEditRoutines ? h('button', {
+                    type: 'button',
+                    className: 'rb-textbtn',
+                    onClick: () => onRemoveRoutine(index),
+                  }, t('routine.remove')) : null,
+                ),
               )
             }) : h(EmptyBlock, { name: 'routines', title: t('routine.empty'), hint: t('routine.emptyHint') }),
+            canEditRoutines && routineOpen ? h(
+              'div',
+              { className: 'rb-stack rb-routine-form' },
+              h(
+                'label',
+                { className: 'rb-flabel' },
+                t('routine.titleLabel'),
+                h('input', {
+                  className: 'rb-field',
+                  value: routineTitle,
+                  maxLength: 80,
+                  onChange: (event) => setRoutineTitle(event.target.value),
+                }),
+              ),
+              h(
+                'label',
+                { className: 'rb-flabel' },
+                t('routine.promptLabel'),
+                h('textarea', {
+                  className: 'rb-field rb-area',
+                  rows: 3,
+                  value: routinePrompt,
+                  onChange: (event) => setRoutinePrompt(event.target.value),
+                }),
+              ),
+              h(
+                'label',
+                { className: 'rb-flabel' },
+                t('routine.minutesLabel'),
+                h('input', {
+                  className: 'rb-field',
+                  type: 'number',
+                  min: 1,
+                  max: 10080,
+                  value: routineMinutes,
+                  onChange: (event) => setRoutineMinutes(event.target.value),
+                }),
+              ),
+              h('p', { className: 'rb-faint' }, t('routine.costHint')),
+              routineError ? h('p', { className: 'rb-say', role: 'alert', style: { color: '#b45309' } }, routineError) : null,
+              h(
+                'div',
+                { className: 'rb-line' },
+                h('button', {
+                  type: 'button',
+                  className: 'rb-btn rb-primary',
+                  disabled: routineBusy || !routineTitle.trim() || !routinePrompt.trim(),
+                  onClick: submitRoutine,
+                }, t('routine.create')),
+                h('button', {
+                  type: 'button',
+                  className: 'rb-btn rb-ghost',
+                  disabled: routineBusy,
+                  onClick: () => {
+                    setRoutineOpen(false)
+                    setRoutineError('')
+                  },
+                }, t('routine.cancel')),
+              ),
+            ) : null,
           ),
           h(ComputerBlock, { t, status: computerStatus, name: computerName, configured, onComputer, onStop }),
           h(UsageBlock, { t, catalog, idle, low, overview, configured, error: usageError, preview: usagePreview }),

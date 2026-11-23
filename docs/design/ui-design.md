@@ -1,6 +1,6 @@
 # UI 设计 — v0.1
 
-*状态：2026-11-21（rev 6）。客户端照搬用户分享的参考截图里 Grok Bot 桌面 App 的布局
+*状态：2026-11-23（rev 7）。客户端照搬用户分享的参考截图里 Grok Bot 桌面 App 的布局
 ——左栏聊天列表、中间 markdown 对话、右侧每 bot 详情面板——但使用 rayrunos.com 的
 视觉语言：白色画布、深蓝主按钮、蓝色强调、细线边框。审批是内联卡，不是单独收件箱。
 可点击参考是 [`docs/mockups/index.html`](../mockups/index.html)；在 URL 后追加
@@ -111,8 +111,9 @@ Harness”控件。DSH 仍是宿主；setup、Plugins、云电脑和 Workspaces 
 - **Recent** — receipt：任务标题、状态（`ready` / `waiting` / `done`）、时间、产物数量
   和今日花费。Receipt 是“回来汇报”的表面。
 - **Upcoming** — routines：每行一个 routine，带标题、日程和开关。所有 routine 都关时，
-  行上方出现一行安静的 `All routines are paused`。v0.1 最多交付一个 routine（P1）；
-  其他行只是示意形态。
+  行上方出现一行安静的 `All routines are paused`。真实 bot 可创建每 N 分钟重复的
+  routine、启停和删除；示例 bot 的行仍是示意形态。cloudHost 模式的云端调度是预览，
+  routine 结果会在轮询后并入对话；cron/事件触发不在 v0.1。
 - **Computer** — 靠近底部的紧凑行，像参考一样：左边是名字和状态（`live` /
   `reconnecting…` / `sleeping` / `unreachable`；Rayrun 未配置时 `Not connected`），
   带彩色点（绿 / 琥珀 / 灰 / 红），右边是 44×30 的小屏幕缩略图，下面右对齐
@@ -236,6 +237,12 @@ Notifications、Appearance/language。Host 行显示同源健康状态，host �
 | `details.recent` | Recent | 最近 |
 | `details.upcoming` | Upcoming | 即将进行 |
 | `routine.paused` | All routines are paused. | 所有日程都已暂停。 |
+| `routine.every` | Every {minutes} min | 每 {minutes} 分钟 |
+| `routine.origin` | Scheduled routine | 定时任务 |
+| `routine.add` | New routine | 新建日程 |
+| `routine.create` | Create routine | 创建日程 |
+| `routine.remove` | Remove | 删除 |
+| `routine.costHint` | A due run may wake a stopped computer and incur machine-hour charges. | 到期运行可能会唤醒已停止的电脑，并产生机时费用。 |
 | `details.computer` | Computer | 电脑 |
 | `details.usage` | Usage | 用量 |
 | `computer.live` | live | 在线 |

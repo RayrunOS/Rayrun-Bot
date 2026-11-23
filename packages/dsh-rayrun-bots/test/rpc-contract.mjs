@@ -309,7 +309,7 @@ check('the roster starts empty, persists a created bot, and lists it after a rel
   const { handler } = hostFor()
   const empty = await request(handler, { action: 'bots.list' })
   assert.equal(empty.status, 200)
-  assert.deepEqual(empty.json, { ok: true, bots: [] })
+  assert.deepEqual(empty.json, { ok: true, bots: [], routines: {} })
 
   const created = await request(handler, post('bots.create', {
     name: 'Weekly Watch',
@@ -345,6 +345,82 @@ check('the roster starts empty, persists a created bot, and lists it after a rel
   assert.equal(deleted.status, 200)
   assert.deepEqual(deleted.json, { ok: true, deleted: 'weekly-watch' })
   assert.deepEqual((await request(hostFor().handler, { action: 'bots.list' })).json.bots, [])
+}))
+
+check('routines are per-bot, host-owned and validated', () => withState(async () => {
+  const { handler } = hostFor()
+  const created = await request(handler, post('bots.create', {
+    name: 'Routine Bot', label: 'Runs routines', instructions: 'Follow routines.',
+  }))
+  const botId = created.json.bot.id
+
+  const empty = await request(handler, post('routines.list', { botId }))
+  assert.equal(empty.status, 200)
+  assert.deepEqual(empty.json, { ok: true, routines: [] })
+
+  const made = await request(handler, post('routines.create', {
+    botId,
+    title: 'Morning inbox',
+    prompt: 'Summarize the inbox.',
+    everyMinutes: 15,
+  }))
+  assert.equal(made.status, 200)
+  assert.equal(made.json.routine.title, 'Morning inbox')
+  assert.equal(made.json.routine.enabled, true)
+  assert.equal(made.json.routines.length, 1)
+  assert.equal(made.json.routine.nextAt > made.json.routine.createdAt, true)
+  assert.equal(
+    JSON.parse(readFileSync(path.join(
+      process.env.DSH_HOME, 'state', 'rayrun-bot', 'bots', botId, 'routines.json',
+    ), 'utf8')).routines.length,
+    1,
+  )
+
+  const roster = await request(handler, { action: 'bots.list' })
+  assert.equal(roster.status, 200)
+  assert.deepEqual(roster.json.routines[botId], made.json.routines)
+  const fetched = await request(handler, post('bots.get', { id: botId }))
+  assert.deepEqual(fetched.json.routines, made.json.routines)
+
+  const paused = await request(handler, post('routines.update', {
+    botId, id: made.json.routine.id, patch: { enabled: false },
+  }))
+  assert.equal(paused.status, 200)
+  assert.equal(paused.json.routine.enabled, false)
+  const resumed = await request(handler, post('routines.update', {
+    botId, id: made.json.routine.id, patch: { enabled: true },
+  }))
+  assert.equal(resumed.status, 200)
+  assert.equal(resumed.json.routine.enabled, true)
+
+  const invalid = await request(handler, post('routines.create', {
+    botId, title: 'Bad', prompt: 'Bad.', everyMinutes: 0,
+  }))
+  assert.equal(invalid.status, 400)
+  assert.equal(invalid.json.error.code, 'E_ROUTINE_INVALID')
+  const hostField = await request(handler, post('routines.update', {
+    botId, id: made.json.routine.id, patch: { nextAt: '2026-11-24T10:00:00.000Z' },
+  }))
+  assert.equal(hostField.status, 400)
+  assert.equal(hostField.json.error.code, 'E_ROUTINE_INVALID')
+  const unknown = await request(handler, post('routines.update', {
+    botId, id: 'routine-missing', patch: { title: 'Nope' },
+  }))
+  assert.equal(unknown.status, 404)
+  assert.equal(unknown.json.error.code, 'E_ROUTINE_UNKNOWN')
+
+  const synced = await request(handler, post('routines.sync', { botId }))
+  assert.equal(synced.status, 200)
+  assert.deepEqual(synced.json, {
+    ok: true, uploaded: false, imported: 0, skipped: 'cloud_host_disabled',
+  })
+
+  const removed = await request(handler, post('routines.remove', { botId, id: made.json.routine.id }))
+  assert.equal(removed.status, 200)
+  assert.deepEqual(removed.json.routines, [])
+  const missingBot = await request(handler, post('routines.list', { botId: 'missing' }))
+  assert.equal(missingBot.status, 404)
+  assert.equal(missingBot.json.error.code, 'E_BOT_UNKNOWN')
 }))
 
 check('roster errors carry stable codes and statuses', () => withState(async () => {

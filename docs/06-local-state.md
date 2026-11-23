@@ -1,6 +1,6 @@
 # 06 — 本地文件与状态
 
-> 状态：2026-11-22。本文定义插件包、本地状态目录与云电脑镜像的文件布局、原子写、
+> 状态：2026-11-23。本文定义插件包、本地状态目录与云电脑镜像的文件布局、原子写、
 > 权限与保留规则。技术基线见 [`01-system-architecture.md`](01-system-architecture.md)；
 > 云端 bot runtime 见 [`04-cloud-host.md`](04-cloud-host.md)；审批文件见
 > [`05-approvals.md`](05-approvals.md)；未决决策见
@@ -56,6 +56,10 @@ packages/dsh-rayrun-bots/
 │   ├── local-store.js    # 状态目录、原子写（锁待建）
 │   ├── dependency.js     # 依赖检测、版本检查（能力调用计划）
 │   ├── sessions.js       # 本地 session 队列 + transcript
+│   ├── routines.js       # 每 bot routine、间隔、下一次运行与原子持久化
+│   ├── routine-scheduler.js # 本地到期检查，把 routine 入队普通 turn
+│   ├── routine-results.js # 云端 routine 结果校验、保留与 history 合并数据
+│   ├── cloud-routine-bridge.js # 定义/bot 镜像上传与结果导入
 │   ├── runtime.js        # 单轮/detached runtime 契约；默认失败关闭
 │   ├── rayrun-rpc.js     # 同源依赖 RPC 调用器
 │   ├── runtime-rpc.js    # 依赖 1.2+ runtime.* client
@@ -74,7 +78,9 @@ packages/dsh-rayrun-bots/
 │   ├── host.mjs          # 随包交付的云 host 入口（projection 到机器）
 │   └── lib/
 │       ├── host.mjs      # queue/transcript/outbox/session id
-│       └── dsh-agent.mjs # headless DSH + --session-id
+│       ├── dsh-agent.mjs # headless DSH + --session-id
+│       ├── routines.mjs  # routine 镜像校验、云端 claim
+│       └── prompt.mjs    # 用镜像 bot.json 组合 routine prompt；DSH session 带对话
 ├── test/
 │   └── *.mjs             # 纯 Node 测试
 └── client/               # 仅当 C-S1 证明相对模块加载可行
@@ -106,6 +112,8 @@ $DSH_HOME/state/rayrun-bot/
 │   ├── bot.json             # v0.1 本地意图源；runtime 落地后同步到机器
 │   ├── session.json         # 本地 session 状态与队列
 │   ├── transcript.jsonl     # 用户/bot/system 消息，只追加
+│   ├── routines.json        # routine 定义、间隔、开关和下一次运行；用户意图 + 本地调度状态
+│   ├── routine-results/     # 从云端导入的 routine 展示历史，一 task 一文件；不改 session.json
 │   ├── approvals/
 │   │   ├── req-<id>.json    # 本地校验后的审批提案；不是授权边界
 │   │   ├── res-<id>.json    # 本地用户决定
@@ -135,6 +143,8 @@ $DSH_HOME/state/rayrun-bot/
 | `bots/<id>/bot.json` | host | client、host | 否 | 永久 | runtime 落地前否；之后是机器副本 |
 | `bots/<id>/session.json` | host | client、host | 否 | 永久 | session 镜像落地前否；之后可从机器重建 |
 | `bots/<id>/transcript.jsonl` | host | client、host | 否 | 永久 | session 镜像落地前否（本地对话历史）；之后可从机器重建 |
+| `bots/<id>/routines.json` | 本地 host（用户操作） | host、client | 否 | 永久 | 否；interval/开关是用户意图，nextAt/lastRunAt 是本地调度状态 |
+| `bots/<id>/routine-results/<taskId>.json` | 本地 host（从云端导入的展示历史） | host、client | 否 | 最近 400 个 | 是，云端结果仍在时 |
 | `bots/<id>/approvals/req-<id>.json` | 本地 host（host-only propose/未来 bridge；proposal 不可信） | host、client | 否 | 永久/过期清理 | 否（审计） |
 | `bots/<id>/approvals/res-<id>.json` | 本地 host（用户决定） | 本地 executor、client | 否 | 永久 | 否（审计） |
 | `bots/<id>/approvals/exec-<id>.json` | 本地 executor（claim/结果） | host、client | 否 | 永久 | 否（审计） |
@@ -169,10 +179,13 @@ $DSH_HOME/state/rayrun-bot/
 /workspace/.rayrun/
 ├── bots/<botId>/
 │   ├── bot.json            # 定义 + schema 版本
+│   ├── routines.json       # 本地 host 镜像的 routine 定义（只读；云端不写）
+│   ├── routine-results/    # 云端 routine 结果；保留最近 200 个，供本地 sync 导入
 │   ├── memory/             # 每 bot 笔记与产物
 │   ├── sessions/           # session id + transcript 引用
 │   ├── queue.jsonl         # 旧草案；建议拆 inbox/state（ADR-003）
 │   ├── approvals/          # req-<id>.json、res-<id>.json
+│   ├── host/routines-state.json # 云端 scheduler 的 claim（nextAt/lastRunAt）
 │   └── log/bot.jsonl       # host 日志，无密钥
 ├── host/state.json         # supervisor pid、health、schema
 └── outbox/events.jsonl     # 给本地 UI 的事件，只追加

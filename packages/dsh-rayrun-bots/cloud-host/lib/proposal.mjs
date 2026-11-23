@@ -16,6 +16,7 @@ import path from 'node:path'
 const BOT_ID = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 const MACHINE = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/
 const KINDS = new Set(['rayrun.machine.start', 'rayrun.machine.stop', 'rayrun.machine.pause', 'rayrun.machine.resume'])
+const ORIGINS = new Set(['chat', 'background'])
 const MARKER = /```rayrun-approval\s*\r?\n([\s\S]*?)\r?\n```/
 
 function invalid(message) {
@@ -26,11 +27,12 @@ function invalid(message) {
  * Extract the first valid approval block. Invalid blocks are left in the reply
  * and reported as an error so the host can log them; no proposal is written.
  * @param {string} text
- * @param {{ botId: string, defaultMachine?: string }} options
+ * @param {{ botId: string, defaultMachine?: string, origin?: 'chat' | 'background' }} options
  */
-export function extractProposal(text, { botId, defaultMachine = '' } = {}) {
+export function extractProposal(text, { botId, defaultMachine = '', origin = 'chat' } = {}) {
   const reply = String(text ?? '')
   if (!BOT_ID.test(String(botId ?? ''))) return invalid('proposal bot id is invalid.')
+  if (!ORIGINS.has(origin)) return invalid('proposal origin is invalid.')
   const match = MARKER.exec(reply)
   if (!match) return { text: reply, proposal: null, error: null }
   let value
@@ -60,7 +62,7 @@ export function extractProposal(text, { botId, defaultMachine = '' } = {}) {
       botId,
       actionId: id,
       action: { kind: value.kind, machine },
-      origin: 'chat',
+      origin,
       createdAt: new Date().toISOString(),
     },
     error: null,

@@ -286,7 +286,7 @@ export function createCloudHostRuntime({
     get available() {
       return supported && Boolean(getOrigin?.()) && filesTool() !== undefined
     },
-    async start({ bot, text, history = [], messageSeq, botId, stateRoot } = {}) {
+    async start({ bot, text, history = [], messageSeq, origin, botId, stateRoot } = {}) {
       if (typeof botId !== 'string' || botId === '') throw rayrunFailure(ERROR_CODES.runtimeUnavailable, 'botId is required.')
       hostSetup ??= setupHost().catch((error) => {
         hostSetup = null
@@ -310,6 +310,7 @@ export function createCloudHostRuntime({
         id: taskId,
         text: prompt,
         at: startedAt,
+        ...(origin === 'routine' ? { origin: 'routine' } : {}),
       }))
       return {
         taskId,

@@ -304,4 +304,7 @@ export function createCloudApprovalBridge({ stateRoot, getTools, getMachine, now
   return { sync, writeResult }
 }
 
-export { MAX_PENDING_APPROVALS, MAX_PROPOSALS, MAX_PROPOSAL_BYTES, MAX_RESULT_BYTES }
+export {
+  MAX_PENDING_APPROVALS, MAX_PROPOSALS, MAX_PROPOSAL_BYTES, MAX_RESULT_BYTES,
+  missingFile, parseListing,
+}

@@ -27,10 +27,12 @@ result outbox -> restart flush, plus a start approval and next-turn outcome
 context, passed on 2026-11-23. Other action types and
 cloud-only credential actions are still pending. The conversation UI
 uses the host session and real approval cards for roster bots; sample bots,
-receipts, routines and settings remain an in-memory preview. The page-level
-create/reload path was verified on 2026-11-21, and the approval card deny/fail-
-closed path on 2026-11-23. Repository-level status and verified combinations
-live in [docs/12-status.md](../../docs/12-status.md).
+receipts and settings remain an in-memory preview. Real bots can create, pause
+and remove local routines; the local scheduler enqueues one ordinary turn when a
+routine is due. The page-level create/reload path was verified on 2026-11-21,
+and the approval card deny/fail-closed path on 2026-11-23. Repository-level
+status and verified combinations live in
+[docs/12-status.md](../../docs/12-status.md).
 
 ## What it does today
 
@@ -48,6 +50,23 @@ live in [docs/12-status.md](../../docs/12-status.md).
   runtime lands; the machine will become the runtime truth. Ids are derived
   from the name when the client does not send one, and collisions get a numeric
   suffix.
+- Host half: `routines.list/create/update/remove/sync` persist at most 32
+  validated routines per bot in `routines.json` beside `bot.json`. A routine has
+  a title, prompt, 1–10080 minute interval, enabled flag and next-run time. In
+  the default non-cloudHost mode, the local scheduler checks every 30 seconds,
+  enqueues at most one ordinary session turn per bot per tick, skips a busy bot,
+  and does not backfill missed intervals. It claims the run
+  (`lastRunAt`/next `nextAt`) before enqueueing, so a crash cannot replay it; a
+  failed enqueue waits for the next interval instead. In cloudHost mode the
+  local scheduler is disabled: the bridge mirrors `routines.json` and `bot.json`
+  while the machine is Running, the cloud host claims schedule state and
+  enqueues the task, expands it with the mirrored bot instructions and approval
+  hint (the DSH session carries the conversation), and `routines.sync` imports
+  routine results into local history. That cloud path is
+  preview with a fake E2E, not live. A routine is a normal user turn and does
+  not bypass approval. Because it uses the normal send path, a due routine may
+  wake a stopped or paused machine and incur machine-hour charges; the interval
+  and enabled switch are standing authorization, not per-run approval.
 - Host half: `session.send`, `session.history` and `session.status` persist a
   per-bot `session.json` and append-only `transcript.jsonl` beside `bot.json`.
   Sends are queued one turn at a time; a runtime failure writes a redacted
@@ -81,7 +100,10 @@ live in [docs/12-status.md](../../docs/12-status.md).
   instead of the sample list; creating a bot in the new-bot screen or the setup
   wizard writes through to the host and selects the saved bot. For real roster
   bots, messages and approval cards come from the host session and approval
-  store; sample bots, receipts and settings still live in the page only. Deny /
+  store; real bots also create, pause and remove routines through the host, and
+  the five-second poll imports cloud routine results into the conversation.
+  Sample bots, receipts, sample routines and settings still live in the page
+  only. Deny /
   Allow once for real approvals goes through the host and can execute a typed
   local action; after a decision the real card offers Continue bot, which sends
   the next turn only when the user clicks it. Sample cards update in-memory state. The client
@@ -121,9 +143,14 @@ live in [docs/12-status.md](../../docs/12-status.md).
 
 Not built yet: approval actions beyond machine start/stop/pause/resume, cloud-only
 credential approvals, a Bots-page-level verified computer-creation success path,
-routines that run, a production cloud image, and the npm release path. Approved
-start/stop, denial/Continue, and the next-turn approval context were verified live on
-2026-11-23; pause/resume is also live. See the repo-level
+live validation of the cloud-host routine scheduler, cron/event triggers, routine
+failure display in local history, a production cloud image, and the npm release
+path. The local routine store/scheduler, cloud routine bridge, cloud scheduler
+and result merge have plain-Node coverage and a fake end-to-end test; the
+detail-panel create, pause and remove paths passed a local DSH + Firefox smoke on
+2026-11-23 without a Rayrun token, but no scheduled turn was waited on. Approved
+start/stop, denial/Continue, and the next-turn approval context were verified live
+on 2026-11-23; pause/resume is also live. See the repo-level
 [MVP plan](../../docs/plans/mvp-plan.md) and [client plan](../../docs/plans/client-plan.md).
 
 ## DSH compatibility
@@ -180,13 +207,18 @@ node test/runtime-rpc.mjs
 node test/cloud-host-runtime.mjs
 node test/host-projection.mjs
 node test/cloud-host.mjs
+node test/cloud-host-routines.mjs
 node test/cloud-host-dsh-agent.mjs
+node test/cloud-routine-bridge.mjs
+node test/cloud-routine-e2e.mjs
 node test/bot-workspace.mjs
 node test/dependency.mjs
 node test/approvals.mjs
 node test/approval-executor.mjs
 node test/cloud-approval-bridge.mjs
 node test/cloud-host-proposal.mjs
+node test/routines.mjs
+node test/routine-results.mjs
 node test/package-contents.mjs
 ```
 
@@ -219,10 +251,16 @@ lib/runtime.js     # single-turn and detached runtime contracts
 lib/runtime-rpc.js # host-side runtime.* client (cloud bot host)
 lib/cloud-host-runtime.js # opt-in persistent host runtime over runtime.* + rayrun_files
 lib/host-projection.js # SHA-256 manifest and projection of cloud-host assets
+lib/routines.js    # per-bot routine definitions and local schedule state
+lib/routine-scheduler.js # local due checks and ordinary session turns
+lib/routine-results.js # imported cloud routine results for history
+lib/cloud-routine-bridge.js # definitions upload and result import; never starts a machine
 cloud-host/host.mjs # cloud host entry point (projected to the machine)
 cloud-host/lib/host.mjs # queue/transcript/outbox/session id/DSH agent wiring
 cloud-host/lib/dsh-agent.mjs # headless DSH profile + --session-id runner
 cloud-host/lib/proposal.mjs  # structured approval block parser/writer
+cloud-host/lib/routines.mjs  # cloud routine definitions/state and due selection
+cloud-host/lib/prompt.mjs    # full routine prompt from bot.json + cloud transcript
 cloud-host/bin/propose.mjs   # typed approval proposal writer for the bot
 lib/rayrun-rpc.js  # shared same-origin dependency RPC caller
 lib/rayrun-runtime.js # rayrun_agent-backed runtime adapter

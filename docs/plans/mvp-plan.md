@@ -1,6 +1,6 @@
 # MVP 计划 — v0.1（详细）
 
-*状态：2026-11-22。首个版本的详细执行计划。范围已冻结；只交付下面的 P0 项。估算单位
+*状态：2026-11-23。首个版本的详细执行计划。范围已冻结；只交付下面的 P0 项。估算单位
 是工程师日，假设 1–2 名工程师加编码 agent；调研给出的 4–6 周估算假设云电脑层原样复用，
 且没有平台阻塞。实现状态以 [../12-status.md](../12-status.md) 为准。相关：
 [客户端计划](client-plan.md)、[平台需求](../08-integration.md)、
@@ -151,8 +151,9 @@ id、botId、actionId、nonce 和 actionHash。聊天消息发起的卡无限等
 **错误码**（稳定，RPC 和日志共用）：`E_DEP_MISSING`、`E_DEP_VERSION`、
 `E_TOKEN_REQUIRED`、`E_KEY_REQUIRED`、`E_MACHINE_STOPPED`、`E_MACHINE_BUSY`、
 `E_APPROVAL_EXPIRED`、`E_APPROVAL_REPLAY`、`E_APPROVAL_UNKNOWN`、`E_APPROVAL_INVALID`、
-`E_HOST_DOWN`、`E_BOT_UNKNOWN`、`E_BOT_INVALID`、`E_BOT_EXISTS`、`E_QUEUE_FULL`、
-`E_SESSION_INVALID`、`E_RUNTIME_UNAVAILABLE`、`E_BALANCE_LOW`、`E_INTERNAL`。
+`E_HOST_DOWN`、`E_BOT_UNKNOWN`、`E_BOT_INVALID`、`E_BOT_EXISTS`、`E_ROUTINE_UNKNOWN`、
+`E_ROUTINE_INVALID`、`E_QUEUE_FULL`、`E_SESSION_INVALID`、`E_RUNTIME_UNAVAILABLE`、
+`E_BALANCE_LOW`、`E_INTERNAL`。
 
 ### 4.4 RPC 表面
 
@@ -330,7 +331,7 @@ watchdog 重启、账号 token 放 vault、无入向网络、S6 失败时两装�
 | 依赖安装摩擦 | 一次安装失败，或包一直不上 npm | 文档化两装路径、版本检查 | alpha 期间从 checkout 装两个 |
 | 依赖漂移 | 上游工具名/RPC 变化 | 版本契约 + adapter + 契约测试 | 固定已知版本 |
 | 余额耗尽销毁数据 | 账号归零 | 警告、建议生命周期上限、本地拉取状态 | 恢复 runbook |
-| 范围蔓延 | IM、桌面、routines 进入 W3 | W3 门砍 P1 | 只交付 P0 |
+| 范围蔓延 | IM、桌面、cron/事件触发器进入 W3 | W3 门砍 P1 | 只交付 P0；最小 routines 已按 ADR-009 收口，cloudHost 调度是预览 |
 | 公网 ingress 诱惑 | 有人要面板 URL | 禁止：无入向、不用 `public` 桌面 | 本地 UI |
 | DSH 版本漂移 | 镜像与笔记本不一致 | M5 的版本矩阵 | 固定镜像请求 |
 
@@ -342,7 +343,9 @@ watchdog 重启、账号 token 放 vault、无入向网络、S6 失败时两装�
 ## 11. 未决决策
 
 1. **Bot 并发** —— v0.1 串行队列（推荐）还是每 bot 一台机器。W0 到期。
-2. **Routines** —— 每 bot 一个 cron 作为 P1（推荐）还是完全砍掉。W0 到期。
+2. **Routines** —— 已解决（ADR-009，2026-11-23）：v0.1 做本地最小间隔调度，
+   cloudHost 模式另有云端调度预览（fake E2E，未 live）；本地 host 决定何时入队，
+   云端队列执行；cron 和事件触发不在 v0.1。
 3. **审批通道** —— v0.1 文件邮箱，v0.2 IM（推荐）。W0 到期。
 4. **已解决（2026-11-11）** —— `dsh-rayrun-computer` 保持不动，留在自己的仓库；
    Rayrun Bot 是依赖它的独立项目。未决子决策：一次安装依赖（S6）还是文档化两装回退。

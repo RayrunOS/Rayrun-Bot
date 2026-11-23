@@ -59,7 +59,7 @@
 | ADR-006 | “合上笔记本”意味着什么 | Proposed | [architecture-decisions.md](adr/architecture-decisions.md#adr-006) |
 | ADR-007 | 常驻 bot runtime 的凭据与 DSH profile 模型 | Proposed | [architecture-decisions.md](adr/architecture-decisions.md#adr-007) |
 | ADR-008 | Desktop 访问路径 | Proposed | [architecture-decisions.md](adr/architecture-decisions.md#adr-008) |
-| ADR-009 | Routines / scheduler 范围 | Proposed | [architecture-decisions.md](adr/architecture-decisions.md#adr-009) |
+| ADR-009 | Routines / scheduler 范围 | Accepted（2026-11-23，本地调度 + cloudHost 预览） | [architecture-decisions.md](adr/architecture-decisions.md#adr-009) |
 | ADR-010 | RPC 路由与信封 | Proposed | [architecture-decisions.md](adr/architecture-decisions.md#adr-010) |
 | ADR-011 | 审批 schema 与 canonical action hash | Accepted（2026-11-22） | [architecture-decisions.md](adr/architecture-decisions.md#adr-011) |
 | ADR-012 | 恢复与运行语义 | Proposed | [architecture-decisions.md](adr/architecture-decisions.md#adr-012) |

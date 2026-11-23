@@ -68,6 +68,22 @@ check('a send persists the user message and the fake reply, then returns to idle
   assert.deepEqual(messages.map((message) => [message.role, message.text]), [['user', 'ping'], ['bot', 'pong']])
 })
 
+check('a routine origin is persisted and passed to the runtime', async () => {
+  let seen
+  const { bot, runner } = setup(async (input) => {
+    seen = input
+    return { text: 'routine reply' }
+  })
+  const sent = runner.send(bot.id, 'scheduled prompt', { origin: 'routine' })
+  assert.equal(sent.message.origin, 'routine')
+  assert.equal(sent.session.state, 'queued')
+  await runner.settled(bot.id)
+  assert.equal(seen.origin, 'routine')
+  const { messages } = runner.history(bot.id)
+  assert.equal(messages[0].origin, 'routine')
+  expectCode(() => runner.send(bot.id, 'bad origin', { origin: 'shell' }), ERROR_CODES.sessionInvalid)
+})
+
 check('history returns only messages after the cursor and validates its bounds', async () => {
   const { bot, runner } = setup(async () => ({ text: 'pong' }))
   const sent = runner.send(bot.id, 'ping')

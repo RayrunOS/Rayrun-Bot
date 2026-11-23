@@ -22,7 +22,7 @@
 | [ADR-006](#adr-006) | “合上笔记本”意味着什么 | Proposed | 写清允许的工作、审批过期与计费后果 | A5, A6, G3 |
 | [ADR-007](#adr-007) | 常驻 bot runtime 的凭据与 DSH profile 模型 | Proposed | M2 前做 spike；回退到逐次 headless + transcript replay | C1–C4, D1–D5, A5, A8 |
 | [ADR-008](#adr-008) | Desktop 访问路径 | Proposed | 核实依赖的路径；没有安全路径就不要承诺 takeover | F5, security |
-| [ADR-009](#adr-009) | Routines / scheduler 范围 | Proposed | 除非 W3 有余量，否则定为 P1；从核心分层图移除 scheduler | M1, M4 |
+| [ADR-009](#adr-009) | Routines / scheduler 范围 | Accepted（2026-11-23，本地调度 + cloudHost 预览） | 本地 host 定时入队普通 turn；cloudHost 模式由云 host 调度；云端队列串行执行 | M1, M4 |
 | [ADR-010](#adr-010) | RPC 路由与信封 | Proposed | 选定一个契约，代码、测试、文档一起对齐 | F2, F4 |
 | [ADR-011](#adr-011) | 审批 schema 与 canonical action hash | Accepted（2026-11-22，协议已实现；本地执行见 ADR-019） | canonical JSON、完整 decision 字段、本地重算 hash | E2–E6, C-S6 |
 | [ADR-012](#adr-012) | 恢复与运行语义 | Proposed | 补字段、时钟规则、限流与审计语义 | C8, D4, E5–E7, A8, A9 |
@@ -348,25 +348,48 @@ runtimes API（`rayrun-bot-gaps`，`4709ac0`，待部署）已提供受监督进
 <a id="adr-009"></a>
 ### ADR-009 — Routines / scheduler 范围
 
-**状态：** Proposed.
+**状态：** Accepted（2026-11-23，本地调度；同日补充 cloudHost 预览）.
 
-**问题。** v0.1 里 scheduler 是 P0 还是 P1？
+**问题。** v0.1 里 scheduler 是 P0 还是 P1？本地 scheduler 与云端队列是什么关系？
 
-**当前设计。** [系统架构](../01-system-architecture.md) “Layers” 把 scheduler 放进本地控制面核心；
-[路线图](../plans/roadmap.md) “v0.1” 包含最小 routines；[MVP 计划](../plans/mvp-plan.md) §3 把 routines
-标为 P1，§11 又把决定列为 W0 到期。
+**决定。** v0.1 做最小 routines：每个 bot 有一份 `routines.json`，记录标题、
+prompt、间隔、开关和下一次运行时间。本地 DSH host 的 scheduler 周期检查到期项，
+把一条普通 prompt 送入该 bot 的本地 session 队列；云端 runtime 和串行队列仍负责
+执行。scheduler 只决定“何时入队”，不是第二个执行队列。
 
-**问题。** 范围与估时不一致。P1 scheduler 会改变 M1 和 M4，而且本地 scheduler 与
-云端队列的关系没有定义。
+**边界。**
+- 每 tick 每 bot 最多入队一条；bot 正在 running/queued 时跳过，下一 tick 再试。
+- 错过多个间隔只补一次，不 backfill；runtime 不可用时保留 due，下一 tick 重试。
+- 运行前先写 `lastRunAt`/下一个 `nextAt` 作为 claim，再入队；入队失败不重放，等待
+  下一间隔。这样本地 host 在 claim 后崩溃也不会在重启后重复同一轮。
 
-**建议。** 除非 W3 结束时有余量，否则定为 P1。若 P1，从核心分层图移除 scheduler，
-并写明 routines 不在 v0.1。若 P0，更新估时和里程碑。无论哪种，写清本地 scheduler 只
-决定何时唤醒 bot，云端队列负责串行执行；它们不是两个队列。
+- routine 只是普通用户轮次，不新增审批绕过；外部动作仍按 ADR-019 由本地审批和
+  执行。routine 轮次产生的提案标记为 `background`，沿用 30 分钟过期规则，不会
+  因为来自 routine 而无限等待。
+- routine turn 使用与手动 send 相同的 runtime 路径，因此可能按依赖的既有语义唤醒
+  已停止/暂停的机器并产生机时费用。routine 的间隔与开关是持续授权，不是逐次
+  审批；UI 和文档必须说明这一点。
+- 默认的本地 scheduler 随本地 DSH host 运行。本地 host 停止时 routine 不会触发；
+  重启后只补一次。
+- cloudHost runtime 启用时，本地 scheduler 停用，避免双调度；云端 host 读取本地
+  镜像到 `.rayrun/bots/<id>/routines.json` 的定义，在
+  `bots/<id>/host/routines-state.json` 维护下一次运行时间，先 claim 再入队。它可以
+  在本地 DSH 停止时运行，前提是机器和 cloudHost runtime 正在运行。结果写入
+  `bots/<id>/routine-results/`，本地 `routines.sync` 导入，`session.history` 合并
+  展示。此路径有 fake E2E，尚未 live；机器停止时不会同步或运行。
+- 机器停止期间编辑 routine 无法上传；机器启动后，云端可能先按旧定义跑一次，直到
+  本地 `routines.sync` 覆盖。MVP 记录此限制，不声称强一致。
+- v0.1 只做每 N 分钟重复；cron 表达式和事件触发不在范围内。
 
-**影响。** M1、M4、范围与估时。
+**影响。** M1、M4 的范围与估时；客户端详情面板可以创建、启停和删除 routine。
 
-**证据。** [系统架构](../01-system-architecture.md) “Layers”；[路线图](../plans/roadmap.md) “v0.1”；
-[MVP 计划](../plans/mvp-plan.md) §3、§11 决策 2。
+**证据。** [系统架构](../01-system-architecture.md) §1.3；[路线图](../plans/roadmap.md) “v0.1”；
+[MVP 计划](../plans/mvp-plan.md) §3、§11 决策 2；`packages/dsh-rayrun-bots/lib/routines.js`、
+`packages/dsh-rayrun-bots/lib/routine-scheduler.js`、`packages/dsh-rayrun-bots/lib/cloud-routine-bridge.js`、
+`packages/dsh-rayrun-bots/cloud-host/lib/routines.mjs`、`packages/dsh-rayrun-bots/cloud-host/lib/prompt.mjs`、
+`packages/dsh-rayrun-bots/test/routines.mjs`、
+`packages/dsh-rayrun-bots/test/cloud-host-routines.mjs`、`packages/dsh-rayrun-bots/test/cloud-routine-bridge.mjs`、
+`packages/dsh-rayrun-bots/test/cloud-routine-e2e.mjs`、[状态](../12-status.md)。
 
 ## P2 — 契约与文档对齐
 

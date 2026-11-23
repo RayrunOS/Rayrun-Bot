@@ -12,14 +12,21 @@
  */
 import {
   appendFileSync, closeSync, existsSync, fsyncSync, mkdirSync, openSync,
-  readFileSync, readdirSync, renameSync, writeSync,
+  readFileSync, readdirSync, renameSync, statSync, unlinkSync, writeSync,
 } from 'node:fs'
 import { randomUUID } from 'node:crypto'
 import path from 'node:path'
+import {
+  advanceRoutineState, buildRoutinePrompt, dueRoutine, pruneRoutineState, readRoutineFile,
+  readRoutineState, writeRoutineState,
+} from './routines.mjs'
 
 const BOT_ID = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 const TASK_ID = /^[A-Za-z0-9._-]{1,80}$/
 const TASK_MAX_BYTES = 64 * 1024
+const TASK_ORIGINS = new Set(['chat', 'routine'])
+const ROUTINE_ID = /^routine-[a-z0-9-]{1,60}$/
+const ROUTINE_RESULT_KEEP = 200
 const SECRET = /(Bearer\s+)\S+|(sk-)[A-Za-z0-9_-]{8,}|((?:RAYRUN_TOKEN|DEEPSEEK_API_KEY|DEEPSEEK_KEY)\s*[=:]\s*)\S+/gi
 
 /**
@@ -29,7 +36,8 @@ const SECRET = /(Bearer\s+)\S+|(sk-)[A-Za-z0-9_-]{8,}|((?:RAYRUN_TOKEN|DEEPSEEK_
  *   root: string,
  *   logPath?: string | null,
  *   credentialPresent?: boolean,
- *   agent?: (input: { botId: string, taskId: string, text: string, sessionId: string | null }) => Promise<string | { text: string, sessionId?: string }>,
+ *   agent?: (input: { botId: string, taskId: string, text: string, origin: string, sessionId: string | null }) => Promise<string | { text: string, sessionId?: string }>,
+ *   promptFor?: (input: { botId: string, task: object }) => string,
  *   now?: () => string,
  *   sleep?: (ms: number) => Promise<void>,
  *   taskDelayMs?: number,
@@ -41,6 +49,7 @@ export function createCloudHost(options = {}) {
     logPath = null,
     credentialPresent = Boolean(process.env.DEEPSEEK_API_KEY),
     agent = async ({ text }) => `echo:${text}`,
+    promptFor = null,
     now = () => new Date().toISOString(),
     sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
     taskDelayMs = 0,
@@ -53,6 +62,7 @@ export function createCloudHost(options = {}) {
   const startedAt = now()
   let lastTask = null
   let lastBot = null
+  const routineErrors = new Map()
 
   const ensure = (dir) => mkdirSync(dir, { recursive: true, mode: 0o700 })
 
@@ -74,6 +84,7 @@ export function createCloudHost(options = {}) {
       failed: path.join(botRoot, 'failed'),
       outbox: path.join(botRoot, 'outbox'),
       results: path.join(botRoot, 'results'),
+      routineResults: path.join(botRoot, 'routine-results'),
       host: path.join(botRoot, 'host'),
       transcript: path.join(botRoot, 'transcript.jsonl'),
       state: path.join(botRoot, 'host', 'state.json'),
@@ -83,7 +94,7 @@ export function createCloudHost(options = {}) {
 
   function ensureBot(botId) {
     const paths = pathsFor(botId)
-    for (const key of ['inbox', 'processing', 'done', 'failed', 'outbox', 'results', 'host']) ensure(paths[key])
+    for (const key of ['inbox', 'processing', 'done', 'failed', 'outbox', 'results', 'routineResults', 'host']) ensure(paths[key])
     return paths
   }
 
@@ -208,6 +219,20 @@ export function createCloudHost(options = {}) {
     }
   }
 
+  function pruneRoutineResults(paths) {
+    try {
+      const entries = readdirSync(paths.routineResults)
+        .filter((name) => name.endsWith('.json') && !name.startsWith('.'))
+        .map((name) => ({ name, mtime: statSync(path.join(paths.routineResults, name)).mtimeMs }))
+        .sort((a, b) => a.mtime - b.mtime)
+      for (const entry of entries.slice(0, Math.max(0, entries.length - ROUTINE_RESULT_KEEP))) {
+        try { unlinkSync(path.join(paths.routineResults, entry.name)) } catch { /* best effort */ }
+      }
+    } catch {
+      // Retention must not fail the task.
+    }
+  }
+
   function describeBot(botId) {
     const paths = pathsFor(botId)
     const messages = transcript(botId)
@@ -283,7 +308,17 @@ export function createCloudHost(options = {}) {
     if (typeof task?.id !== 'string' || !TASK_ID.test(task.id)) throw new Error('task.id is invalid')
     if (typeof task?.text !== 'string' || task.text.trim() === '') throw new Error('task.text is required')
     if (Buffer.byteLength(task.text, 'utf8') > TASK_MAX_BYTES) throw new Error('task.text is too large')
-    return { id: task.id, text: task.text }
+    const origin = task.origin === undefined ? 'chat' : task.origin
+    if (!TASK_ORIGINS.has(origin)) throw new Error('task.origin is invalid')
+    if (task.routineId !== undefined && (typeof task.routineId !== 'string' || !ROUTINE_ID.test(task.routineId))) {
+      throw new Error('task.routineId is invalid')
+    }
+    return {
+      id: task.id,
+      text: task.text,
+      origin,
+      ...(task.routineId === undefined ? {} : { routineId: task.routineId }),
+    }
   }
 
   /** Pick the next bot with pending work, round-robin after the last one. */
@@ -324,16 +359,29 @@ export function createCloudHost(options = {}) {
       return { botId, taskId: task.id, skipped: true }
     }
 
-    if (!hasUser(botId, task.id)) appendMessage(botId, 'user', task.text, { taskId: task.id })
+    if (!hasUser(botId, task.id)) {
+      appendMessage(botId, 'user', task.text, {
+        taskId: task.id,
+        ...(task.origin === 'routine' ? { origin: 'routine' } : {}),
+      })
+    }
     lastTask = task.id
     lastBot = botId
     log('task-start', { botId, taskId: task.id })
     try {
       if (taskDelayMs > 0) await sleep(taskDelayMs)
+      let prompt = task.text
+      if (task.origin === 'routine' && typeof promptFor === 'function') {
+        prompt = promptFor({ botId, task })
+        if (typeof prompt !== 'string' || prompt.trim() === '') {
+          throw new Error('routine prompt builder returned no prompt')
+        }
+      }
       const result = await agent({
         botId,
         taskId: task.id,
-        text: task.text,
+        text: prompt,
+        origin: task.origin,
         sessionId: readSessionId(botId),
       })
       const reply = typeof result === 'string' ? result : result?.text
@@ -346,6 +394,18 @@ export function createCloudHost(options = {}) {
       atomicJson(path.join(paths.results, `${task.id}.json`), {
         schema: 1, botId, taskId: task.id, reply, at: now(),
       })
+      if (task.origin === 'routine') {
+        atomicJson(path.join(paths.routineResults, `${task.id}.json`), {
+          schema: 1,
+          botId,
+          taskId: task.id,
+          text: task.text,
+          reply,
+          at: now(),
+          ...(task.routineId === undefined ? {} : { routineId: task.routineId }),
+        })
+        pruneRoutineResults(paths)
+      }
       renameSync(file, path.join(paths.done, `${task.id}.json`))
       log('task-done', { botId, taskId: task.id })
       writeState()
@@ -357,6 +417,64 @@ export function createCloudHost(options = {}) {
     }
   }
 
+  /**
+   * Enqueue at most one due routine per idle bot. The schedule state is written
+   * before the inbox task, so a crash cannot replay the same interval. A bot
+   * with queued or in-flight work is left for a later tick.
+   */
+  function enqueueDueRoutines() {
+    const at = now()
+    const nowMs = Date.parse(at)
+    if (!Number.isFinite(nowMs)) return []
+    const enqueued = []
+    for (const botId of listBots()) {
+      const paths = ensureBot(botId)
+      if (listInbox(botId).length + count(paths.processing) > 0) continue
+      let routines
+      let state
+      let due
+      try {
+        routines = readRoutineFile(root, botId)
+        state = pruneRoutineState(readRoutineState(root, botId), routines)
+        due = dueRoutine(routines, state, nowMs)
+        routineErrors.delete(botId)
+      } catch (error) {
+        const message = redact(error.message)
+        if (routineErrors.get(botId) !== message) {
+          routineErrors.set(botId, message)
+          log('routine-invalid', { botId, message })
+        }
+        continue
+      }
+      if (due === null) continue
+      const routine = due.routine
+      const taskId = `routine-${randomUUID()}`
+      try {
+        writeRoutineState(root, botId, advanceRoutineState(state, routine, nowMs))
+      } catch (error) {
+        log('routine-state-failed', { botId, routineId: routine.id, message: redact(error.message) })
+        continue
+      }
+      try {
+        atomicJson(path.join(paths.inbox, `${taskId}.json`), {
+          schema: 1,
+          id: taskId,
+          text: buildRoutinePrompt(routine),
+          at,
+          origin: 'routine',
+          routineId: routine.id,
+        })
+      } catch (error) {
+        // The run is claimed already; do not replay it this interval.
+        log('routine-enqueue-failed', { botId, routineId: routine.id, message: redact(error.message) })
+        continue
+      }
+      log('routine-enqueued', { botId, routineId: routine.id, taskId })
+      enqueued.push({ botId, routineId: routine.id, taskId })
+    }
+    return enqueued
+  }
+
   return {
     paths: { root, bots: botsRoot, host: hostDir, state: statePath, log: logPath },
     startedAt,
@@ -364,6 +482,7 @@ export function createCloudHost(options = {}) {
     pathsFor: ensureBot,
     recover,
     processNext,
+    enqueueDueRoutines,
     writeState,
     listInbox,
     log,
