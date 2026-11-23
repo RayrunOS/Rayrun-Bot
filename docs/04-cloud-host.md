@@ -158,9 +158,10 @@ cloudHost runtime 启用时，本地 DSH host 停用本地 scheduler，把每 bo
 
 本地 `routines.sync` 只在机器 Running 时上传定义和下载结果，不唤醒机器。结果经
 schema 校验后写本地 `routine-results/`（保留最近 400 个），由 `session.history`
-按时间合并；它不修改 `session.json`，也不是审批/执行记录。机器停止期间的定义编辑
-无法上传，启动后旧定义可能先运行一次，直到 sync 覆盖。该路径有 fake E2E，尚未
-live；失败任务目前只进 host 日志，不进入本地聊天。详见 ADR-009。
+按时间合并；它不修改 `session.json`，也不是审批/执行记录。失败任务写
+`state: failed` + `error`，本地 history 显示为 `E_ROUTINE_FAILED` system error。
+机器停止期间的定义编辑无法上传，启动后旧定义可能先运行一次，直到 sync 覆盖。该
+路径有 fake E2E，尚未 live。详见 ADR-009。
 
 ---
 

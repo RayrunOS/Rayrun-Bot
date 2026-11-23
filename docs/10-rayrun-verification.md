@@ -1,6 +1,6 @@
 # 10 — 验证、测试与 Rayrun 缺口
 
-> 状态：2026-11-22。本文是**验证/测试资源政策**和 **Rayrun 缺口登记册**。
+> 状态：2026-11-24。本文是**验证/测试资源政策**和 **Rayrun 缺口登记册**。
 > 所有需要计算资源的验证与测试都走 Rayrun（真实 token 页面例外见 §2.6）；Rayrun 不满足
 > 的项记在这里，不静默改用本地或其他云，也不把未验证写成已实现。平台能力需求本身仍以
 > [`08-integration.md`](08-integration.md) 为准。
@@ -306,6 +306,15 @@
   `test/rpc-contract.mjs` 覆盖，云端 proposal bridge 由
   `test/cloud-approval-bridge.mjs` 用 fake file tool/machine 覆盖（CLI、去重、非法/超限
   提案、停机不唤醒、结果 outbox/补传）。
+- 云端 routine scheduler live 尝试（2026-11-24，生产 `api.rayrunos.com` 账号 token，
+  本机临时 DSH profile，依赖 checkout `1.2.0`，cloudHost 固定 `rayrun-bot-test`）：
+  插件 health 正常（dependency `1.2.0`、runtime `rayrun-cloud-host`、available），
+  机器 `Stopped → Running`；但页面 `runtime.list` 返回
+  `E_RUNTIMES_UNAVAILABLE` / HTTP 404
+  “This Rayrun deployment does not expose the runtimes API”。测试在创建 bot/routine
+  前中止；机器已 stop，本次未创建 runtime，token 未打印，临时 DSH profile（含
+  vault token）已删除；保留的本地 token 文件未打印、未改动。该结果与 R-G008 的
+  生产部署状态一致，说明 cloudHost routine 的 live 验证仍被平台阻塞。
 - 真实 cloud proposal 闭环（2026-11-23，本机 DSH `0.2.2-rc.5`，依赖 main
   `fe965c1`，Bots `0.1.0-alpha.0`，`rayrun-bot-scoped`，私有 `deepseek-flash`）：
   真实云 bot 在回复末尾输出结构化 `rayrun-approval` block；cloud host 解析并写
@@ -375,6 +384,8 @@
 - A11 本地 workspace 扫描发现 `tmp/` 下有未跟踪的本地 key 文件（`dp-code.key`、
   `rayrun-dev.key`）。它们被 `.gitignore` 忽略，且未进入 git 历史或 npm 包，但仍
   留在工作区；需轮换并移出/删除后才能声称 A11 通过。扫描未打印值；
+- 云端 routine scheduler 的 live 验证：生产 API 的 `runtime.list` 仍缺失（R-G008
+  待部署；2026-11-24 尝试见 §3.1）；目前只有 fake E2E 和本地 mode 页面 smoke。
 - bot 会话、审批往返、远程审批、队列与恢复：R-G008 平台实现待部署；bot 侧常驻
   host 已有 dev 预览（多 bot 单 host E2E 通过）；本地 typed 审批执行已通过拒绝/
   失败关闭的页面 E2E、真实 cloud proposal + start/stop/pause/resume、denial/Continue

@@ -158,6 +158,19 @@ check('a malformed routines file does not block another bot', () => {
   assert.match(log, /routine-invalid/)
 })
 
+check('a failed routine writes a failed result for local history', async () => {
+  const { host } = setup({ agent: async () => { throw new Error('model down') } })
+  const paths = writeRoutines(host, 'bot-a', [routine()])
+  const [enqueued] = host.enqueueDueRoutines()
+  const result = await host.processNext()
+  assert.equal(result.botId, 'bot-a')
+  assert.match(result.error, /model down/)
+  const stored = JSON.parse(readFileSync(path.join(paths.routineResults, `${enqueued.taskId}.json`), 'utf8'))
+  assert.equal(stored.state, 'failed')
+  assert.match(stored.error, /model down/)
+  assert.equal(stored.reply, undefined)
+})
+
 check('builds a full routine prompt from the mirrored bot', () => {
   const { host } = setup()
   const paths = writeBot(host, 'bot-a')

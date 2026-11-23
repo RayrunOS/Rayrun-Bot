@@ -411,6 +411,23 @@ export function createCloudHost(options = {}) {
       writeState()
       return { botId, taskId: task.id, reply }
     } catch (error) {
+      if (task.origin === 'routine') {
+        try {
+          atomicJson(path.join(paths.routineResults, `${task.id}.json`), {
+            schema: 1,
+            botId,
+            taskId: task.id,
+            text: task.text,
+            at: now(),
+            state: 'failed',
+            error: redact(error.message) || 'The routine turn failed.',
+            ...(task.routineId === undefined ? {} : { routineId: task.routineId }),
+          })
+          pruneRoutineResults(paths)
+        } catch (writeError) {
+          log('routine-result-failed', { botId, taskId: task.id, message: redact(writeError.message) })
+        }
+      }
       renameSync(file, path.join(paths.failed, `${task.id || name}.json`))
       log('task-failed', { botId, taskId: task.id, message: redact(error.message) })
       return { botId, taskId: task.id, error: redact(error.message) }

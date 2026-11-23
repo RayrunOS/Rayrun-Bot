@@ -68,6 +68,27 @@ check('invalid results are refused and an unknown bot writes nothing', () => {
   assert.deepEqual(readRoutineResults(root, bot.id), [])
 })
 
+check('a failed result becomes a visible system error in history', () => {
+  const { root, bot } = setup()
+  writeRoutineResult(root, {
+    schema: 1,
+    botId: bot.id,
+    taskId: 'task-failed',
+    text: 'Scheduled routine: Inbox\n\nCheck it.',
+    at: T0,
+    state: 'failed',
+    error: 'The model connection failed.',
+  }, { botId: bot.id })
+  const history = openSessionStore(root).history(bot.id, { tail: true })
+  assert.deepEqual(history.messages.map((message) => message.role), ['user', 'system'])
+  assert.equal(history.messages[1].code, ERROR_CODES.routineFailed)
+  assert.equal(history.messages[1].text, 'The model connection failed.')
+  expectCode(() => writeRoutineResult(root, {
+    schema: 1, botId: bot.id, taskId: 'task-bad-failure', text: 'x', at: T0,
+    state: 'failed', error: 'x', reply: 'nope',
+  }, { botId: bot.id }), ERROR_CODES.routineInvalid)
+})
+
 check('history merges local transcript and routine results chronologically', () => {
   const { root, bot } = setup()
   const store = openSessionStore(root)

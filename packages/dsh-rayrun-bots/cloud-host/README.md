@@ -161,7 +161,8 @@ The local `routines.sync` bridge uploads definitions and imports results only
 while the machine is Running; it never wakes a stopped machine. Imported results
 are display history merged by `session.history`, not queue state. The cloud
 scheduler has fake end-to-end coverage but no live Rayrun run yet. A failed
-routine task is logged but does not produce a local result file.
+routine task writes `state: failed` + `error` to the same results directory, and
+local history shows it as an `E_ROUTINE_FAILED` system error.
 
 ## Not built yet
 

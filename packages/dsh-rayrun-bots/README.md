@@ -143,10 +143,10 @@ status and verified combinations live in
 
 Not built yet: approval actions beyond machine start/stop/pause/resume, cloud-only
 credential approvals, a Bots-page-level verified computer-creation success path,
-live validation of the cloud-host routine scheduler, cron/event triggers, routine
-failure display in local history, a production cloud image, and the npm release
-path. The local routine store/scheduler, cloud routine bridge, cloud scheduler
-and result merge have plain-Node coverage and a fake end-to-end test; the
+live validation of the cloud-host routine scheduler, cron/event triggers, a
+production cloud image, and the npm release path. The local routine store/
+scheduler, cloud routine bridge, cloud scheduler, failed-result history and
+result merge have plain-Node coverage and a fake end-to-end test; the
 detail-panel create, pause and remove paths passed a local DSH + Firefox smoke on
 2026-11-23 without a Rayrun token, but no scheduled turn was waited on. Approved
 start/stop, denial/Continue, and the next-turn approval context were verified live

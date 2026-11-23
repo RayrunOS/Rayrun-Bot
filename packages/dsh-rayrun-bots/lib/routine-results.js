@@ -23,7 +23,8 @@ const ROUTINE_RESULT_DEFAULT_LIMIT = 200
 const TASK_ID = /^[A-Za-z0-9._-]{1,80}$/
 const ROUTINE_ID = /^routine-[a-z0-9-]{1,60}$/
 const CONTROL = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/
-const FIELDS = new Set(['schema', 'botId', 'taskId', 'text', 'reply', 'at', 'routineId'])
+const FIELDS = new Set(['schema', 'botId', 'taskId', 'text', 'reply', 'error', 'state', 'at', 'routineId'])
+const STATES = new Set(['done', 'failed'])
 
 const isObject = (value) => typeof value === 'object' && value !== null && !Array.isArray(value)
 
@@ -38,12 +39,12 @@ export class RoutineResultError extends Error {
 
 const fail = (message, options) => { throw new RoutineResultError(message, options) }
 
-function textOf(value, field) {
+function textOf(value, field, maxBytes = ROUTINE_RESULT_FIELD_MAX_BYTES) {
   if (typeof value !== 'string') fail(`${field} must be a string.`, { field })
   const result = value.trim()
   if (result === '') fail(`${field} is required.`, { field })
   if (CONTROL.test(result)) fail(`${field} contains control characters.`, { field })
-  if (Buffer.byteLength(result, 'utf8') > ROUTINE_RESULT_FIELD_MAX_BYTES) fail(`${field} is too large.`, { field })
+  if (Buffer.byteLength(result, 'utf8') > maxBytes) fail(`${field} is too large.`, { field })
   return result
 }
 
@@ -60,14 +61,23 @@ export function validateRoutineResult(value, { botId, filename } = {}) {
     fail('routine result routineId is invalid.')
   }
   if (typeof value.at !== 'string' || Number.isNaN(Date.parse(value.at))) fail('routine result at is invalid.')
+  const state = value.state === undefined ? 'done' : value.state
+  if (!STATES.has(state)) fail('routine result state is invalid.')
   const result = {
     schema: 1,
     botId,
     taskId: value.taskId,
     text: textOf(value.text, 'text'),
-    reply: textOf(value.reply, 'reply'),
     at: value.at,
     ...(value.routineId === undefined ? {} : { routineId: value.routineId }),
+  }
+  if (state === 'failed') {
+    if (value.reply !== undefined) fail('A failed routine result must not carry a reply.')
+    result.state = 'failed'
+    result.error = textOf(value.error, 'error', 4 * 1024)
+  } else {
+    if (value.error !== undefined) fail('A completed routine result must not carry an error.')
+    result.reply = textOf(value.reply, 'reply')
   }
   if (Buffer.byteLength(JSON.stringify(result), 'utf8') > ROUTINE_RESULT_MAX_BYTES) {
     fail('routine result is too large.')

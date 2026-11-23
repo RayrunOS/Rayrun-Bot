@@ -234,21 +234,30 @@ function appendMessage(stateRoot, botId, message) {
 
 function routineMessages(stateRoot, botId) {
   const results = readRoutineResults(stateRoot, botId)
-  return results.flatMap((result, index) => [
-    {
+  return results.flatMap((result, index) => {
+    const user = {
       seq: ROUTINE_SYNTHETIC_SEQ_BASE + index * 2,
       at: result.at,
       role: 'user',
       text: result.text,
       origin: 'routine',
-    },
-    {
-      seq: ROUTINE_SYNTHETIC_SEQ_BASE + index * 2 + 1,
-      at: result.at,
-      role: 'bot',
-      text: result.reply,
-    },
-  ])
+    }
+    const reply = result.state === 'failed'
+      ? {
+          seq: ROUTINE_SYNTHETIC_SEQ_BASE + index * 2 + 1,
+          at: result.at,
+          role: 'system',
+          code: ERROR_CODES.routineFailed,
+          text: result.error,
+        }
+      : {
+          seq: ROUTINE_SYNTHETIC_SEQ_BASE + index * 2 + 1,
+          at: result.at,
+          role: 'bot',
+          text: result.reply,
+        }
+    return [user, reply]
+  })
 }
 
 function pageMessages(messages, { after, limit, tail }) {
