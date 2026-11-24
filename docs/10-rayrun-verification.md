@@ -356,17 +356,27 @@
   token `8b7d8648…`）：一次连发三条消息，session `queued`、第一条 detached
   `task-1c40a327-…` 运行、pending 2；随后 SIGKILL 本地 DSH（约 00:14:52Z）。
   本地停机期间云 host 于 00:14:52.626Z 写出 Q1 outbox（`Q1_OK`），云端 DSH
-  session `session-fb87719f-…` 已建立。重启同一 `DSH_HOME` 后，host 插件的
-  session service 首次被页面 RPC 触发即恢复 poll 并按序排空：本地 session id
+  session `session-fb87719f-…` 已建立。重启同一 `DSH_HOME` 后恢复 poll 按序
+  排空（当次由页面 RPC 触发；同轮修复为 host 挂载即恢复）：本地 session id
   `f4cee1c7-…` 不变、`bot-host` pid 635 不变、云端 DSH session 不变；最终
   `idle`、pending 0、history 6 条（3 user + 3 bot，bot 回复依次
   `Q1_OK`/`Q2_OK`/`Q3_OK`），无重复、无丢失。截图
   `/tmp/bot/cloud-v01-queue.png`（临时文件，不入库）。测试后 runtime 删除、
   runtimes=[]、机器 Stopped、未 destroy；scoped token 已撤销，临时 token/
   base-url 文件、临时 DSH profile 和脚本已删除。
-  恢复 poll 只在 host 插件的 session service 首次被 RPC 触及时启动；本地 DSH
-  重启后若一直不打开页面、也不发生 `session.*` 调用，detached/队列会等到下一次
-  页面动作才恢复（数据仍在磁盘/云端，不丢失）。
+- Host 挂载即恢复 detached task live（2026-11-24，Rayrun dev daemon，依赖
+  `1.2.0`，机器 `rayrun-bot-scoped`，scoped token `7b8fb8bd…`）：直连 host RPC
+  （不经页面）创建 bot 并连发两条消息，第一条 detached `task-53a45eeb-…` 运行、
+  pending 1；随后 SIGKILL 本地 DSH（约 00:26:12Z）。本地停机期间云 host 于
+  00:26:14.170Z 写出 Q1 outbox（`E1_OK`），云端 DSH session
+  `session-e716fe55-…` 已建立。重启同一 `DSH_HOME` 后**不打开页面、不发任何
+  HTTP RPC**，只轮询本地状态文件：session 自动从 `queued` 排空到 `idle`，
+  transcript 4 条（2 user + `E1_OK`/`E2_OK`），`bot-host` pid 636 与云端 DSH
+  session 均不变。`test/rpc-contract.mjs` 新增 fake detached runtime 的同类用例
+  （无页面 RPC 恢复并收取），32/32。另做无 token 本地冒烟：启动宿主 6 秒内
+  session 因缺 token 失败关闭。测试后 runtime 删除、runtimes=[]、机器 Stopped、
+  未 destroy；临时 DSH profile 和脚本已删除；scoped token 已撤销，临时 token
+  文件已删除。
 - 真实 cloud proposal 闭环（2026-11-23，本机 DSH `0.2.2-rc.5`，依赖 main
   `fe965c1`，Bots `0.1.0-alpha.0`，`rayrun-bot-scoped`，私有 `deepseek-flash`）：
   真实云 bot 在回复末尾输出结构化 `rayrun-approval` block；cloud host 解析并写
@@ -447,8 +457,8 @@
   本地 session store、`session.*` RPC、`rayrun_agent`/detached adapter 已有 fake
   测试；页面层真实一轮、detached 的页面关闭 + host 重启收取、同一 host 连续两轮、
   无 token 失败恢复、runtime 重建，以及三条消息排队 + 本地 DSH 崩溃恢复已在
-  Rayrun dev/test 验证（§3.1）；恢复 poll 需要一次页面 RPC 触发，DSH 启动后
-  未打开页面时的自动恢复未验证；
+  Rayrun dev/test 验证（§3.1）；host 挂载即恢复 detached task 已有 fake 测试和
+  本机 DSH 无 token 冒烟，真实云端 task 在无页面情况下的完整收取未单独做 live；
 - DeepSeek 模型调用（至今只创建了 model credential，没有发模型请求）；
 - 零余额宽限/force-destroy 行为（R-G009，不做破坏性验证）；
 - 在 Rayrun 上构建自定义 Dockerfile 镜像（R-G013）。

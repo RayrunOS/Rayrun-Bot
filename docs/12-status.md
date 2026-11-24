@@ -67,8 +67,10 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
   `test/rayrun-runtime.mjs` 用 fake tools/fetch 覆盖。第二轮跨 runner 重启的本地
   接续由 `test/session-runtime.mjs` 覆盖；Rayrun 实测同一 host 连续两轮已在
   2026-11-24 的 v0.1 live 验收中通过（见 §3.1）。三条消息排队 + 本地 DSH SIGKILL
-  后的按序排空也在同次 live 验收中通过；恢复 poll 由 host 插件 session service
-  首次页面 RPC 触发。
+  后的按序排空也在同次 live 验收中通过。host 挂载时会主动恢复持久化的 detached
+  task（不依赖页面 RPC；需要 `rayrun_files` 工具已注册）；`test/rpc-contract.mjs`
+  覆盖无页面 RPC 的恢复，另有 dev live：重启后不发任何页面/HTTP 请求，队列自动
+  排空（`E1_OK`/`E2_OK`）；无 token 本地冒烟也在 6 秒内失败关闭。
 - 审批协议由 `test/approvals.mjs` 和 `test/rpc-contract.mjs` 覆盖：schema、canonical
   actionHash、TTL、幂等/重放、错 bot、篡改、损坏文件、审计不含 action payload。
   ADR-019 的本地执行器由 `test/approval-executor.mjs`（7 项）覆盖 typed allowlist、
@@ -178,8 +180,15 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
     `session-fb87719f-…`）。重启同一 `DSH_HOME` 后由首次页面 RPC 触发恢复，
     按序排空队列：本地 session id `f4cee1c7-…` 不变、`bot-host` pid 635 不变、
     云端 DSH session 不变，最终 `idle`、pending 0、history 6 条，bot 回复依次
-    `Q1_OK`/`Q2_OK`/`Q3_OK`，无重复、无丢失。恢复 poll 由 host 插件 session
-    service 首次 RPC 触发；DSH 启动后未打开页面时不主动 poll，数据保留。
+    `Q1_OK`/`Q2_OK`/`Q3_OK`，无重复、无丢失。同轮修复：host 挂载时主动恢复
+    detached task，不再依赖页面 RPC；本地 DSH 启动后未打开页面的无 token 冒烟
+    确认 6 秒内 session 失败关闭。
+  - Host 挂载即恢复 live（scoped token `7b8fb8bd…`）：直连 host RPC 连发两条
+    消息，第一条 detached 运行、pending 1 后 SIGKILL 本地 DSH；停机期间云 host
+    完成 Q1（`E1_OK`，云端 DSH session `session-e716fe55-…`）。重启同一
+    `DSH_HOME` 后不打开页面、不发任何 HTTP RPC，只轮询本地文件：session 自动
+    排空到 `idle`，transcript 4 条（`E1_OK`/`E2_OK`），`bot-host` pid 636 与
+    云端 DSH session 均不变。
   - 截图 `/tmp/bot/cloud-v01-no-token.png`、`cloud-v01-continuity.png`、
     `cloud-v01-recovery.png`、`cloud-v01-heal.png`、`cloud-v01-queue.png`
     （临时文件，不入库）。测试后
@@ -226,8 +235,6 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
 ## 4. 尚未构建或验证
 
 - 页面层云电脑创建按钮的补验。
-- 本地 DSH 启动后若一直不打开页面、也不发生 `session.*` 调用，detached/队列
-  恢复不会主动启动，要等下一次页面动作；数据仍在磁盘和云端，不丢失。
 - 常驻云端 bot runtime 的生产镜像与部署：平台 R-G008 runtimes API 已实现并本机 dev
   全量验收通过（`rayrun-bot-gaps`，`4709ac0`，2026-11-22：runtime 启动、凭证注入、
   sandbox stop/start autostart、SIGKILL 重启、删除；keep_alive 与 daemon 重启保留；
