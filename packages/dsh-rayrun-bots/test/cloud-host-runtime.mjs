@@ -16,7 +16,7 @@ const checks = []
 const check = (name, fn) => checks.push({ name, fn })
 const roots = []
 
-function setup({ machineStatus = 'Running', runtime: existing = null, withTool = true, project = false, configured = true } = {}) {
+function setup({ machineStatus = 'Running', runtime: existing = null, withTool = true, project = false, configured = true, tokenMissing = false } = {}) {
   const root = mkdtempSync(path.join(tmpdir(), 'rayrun-cloud-host-runtime-'))
   roots.push(root)
   const calls = []
@@ -30,6 +30,11 @@ function setup({ machineStatus = 'Running', runtime: existing = null, withTool =
   }
   const tool = {
     async execute(args) {
+      if (tokenMissing) {
+        const error = new Error('No Rayrun token.')
+        error.code = 'token_required'
+        throw error
+      }
       if (args.action === 'upload') {
         uploads.push(args)
         files.set(args.path, args.text)
@@ -241,6 +246,14 @@ check('refuses without a Rayrun connection before a machine lookup', async () =>
   )
   assert.equal(state.machine.status, 'Running')
   assert.equal(state.puts.length, 0)
+})
+
+check('maps a missing token from the file tool to E_TOKEN_REQUIRED', async () => {
+  const { root, runtime } = setup({ tokenMissing: true })
+  await assert.rejects(
+    runtime.start({ bot, text: 'hello', messageSeq: 1, botId: bot.id, stateRoot: root }),
+    (error) => error.code === ERROR_CODES.tokenRequired,
+  )
 })
 
 check('refuses when there is no machine', async () => {

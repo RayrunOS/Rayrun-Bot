@@ -337,7 +337,7 @@
   token_id `cd0f5810…`）：无 token 发送时 session `failed`、`E_TOKEN_REQUIRED`，
   无 bot 回复；保存 token 后下一轮 `RECOVERED_OK`。同轮修复
   `cloud-host-runtime.ensureMachine` 先检查 `connection.configured`，避免把缺
-  token 误报成 `E_MACHINE_STOPPED`；`test/cloud-host-runtime.mjs` 13/13。随后同一
+  token 误报成 `E_MACHINE_STOPPED`；`test/cloud-host-runtime.mjs` 14/14。随后同一
   host 连续两轮：`bot-host` pid 635、DSH session `session-5aa1302e-…` 不变，
   `TURN1_OK` → `ALPHA`。删除 `bot-host` 并重启本地 DSH 后，下一轮自动重建 host
   （pid 704），DSH session 仍为 `session-5aa1302e-…`，`RECOVERY_TURN` → `ALPHA`；
@@ -374,7 +374,8 @@
   transcript 4 条（2 user + `E1_OK`/`E2_OK`），`bot-host` pid 636 与云端 DSH
   session 均不变。`test/rpc-contract.mjs` 新增 fake detached runtime 的同类用例
   （无页面 RPC 恢复并收取），32/32。另做无 token 本地冒烟：启动宿主 6 秒内
-  session 因缺 token 失败关闭。测试后 runtime 删除、runtimes=[]、机器 Stopped、
+  session 以 `E_TOKEN_REQUIRED` 失败关闭（修复前为 `E_INTERNAL`）。测试后
+  runtime 删除、runtimes=[]、机器 Stopped、
   未 destroy；临时 DSH profile 和脚本已删除；scoped token 已撤销，临时 token
   文件已删除。
 - 真实 cloud proposal 闭环（2026-11-23，本机 DSH `0.2.2-rc.5`，依赖 main

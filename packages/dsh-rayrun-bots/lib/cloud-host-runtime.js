@@ -22,7 +22,7 @@ import { assertBotId } from './bot-schema.js'
 import { ERROR_CODES } from './errors.js'
 import { HOST_ASSET_VERSION, projectHost } from './host-projection.js'
 import { buildPrompt } from './rayrun-runtime.js'
-import { createRayrunRpc, rayrunFailure } from './rayrun-rpc.js'
+import { createRayrunRpc, dependencyFailure, rayrunFailure } from './rayrun-rpc.js'
 import { createRuntimeRpc } from './runtime-rpc.js'
 import { RUNTIME_CONTRACT_VERSION } from './runtime.js'
 
@@ -75,7 +75,16 @@ function missingFile(error) {
   return error?.status === 404
     || error?.code === 'not_found'
     || error?.code === 'file_not_found'
-    || /not found|404/i.test(String(error?.message ?? ''))
+    || /not found|404/i.test(String(error?.message ?? error))
+}
+
+/** Map the dependency's auth errors, but leave file-level errors intact. */
+function toolFailure(error) {
+  const code = error?.code
+  if (code === 'token_required' || code === 'unauthorized' || code === 'invalid_token' || error?.status === 401) {
+    return dependencyFailure(error)
+  }
+  return error
 }
 
 /** Derive the bot id from the persisted localDir (`.../bots/<id>/workspace`). */
@@ -266,12 +275,16 @@ export function createCloudHostRuntime({
     if (tool === undefined) {
       throw rayrunFailure(ERROR_CODES.runtimeUnavailable, 'dsh-rayrun-computer is missing the rayrun_files tool; no turn was sent.')
     }
-    await tool.execute({
-      action: 'upload',
-      sandbox,
-      path: relative,
-      text,
-    }, { signal: AbortSignal.timeout(60_000) })
+    try {
+      await tool.execute({
+        action: 'upload',
+        sandbox,
+        path: relative,
+        text,
+      }, { signal: AbortSignal.timeout(60_000) })
+    } catch (error) {
+      throw toolFailure(error)
+    }
   }
 
   async function readFile(sandbox, relative) {
@@ -288,7 +301,7 @@ export function createCloudHostRuntime({
       return typeof text === 'string' ? text : null
     } catch (error) {
       if (missingFile(error)) return null
-      throw error
+      throw toolFailure(error)
     }
   }
 
