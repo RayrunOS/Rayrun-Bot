@@ -4,7 +4,7 @@
  * The host process runs under the platform `runtimes` API and owns a per-bot
  * queue under `/workspace/.rayrun/bots/<botId>`. This adapter:
  *   1. ensures the sandbox is Running (never creates one);
- *   2. ensures `bot-host-<botId>` exists with the host entry point;
+ *   2. ensures the shared `bot-host` exists and rechecks it each turn;
  *   3. uploads one task JSON into the host inbox;
  *   4. polls the outbox for the reply.
  *
@@ -116,7 +116,8 @@ export function createCloudHostRuntime({
 } = {}) {
   const rpc = createRayrunRpc({ getOrigin, fetchImpl })
   const runtimeRpc = createRuntimeRpc({ getOrigin, fetchImpl })
-  let hostSetup = null
+  const hostScripts = new Map()
+  const hostChecks = new Map()
   if (!Array.isArray(credentials) || credentials.some((name) => typeof name !== 'string' || name === '')) {
     throw new TypeError('cloud host credentials must be an array of binding names')
   }
@@ -130,25 +131,52 @@ export function createCloudHostRuntime({
     }
   }
 
-  async function setupHost() {
-    const machine = await ensureMachine()
+  function scriptFor(machine) {
+    if (hostScript !== null) return Promise.resolve(hostScript)
     const sandbox = machine.name || machine.id
-    let script = hostScript
-    if (script === null) {
-      const projected = await projectHost({
+    let pending = hostScripts.get(sandbox)
+    if (pending === undefined) {
+      pending = projectHost({
         read: (relative) => readFile(sandbox, relative),
         write: (relative, value) => writeFile(sandbox, relative, value),
         version: HOST_ASSET_VERSION,
+      }).then((projected) => projected.script).catch((error) => {
+        hostScripts.delete(sandbox)
+        throw error
       })
-      script = projected.script
+      hostScripts.set(sandbox, pending)
     }
-    const host = await ensureHost(machine, script)
-    await waitHostReady(host.ref)
-    return { machine, host }
+    return pending
+  }
+
+  /**
+   * Verify the machine, projected script and host on every turn. The host can be
+   * deleted or restarted between turns, so a one-time setup cache would leave a
+   * task in an inbox with no process to consume it.
+   */
+  async function prepareHost() {
+    const machine = await ensureMachine()
+    const script = await scriptFor(machine)
+    const ref = machine.name || machine.id
+    let pending = hostChecks.get(ref)
+    if (pending === undefined) {
+      pending = (async () => {
+        const host = await ensureHost(machine, script)
+        await waitHostReady(host.ref)
+        return { machine, host }
+      })().finally(() => {
+        hostChecks.delete(ref)
+      })
+      hostChecks.set(ref, pending)
+    }
+    return pending
   }
 
   async function ensureMachine({ start = true } = {}) {
     const overview = await rpc.call('overview')
+    if (overview.connection?.configured !== true) {
+      throw rayrunFailure(ERROR_CODES.tokenRequired, 'Connect Rayrun in Bots setup before sending a message.')
+    }
     const machines = Array.isArray(overview.machines)
       ? overview.machines.filter((item) => item?.status !== 'Terminated')
       : []
@@ -288,11 +316,7 @@ export function createCloudHostRuntime({
     },
     async start({ bot, text, history = [], messageSeq, origin, botId, stateRoot } = {}) {
       if (typeof botId !== 'string' || botId === '') throw rayrunFailure(ERROR_CODES.runtimeUnavailable, 'botId is required.')
-      hostSetup ??= setupHost().catch((error) => {
-        hostSetup = null
-        throw error
-      })
-      const { machine, host } = await hostSetup
+      const { machine, host } = await prepareHost()
       const taskId = `task-${randomUUID()}`
       const paths = filePaths(botId, taskId)
       const prompt = buildPrompt({

@@ -16,7 +16,7 @@ const checks = []
 const check = (name, fn) => checks.push({ name, fn })
 const roots = []
 
-function setup({ machineStatus = 'Running', runtime: existing = null, withTool = true, project = false } = {}) {
+function setup({ machineStatus = 'Running', runtime: existing = null, withTool = true, project = false, configured = true } = {}) {
   const root = mkdtempSync(path.join(tmpdir(), 'rayrun-cloud-host-runtime-'))
   roots.push(root)
   const calls = []
@@ -49,7 +49,7 @@ function setup({ machineStatus = 'Running', runtime: existing = null, withTool =
     calls.push(body)
     let value
     if (body.action === 'overview') {
-      value = { ok: true, connection: { configured: true }, machines: state.machine ? [state.machine] : [] }
+      value = { ok: true, connection: { configured }, machines: state.machine ? [state.machine] : [] }
     } else if (body.action === 'machine.action') {
       state.machine = { ...state.machine, status: 'Running' }
       value = { ok: true, machine: state.machine }
@@ -188,6 +188,18 @@ check('concurrent bots share one host setup', async () => {
   assert.equal(uploads.filter((item) => item.path.includes('/inbox/')).length, 2)
 })
 
+check('recreates a deleted host runtime on the next turn', async () => {
+  const { root, runtime, state, uploads } = setup()
+  const first = await runtime.start({ bot, text: 'one', messageSeq: 1, botId: bot.id, stateRoot: root })
+  assert.equal(state.puts.length, 1)
+  state.runtimes.delete('bot-host')
+  const second = await runtime.start({ bot, text: 'two', messageSeq: 2, botId: bot.id, stateRoot: root })
+  assert.notEqual(first.taskId, second.taskId)
+  assert.equal(state.puts.length, 2)
+  assert.equal(state.runtimes.get('bot-host')?.state, 'running')
+  assert.equal(uploads.filter((item) => item.path.includes('/inbox/')).length, 2)
+})
+
 check('status stays running until the outbox exists, then collect returns the reply', async () => {
   const { root, runtime, files } = setup()
   const started = await runtime.start({ bot, text: 'hello', messageSeq: 1, botId: bot.id, stateRoot: root })
@@ -218,6 +230,16 @@ check('reuses an existing running runtime without putting it again', async () =>
   const existing = { name: 'bot-host', state: 'running', pid: 7, restarts: 0 }
   const { root, runtime, state } = setup({ runtime: existing })
   await runtime.start({ bot, text: 'hello', messageSeq: 1, botId: bot.id, stateRoot: root })
+  assert.equal(state.puts.length, 0)
+})
+
+check('refuses without a Rayrun connection before a machine lookup', async () => {
+  const { root, runtime, state } = setup({ configured: false })
+  await assert.rejects(
+    runtime.start({ bot, text: 'hello', messageSeq: 1, botId: bot.id, stateRoot: root }),
+    (error) => error.code === ERROR_CODES.tokenRequired && /Connect Rayrun/.test(error.message),
+  )
+  assert.equal(state.machine.status, 'Running')
   assert.equal(state.puts.length, 0)
 })
 
