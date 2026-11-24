@@ -58,13 +58,19 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
 
 ### 3.1 验证记录
 
+> 2026-11-24 按用户明确授权销毁全部测试机：devcheck 的 `rayrun-bot`、
+> `rayrun-bot-idle`、`rayrun-bot-scoped` 与 botclean 的 `rayrun-bot-clean`；
+> 两租户复核 `live_remaining=[]`。下文“stop / 未 destroy”是当次测试收尾动作；
+> botclean 租户本身保留。
+
 - 依赖层的连接、创建和桌面成功路径，以及页面层的 setup 和 Open 路径，已在
   2026-11-21 用本地测试 key 验证；key 没有进入沙盒。
 - 页面层云电脑创建按钮已在干净 dev tenant（初始 0 台机器）验证（2026-11-24）：
   setup 云电脑步骤点击 `Create cloud computer`，名称 `rayrun-bot-clean`、DeepSeek
   key 留空，页面显示 `Created · rayrun-bot-clean`；机器创建后 Running，测试后 stop
-  回 Stopped，未 destroy。截图 `/tmp/bot/create-computer.png`（临时文件，不入库）。
-  scoped token 已撤销，临时 token/base-url 文件和临时 DSH profile 已删除。
+  回 Stopped，随后于 2026-11-24 按用户明确授权 destroy。截图
+  `/tmp/bot/create-computer.png`（临时文件，不入库）。scoped token 已撤销，临时
+  token/base-url 文件和临时 DSH profile 已删除。
 - 页面层的新建/刷新名册路径已在 2026-11-21 的本机 DSH 页面验证。
 - Session store 与 `session.*` RPC 已由 `test/session-runtime.mjs` 和
   `test/rpc-contract.mjs` 在 fake runtime 上覆盖；`rayrun_agent` adapter 由
@@ -199,9 +205,9 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
   - 截图 `/tmp/bot/cloud-v01-no-token.png`、`cloud-v01-continuity.png`、
     `cloud-v01-recovery.png`、`cloud-v01-heal.png`、`cloud-v01-queue.png`
     （临时文件，不入库）。测试后
-    runtime 删除、
-    runtimes=[]、机器 Stopped、未 destroy；scoped token 已撤销，临时 token/base-url
-    文件和临时 DSH profile 已删除。
+    runtime 删除、runtimes=[]、机器 Stopped；`rayrun-bot-scoped` 后于 2026-11-24
+    按用户明确授权 destroy。scoped token 已撤销，临时 token/base-url 文件和临时
+    DSH profile 已删除。
 - R-G008 平台验收已在 2026-11-22 的 dev daemon 上完成：runtimes 正测、`keep_alive`
   （60s idle 机等 150s 仍 Running，删除 runtime 后约 240s 自动 Stopped）、daemon
   重启（runtime pid 不变）、旧镜像 `ci@1` 409 `guestd_outdated` 均通过；生产未部署。

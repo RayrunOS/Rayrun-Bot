@@ -112,6 +112,11 @@
 ### 3.1 已验证通过（含本机验证；待 Rayrun 复验项见 §4）
 
 > 以下金额、机器数、密码长度是当时读数，会随时间变化，不构成当前状态。
+>
+> 2026-11-24 按用户明确授权销毁了全部测试机：devcheck 租户的 `rayrun-bot`、
+> `rayrun-bot-idle`、`rayrun-bot-scoped`，以及 botclean 租户的
+> `rayrun-bot-clean`；复核两个租户 `live_remaining=[]`。下文各条记录里的
+> “stop / 未 destroy”描述的是当次测试收尾动作。botclean 租户本身保留。
 
 - 两个插件的安装、bundle 合成、Bots/云电脑页面渲染、health、跨源 POST 拒绝
   （2026-11-21，Rayrun 沙箱；[`design/desktop-distribution.md`](design/desktop-distribution.md) §5.8）；
@@ -160,8 +165,9 @@
   setup 云电脑步骤，点击 `Create cloud computer`（名称 `rayrun-bot-clean`，DeepSeek
   key 留空）→ 依赖 `machine.create` 创建 2C/2G、remote desktop 机器 → 页面显示
   `Created · rayrun-bot-clean` 并改为已有电脑；机器创建后为 Running，测试后 `stop`
-  回 Stopped，未 destroy。截图 `/tmp/bot/create-computer.png`（临时文件，不入库）。
-  scoped token 已撤销，临时 token/base-url 文件和临时 DSH profile 已删除。
+  回 Stopped，随后于 2026-11-24 按用户明确授权 destroy。截图
+  `/tmp/bot/create-computer.png`（临时文件，不入库）。scoped token 已撤销，临时
+  token/base-url 文件和临时 DSH profile 已删除。
 - 详情面板真实数据（2026-11-21，同一本机 DSH 页面）：连接后显示 `rayrun-bot-test` /
   `休眠`、`余额 ¥27.42 · 231.3 机时`、底部 `Rayrun 已连接 · ¥27.42`；在 setup 里连接
   后关闭向导，详情无需刷新即更新。登出 Rayrun 后显示 `—` / `未连接`、
@@ -297,9 +303,9 @@
   并同时发送；adapter 只注册一个 `bot-host`（running，pid 636），host 全局串行、
   每 bot 独立 DSH session；回复 `MULTI_A_OK`/`MULTI_B_OK`，host state 中两个
   session id 不同（`session-5a9f7837-…`/`session-5eb77773-…`），queueDepth 0、
-  processed 2。测试后 runtime 删除、机器 stop（Stopped，runtimes 空），未 destroy；
-  scoped token 已撤销（旧 token 401），临时 token 文件已清理；`rayrun-bot-scoped`
-  保持 Stopped，销毁需用户明确授权。
+  processed 2。测试后 runtime 删除、机器 stop（Stopped，runtimes 空）；scoped token
+  已撤销（旧 token 401），临时 token 文件已清理。`rayrun-bot-scoped` 后于
+  2026-11-24 按用户明确授权 destroy。
 - 本地审批执行页面 E2E（2026-11-23，本机 DSH `0.2.2-rc.5`，依赖 main `fe965c1`，
   Bots `0.1.0-alpha.0`，临时 DSH profile，**无 Rayrun token**）：本地 store 创建两条
   真实 proposal（机器 `box` 的 stop/start）；页面从 `approvals.list` 显示动作、目标
