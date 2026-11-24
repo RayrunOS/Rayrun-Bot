@@ -22,6 +22,8 @@ import { RUNTIME_CONTRACT_VERSION } from './runtime.js'
 
 const TASK_TIMEOUT_SECONDS = 900
 const REPLY_MAX_BYTES = 64 * 1024
+const COLD_START_RETRY_DELAYS_MS = Object.freeze([5_000, 10_000, 20_000, 30_000])
+const COLD_START_CODES = new Set(['http_404', 'worker_files_unavailable'])
 
 function resultNames(body) {
   return Array.isArray(body?.files) && body.files.length ? body.files.join(', ') : 'none'
@@ -29,11 +31,25 @@ function resultNames(body) {
 
 /**
  * Create the detached adapter. `getOrigin` is lazy because it is only available
- * after the DSH web server is injected.
- * @param {{ getOrigin?: () => string | undefined, fetchImpl?: Function }} options
+ * after the DSH web server is injected. A machine that just woke can briefly
+ * reject the worker-profile file PUT; retry the whole `dsh.start` with the same
+ * task id and bounded exponential backoff before failing closed.
+ * @param {{
+ *   getOrigin?: () => string | undefined,
+ *   fetchImpl?: Function,
+ *   startRetryDelays?: number[],
+ * }} options
  */
-export function createRayrunDetachedRuntime({ getOrigin, fetchImpl = globalThis.fetch } = {}) {
+export function createRayrunDetachedRuntime({
+  getOrigin,
+  fetchImpl = globalThis.fetch,
+  startRetryDelays = COLD_START_RETRY_DELAYS_MS,
+} = {}) {
   const rpc = createRayrunRpc({ getOrigin, fetchImpl })
+  const retryDelays = Array.isArray(startRetryDelays)
+    && startRetryDelays.every((delay) => Number.isFinite(delay) && delay >= 0)
+    ? startRetryDelays
+    : COLD_START_RETRY_DELAYS_MS
 
   return {
     contract: RUNTIME_CONTRACT_VERSION,
@@ -54,15 +70,26 @@ export function createRayrunDetachedRuntime({ getOrigin, fetchImpl = globalThis.
         'The task result directory contains reply.md with a self-contained reply to the latest user message.',
         'No external side effect was performed.',
       ]
-      const body = await rpc.call('dsh.start', {
+      const taskId = `task-${randomUUID()}`
+      const start = () => rpc.call('dsh.start', {
         sandbox: machine.name || machine.id,
         local_dir: localDir,
         objective,
         acceptance,
         context: `The turn came from the Bots UI for bot ${botId}. reply.md is the only user-facing output.`,
-        task_id: `task-${randomUUID()}`,
+        task_id: taskId,
         timeout: TASK_TIMEOUT_SECONDS,
       }, { timeoutMs: 240_000 })
+      let body
+      for (let attempt = 0; ; attempt += 1) {
+        try {
+          body = await start()
+          break
+        } catch (error) {
+          if (!COLD_START_CODES.has(error?.detailCode) || attempt >= retryDelays.length) throw error
+          await new Promise((resolve) => setTimeout(resolve, retryDelays[attempt]))
+        }
+      }
       if (typeof body.task_id !== 'string' || body.task_id.trim() === '') {
         throw rayrunFailure(ERROR_CODES.internal, 'The detached RPC returned no task id.')
       }

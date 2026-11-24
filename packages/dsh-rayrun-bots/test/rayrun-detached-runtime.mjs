@@ -21,14 +21,14 @@ const MACHINE = {
   machines: [{ id: 'machine-1', name: 'rayrun-bot', status: 'Running' }],
 }
 
-function fakeFetch({ start, status = { running: true, files: ['reply.md'], activity: null }, result } = {}) {
+function fakeFetch({ start, startFailures = [], status = { running: true, files: ['reply.md'], activity: null }, result } = {}) {
   const calls = []
   const impl = async (url, options) => {
     const body = JSON.parse(options.body)
     calls.push({ url: String(url), body })
     let payload = null
     if (body.action === 'overview') payload = MACHINE
-    else if (body.action === 'dsh.start') payload = start ?? {
+    else if (body.action === 'dsh.start') payload = startFailures.shift() ?? start ?? {
       ok: true,
       task_id: 'task-test',
       sandbox: 'rayrun-bot',
@@ -96,6 +96,77 @@ check('start posts a bounded dsh.start and returns its task id', async () => {
   assert.doesNotMatch(JSON.stringify(fetchImpl.calls), /Bearer\s|RAYRUN_TOKEN|sk-[A-Za-z0-9]{16,}/)
 })
 
+check('retries a cold-start http_404 once with the same task id', async () => {
+  const stateRoot = setup()
+  const fetchImpl = fakeFetch({
+    startFailures: [{ ok: false, error: { code: 'http_404', message: 'Not Found', status: 404 } }],
+  })
+  const runtime = createRayrunDetachedRuntime({
+    getOrigin: () => 'http://127.0.0.1:1234',
+    fetchImpl,
+    startRetryDelays: [1],
+  })
+  const started = await runtime.start({
+    bot: { id: 'echo', name: 'Echo', label: 'Echoes', instructions: 'Reply briefly.' },
+    text: 'hello',
+    history: [],
+    messageSeq: 1,
+    botId: 'echo',
+    stateRoot,
+  })
+  assert.equal(started.taskId, 'task-test')
+  const starts = fetchImpl.calls.filter((call) => call.body.action === 'dsh.start')
+  assert.equal(starts.length, 2)
+  assert.equal(starts[0].body.task_id, starts[1].body.task_id)
+})
+
+check('backs off worker_files_unavailable and reuses the task id', async () => {
+  const stateRoot = setup()
+  const failure = { ok: false, error: { code: 'worker_files_unavailable', message: 'waking', status: 503 } }
+  const fetchImpl = fakeFetch({ startFailures: [failure, failure] })
+  const runtime = createRayrunDetachedRuntime({
+    getOrigin: () => 'http://127.0.0.1:1234',
+    fetchImpl,
+    startRetryDelays: [1, 1],
+  })
+  const started = await runtime.start({
+    bot: { id: 'echo', name: 'Echo', label: 'Echoes', instructions: 'Reply briefly.' },
+    text: 'hello',
+    history: [],
+    messageSeq: 1,
+    botId: 'echo',
+    stateRoot,
+  })
+  assert.equal(started.taskId, 'task-test')
+  const starts = fetchImpl.calls.filter((call) => call.body.action === 'dsh.start')
+  assert.equal(starts.length, 3)
+  assert.equal(new Set(starts.map((call) => call.body.task_id)).size, 1)
+})
+
+check('fails closed after the cold-start backoff budget', async () => {
+  const stateRoot = setup()
+  const failure = { ok: false, error: { code: 'worker_files_unavailable', message: 'waking', status: 503 } }
+  const fetchImpl = fakeFetch({ startFailures: [failure, failure, failure] })
+  const runtime = createRayrunDetachedRuntime({
+    getOrigin: () => 'http://127.0.0.1:1234',
+    fetchImpl,
+    startRetryDelays: [1, 1],
+  })
+  await assert.rejects(runtime.start({
+    bot: { id: 'echo', name: 'Echo', label: 'Echoes', instructions: 'Reply briefly.' },
+    text: 'hello',
+    history: [],
+    messageSeq: 1,
+    botId: 'echo',
+    stateRoot,
+  }), (error) => {
+    assert.equal(error.code, ERROR_CODES.runtimeUnavailable)
+    assert.equal(error.detailCode, 'worker_files_unavailable')
+    return true
+  })
+  assert.equal(fetchImpl.calls.filter((call) => call.body.action === 'dsh.start').length, 3)
+})
+
 check('status and result collect reply.md from the task directory', async () => {
   const stateRoot = setup()
   const fetchImpl = fakeFetch()
@@ -152,6 +223,7 @@ check('a dependency error code is mapped before a task is attached', async () =>
   const runtime = createRayrunDetachedRuntime({
     getOrigin: () => 'http://127.0.0.1:1234',
     fetchImpl,
+    startRetryDelays: [1],
   })
   await assert.rejects(runtime.start({
     bot: { id: 'echo', name: 'Echo', label: 'Echoes', instructions: 'Reply briefly.' },
@@ -164,6 +236,7 @@ check('a dependency error code is mapped before a task is attached', async () =>
     assert.equal(error.code, ERROR_CODES.machineStopped)
     return true
   })
+  assert.equal(fetchImpl.calls.filter((call) => call.body.action === 'dsh.start').length, 1)
 })
 
 check('availability follows a late origin injection', () => {
