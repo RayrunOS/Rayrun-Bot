@@ -113,10 +113,11 @@
 
 > 以下金额、机器数、密码长度是当时读数，会随时间变化，不构成当前状态。
 >
-> 2026-11-24 按用户明确授权销毁了全部测试机：devcheck 租户的 `rayrun-bot`、
-> `rayrun-bot-idle`、`rayrun-bot-scoped`，以及 botclean 租户的
-> `rayrun-bot-clean`；复核两个租户 `live_remaining=[]`。下文各条记录里的
-> “stop / 未 destroy”描述的是当次测试收尾动作。botclean 租户本身保留。
+> 2026-11-24 按用户明确授权销毁了 dev 测试机：devcheck 的 `rayrun-bot`、
+> `rayrun-bot-idle`、`rayrun-bot-scoped`、`rayrun-bot-coldstart`，以及 botclean 的
+> `rayrun-bot-clean`；dev 侧现无 bot 测试机。hosted 的 `rayrun-bot-test` 与
+> `rayrun-bot-fresh-mwu9kgwj` 按用户决定保留、保持 Stopped、未 destroy。下文各条
+> 记录里的“stop / 未 destroy”描述的是当次测试收尾动作；botclean 租户本身保留。
 
 - 两个插件的安装、bundle 合成、Bots/云电脑页面渲染、health、跨源 POST 拒绝
   （2026-11-21，Rayrun 沙箱；[`design/desktop-distribution.md`](design/desktop-distribution.md) §5.8）；
@@ -395,8 +396,9 @@
   机器 `rayrun-bot-coldstart` / `deepseek-harness@1`，credential `deepseek-flash`，
   dev token `02e0a54e…`）：机器先 stop 到 Stopped；直连 host RPC 创建 bot 并发送
   `COLDSTART`；首轮 `dsh.start` 唤醒机器并成功，session `running` → `idle`，
-  bot 回复 `COLD_OK`，约 13 秒完成。测试后机器 stop 回 Stopped、未 destroy；临时
-  DSH profile 和脚本已删除；token 已撤销，临时 token 文件已删除。依赖侧随后确认：
+  bot 回复 `COLD_OK`，约 13 秒完成。测试后机器 stop；用户授权后于 2026-11-24
+  10:17:17Z destroy（HTTP 204）。临时 DSH profile 和脚本已删除；token 已撤销，
+  临时 token 文件已删除。依赖侧随后确认：
   hosted 上的 `worker_files_unavailable` 是其 live 测试脚本的 fetch mock 误拦截
   `.../node_modules/dsh-rayrun-computer/...` file PUT；请求未到 nginx。修正已合入
   依赖 main `956d595`（CI Node 22/24 全绿），`worker_files_unavailable` 已移除，

@@ -58,10 +58,11 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
 
 ### 3.1 验证记录
 
-> 2026-11-24 按用户明确授权销毁全部测试机：devcheck 的 `rayrun-bot`、
-> `rayrun-bot-idle`、`rayrun-bot-scoped` 与 botclean 的 `rayrun-bot-clean`；
-> 两租户复核 `live_remaining=[]`。下文“stop / 未 destroy”是当次测试收尾动作；
-> botclean 租户本身保留。
+> 2026-11-24 按用户明确授权销毁 dev 测试机：devcheck 的 `rayrun-bot`、
+> `rayrun-bot-idle`、`rayrun-bot-scoped`、`rayrun-bot-coldstart` 与 botclean 的
+> `rayrun-bot-clean`；dev 侧现无 bot 测试机。hosted 的 `rayrun-bot-test` 与
+> `rayrun-bot-fresh-mwu9kgwj` 保留、Stopped、未 destroy。下文“stop / 未 destroy”
+> 是当次测试收尾动作；botclean 租户本身保留。
 
 - 依赖层的连接、创建和桌面成功路径，以及页面层的 setup 和 Open 路径，已在
   2026-11-21 用本地测试 key 验证；key 没有进入沙盒。
@@ -170,14 +171,15 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
   后 task id 落入 `session.json`，关闭页面并 kill 本地 DSH，等待后重启同一
   `DSH_HOME`，新 host 恢复 poll、收取 `reply.md`（`DETACHED_OK`），session 回到
   `idle`，刷新后回复仍在。冷启动 dev live（2026-11-24）：`rayrun-bot-coldstart`
-  Stopped → 首轮 `dsh.start` → `COLD_OK`，约 13 秒。依赖侧曾在 hosted 报
+  Stopped → 首轮 `dsh.start` → `COLD_OK`，约 13 秒；用户授权后于 10:17:17Z
+  destroy（HTTP 204）。依赖侧曾在 hosted 报
   `worker_files_unavailable`，后确认是其 live 测试脚本的 fetch mock 误拦截
   `.../node_modules/dsh-rayrun-computer/...` file PUT，请求未到 nginx；修正已合入
   依赖 main `956d595`（CI Node 22/24 全绿），该码已移除，尚未 npm 发布。收窄
   mock 后 hosted `rayrun-bot-test` 冷启动 8.8 秒成功（`REAL_FIX_OK`）。adapter
   和平台正常，不需要 cold-start retry。生产 daemon `92a77d0` 早于 R-G008，
-  `/runtimes`、`/host` 404 是独立的未部署差异。两台测试机保持 Stopped，destroy
-  需用户单独授权。
+  `/runtimes`、`/host` 404 是独立的未部署差异。两台 hosted 测试机保留、保持
+  Stopped；清理待用户确认，当前不 destroy。
 - A8 续接已在 2026-11-22 用本机 DSH 页面 + 已有 `rayrun-bot-test` 验证：第一轮
   `TURN1_OK` 后把机器 stop 到 Stopped，关闭页面并 kill 本地 DSH；重启同一
   `DSH_HOME` 后发第二轮，依赖自动唤醒机器，bot 从持久化 transcript 回答 `ALPHA`；
