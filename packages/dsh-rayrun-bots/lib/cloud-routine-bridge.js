@@ -36,6 +36,17 @@ export function createCloudRoutineBridge({ stateRoot, getTools, getMachine } = {
   const bots = openBotStore(root)
   const store = openRoutineStore(root)
   const mirrored = new Map()
+  const syncs = new Map()
+
+  /** Run one bot's syncs in order so a slower, older upload cannot win. */
+  function serialize(botId, task) {
+    const previous = syncs.get(botId) ?? Promise.resolve()
+    const next = previous.catch(() => {}).then(task)
+    syncs.set(botId, next)
+    return next.finally(() => {
+      if (syncs.get(botId) === next) syncs.delete(botId)
+    })
+  }
 
   function filesTool() {
     let tool
@@ -189,18 +200,20 @@ export function createCloudRoutineBridge({ stateRoot, getTools, getMachine } = {
   }
 
   /** Upload definitions and import results for one bot; never starts a machine. */
-  async function sync(botId) {
+  function sync(botId) {
     const bot = assertBotId(botId)
-    const machine = await runningMachine()
-    if (machine === null) {
-      return {
-        uploaded: false, imported: 0, duplicates: 0, rejected: 0, truncated: false,
-        skipped: 'machine_not_running',
+    return serialize(bot, async () => {
+      const machine = await runningMachine()
+      if (machine === null) {
+        return {
+          uploaded: false, imported: 0, duplicates: 0, rejected: 0, truncated: false,
+          skipped: 'machine_not_running',
+        }
       }
-    }
-    const uploaded = await uploadDefinitions(bot, machine)
-    const results = await importResults(bot, machine)
-    return { uploaded, ...results }
+      const uploaded = await uploadDefinitions(bot, machine)
+      const results = await importResults(bot, machine)
+      return { uploaded, ...results }
+    })
   }
 
   return { sync, uploadDefinitions }

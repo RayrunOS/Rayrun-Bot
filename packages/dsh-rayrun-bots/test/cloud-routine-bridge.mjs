@@ -20,7 +20,7 @@ const T0 = Date.parse('2026-11-23T10:00:00.000Z')
 const TASK = 'task-11111111-1111-1111-1111-111111111111'
 const ROUTINE = 'routine-11111111-1111-1111-1111-111111111111'
 
-function setup({ status = 'Running', withTool = true } = {}) {
+function setup({ status = 'Running', withTool = true, uploadDelay = () => 0 } = {}) {
   const root = mkdtempSync(path.join(tmpdir(), 'rayrun-cloud-routines-'))
   roots.push(root)
   const bots = openBotStore(root)
@@ -54,6 +54,8 @@ function setup({ status = 'Running', withTool = true } = {}) {
       }
       if (args.action === 'upload') {
         uploads.push(args)
+        const delay = uploadDelay(uploads.length, args)
+        if (delay > 0) await new Promise((resolve) => setTimeout(resolve, delay))
         files.set(args.path, args.text)
         return 'Uploaded'
       }
@@ -127,6 +129,24 @@ check('re-uploads after a local definition change', async () => {
   const again = await bridge.sync(bot.id)
   assert.equal(again.uploaded, true)
   assert.equal(uploads.length, 4)
+})
+
+check('serializes concurrent definition syncs so the latest upload wins', async () => {
+  const delays = [80, 0, 0, 0, 0, 0]
+  const { bot, routines, bridge, files, uploads } = setup({
+    uploadDelay: (index) => delays[index - 1] ?? 0,
+  })
+  const first = bridge.sync(bot.id)
+  while (uploads.length < 1) await new Promise((resolve) => setTimeout(resolve, 1))
+  const current = routines.list(bot.id)[0]
+  routines.update(bot.id, current.id, { everyMinutes: 30 }, { now: T0 + 60_000 })
+  const second = bridge.sync(bot.id)
+  await Promise.all([first, second])
+
+  const mirrored = JSON.parse(files.get(`.rayrun/bots/${bot.id}/routines.json`))
+  assert.equal(mirrored.routines[0].everyMinutes, 30)
+  const routineUploads = uploads.filter((item) => item.path.endsWith('/routines.json'))
+  assert.equal(JSON.parse(routineUploads.at(-1).text).routines[0].everyMinutes, 30)
 })
 
 check('imports more than one batch without getting stuck on duplicates', async () => {
