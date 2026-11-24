@@ -218,8 +218,8 @@
   浏览器页面，并在 task 运行期间用 SIGKILL 停掉本地 DSH；用同一 `DSH_HOME` 重启后，
   新 host 从 `session.json` 恢复 poll，收取 `.dsh/results/<taskId>/reply.md`
   （内容 `DETACHED_OK`），session 回到 `idle`，transcript 有 user+bot，刷新页面后
-  回复仍在。机时读数从 0.8114 增至 0.8244（约 47 秒，读数不是承诺）。审批未参与；
-  同一 host 不重启的连续两轮未单独测试。
+  回复仍在。机时读数从 0.8114 增至 0.8244（约 47 秒，读数不是承诺）。审批未参与。
+  同一 host 不重启的连续两轮已在 2026-11-24 的 v0.1 live 验收中另行验证。
 - A8 续接（2026-11-22，同一本机 DSH 环境，独立临时 DSH_HOME，依赖 `1.1.0` 的
   main `720f30a`，未发布 npm；Rayrun token 只经共享 Harness vault，
   从不打印）：第一轮发送
@@ -333,6 +333,40 @@
   测试后 runtime 删除、runtimes=[]、机器 stop（Stopped，未 destroy）；scoped token
   已撤销（token_id `321a872f…`），临时 token/base-url 文件和临时 DSH profile 已
   删除；保留的本地 token 文件未打印、未改动。
+- v0.1 失败/续接/恢复 live（2026-11-24，同一 dev daemon / 机器 / scoped token，
+  token_id `cd0f5810…`）：无 token 发送时 session `failed`、`E_TOKEN_REQUIRED`，
+  无 bot 回复；保存 token 后下一轮 `RECOVERED_OK`。同轮修复
+  `cloud-host-runtime.ensureMachine` 先检查 `connection.configured`，避免把缺
+  token 误报成 `E_MACHINE_STOPPED`；`test/cloud-host-runtime.mjs` 13/13。随后同一
+  host 连续两轮：`bot-host` pid 635、DSH session `session-5aa1302e-…` 不变，
+  `TURN1_OK` → `ALPHA`。删除 `bot-host` 并重启本地 DSH 后，下一轮自动重建 host
+  （pid 704），DSH session 仍为 `session-5aa1302e-…`，`RECOVERY_TURN` → `ALPHA`；
+  本地 history 共 10 条。截图 `/tmp/bot/cloud-v01-no-token.png`、
+  `cloud-v01-continuity.png`、`cloud-v01-recovery.png`（临时文件，不入库）。测试后
+  runtime 删除、runtimes=[]、机器 Stopped、未 destroy；scoped token 已撤销，
+  临时 token/base-url 文件和临时 DSH profile 已删除。
+- Host runtime self-heal live（2026-11-24，同一 dev daemon / 机器，scoped token
+  `cf781230…`）：本地 DSH **不重启**，删除机器上的 `bot-host` runtime；下一轮
+  `cloudHostRuntime.start` 重新执行 ensureMachine/ensureHost，自动重建 host
+  （pid 636 → 668），DSH session `session-ea68cea7-…` 不变，`TURN1_OK` → `BETA`；
+  本地 history 4 条。截图 `/tmp/bot/cloud-v01-heal.png`（临时文件，不入库）。测试后
+  runtime 删除、runtimes=[]、机器 Stopped、未 destroy；token 已撤销，临时文件和
+  DSH profile 已删除。
+- v0.1 队列 + 本地 DSH 崩溃恢复 live（2026-11-24，同一 dev daemon / 机器 / scoped
+  token `8b7d8648…`）：一次连发三条消息，session `queued`、第一条 detached
+  `task-1c40a327-…` 运行、pending 2；随后 SIGKILL 本地 DSH（约 00:14:52Z）。
+  本地停机期间云 host 于 00:14:52.626Z 写出 Q1 outbox（`Q1_OK`），云端 DSH
+  session `session-fb87719f-…` 已建立。重启同一 `DSH_HOME` 后，host 插件的
+  session service 首次被页面 RPC 触发即恢复 poll 并按序排空：本地 session id
+  `f4cee1c7-…` 不变、`bot-host` pid 635 不变、云端 DSH session 不变；最终
+  `idle`、pending 0、history 6 条（3 user + 3 bot，bot 回复依次
+  `Q1_OK`/`Q2_OK`/`Q3_OK`），无重复、无丢失。截图
+  `/tmp/bot/cloud-v01-queue.png`（临时文件，不入库）。测试后 runtime 删除、
+  runtimes=[]、机器 Stopped、未 destroy；scoped token 已撤销，临时 token/
+  base-url 文件、临时 DSH profile 和脚本已删除。
+  恢复 poll 只在 host 插件的 session service 首次被 RPC 触及时启动；本地 DSH
+  重启后若一直不打开页面、也不发生 `session.*` 调用，detached/队列会等到下一次
+  页面动作才恢复（数据仍在磁盘/云端，不丢失）。
 - 真实 cloud proposal 闭环（2026-11-23，本机 DSH `0.2.2-rc.5`，依赖 main
   `fe965c1`，Bots `0.1.0-alpha.0`，`rayrun-bot-scoped`，私有 `deepseek-flash`）：
   真实云 bot 在回复末尾输出结构化 `rayrun-approval` block；cloud host 解析并写
@@ -411,8 +445,10 @@
   和下一轮结果 context 已 live；云端凭据动作仍未验证，仍等待平台隔离（ADR-001，
   [`08-integration.md`](08-integration.md) §3.3）。
   本地 session store、`session.*` RPC、`rayrun_agent`/detached adapter 已有 fake
-  测试；页面层真实一轮，以及 detached 的页面关闭 + host 重启收取，已在本机 DSH +
-  已有 Rayrun 机器验证（§3.1）；同一 host 不重启的连续两轮、队列与恢复仍未验证；
+  测试；页面层真实一轮、detached 的页面关闭 + host 重启收取、同一 host 连续两轮、
+  无 token 失败恢复、runtime 重建，以及三条消息排队 + 本地 DSH 崩溃恢复已在
+  Rayrun dev/test 验证（§3.1）；恢复 poll 需要一次页面 RPC 触发，DSH 启动后
+  未打开页面时的自动恢复未验证；
 - DeepSeek 模型调用（至今只创建了 model credential，没有发模型请求）；
 - 零余额宽限/force-destroy 行为（R-G009，不做破坏性验证）；
 - 在 Rayrun 上构建自定义 Dockerfile 镜像（R-G013）。
