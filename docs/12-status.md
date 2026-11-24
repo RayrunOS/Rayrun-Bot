@@ -54,7 +54,7 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
 | 用量 | 详情面板的电脑块和用量块，以及 Settings 的用量行，读取真实机器状态、余额与机时。 |
 | 测试 | Host/client 名册接线、session/transcript、`rayrun_agent`/detached adapter、per-bot workspace 与审批协议由普通 Node 契约测试覆盖；客户端 session 失败路径、单轮真实一轮、页面关闭 + host 重启后的 detached 收取，以及机器 stop/start 后的第二轮续接另有本机页面 smoke。包清单、locale、RPC、客户端、名册、session、runtime、workspace、审批和 tarball 内容都有检查；cloud host 8 项、cloud host routines 8 项、DSH agent 5 项、host projection 5 项、runtime.* client 5 项、cloud host runtime adapter 14 项、cloud host proposal 5 项、approval executor 7 项、cloud approval bridge 6 项、routines 16 项、cloud routine bridge 7 项、cloud routine E2E 1 项、routine results 6 项纯 Node 检查，runtime.* client 与 cloud host 另有 dev live 联调，cloudHost adapter 另有页面 E2E（手动、自动 projection 与多 bot 单 host），审批卡另有拒绝/失败关闭与 Continue 按钮的页面 E2E。Routine 页面另做本地 DSH + Firefox smoke：真实表单创建、暂停、删除并写入 routines.json（2026-11-23，无 Rayrun token），截图 `/tmp/bot/routines-ui.png`（临时文件，不入库）；本地 mode 尚未等待一次 scheduler 自动触发；cloudHost mode 的 dev live E2E 已通过（2026-11-24，见 §3.1）。 |
 | 审批执行 | 协议后端（request/decision schema、canonical actionHash、TTL、幂等/重放/错 bot 负向测试、审计、`approvals.list/get/decide/propose/sync`）已实现。ADR-019（2026-11-23）把本地 DSH host 定为本地 typed 动作的审批权威与执行方：`approvals.decide` 批准后由本地 executor 执行 `rayrun.machine.start/stop/pause/resume`，先写 `executing` claim，拒绝/过期/重放/崩溃 claim 失败关闭；客户端真实卡片已接。云端 proposal bridge 已接并 live 验证：云 bot 在回复末尾输出结构化 `rayrun-approval` block，cloud host 解析后写 proposal（`propose.mjs` 保留为可选 shell 路径），本地用 `rayrun_files` 导入并去重，结果写回 `approval-results/`；机器停机时结果先落本地 outbox，下次 Running 补传。start/stop/pause/resume、denial、Continue 均真机通过。下一轮 prompt 会带最近审批结果，bot 无工具直接回答 approved/done/Running 或 denied/not_executed。本地 routine 轮次会把 `origin: routine` 传到 cloud task，云端提案标为 background 并沿用 30 分钟 TTL。其他动作和云端凭据动作仍未完成；平台隔离仍用于云端凭据（ADR-001）。`rayrun_agent` adapter 不拦截外部动作，prompt 指引不是安全边界。 |
-| 发布 | 没有可发布版本；npm 发布路径不存在。 |
+| 发布 | 没有可发布版本；npm 发布路径不存在。S6 已验证（2026-11-24，本地 tarball）：一条 `dsh plugin add` 安装两个包会同时选中两个 bundle；只安装 bots 包即使声明依赖也不会启用依赖 bundle。 |
 
 ### 3.1 验证记录
 
@@ -163,13 +163,29 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
   测试后删除 runtime（runtimes=[]）、机器 stop（Stopped，未 destroy）；scoped
   token 已撤销，临时 token/base-url 文件和临时 DSH profile 已删除。机器停止期间
   编辑定义的上传竞态未消除，属于已知限制。
-- Detached runtime 由 `test/rayrun-detached-runtime.mjs`（5 项）和
+- Detached runtime 由 `test/rayrun-detached-runtime.mjs`（8 项）和
   `test/session-runtime.mjs`（跨 runner 恢复、队列排空）覆盖；依赖 1.1.0
   （main `720f30a`，未发布 npm）的 `dsh.start/status/result` 页面路径
   已在本机验证：Bots 页发送
   后 task id 落入 `session.json`，关闭页面并 kill 本地 DSH，等待后重启同一
   `DSH_HOME`，新 host 恢复 poll、收取 `reply.md`（`DETACHED_OK`），session 回到
-  `idle`，刷新页面后回复仍在。
+  `idle`，刷新后回复仍在。冷启动（Stopped→Running 后首次 `dsh.start`）的
+  worker profile file PUT 可能返回 `http_404`（旧依赖）或稳定码
+  `worker_files_unavailable`（依赖 main `5259782`，**未 npm 发布**）；adapter 对
+  这两种码用同一 task id 按 5/10/20/30 秒退避，最多重试 4 次，其他错误不重试
+  （fake 测试 8/8）。依赖侧 2026-11-24 在 hosted `rayrun-bot-test` 按该策略复验：
+  4 次都返回 `worker_files_unavailable`，随后失败关闭；删除该机 profile 的
+  `node_modules/dsh-rayrun-computer` 后仍失败。另在 hosted 生产 API 新建全新
+  `deepseek-harness@1` sandbox `rayrun-bot-fresh-mwu9kgwj` 复验，4 次仍 4/4 失败，
+  失败在 worker profile 首次 PUT。依赖侧已排除 mkdir 顺序：首次 PUT 前
+  `mkdir -p .../node_modules/dsh-rayrun-computer` 成功且 `ls` 确认目录存在，
+  profile 级文件 PUT 成功，只有 `node_modules/...` 下的插件文件 404；待平台查
+  hosted file API 对 exec 新建父目录的可见性/缓存，或生产 daemon 与 dev HEAD 的
+  版本差距。dev daemon 上新建 `rayrun-bot-coldstart` 冷启动复验成功：Stopped →
+  首轮 `dsh.start` → `COLD_OK`，约 13 秒；机器已 stop。该次未触发退避。
+  平台侧下一步用 `curl -i` 响应头区分入口层/daemon 404，并用非 `node_modules`
+  路径排除路径名拦截；hosted 诊断需用户授权。两台测试机保持 Stopped，排查期间不
+  destroy；destroy 需用户单独授权。
 - A8 续接已在 2026-11-22 用本机 DSH 页面 + 已有 `rayrun-bot-test` 验证：第一轮
   `TURN1_OK` 后把机器 stop 到 Stopped，关闭页面并 kill 本地 DSH；重启同一
   `DSH_HOME` 后发第二轮，依赖自动唤醒机器，bot 从持久化 transcript 回答 `ALPHA`；
@@ -254,7 +270,9 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
   （`lib/cloud-host-runtime.js`）、随包 host 资产、自动 projection 与多 bot 单 host
   已在 dev 页面 E2E 通过（2026-11-23）；生产未部署，镜像/生产交付未做。依赖 1.2.0
   `runtime.*` client（`lib/runtime-rpc.js`）已过 fake 测试和 dev live 联调。生产部署
-  需授权。
+  需授权。依赖侧 2026-11-24 观察：hosted 账号现有模型 credential slot 是
+  `ANTHROPIC_AUTH_TOKEN`，而 `deepseek-harness@1` 声明 `DEEPSEEK_API_KEY`；生产 bot
+  还需要正确 slot 的 credential（待核实）。
 - 能拦住 worker 的远程审批执行：ADR-019 已让本地 host 对 typed 机器
   start/stop/pause/resume 做审批/执行，真实 cloud proposal、denial/Continue 和下一轮
   context live E2E 已通过；其他动作和云端凭据动作仍未完成；云端 agent 本身仍不受

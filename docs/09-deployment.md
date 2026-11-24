@@ -35,7 +35,9 @@
 ## 2. 今天能跑什么
 
 Rayrun Bot 不 vendor 云电脑层；它是独立项目、必需依赖。今天两个插件要装进同一个 DSH
-profile；一次安装路径是 S6，未验证。先装依赖：
+profile。S6 已验证（2026-11-24，本地 tarball）：**一条命令安装两个包**会同时选中
+两个 bundle；只安装 `dsh-rayrun-bots` 即使它声明依赖，也只会安装依赖包、
+不会自动启用依赖的 bundle。先装依赖：
 
 ```bash
 git clone https://github.com/RayrunOS/dsh-rayrun-computer.git
@@ -121,17 +123,31 @@ dsh plugin --profile web add /tmp/dsh-rayrun-bots-0.1.0-alpha.0.tgz
 patch、`lib/*.js`、图标、README 和 LICENSE；CI 会把打出的 tarball 装进第二个 profile
 并合成配置。兼容组合见[版本矩阵](version-matrix.md)。
 
-**一次安装**：Rayrun Bot 的 bundle 拟声明 `dsh-rayrun-computer` 为依赖，让一次安装
-带两个插件。这是 W0 spike S6，**未验证**；在那之前按上面的两装路径。npm 归属与发布
-账号仍未定（[`plans/mvp-plan.md`](plans/mvp-plan.md) §11 第 5 项），所以现在没有
-发布 job。
+**一次安装（S6，已验证 2026-11-24）**：用一条 `dsh plugin add` 命令安装两个包：
+
+```bash
+dsh plugin --profile web add <dsh-rayrun-computer 路径或 tarball> <dsh-rayrun-bots 路径或 tarball>
+```
+
+本地 tarball 验证结果：
+
+- 两个包都进入 profile 的 `dependencies`
+- `dsh.profile.bundles` 同时包含 `dsh-rayrun-bots` 和 `dsh-rayrun-computer`
+- `dsh web` 启动后两个插件都加载，Bots health 报依赖 `ok`，云电脑 RPC 正常
+
+如果只安装 `dsh-rayrun-bots` 并在它的 `package.json` 里声明
+`dependencies.dsh-rayrun-computer`：依赖包会进 `node_modules`，但 profile 的
+`bundles` 仍只有 `dsh-rayrun-bots`，依赖 bundle **不会自动启用**。因此不要把它
+写成“单包安装”；真正的单包安装需要 DSH 支持传递 bundle 激活，或新增 meta-package。
+
+npm 归属与发布账号仍未定（[`plans/mvp-plan.md`](plans/mvp-plan.md) §11 第 5 项），
+所以现在没有发布 job。
 
 ---
 
 ## 4. v0.1 目标三分钟路径（未构建）
 
-1. 安装 `dsh-rayrun-bots`（npm 未发布；checkout 可用）；一次安装 S6 未验证，先装
-   依赖。
+1. 用一条命令安装两个包（S6 已验证；npm 未发布，checkout/tarball 可用）。
 2. 登录 Rayrun 一次；向导创建云电脑。
 3. 创建 bot：名字、职责、指令、skills；它在电脑上有自己的 session。
 4. 和它对话，或创建一个 routine 让 bot 按间隔运行（本地 DSH host 需保持运行）。
