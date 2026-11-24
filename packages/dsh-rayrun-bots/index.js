@@ -416,6 +416,9 @@ export function apply(ctx, options = {}) {
     return routineService
   }
 
+  const hasStateRoot = profileDirectory(ctx) !== undefined
+    || (typeof process.env.DSH_HOME === 'string' && process.env.DSH_HOME.trim() !== '')
+
   ctx.inject(['webServer'], (child) => {
     webServer = child.webServer
     child.effect(() =>
@@ -500,8 +503,6 @@ export function apply(ctx, options = {}) {
         },
       }),
     )
-    const hasStateRoot = profileDirectory(ctx) !== undefined
-      || (typeof process.env.DSH_HOME === 'string' && process.env.DSH_HOME.trim() !== '')
     if (hasStateRoot) {
       child.effect(() => {
         const scheduler = routineScheduler()
@@ -510,4 +511,33 @@ export function apply(ctx, options = {}) {
       })
     }
   })
+
+  // Resume persisted detached tasks without waiting for the page to issue the
+  // first session RPC. Wait for the tool registry too: the cloud adapter needs
+  // `rayrun_files` before it can report itself available.
+  if (hasStateRoot) {
+    ctx.inject(['webServer', 'tools'], (child) => {
+      child.effect(() => {
+        let capable = false
+        try {
+          capable = runtime.detached === true && runtime.available === true
+        } catch {
+          capable = false
+        }
+        if (!capable) return () => {}
+        try {
+          sessions()
+        } catch (error) {
+          try {
+            ctx.logger?.warn?.(`dsh-rayrun-bots: session recovery failed: ${String(error?.message ?? error).slice(0, 200)}`)
+          } catch {
+            // Logging must not break plugin startup.
+          }
+        }
+        return () => {
+          if (sessionService !== undefined) sessionService.runner.close()
+        }
+      })
+    })
+  }
 }

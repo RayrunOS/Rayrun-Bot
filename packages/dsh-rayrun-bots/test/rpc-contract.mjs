@@ -15,6 +15,8 @@ import path from 'node:path'
 import { Readable } from 'node:stream'
 import { apply } from '../index.js'
 import { openApprovalStore } from '../lib/approvals.js'
+import { openBotStore } from '../lib/bots.js'
+import { openSessionStore } from '../lib/sessions.js'
 
 const NAME = 'rayrun-bots'
 const ROUTE = '/plugins/rayrun-bots'
@@ -552,6 +554,43 @@ check('an unknown session action is refused before any state is touched', () => 
   assert.equal(reply.status, 404)
   assert.match(reply.json.error.message, /Unknown action/)
   assert.equal(existsSync(path.join(home, 'state', 'rayrun-bot')), false)
+}))
+
+check('resumes a persisted detached task without a page RPC', () => withState(async (home) => {
+  const stateRoot = path.join(home, 'state', 'rayrun-bot')
+  const bot = openBotStore(stateRoot).create({ id: 'auto-recover', name: 'Auto Recover', label: 'Recovery' })
+  const store = openSessionStore(stateRoot)
+  store.enqueue(bot.id, 'hello')
+  store.shift(bot.id)
+  store.attach(bot.id, {
+    taskId: 'task-recover',
+    sandbox: 'box',
+    localDir: path.join(stateRoot, 'bots', bot.id, 'workspace'),
+    timeoutSeconds: 900,
+  })
+  let collected = false
+  const runtime = {
+    contract: 1,
+    name: 'fake-detached-recovery',
+    available: true,
+    detached: true,
+    async start() { throw new Error('start must not be called during recovery') },
+    async status() { return { running: false } },
+    async collect() {
+      collected = true
+      return { text: 'recovered' }
+    },
+  }
+  hostFor({ runtime })
+  for (let attempt = 0; attempt < 40 && store.status(bot.id).state !== 'idle'; attempt += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 100))
+  }
+  assert.equal(collected, true, 'recovery did not start from the host mount')
+  assert.equal(store.status(bot.id).state, 'idle')
+  assert.deepEqual(
+    store.history(bot.id).messages.map((message) => message.text),
+    ['hello', 'recovered'],
+  )
 }))
 
 check('session replies expose no credential shape', () => withState(async () => {
