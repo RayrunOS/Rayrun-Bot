@@ -49,6 +49,7 @@ host-callable `runtime.*`（main 已合并，尚未发布 npm）。
 | `0.2.2-rc.5`（本机） | `1.2.0`（main `fe965c1`，未发布 npm） | `0.1.0-alpha.0`（cloudHost runtime adapter） | 24 + Rayrun dev | host 挂载即恢复 detached task live：重启后不打开页面、不发 HTTP RPC，队列自动排空（`E1_OK`/`E2_OK`），同一 host pid 636 与云端 DSH session；`test/rpc-contract.mjs` 32/32；runtime 删除、机器 stop | [`10-rayrun-verification.md`](10-rayrun-verification.md) §3.1（2026-11-24） |
 | `0.2.2-rc.5`（本机）/ `0.2.0-rc.2`（镜像 `dsh-bot-devcheck@1`） | `1.2.0`（main `fe965c1`，未发布 npm） | `0.1.0-alpha.0`（cloudHost routine scheduler） | 24 + Rayrun dev | 本地 DSH 在 due 前停止；云 host 自动 enqueue/执行 routine，reply `CLOUD_ROUTINE_OK`；重启后 sync 导入 history；runtime 删除、机器 stop | [`10-rayrun-verification.md`](10-rayrun-verification.md) §3.1（2026-11-24） |
 | `0.2.2-rc.5`（本机） | `1.2.0`（main `fe965c1`，未发布 npm） | `0.1.0-alpha.0` | 24 + Rayrun dev | 干净 tenant（0 台机器）页面 setup 点击创建按钮 → `machine.create` 创建 `rayrun-bot-clean`（2C/2G、remote desktop），页面显示 `Created`；机器 stop，后按用户授权 destroy | [`10-rayrun-verification.md`](10-rayrun-verification.md) §3.1（2026-11-24） |
+| `0.2.2-rc.5`（本机）/ `0.2.0-rc.2`（镜像 `dsh-bot@1`） | `1.2.0`（main `956d595`，未发布 npm） | `0.1.0-alpha.0`（cloudHost runtime adapter + `cloud-host/` assets） | 24.22 + Rayrun hosted prod | hosted prod 新 sandbox `rayrun-bot-prod-e2e`（guestd 0.6.0）冷启动 → `bot-host` runtime running pid 636 → bot 回复 `PROD_OK`（约 12 秒）；runtime 删除、机器 Stopped、未 destroy | [`10-rayrun-verification.md`](10-rayrun-verification.md) §3.1（2026-11-24） |
 | `0.2.2-rc.5` | `1.0.0` | `0.1.0-alpha.0` | 24 + Rayrun 沙盒 | 云端 ingress、`dsh web` 部署与 token URL | [`09-deployment.md`](09-deployment.md)、[`10-rayrun-verification.md`](10-rayrun-verification.md) §3.1 |
 
 “未安装”表示该 CI 矩阵只验证 Bots 包本身能安装和合成，不验证依赖或云端行为。
@@ -61,9 +62,17 @@ host-callable `runtime.*`（main 已合并，尚未发布 npm）。
 file API），CI Node 22/24 全绿；尚未 npm 发布；本仓库未采用该码的特殊重试。
 hosted `rayrun-bot-test` 在收窄 mock 后冷启动 8.8 秒成功（`REAL_FIX_OK`）；
 dev `rayrun-bot-coldstart` 冷启动成功（`COLD_OK`），后按用户授权 destroy。
-两台 hosted 测试机保留、保持 Stopped，清理待用户确认。生产 daemon `92a77d0`
-早于 R-G008，`/runtimes`、`/host` 404 是独立的未部署差异。2026-11-24 对依赖
-main `956d595` 跑本仓库全部 `test/*.mjs`，离线检查通过（不含 live）。
+两台 hosted 测试机保留、保持 Stopped，清理待用户确认。2026-11-24 生产 daemon
+部署到 `5c2ff48`（build 493，tag `prod-20261124-2`），包含 `rayrun-bot-gaps`；
+`/v1/runtimes`、`/v1/ci/capabilities` 未认证返回 401；CI 代码已上生产但
+`RAYRUN_GITHUB_CI_ENABLED` 未开。hosted `rayrun-bot-test` 首次 `runtime.put`
+返回 409 `guestd_outdated`（`E_GUESTD_OUTDATED`）。2026-11-24 已发布
+`dsh-bot@1`（guestd 0.6.0、DSH 0.2.0-rc.2、manifest `DEEPSEEK_API_KEY`），
+平台测试 sandbox 的 `runtime.put` 返回 200；2026-11-24 hosted 用户租户
+cloudHost 聊天 E2E 通过（`rayrun-bot-prod-e2e`，`PROD_OK`，约 12 秒，runtime
+删除、机器 Stopped、未 destroy）；生产 routine E2E 尚未跑。
+2026-11-24 对依赖 main `956d595` 跑本仓库全部 `test/*.mjs`，离线检查通过
+（不含 live）。
 
 S6（2026-11-24，本地 tarball）：`dsh plugin add` 一条命令安装两个包会同时选中
 两个 bundle；只安装 bots 包即使声明依赖，也只会安装依赖包、不启用依赖 bundle。

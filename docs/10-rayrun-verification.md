@@ -100,7 +100,7 @@
 | R-G005 | 2026-11-21 | 完整安装 DSH 0.2.2-rc.5 的 subprocess/terminal 路径 | `npm install -g` 跳过 `dsh-subprocess-local`、`node-pty`、`koffi`、`protobufjs` 的 install scripts | **未验证**：Web UI 和 plugin manager 可用；terminal/子进程未测 | 需要在镜像里显式跑 allow-scripts 或换安装方式 |
 | R-G006 | 2026-11-21 | 把预装好的 web profile 烘进自定义镜像 | `POST /v1/images` 保存的是 rootfs overlay；`/workspace/.rayrun/dsh` 在 workspace 盘，不在镜像里 | **有 workaround**：镜像带 tarball + bootstrap，首启写入 workspace | 不能直接做“打开即带 profile”的镜像；需要 bootstrap 或平台支持 workspace 快照 |
 | R-G007 | 2026-11-21 | 与本地验证/桌面一致的 DSH 版本 | 官方镜像 pin `0.2.0-rc.2`；本机页面验证使用 `0.2.2-rc.5`；桌面 bundle `0.2.2-rc.5`（官方桌面未验证，见 R-G001） | **有 workaround**：镜像内可升级并验证；升级后 profile 保留；组合记录在 [`version-matrix.md`](version-matrix.md) | 镜像 pin 与本地/桌面仍不一致；镜像升级需要平台/构建支持 |
-| R-G008 | 2026-11-22 | 长驻 bot runtime、session 续接、启动钩子、prompt 队列 | 平台答复（2026-11-22）：runtimes API 已实现并本机 dev 全量验收通过（`rayrun` 仓库 `rayrun-bot-gaps`，`4709ac0`），**生产未部署**；契约含 `PUT/GET/POST/DELETE /v1/sandboxes/{id}/runtimes`、guestd 0.6.0、`autostart`/`restart=always`/`keep_alive`、boot 时 credential injection；session 不是平台对象，bot host 自己写 `/workspace`，workspace 跨 stop/start 保留；旧镜像 409 `guestd_outdated`。2026-11-22 本机 dev 全量验收通过，旧镜像 `ci@1` 负测通过（见 §3.1） | **平台实现本机 dev 全量验收通过；生产未部署；旧镜像 409 已验证**；bot 侧本地 adapter 已进包预览并页面 E2E 通过（`HOST_E2E_OK`，2026-11-23）；host 资产已进包，projection 页面 E2E 已通过（2026-11-23）；镜像/生产未交付。审批隔离不在初步支持内（§3.3） | 生产部署 + host 镜像/联合验收；“合上笔记本继续工作”的端到端验证仍待做 |
+| R-G008 | 2026-11-22 | 长驻 bot runtime、session 续接、启动钩子、prompt 队列 | 平台答复（2026-11-22）：runtimes API 已实现并本机 dev 全量验收通过（`rayrun` 仓库 `rayrun-bot-gaps`，`4709ac0`），**生产已部署（2026-11-24，`5c2ff48`/build 493）**；契约含 `PUT/GET/POST/DELETE /v1/sandboxes/{id}/runtimes`、guestd 0.6.0、`autostart`/`restart=always`/`keep_alive`、boot 时 credential injection；session 不是平台对象，bot host 自己写 `/workspace`，workspace 跨 stop/start 保留；旧镜像 409 `guestd_outdated`。2026-11-22 本机 dev 全量验收通过，旧镜像 `ci@1` 负测通过（见 §3.1）。2026-11-24 生产 daemon 已部署到 `5c2ff48`（build 493，tag `prod-20261124-2`），包含 `rayrun-bot-gaps` 的 14 个提交（R-G008–R-G012、scopes/凭证所有权）；未认证 `GET /v1/sandboxes/{id}/runtimes` 返回 401（已注册），`/v1/health` 200；CI 代码已上生产但 `RAYRUN_GITHUB_CI_ENABLED` 未开。2026-11-24 hosted production 尝试：`rayrun-bot-test` start 成功，但 `runtime.put` 返回 409 `guestd_outdated`，session 以 `E_GUESTD_OUTDATED` 失败关闭；机器已 stop、无 runtime。只换新 sandbox 不够：生产镜像 `ubuntu@1`/`builder@1` 仍是 guestd 0.5.0，rootfs 2026-10-26，builder 构建也注入 0.5.0；必须先刷新生产镜像（含 builder@1）到 guestd 0.6.0。2026-11-24 已完成：builder@1 换 guestd 0.6.0（有备份），发布 `dsh-bot@1`（build `01a20dec…`，rootfs sha256 `937ebd7a…`，guestd 0.6.0，Node v24.22.0，DSH 0.2.0-rc.2，manifest `credential_slots=["DEEPSEEK_API_KEY"]`）；测试 sandbox `01a20df8…` 的 `runtime.put bot-host` 返回 200 applied/restarted，state running pid 651，heartbeat 更新；测试后 stop、未 destroy。`rayrun-bot-test` 仍是旧镜像、Stopped。2026-11-24 hosted 用户租户 cloudHost E2E 通过：新 sandbox `rayrun-bot-prod-e2e`（`01a20dfd…`，`dsh-bot@1`）从 Stopped 启动，bot-host runtime running pid 636，bot 回复 `PROD_OK`，约 12 秒；随后 runtime 删除、机器 Stopped、未 destroy | **平台实现本机 dev 全量验收通过；生产已部署（`5c2ff48`/build 493）；旧镜像 409 已验证；`dsh-bot@1` 已发布并完成 hosted cloudHost 聊天 E2E**；bot 侧本地 adapter 已进包预览并页面 E2E 通过（`HOST_E2E_OK`，2026-11-23）；host 资产已进包，projection 页面 E2E 已通过（2026-11-23）。审批隔离不在初步支持内（§3.3） | hosted 生产 routine E2E 尚未跑；“合上笔记本继续工作”的端到端验证仍待做 |
 | R-G009 | 2026-11-11 | 零余额不丢盘、spend cap | 平台答复：线上仍可能 force-destroy；代码里的两步停/宽限未部署；无硬上限 | **风险接受**（见 [`08-integration.md`](08-integration.md) §3.2） | 不通过烧余额来验证；只做只读余额/告警检查 |
 | R-G010 | 2026-11-11 | 带鉴权的入站访问 | ingress `token` 档恒 403；`public` 档无鉴权；无 per-instance 证书 | **有 workaround**：public ingress + 应用层 DSH launch token/cookie；不暴露产品面板 | 手机审批/远程 UI 的 Rayrun 路径受限 |
 | R-G011 | 2026-11-21 | 只读、可撤销的测试 token | 生产 token 是账号身份，无 scope；当前测试 token 无过期时间 | **有 workaround**：专用账号/测试后撤销 | 测试 token 权限过大；不要放进沙箱 |
@@ -259,7 +259,8 @@
   daemon 重启：`rayrun-bot` 上 `daemon-restart-probe`（`/bin/sleep 600`）在 dev
   daemon 2026-11-22 23:28:36 +08:00 重启后仍 running（pid 634、restarts=0），随后
   删除 runtime、stop 机器。测试 token 已撤销、临时 token 文件已清理；两台机器保持
-  stop，未 destroy。生产未部署；host 资产已进包，projection 页面 E2E 已通过（2026-11-23）。
+  stop，未 destroy。生产后于 2026-11-24 部署到 `5c2ff48`（build 493）；host 资产已
+  进包，projection 页面 E2E 已通过（2026-11-23）。
 - 最小 cloud bot host 原型（2026-11-22；E2E 用 `/tmp` 原型，随后固化为随包的 `cloud-host/` 资产；该次 E2E 未走 projection；devcheck + runtimes）：
   Node host 注册为 `bot-host-e2e`，fake agent 依次处理 t1/t2/t3；sandbox stop→start
   后 autostart 新 pid 635；SIGKILL 后新 pid 646、restarts=1；transcript 为
@@ -471,13 +472,20 @@
   `rayrun-dev.key`）。它们被 `.gitignore` 忽略，且未进入 git 历史或 npm 包，但仍
   留在工作区；需轮换并移出/删除后才能声称 A11 通过。扫描未打印值；
 - 生产环境的 cloudHost routine live 验证：dev daemon 的 live E2E 已通过（§3.1，
-  2026-11-24），但生产 API 的 `runtime.list` 仍缺失（R-G008 待部署；同日生产尝试
-  止于 404）；本地 mode 页面 smoke 也已通过。
-- hosted 生产 bot host 的模型凭据 slot：依赖侧 2026-11-24 观察，hosted 账号现有
-  credential slot 是 `ANTHROPIC_AUTH_TOKEN`，而 `deepseek-harness@1` 声明
-  `DEEPSEEK_API_KEY`；新机器即使 file API 修好，可能还需要正确 slot 的 credential
-  （待核实）。
-- bot 会话、审批往返、远程审批、队列与恢复：R-G008 平台实现待部署；bot 侧常驻
+  2026-11-24）。生产已于 2026-11-24 部署 `5c2ff48`（build 493），未认证
+  `/v1/runtimes` 返回 401。hosted production 尝试在 `runtime.put` 收到 409
+  `guestd_outdated`（`E_GUESTD_OUTDATED`），机器已 stop、无 runtime。2026-11-24
+  已发布 `dsh-bot@1`（builder@1 换 guestd 0.6.0；Node 24.22.0，DSH 0.2.0-rc.2，
+  manifest `DEEPSEEK_API_KEY`），平台测试 sandbox 的 `runtime.put bot-host` 返回
+  200 applied/restarted，heartbeat 正常；测试后 stop、未 destroy。hosted 用户租户
+  cloudHost 聊天 E2E 已通过：`rayrun-bot-prod-e2e`（`dsh-bot@1`）从 Stopped 启动，
+  bot-host runtime running pid 636，bot 回复 `PROD_OK`，约 12 秒；runtime 删除、
+  机器 Stopped、未 destroy。生产 routine E2E 仍未跑。本地 mode 页面 smoke 已通过。
+- hosted 生产 bot host 的模型凭据 slot：`dsh-bot@1` 的 manifest 声明
+  `DEEPSEEK_API_KEY`，现有 hosted `dsh-model-sinnet`（provider=deepseek）会映射到
+  该槽位；不需要新建 credential。旧 `rayrun-bot-test` 仍是旧镜像，未用于该验证。
+- bot 会话、审批往返、远程审批、队列与恢复：R-G008 已部署生产，hosted cloudHost
+  聊天 E2E 已通过（`PROD_OK`，2026-11-24）；生产 routine E2E 尚未跑。bot 侧常驻
   host 已有 dev 预览（多 bot 单 host E2E 通过）；本地 typed 审批执行已通过拒绝/
   失败关闭的页面 E2E、真实 cloud proposal + start/stop/pause/resume、denial/Continue
   和下一轮结果 context 已 live；云端凭据动作仍未验证，仍等待平台隔离（ADR-001，

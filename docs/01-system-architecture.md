@@ -61,8 +61,8 @@
                         ▼
         你的 Rayrun 云电脑（一人一台，bots 共享）
           ├─ 常驻 DSH host（web profile）                      [平台 runtimes API
-          ├─ 每 bot 一个 session + 一个 profile 目录            已实现并本机 dev 全量验收通过，待生产部署；
-          ├─ /workspace · X11 desktop :99 · browser profile     bot host 未实现]
+          ├─ 每 bot 一个 session + 一个 profile 目录            已实现并在 2026-11-24 部署生产；
+          ├─ /workspace · X11 desktop :99 · browser profile     bot host 已预览]
           └─ 模型调用 ──▶ DeepSeek API（你的 key，只注入
                             agent 进程）
 ```
@@ -92,8 +92,10 @@
 5. **Bot↔session 映射。** bot 是持久对象：名字、指令、skills、memory 目录和 session
    id 在机器上。映射必须存在 supervisor 内存之外；平台不提供 session 对象，session
    的 create/continue 由 bot host 在 `/workspace` 内实现。2026-11-22 dev 验证了镜像
-   DSH 0.2.0-rc.2 的 headless `--session-id` 可跨进程续接，host 资产已跑通两轮；
-   核心 host 尚未进入包，生产未部署。
+   DSH 0.2.0-rc.2 的 headless `--session-id` 可跨进程续接，host 资产已跑通两轮并
+   随包发布（`cloud-host/`）；生产 runtimes API 于 2026-11-24 部署到 `5c2ff48`，
+   hosted 生产 cloudHost 聊天 E2E 已通过（`PROD_OK`，2026-11-24）；生产 routine
+   E2E 尚未执行。
 6. **审批通道。** 受控动作由云端 bot 提案 → 本地控制面卡片 → 本地决定与执行；
    云端不写 decision。ADR-019 决定本地 DSH host 为本地动作的审批权威；ADR-001 的
    平台隔离仍用于云端凭据动作。失败即拒绝；浏览器先做，IM 是 v0.2。当前边界见 §4.3。
@@ -353,7 +355,8 @@ tombstone，action hash 的 canonicalization 未定义；见 ADR-011/012。
 
 - 本地 watchdog 通过 `exec` 检查心跳，host 丢失后尝试重启（C6）。
 - bot runtime 重启后重读队列与审批状态，不丢已排队工作（C8）。
-- 平台 runtimes API 已实现并本机 dev 全量验收通过（待生产部署）；session 由 bot host 自己写 `/workspace`，端到端
+- 平台 runtimes API 已实现并本机 dev 全量验收通过，2026-11-24 已部署生产
+  （`5c2ff48`）；session 由 bot host 自己写 `/workspace`，端到端
   未验证前回退到 transcript replay（ADR-007、D1–D5）。
 - 机器 stop/start 保留磁盘；destroy 删除一切，只能由人类明确请求。
 - A8/A9 的字段与状态机缺口见 ADR-012。
@@ -400,8 +403,9 @@ tombstone，action hash 的 canonicalization 未定义；见 ADR-011/012。
   平台答复（2026-11-22）：同沙箱内不可行，平台端点设计 1 周 + 实现 2–4 周、非首版。
   本地 typed 动作已按 ADR-019 在本地执行；云端凭据动作仍等待平台；
 - R-G008 常驻 runtime：平台 runtimes API 已实现并本机 dev 全量验收通过（`rayrun-bot-gaps`，
-  `4709ac0`），待生产部署；bot 侧 host/session 已在 dev 预览实现并通过多 bot live
-  E2E（2026-11-23），生产镜像未交付；
+  `4709ac0`），2026-11-24 已部署生产（`5c2ff48`/build 493）；bot 侧 host/session
+  已在 dev 预览实现并通过多 bot live E2E（2026-11-23）；hosted 生产 cloudHost
+  聊天 E2E 已通过（`PROD_OK`，2026-11-24），生产 routine E2E 尚未执行；
 - 余额宽限与 spend 护栏：余额耗尽今天会 force-destroy 机器和磁盘；
 - 安全的入站网络：token ingress 不可用，只有 `public`；
 - idle auto-stop 或 wake-on-request；

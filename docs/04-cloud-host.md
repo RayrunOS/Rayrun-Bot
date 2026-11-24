@@ -36,7 +36,9 @@
 
 当前平台按每次 prompt 启动 `dsh --profile headless`，session 不跨 run。平台答复
 （2026-11-22）：R-G008 的 runtimes API 已实现并本机 dev 全量验收通过（`rayrun-bot-gaps`，
-`4709ac0`），**生产未部署**；它提供受监督常驻进程、autostart、keep_alive 和 boot 时
+`4709ac0`），2026-11-24 已部署生产（`5c2ff48`/build 493），`dsh-bot@1` 的 hosted
+cloudHost E2E 已通过 `PROD_OK`；它提供受监督常驻进程、
+autostart、keep_alive 和 boot 时
 credential injection。session 不是平台对象，由 bot host 自己写 `/workspace`；平台保证
 workspace 跨 stop/start 保留。bot 侧 supervisor/session 实现仍是本仓库的工作
 （ADR-007）；契约见 [`08-integration.md`](08-integration.md) §3.1。2026-11-22 dev
@@ -85,7 +87,8 @@ DSH agent sessions（bot）
 ```
 
 - **一个 supervisor** 管理队列与 session；agent 任务串行执行。平台答复
-  （2026-11-22）：R-G008 runtimes API 已实现并本机 dev 全量验收通过（待生产部署），用 `restart=always`、
+  （2026-11-22）：R-G008 runtimes API 已实现并本机 dev 全量验收通过；2026-11-24
+  已部署生产（`5c2ff48`），用 `restart=always`、
   `autostart`、`keep_alive` 启动/监督它。
 - **每 bot 一个 session 与 profile 目录**：平台不提供 session 对象，session 由 host
   自己写 `/workspace`；是否能在同一个 DSH 进程里承载多个 profile，还是每 bot 一个

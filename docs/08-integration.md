@@ -50,7 +50,7 @@
 | `exec` | 启动 runtime、watchdog、健康检查 | 超时/退出码/输出上限 |
 | 文件 read/write/list | 队列、审批、outbox、镜像 | 原子写/ETag/分页/大小上限 |
 | agent prompt + SSE | 发任务、流式回复 | session id、取消、`409 sandbox_busy` |
-| session create/continue | bot 续接 | 平台不提供 session 对象；bot host 自己写 `/workspace`（R-G008 已实现并本机 dev 全量验收通过，待生产部署） |
+| session create/continue | bot 续接 | 平台不提供 session 对象；bot host 自己写 `/workspace`（R-G008 已实现并本机 dev 全量验收通过；生产 `5c2ff48` 已含 gaps，`/v1/runtimes` 未认证 401；`dsh-bot@1` + hosted cloudHost 聊天 E2E 已通过 `PROD_OK`） |
 | credential 注入状态 | 确认模型 key 已注入 | runtime boot 时注入；runtime restart 不刷新，轮换需 sandbox stop→start（ADR-007） |
 | balance/usage | 成本栏 | 余额、机器小时；per-sandbox 是 beta |
 | worker projection | 把 bot runtime ship 到机器并启动 | 扩展点、hash、启动/重启 |
@@ -83,8 +83,10 @@ adapter 放在我们的包里，不改依赖。
 通过 `exec` 重启 host。
 
 **Rayrun 答复（2026-11-22）。** 平台侧 R-G008 已实现并本机 dev 全量验收通过（`rayrun` 仓库
-`rayrun-bot-gaps`，`4709ac0`），**生产尚未部署**，现在不能在 `api.rayrunos.com`
-使用。初步支持的契约：
+`rayrun-bot-gaps`，`4709ac0`），并已于 2026-11-24 部署到生产 `5c2ff48`
+（build 493，tag `prod-20261124-2`），包含 gaps；生产 `/v1/runtimes` 已注册
+（未认证 401）。`dsh-bot@1`（guestd 0.6.0）已发布，hosted 用户租户 cloudHost
+聊天 E2E 已通过（`PROD_OK`）；生产 routine E2E 尚未跑。初步支持的契约：
 
 - `PUT/GET/POST/DELETE /v1/sandboxes/{id}/runtimes[/{name}]`；spec 包含 `argv`、
   `workdir`、`env`、`credentials`、`restart`、`autostart`、`keep_alive`、
@@ -291,7 +293,7 @@ SSO/SAML/SCIM、组织 RBAC、审计导出/SIEM、DPA 与数据驻留、marketpl
 
 | 需求 | 需要时间 | 今天阻塞发布？ |
 | --- | --- | --- |
-| 1. session + 常驻 runtime 契约 | v0.1 | 平台侧已实现并本机 dev 全量验收；待生产部署；bot 侧 host/session 已有 dev 预览（多 bot live E2E 通过），生产镜像未交付 |
+| 1. session + 常驻 runtime 契约 | v0.1 | 平台侧已实现并本机 dev 全量验收；2026-11-24 已部署生产 `5c2ff48`；`dsh-bot@1` + hosted 用户租户 cloudHost 聊天 E2E 已通过 `PROD_OK`；生产 routine E2E 尚未执行 |
 | 2. 余额宽限 / 护栏 | v0.1 | 风险接受并警告 |
 | host/agent 权限隔离 + 云端审批端点（§3.3） | v0.1 | 云端凭据动作是（ADR-001）；本地 typed 动作已按 ADR-019 解阻 |
 | 3. 文件通道语义 | v0.1 | 否（有 workaround） |

@@ -37,8 +37,9 @@ cloud proposal、start/stop/pause/resume、denial/Continue 与下一轮 context 
 - **Bot 名册与 bot↔session 映射。** Bot 有名字、指令、技能、记忆目录和持久 session；
   映射在 DSH 重启后仍然存在，而不是住在 host 内存里。
 - **机器上的常驻 DSH host。** 把“每个 prompt 跑一次 `headless`”换成受监督的 host，
-  让 bot 在笔记本合上后继续工作。平台 R-G008 runtimes API 已实现并本机 dev 全量验收通过（待生产部署）；用它
-  跑通常驻 host、并把 session 写进 `/workspace` 是第一个 spike。
+  让 bot 在笔记本合上后继续工作。平台 R-G008 runtimes API 已实现并本机 dev 全量
+  验收通过，2026-11-24 已部署生产（`5c2ff48`）；用它跑通常驻 host、并把 session
+  写进 `/workspace` 是第一个 spike。
 - **Fail-closed 审批。** 云端 proposal → 本地 host 的决定/执行 claim → 浏览器卡片。
   超时、未知或面板关闭都算拒绝。ADR-019 首版允许本地执行机器 start/stop/pause/
   resume；云端凭据动作仍等待平台 host/agent 隔离（ADR-001）；云提案 bridge、
@@ -134,8 +135,10 @@ profile 持久化、完整品牌化或 analytics 让 B1 不够时才作为升级
 端点；其余是 v0.2/beta：
 
 - R-G008 常驻 runtime：平台 runtimes API 已实现并本机 dev 全量验收通过（`rayrun-bot-gaps`，
-  `4709ac0`），待生产部署；session 由 bot host 写 `/workspace`，bot 侧
-  host 资产已进包（`cloud-host/`）；projection 路径待页面 E2E；
+  `4709ac0`），2026-11-24 已部署生产（`5c2ff48`）；session 由 bot host 写
+  `/workspace`，host 资产已进包（`cloud-host/`），projection 页面 E2E 已通过；
+  hosted 生产 cloudHost 聊天 E2E 已通过（`PROD_OK`，2026-11-24），生产 routine
+  E2E 尚未执行；
 - host/agent 权限隔离与 host-only 审批端点（ADR-001：云端凭据动作）。平台答复
   （2026-11-22）：同沙箱不可行，平台端点非首版；host/agent 分域路径需要本项目新
   ADR；本地 typed 审批执行已按 ADR-019 走本地路径，云端凭据动作仍无执行；
