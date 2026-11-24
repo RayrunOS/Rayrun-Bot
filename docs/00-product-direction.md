@@ -115,7 +115,7 @@ key 思考；没有项目方托管的账号、控制面、代理或中继。
 
 | 能力 | 说明 |
 | --- | --- |
-| 双插件安装 | Rayrun Bot + 独立的 `dsh-rayrun-computer`；一次安装路径未验证前保留两装路径 |
+| 双插件安装 | Rayrun Bot + 独立的 `dsh-rayrun-computer`；S6 已验证一条 `dsh plugin add` 安装两个包会同时启用两个 bundle，单包依赖不会自动启用依赖 bundle |
 | 登录与凭据 | Rayrun token 进 Harness vault；DeepSeek key 作为 Rayrun credential；不写入页面、仓库或日志 |
 | 一台云电脑 | 一人一台，可创建、打开、停止；不自动销毁 |
 | Bot 注册表 | 名字、职责、头像（字母 monogram）、指令、skills、memory 目录 |

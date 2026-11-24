@@ -27,8 +27,9 @@
 - 本仓库通过它已发布的 tools/RPC 表面和版本契约消费它；
 - **不修改、不 fork、不 vendor、不复制**它的代码；
 - 需要它改行为 → 去它的仓库提 issue/PR，或在本仓库写 adapter；
-- 安装：npm 发布前双方都从 checkout 安装；S6 只决定“bundle 能否声明依赖、一次安装
-  是否带两个插件”，不是这个依赖接口问题；
+- 安装：npm 发布前双方都从 checkout/tarball 安装；S6 已验证一条 `dsh plugin add`
+  安装两个包会同时启用两个 bundle，而单包声明依赖不会自动启用依赖 bundle；这不是
+  依赖接口问题；
 - 本地控制面调用依赖的接口方式（service injection / host RPC / adapter）与 bot
   runtime 的 worker-projection 落地方式，都是 **ADR-004**；未定前 C1/D1 不应动工。
 
@@ -329,7 +330,7 @@ SSO/SAML/SCIM、组织 RBAC、审计导出/SIEM、DPA 与数据驻留、marketpl
 | 审批执行点 | E1–E7、A6/A7 | ADR-001：已定（平台权限隔离）；需求见 §3.3 |
 | 安全入站 | desktop/手机审批 | v0.2 平台需求 |
 | 已有沙盒的 resize API | 成本与规格调整 | 待 Rayrun 确认；没有时新建机器 |
-| 版本矩阵与一次安装 | 发布路径 | S6 + Release |
+| 版本矩阵与一次安装 | 发布路径 | S6 已验证（2026-11-24，一条命令装两个包）；Release 待 npm 归属/发布 |
 
 ---
 

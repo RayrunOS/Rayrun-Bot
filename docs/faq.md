@@ -49,10 +49,10 @@ key 存在 Rayrun credential 里，只注入 agent 进程；机器里的 `exec` 
 
 今天需要：Rayrun Bot，以及独立的
 [RayrunOS/dsh-rayrun-computer](https://github.com/RayrunOS/dsh-rayrun-computer)
-项目。Rayrun Bot 把它当作外部依赖复用，不修改、不 fork、不 vendor。Rayrun Bot 的
-bundle 计划把它声明为依赖，让一次安装带两个插件；但 DSH bundle 依赖是否会同时加载
-host 和 client 两半，是 W0 spike S6，**未验证**。在那之前——以及两个包都上 npm 之前——
-从各自的 checkout 把两个插件装进同一个 DSH profile，然后重启 DSH。
+项目。Rayrun Bot 把它当作外部依赖复用，不修改、不 fork、不 vendor。两个包都未上
+npm；从各自的 checkout/tarball 用**一条** `dsh plugin add` 命令装进同一个 DSH
+profile，会同时启用两个 bundle（S6 已验证，2026-11-24）。只安装 Rayrun Bot 并在
+`package.json` 声明依赖，只会安装依赖包，不会自动启用依赖 bundle。
 
 ## 为什么这个仓库文档这么多？
 

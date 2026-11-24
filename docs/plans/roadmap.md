@@ -148,8 +148,9 @@ profile 持久化、完整品牌化或 analytics 让 B1 不够时才作为升级
 完整 handoff 清单、期望的 API 形态和我们的 workaround 见
 [08-integration.md](../08-integration.md)。[01-system-architecture.md](../01-system-architecture.md)
 解释每一项；[faq.md](../faq.md) 有面向用户的版本。有一个打包风险不是平台的：两个包
-都还没上 npm，所以两个都从 checkout 安装，直到 `dsh-rayrun-computer` 发布、且一次安装
-bundle 依赖被验证（W0 spike S6，**TBD**）。
+都还没上 npm，所以两个都从 checkout/tarball 安装。S6 已验证（2026-11-24）：一条
+`dsh plugin add` 装两个包会同时启用两个 bundle；单包声明依赖不会自动启用依赖
+bundle，真正的单包安装仍待 DSH 支持或 meta-package。
 
 ## 范围怎么定
 

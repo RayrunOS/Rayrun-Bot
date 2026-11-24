@@ -103,8 +103,9 @@ A1–A12 之后的 alpha 门：10–20 名种子用户；首个 bot 成功率 �
 6. **Session 策略由 spike S1 决定**：优先机器上的长驻 DSH 进程；回退到每轮 headless
    加 session id；最后手段是 transcript 重放。
 7. **独立项目，一条依赖边。** `dsh-rayrun-computer` 留在自己的仓库，作为 npm 依赖
-   （MIT）被消费。bundle 计划声明该依赖，让一次安装带两个；S6 决定，文档化的两装路径
-   是回退。
+   （MIT）被消费。S6 已验证（2026-11-24）：只安装 bots 包并声明依赖不会自动启用
+   依赖 bundle；安装文档改用一条 `dsh plugin add` 命令装两个包。真正的单包安装需要
+   DSH 传递 bundle 激活或 meta-package，不在 v0.1 范围。
 8. **一个队列，一个 agent 任务。** Host 绝不依赖平台排队；busy 重试，绝不丢弃。
 9. **权限划分。** 所有权和决策 local-first，执行在云端；见
    [01-system-architecture.md](../01-system-architecture.md#51-真相在哪)。
@@ -347,8 +348,9 @@ watchdog 重启、账号 token 放 vault、无入向网络、S6 失败时两装�
    cloudHost 模式的云端调度已在 Rayrun dev/test 环境 live 验证（2026-11-24），
    生产待部署；本地 host 决定何时入队，云端队列执行；cron 和事件触发不在 v0.1。
 3. **审批通道** —— v0.1 文件邮箱，v0.2 IM（推荐）。W0 到期。
-4. **已解决（2026-11-11）** —— `dsh-rayrun-computer` 保持不动，留在自己的仓库；
-   Rayrun Bot 是依赖它的独立项目。未决子决策：一次安装依赖（S6）还是文档化两装回退。
+4. **已解决（2026-11-11 / S6 2026-11-24）** —— `dsh-rayrun-computer` 保持不动，
+   留在自己的仓库；Rayrun Bot 是依赖它的独立项目。S6 结论：单包声明依赖不会自动
+   启用依赖 bundle；安装文档改用一条 `dsh plugin add` 命令装两个包。
 5. **npm 所有权** —— 哪个账号拥有两个包、谁发布依赖、谁配置 trusted publishing。
    W1 到期。
 

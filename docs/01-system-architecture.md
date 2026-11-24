@@ -193,8 +193,8 @@ billing。token 只在本地控制面使用；云端 agent 只拿模型 key，�
 - **我们使用**：`rayrun_*` tools 的语义、同源 RPC 路由、worker projection 和版本
   契约。
 - **未定**：本地控制面通过 service injection、host RPC 还是其他 adapter 调用它；
-  bot runtime 如何由它的 worker projection ship/启动，也是 ADR-004。S6 只解决
-  “bundle 能否声明依赖”，不等于这个接口问题。
+  bot runtime 如何由它的 worker projection ship/启动，也是 ADR-004。S6 已解决
+  安装组合（一条 `dsh plugin add` 装两个包），不等于这个接口问题。
 - **禁止**：修改、fork、vendor 或复制它的代码；需要它改行为 → 去它的仓库提
   issue/PR，或在本仓库写 adapter。
 - **版本检查**：host 启动时记录已安装版本，缺失/过旧返回 `E_DEP_MISSING` /

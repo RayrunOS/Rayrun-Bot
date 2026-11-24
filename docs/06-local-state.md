@@ -96,7 +96,8 @@ packages/dsh-rayrun-bots/
 - 用户文案在 `locale/en.json`（源）和 `locale/zh.json`（镜像）；key 用 `bots.*`、
   `approval.*`、`setup.*`、`cost.*`、`error.*`。
 - 测试镜像模块：`test/<module>.mjs`；无框架。
-- 依赖声明在 S6 确认前保持两装路径；见 [`08-integration.md`](08-integration.md)。
+- S6 已验证（2026-11-24）：安装文档使用一条 `dsh plugin add` 安装两个包；单包声明依赖
+  不会自动启用依赖 bundle。见 [`08-integration.md`](08-integration.md)。
 
 ---
 
