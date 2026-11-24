@@ -27,7 +27,6 @@ const DEPENDENCY_CODES = new Map([
   ['invalid_runtime_spec', ERROR_CODES.runtimeInvalid],
   ['runtime_not_found', ERROR_CODES.runtimeNotFound],
   ['runtimes_unavailable', ERROR_CODES.runtimesUnavailable],
-  ['worker_files_unavailable', ERROR_CODES.runtimeUnavailable],
   ['workspace_locked', ERROR_CODES.machineBusy],
   ['balance_low', ERROR_CODES.balanceLow],
   ['insufficient_balance', ERROR_CODES.balanceLow],
@@ -59,11 +58,7 @@ export function dependencyFailure(error) {
   if (!code && error?.status === 402) code = ERROR_CODES.balanceLow
   if (!code && error?.status === 404) code = ERROR_CODES.depMissing
   if (!code && error?.status === 409) code = ERROR_CODES.machineBusy
-  const failure = rayrunFailure(code ?? ERROR_CODES.internal, String(error?.message ?? error ?? 'The cloud turn failed.'))
-  // Keep the dependency's raw code for callers that need to distinguish a
-  // transient cold-start 404 from a genuinely missing resource.
-  if (raw !== '') failure.detailCode = raw
-  return failure
+  return rayrunFailure(code ?? ERROR_CODES.internal, String(error?.message ?? error ?? 'The cloud turn failed.'))
 }
 
 function rpcFailure(body, status) {

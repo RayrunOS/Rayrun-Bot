@@ -56,14 +56,15 @@ host-callable `runtime.*`（main 已合并，尚未发布 npm）。
 `rayrun-bot-scoped` 与 botclean 的 `rayrun-bot-clean` 已于 2026-11-24 按用户明确
 授权 destroy，复核 `live_remaining=[]`；botclean 租户保留。
 
-依赖 main `5259782` 已包含冷启动 `worker_files_unavailable` 稳定码，但尚未 npm
-发布；表中 `1.2.0` 行仍基于 `fe965c1` 验证。R-G015 在 hosted 生产新 sandbox
-`rayrun-bot-fresh-mwu9kgwj` 上仍 4/4 失败；依赖侧已确认首次 PUT 前 `mkdir -p`
-成功且目录存在，profile 级文件可写，只有 `node_modules/...` 下插件文件 404；
-待平台查 hosted file API 对 exec 新建父目录的可见性/缓存或生产入口层/构建差异；
-诊断需用户授权，两台测试机保持 Stopped。dev `rayrun-bot-coldstart` 冷启动已成功
-（`COLD_OK`）。2026-11-24 对依赖 main `5259782` 跑本仓库全部 `test/*.mjs`，离线
-检查通过（不含 live）。
+依赖 main `956d595` 已移除 `worker_files_unavailable` 映射（来自依赖侧 live 测试
+脚本的 fetch mock 误拦截 `.../node_modules/dsh-rayrun-computer/...`，不是平台
+file API），CI Node 22/24 全绿；尚未 npm 发布；本仓库未采用该码的特殊重试。
+hosted
+`rayrun-bot-test` 在收窄 mock 后冷启动 8.8 秒成功（`REAL_FIX_OK`）；dev
+`rayrun-bot-coldstart` 冷启动成功（`COLD_OK`）；两台测试机保持 Stopped。生产
+daemon `92a77d0` 早于 R-G008，`/runtimes`、`/host` 404 是独立的未部署差异。
+2026-11-24 对依赖 main `956d595` 跑本仓库全部 `test/*.mjs`，离线检查通过（不含
+live）。
 
 S6（2026-11-24，本地 tarball）：`dsh plugin add` 一条命令安装两个包会同时选中
 两个 bundle；只安装 bots 包即使声明依赖，也只会安装依赖包、不启用依赖 bundle。

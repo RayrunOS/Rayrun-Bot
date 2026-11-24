@@ -108,7 +108,6 @@
 | R-G013 | 2026-11-21 | 用 Rayrun 镜像做 `FROM` 的自定义构建 | `POST /v1/builds` 不接受 `FROM <rayrun-ref>`（`unsupported_base`） | **有 workaround**：从公共 registry 构建；或从沙箱保存 | 自定义镜像需要从零构建，无法复用官方 rootfs |
 | R-G014 | 2026-11-22 | 可用于 `dsh.start` 的 DSH oneshot 测试镜像 | `dsh-bot-devcheck@1`（由 `dsh-bot@1` 复制）的 manifest 是 `prompt_via='argv'`、`argv=['/bin/sh','-c']`；`dsh.start` 把 delegation prompt 当 shell 命令执行，没有 DSH worker，`.dsh/results/<task>/reply.md` 不会产生。直接 `dsh --profile headless` 正常；`deepseek-harness@1` 是 DSH stdin/ndjson。 | **有 workaround**：`dsh.start` 测试用 `deepseek-harness@1`；runtimes/host 测试用 `dsh-bot-devcheck@1`；同时测两者时构建 guestd 0.6.0 + DSH stdin/ndjson 的组合镜像 | devcheck 镜像不能验证 `dsh.start` 的 `reply.md` 契约；host 直接 DSH 路径不受影响 |
 | R-G014 | 2026-11-21 | 在 Rayrun 内验证 Linux Electron 桌面开发版 | 无官方 Linux Desktop target；源码构建需要数 GB/较长时间，且仍不能验证官方安装器/更新器 | **未做/不建议**：不把源码开发版当成官方桌面验收 | 若必须做，先作为独立 spike 并记录成本；不替代 D-S1a |
-| R-G015 | 2026-11-24 | 机器从 Stopped 唤醒后立即执行 `dsh.start` | hosted `rayrun-bot-test` 上观察：worker profile 首次 file PUT（`PUT .../files/.rayrun/dsh/profiles/headless/node_modules/dsh-rayrun-computer/<file>`）返回 404；依赖侧已把该错误映射为 `worker_files_unavailable` 并合入 main `5259782`（CI Node 22/24 全绿，**未 npm 发布**）。删除旧机 profile 的 `node_modules/dsh-rayrun-computer` 后仍失败；另在 hosted 生产 API 新建全新 `deepseek-harness@1` sandbox `rayrun-bot-fresh-mwu9kgwj`（`01a20c0f-f493-74f0-b041-f6024a973bda`，Running）复验，5/10/20/30 秒 4 次仍 4/4 返回该码。平台侧最初怀疑 `PUT /v1/sandboxes/{id}/files/*path` 不自动创建父目录；依赖侧复核后排除：`syncCloudWorker` 在插件文件循环前执行 `mkdir -p .../node_modules/dsh-rayrun-computer`，debug exit 0，`ls -la` 确认目录存在，但首次 PUT 仍 404。profile 级文件（`cordis.patch.yml`、`cloud-projection.json`）PUT 成功，只有 `node_modules/...` 下的插件文件 404；dev daemon 上新建 `rayrun-bot-coldstart`（`01a20c12-12e5-7dd7-b9b9-fe89a0da8647`）冷启动成功：Stopped → 首轮 `dsh.start` → `COLD_OK`，约 13 秒 | **临时 workaround**：bot 侧 detached adapter 对 `http_404` 或 `worker_files_unavailable` 用同一 task id 按 5/10/20/30 秒退避，最多重试 4 次；其他错误不重试。fake 测试覆盖；hosted 重试与失败关闭已实测，dev 冷启动成功路径已实测。mkdir 顺序已排除，退避不能修复父目录可见性问题 | 冷启动首轮最多多约 65 秒；hosted file API 对 exec 新建 `node_modules` 父目录的可见性/缓存，或生产入口层/构建落后 dev HEAD，待平台确认。平台侧下一步：对失败/成功的 PUT 抓 `curl -i` 响应头（`Server`、`X-Request-Id`）区分入口层与 daemon 404，并在同目录 `mkdir zzprobe` 后 PUT 非 `node_modules` 路径，排除路径名拦截；hosted 诊断需用户授权。稳定码已进 main 但未发布；两台测试机保持 Stopped，排查期间不 destroy；destroy 需用户单独授权 |
 
 ### 3.1 已验证通过（含本机验证；待 Rayrun 复验项见 §4）
 
@@ -397,9 +396,12 @@
   dev token `02e0a54e…`）：机器先 stop 到 Stopped；直连 host RPC 创建 bot 并发送
   `COLDSTART`；首轮 `dsh.start` 唤醒机器并成功，session `running` → `idle`，
   bot 回复 `COLD_OK`，约 13 秒完成。测试后机器 stop 回 Stopped、未 destroy；临时
-  DSH profile 和脚本已删除；token 已撤销，临时 token 文件已删除。这次没有触发
-  `worker_files_unavailable`，退避后的成功路径仍只有 fake 测试和 hosted 失败关闭
-  证据。
+  DSH profile 和脚本已删除；token 已撤销，临时 token 文件已删除。依赖侧随后确认：
+  hosted 上的 `worker_files_unavailable` 是其 live 测试脚本的 fetch mock 误拦截
+  `.../node_modules/dsh-rayrun-computer/...` file PUT；请求未到 nginx。修正已合入
+  依赖 main `956d595`（CI Node 22/24 全绿），`worker_files_unavailable` 已移除，
+  尚未 npm 发布。收窄 mock 后 hosted `rayrun-bot-test` 冷启动 8.8 秒成功
+  （`REAL_FIX_OK`）。adapter 和平台正常，不需要 cold-start retry。
 - 真实 cloud proposal 闭环（2026-11-23，本机 DSH `0.2.2-rc.5`，依赖 main
   `fe965c1`，Bots `0.1.0-alpha.0`，`rayrun-bot-scoped`，私有 `deepseek-flash`）：
   真实云 bot 在回复末尾输出结构化 `rayrun-approval` block；cloud host 解析并写
@@ -483,12 +485,6 @@
   无 token 失败恢复、runtime 重建，以及三条消息排队 + 本地 DSH 崩溃恢复已在
   Rayrun dev/test 验证（§3.1）；host 挂载即恢复 detached task 已有 fake 测试和
   本机 DSH 无 token 冒烟，真实云端 task 在无页面情况下的完整收取未单独做 live；
-  R-G015 的冷启动退避重试有 fake 测试；hosted `rayrun-bot-test`/新 hosted sandbox
-  上实测到 4 次 `worker_files_unavailable` 后失败关闭；dev `rayrun-bot-coldstart`
-  冷启动成功（`COLD_OK`），但未触发退避。依赖侧已确认首次 PUT 前 `mkdir -p`
-  成功且目录存在，profile 级文件可写，只有 `node_modules/...` 下插件文件 404；
-  待平台查 hosted file API 对 exec 新建父目录的可见性/缓存或生产 daemon 版本差距；
-  稳定码已进依赖 main `5259782`，但尚未 npm 发布；
 - DeepSeek 模型调用（至今只创建了 model credential，没有发模型请求）；
 - 零余额宽限/force-destroy 行为（R-G009，不做破坏性验证）；
 - 在 Rayrun 上构建自定义 Dockerfile 镜像（R-G013）。
