@@ -155,6 +155,13 @@
   点击 `打开` 后启动机器、打开 desktop 新窗口，并显示 `桌面密码` 提示条（136 字符，
   截图前已把密码替换为圆点）；测试后机器 `stop` 回 Stopped，未 destroy。DSH 首次运行的
   `Preview Notice` / `Get started` 弹窗需要先点掉，这是 DSH 自己的弹窗，不是 Bots 的。
+- Bots 页面层创建按钮成功路径（2026-11-24，本机 DSH web `0.2.2-rc.5` + Firefox/
+  geckodriver，Rayrun dev daemon，干净 tenant `botclean`，初始 0 台机器）：进入
+  setup 云电脑步骤，点击 `Create cloud computer`（名称 `rayrun-bot-clean`，DeepSeek
+  key 留空）→ 依赖 `machine.create` 创建 2C/2G、remote desktop 机器 → 页面显示
+  `Created · rayrun-bot-clean` 并改为已有电脑；机器创建后为 Running，测试后 `stop`
+  回 Stopped，未 destroy。截图 `/tmp/bot/create-computer.png`（临时文件，不入库）。
+  scoped token 已撤销，临时 token/base-url 文件和临时 DSH profile 已删除。
 - 详情面板真实数据（2026-11-21，同一本机 DSH 页面）：连接后显示 `rayrun-bot-test` /
   `休眠`、`余额 ¥27.42 · 231.3 机时`、底部 `Rayrun 已连接 · ¥27.42`；在 setup 里连接
   后关闭向导，详情无需刷新即更新。登出 Rayrun 后显示 `—` / `未连接`、
@@ -426,7 +433,7 @@
 > 调用；创建用 `ensureModelCredential` → `createMachine`。页面层用
 > `@deepseek-ai/dsh@0.2.2-rc.5`（npmmirror）+ 两个插件安装到临时 profile，token 只经
 > 同源 RPC 写入本机 DSH vault。所有 key 只在本机读取，不打印，不上传沙箱。页面层的
-> 创建按钮仍未验证（见 §4）。
+> 创建按钮另在干净 dev tenant 上验证（2026-11-24，见 §3.1）。
 
 ---
 
@@ -436,9 +443,6 @@
 - `profiles/desktop` 的创建、插件写入和 Electron 启动；
 - 在 Rayrun 云端沙箱内放真实 token 并直接操作云电脑（出于安全刻意不做；依赖库验证
   在本机进行，token 未进入沙箱）；
-- Bots 页面内的云电脑**创建按钮**成功路径：依赖层的 `ensureModelCredential` +
-  `machine.create` 已验证；页面层的已有机器采用和 `继续` 已验证，但创建按钮本身未在
-  页面层点击（账号有多台已有机器，setup 会采用），需要在没有现有机器的账号上补验；
 - 在 Rayrun 沙箱内复验 roster 页面路径（本机 DSH 已完成；roster 不需要真实 token，
   应可在沙箱内复现）；
 - 核实 `$DSH_HOME/.credentials.yaml`（DSH web auth secret）在云端 workspace 上的文件

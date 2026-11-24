@@ -60,7 +60,11 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
 
 - 依赖层的连接、创建和桌面成功路径，以及页面层的 setup 和 Open 路径，已在
   2026-11-21 用本地测试 key 验证；key 没有进入沙盒。
-- 页面层的云电脑创建按钮仍需在没有已有机器时补验。
+- 页面层云电脑创建按钮已在干净 dev tenant（初始 0 台机器）验证（2026-11-24）：
+  setup 云电脑步骤点击 `Create cloud computer`，名称 `rayrun-bot-clean`、DeepSeek
+  key 留空，页面显示 `Created · rayrun-bot-clean`；机器创建后 Running，测试后 stop
+  回 Stopped，未 destroy。截图 `/tmp/bot/create-computer.png`（临时文件，不入库）。
+  scoped token 已撤销，临时 token/base-url 文件和临时 DSH profile 已删除。
 - 页面层的新建/刷新名册路径已在 2026-11-21 的本机 DSH 页面验证。
 - Session store 与 `session.*` RPC 已由 `test/session-runtime.mjs` 和
   `test/rpc-contract.mjs` 在 fake runtime 上覆盖；`rayrun_agent` adapter 由
@@ -237,7 +241,6 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
 
 ## 4. 尚未构建或验证
 
-- 页面层云电脑创建按钮的补验。
 - 常驻云端 bot runtime 的生产镜像与部署：平台 R-G008 runtimes API 已实现并本机 dev
   全量验收通过（`rayrun-bot-gaps`，`4709ac0`，2026-11-22：runtime 启动、凭证注入、
   sandbox stop/start autostart、SIGKILL 重启、删除；keep_alive 与 daemon 重启保留；
