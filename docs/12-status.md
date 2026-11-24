@@ -29,7 +29,7 @@ Rayrun dev/test 环境完成 live E2E（本地 DSH 停止期间由云 host 调�
 返回 200 applied/restarted，heartbeat 正常；测试后 stop、未 destroy。2026-11-24
 hosted 用户租户 cloudHost 聊天 E2E 通过：`rayrun-bot-prod-e2e`（`dsh-bot@1`）从
 Stopped 启动，bot-host runtime running pid 636，bot 回复 `PROD_OK`，约 12 秒；
-runtime 删除、机器 Stopped、未 destroy。生产 routine E2E 尚未跑。其他审批动作、
+runtime 删除、机器 Stopped、未 destroy。生产 routine E2E 已通过（`CLOUD_ROUTINE_PROD_OK`，2026-11-24）。其他审批动作、
 cron/事件触发和发布路径仍未打通。CI 代码已上生产但 `RAYRUN_GITHUB_CI_ENABLED` 未开。bot 侧常驻 host 的本地
 transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；host 资产已随包
 发布（`cloud-host/`），projection 页面 E2E 已通过，多 bot 单 host 页面 E2E 也已通过
@@ -69,9 +69,10 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
 
 > 2026-11-24 按用户明确授权销毁 dev 测试机：devcheck 的 `rayrun-bot`、
 > `rayrun-bot-idle`、`rayrun-bot-scoped`、`rayrun-bot-coldstart` 与 botclean 的
-> `rayrun-bot-clean`；dev 侧现无 bot 测试机。hosted 的 `rayrun-bot-test` 与
-> `rayrun-bot-fresh-mwu9kgwj` 保留、Stopped、未 destroy。下文“stop / 未 destroy”
-> 是当次测试收尾动作；botclean 租户本身保留。
+> `rayrun-bot-clean`；dev 侧现无 bot 测试机。hosted 的 `rayrun-bot-test`、
+> `rayrun-bot-fresh-mwu9kgwj`、`rayrun-bot-prod-e2e`（`dsh-bot@1` 生产 E2E）保留、
+> Stopped、未 destroy。下文“stop / 未 destroy”是当次测试收尾动作；botclean 租户
+> 本身保留。
 
 - 依赖层的连接、创建和桌面成功路径，以及页面层的 setup 和 Open 路径，已在
   2026-11-21 用本地测试 key 验证；key 没有进入沙盒。
@@ -243,7 +244,9 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
   `rayrun-bot-test` 仍是旧镜像、Stopped。2026-11-24 hosted 用户租户 cloudHost
   聊天 E2E 通过：`rayrun-bot-prod-e2e`（`dsh-bot@1`）从 Stopped 启动，
   bot-host runtime running pid 636，bot 回复 `PROD_OK`，约 12 秒；runtime 删除、
-  机器 Stopped、未 destroy。生产 routine E2E 尚未跑。cloud host 资产
+  机器 Stopped、未 destroy。生产 routine E2E 已通过：本地 DSH 停机期间云 host
+  于 14:48:16Z 产出 `CLOUD_ROUTINE_PROD_OK`；重启后 `routines.sync` imported=1，
+  history 合并 routine user/bot。cloud host 资产
   （`cloud-host/`，随包发布）也在 dev 环境通过
   queue/transcript/heartbeat、sandbox stop/start autostart、SIGKILL 重启。DSH agent
   已接入：镜像内 DSH 0.2.0-rc.2 直接 headless 第一轮 `RUN1_OK`，同 session id 第二轮
@@ -295,7 +298,7 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
   0.5.0，不能用于 runtime。2026-11-24 hosted 用户租户 cloudHost 聊天 E2E 通过：
   `rayrun-bot-prod-e2e`（`dsh-bot@1`）从 Stopped 启动，bot-host runtime running
   pid 636，bot 回复 `PROD_OK`，约 12 秒；runtime 删除、机器 Stopped、未 destroy。
-  生产 routine E2E 尚未跑。credential 不需要新建：现有 hosted deepseek
+  生产 routine E2E 已通过（`CLOUD_ROUTINE_PROD_OK`，2026-11-24）。credential 不需要新建：现有 hosted deepseek
   credential 会映射到新镜像声明的 `DEEPSEEK_API_KEY` 槽位。依赖 1.2.0
   `runtime.*` client（`lib/runtime-rpc.js`）已过 fake 测试和 dev live 联调。
 - 能拦住 worker 的远程审批执行：ADR-019 已让本地 host 对 typed 机器
@@ -331,7 +334,7 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
   拒绝。2026-11-24 已发布 `dsh-bot@1`（guestd 0.6.0、DSH 0.2.0-rc.2，manifest
   `DEEPSEEK_API_KEY`），平台测试 sandbox 的 `runtime.put` 返回 200；2026-11-24
   hosted 用户租户 cloudHost 聊天 E2E 通过（`PROD_OK`，runtime 删除、机器 Stopped、
-  未 destroy）；生产 routine E2E 尚未跑。
+  未 destroy）；生产 routine E2E 已通过（`CLOUD_ROUTINE_PROD_OK`，2026-11-24）。
 - 安全入向网络（今天 token ingress 不可用，只有 `public` 可用）。
 - 空闲自动停机、spend cap、动态调整资源、运行期 egress 更新。
 

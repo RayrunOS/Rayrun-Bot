@@ -405,7 +405,7 @@ tombstone，action hash 的 canonicalization 未定义；见 ADR-011/012。
 - R-G008 常驻 runtime：平台 runtimes API 已实现并本机 dev 全量验收通过（`rayrun-bot-gaps`，
   `4709ac0`），2026-11-24 已部署生产（`5c2ff48`/build 493）；bot 侧 host/session
   已在 dev 预览实现并通过多 bot live E2E（2026-11-23）；hosted 生产 cloudHost
-  聊天 E2E 已通过（`PROD_OK`，2026-11-24），生产 routine E2E 尚未执行；
+  聊天 E2E 已通过（`PROD_OK`，2026-11-24），生产 routine E2E 已通过（`CLOUD_ROUTINE_PROD_OK`，2026-11-24）；
 - 余额宽限与 spend 护栏：余额耗尽今天会 force-destroy 机器和磁盘；
 - 安全的入站网络：token ingress 不可用，只有 `public`；
 - idle auto-stop 或 wake-on-request；

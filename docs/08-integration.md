@@ -86,7 +86,7 @@ adapter 放在我们的包里，不改依赖。
 `rayrun-bot-gaps`，`4709ac0`），并已于 2026-11-24 部署到生产 `5c2ff48`
 （build 493，tag `prod-20261124-2`），包含 gaps；生产 `/v1/runtimes` 已注册
 （未认证 401）。`dsh-bot@1`（guestd 0.6.0）已发布，hosted 用户租户 cloudHost
-聊天 E2E 已通过（`PROD_OK`）；生产 routine E2E 尚未跑。初步支持的契约：
+聊天 E2E 已通过（`PROD_OK`）；生产 routine E2E 已通过（`CLOUD_ROUTINE_PROD_OK`，2026-11-24）。初步支持的契约：
 
 - `PUT/GET/POST/DELETE /v1/sandboxes/{id}/runtimes[/{name}]`；spec 包含 `argv`、
   `workdir`、`env`、`credentials`、`restart`、`autostart`、`keep_alive`、
@@ -293,7 +293,7 @@ SSO/SAML/SCIM、组织 RBAC、审计导出/SIEM、DPA 与数据驻留、marketpl
 
 | 需求 | 需要时间 | 今天阻塞发布？ |
 | --- | --- | --- |
-| 1. session + 常驻 runtime 契约 | v0.1 | 平台侧已实现并本机 dev 全量验收；2026-11-24 已部署生产 `5c2ff48`；`dsh-bot@1` + hosted 用户租户 cloudHost 聊天 E2E 已通过 `PROD_OK`；生产 routine E2E 尚未执行 |
+| 1. session + 常驻 runtime 契约 | v0.1 | 平台侧已实现并本机 dev 全量验收；2026-11-24 已部署生产 `5c2ff48`；`dsh-bot@1` + hosted 用户租户 cloudHost 聊天 E2E 已通过 `PROD_OK`；生产 routine E2E 已通过（`CLOUD_ROUTINE_PROD_OK`，2026-11-24） |
 | 2. 余额宽限 / 护栏 | v0.1 | 风险接受并警告 |
 | host/agent 权限隔离 + 云端审批端点（§3.3） | v0.1 | 云端凭据动作是（ADR-001）；本地 typed 动作已按 ADR-019 解阻 |
 | 3. 文件通道语义 | v0.1 | 否（有 workaround） |
