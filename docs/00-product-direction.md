@@ -2,7 +2,8 @@
 
 > 状态：2026-11-24。本文是**产品层的唯一真相源**：卖给谁、解决什么问题、v0.1 做什么、怎么算做完。
 > 实现状态与进度只看 [`12-status.md`](12-status.md)；本文不复制状态。根
-> [`../README.md`](../README.md) 是营销页，不作为事实依据。
+> [`../README.md`](../README.md) 是产品页（安装和能力的短述）；与 12-status 冲突时以
+> 12-status 为准。
 > 技术方案见 [`01-system-architecture.md`](01-system-architecture.md)；工作分解与验收见
 > [`plans/mvp-plan.md`](plans/mvp-plan.md)；未决架构决策见
 > [`adr/architecture-decisions.md`](adr/architecture-decisions.md)。
@@ -11,7 +12,7 @@
 
 | 文档 | 本文对它的处置 |
 | --- | --- |
-| [`../README.md`](../README.md) | 营销页，不承载事实。本文不重复“今天能做什么” |
+| [`../README.md`](../README.md) | 产品页上的短述。本文不重复“今天能做什么”；那部分以 12-status 为准 |
 | [`12-status.md`](12-status.md) | 实现状态的唯一事实源；本文不复制状态 |
 | [`01-system-architecture.md`](01-system-architecture.md) | 技术落点。产品与技术冲突时以本文为准；技术细节以 01 为准 |
 | [`plans/mvp-plan.md`](plans/mvp-plan.md) | v0.1 工作分解与 A1–A12 验收。本文只定方向和范围 |
@@ -243,7 +244,7 @@ v0.1 的估算与排序见 [`plans/mvp-plan.md`](plans/mvp-plan.md)；里程碑�
 ## 11. 文档约定
 
 - 产品方向以本文为准；实现状态以 [`12-status.md`](12-status.md) 为准。
-- 根 [`../README.md`](../README.md) 是营销页，不作为事实依据。
+- 根 [`../README.md`](../README.md) 是产品页上的短述，不作为实现状态的依据。
 - 技术基线以 [`01-system-architecture.md`](01-system-architecture.md) 为准。
 - 工作分解与验收以 [`plans/mvp-plan.md`](plans/mvp-plan.md) 为准。
 - 架构决策以 [`adr/architecture-decisions.md`](adr/architecture-decisions.md) 为准；ADR-001

@@ -1,278 +1,133 @@
 # dsh-rayrun-bots
 
-The Rayrun Bot plugin package. Status: **client shell with a local roster and
-local sessions** — the bundle loads, the client half renders the v0.1 screens,
-and the host half answers health, persists the bot roster, and stores a durable
-per-bot session/transcript. With `dsh-rayrun-computer` 1.1+, a turn is posted as
-a detached `dsh.start` task, its task id is persisted, and `reply.md` is
-collected from the task result directory; 1.0.x falls back to the single-turn
-`rayrun_agent` tool, and without either surface `session.send` fails closed with
-`E_RUNTIME_UNAVAILABLE`. One-turn and detached live Rayrun smokes were verified
-on 2026-11-22; the detached smoke closed the page and restarted the local DSH
-while the task ran, and the restarted host collected `reply.md`. A second-turn
-smoke stopped the machine, restarted DSH, and the next turn answered from the
-persisted transcript. With 1.2+, a host-side `runtime.*` client is ready for
-the platform-supervised bot host. The opt-in `cloudHost` runtime adapter ships
-the host assets in this package, projects them with a SHA-256 manifest through
-the dependency's `rayrun_files` tool, and wires one multi-bot host process into
-`session.*`. It is preview and has passed a dev page E2E.
-Approval execution now follows ADR-019: the local host is the authority and
-executor for typed local actions, while the cloud side may only propose. The
-first allowlist is `rayrun.machine.start/stop/pause/resume`; an approved
-request gets a durable at-most-once execution claim, and denied, expired, or
-crashed requests never execute. A cloud bot emits a structured `rayrun-approval`
-block; the cloud host writes the proposal and the local `approvals.sync` bridge
-imports it. A live cloud proposal -> local approve -> real machine stop -> stopped
-result outbox -> restart flush, plus a start approval and next-turn outcome
-context, passed on 2026-11-23. Other action types and
-cloud-only credential actions are still pending. The conversation UI
-uses the host session and real approval cards for roster bots; sample bots,
-receipts and settings remain an in-memory preview. Real bots can create, pause
-and remove local routines; the local scheduler enqueues one ordinary turn when a
-routine is due. The page-level create/reload path was verified on 2026-11-21,
-and the approval card deny/fail-closed path on 2026-11-23. Repository-level
-status and verified combinations live in
-[docs/12-status.md](../../docs/12-status.md).
+The Rayrun Bot plugin for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness).
+The product page is the repository README:
+[English](https://github.com/RayrunOS/Rayrun-Bot/blob/main/README.md) ·
+[简体中文](https://github.com/RayrunOS/Rayrun-Bot/blob/main/README.zh-CN.md).
+This file is the same install and the same limits, for the npm package.
 
-## What it does today
+**Bots with a name, a body, and a home.** Each bot has a name, a job brief,
+memory, and a schedule, and it lives on your own [Rayrun](https://rayrunos.com/)
+cloud computer: a Linux machine you can watch and take over. It thinks with your
+DeepSeek key. The computer is billed to your Rayrun account, and the model bill
+is yours. There is no project-run account, relay, or control plane. You install
+this package into DeepSeek Harness.
 
-- Host half: `GET /plugins/rayrun-bots?action=health` returns
-  `{ ok: true, plugin: "rayrun-bots", version, ready: false, dependency, runtime }`.
-  `dependency` reports `dsh-rayrun-computer` as `ok`, `missing` (`E_DEP_MISSING`),
-  `incompatible` (`E_DEP_VERSION`), or `unknown` when no profile context exists.
-  `runtime` reports the adapter name and whether its tool is currently
-  registered. `POST` is same-origin gated: a browser `Origin` that does not
-  match the request `Host` is refused with 403. No credentials are touched.
-- Host half: `bots.list`, `bots.get`, `bots.create`, `bots.update` and
-  `bots.delete` persist validated `bot.json` files under
-  `$DSH_HOME/state/rayrun-bot/bots/<id>/` (atomic writes, private modes, stable
-  `E_BOT_*` errors). The roster is the user's intent store until the cloud
-  runtime lands; the machine will become the runtime truth. Ids are derived
-  from the name when the client does not send one, and collisions get a numeric
-  suffix.
-- Host half: `routines.list/create/update/remove/sync` persist at most 32
-  validated routines per bot in `routines.json` beside `bot.json`. A routine has
-  a title, prompt, 1–10080 minute interval, enabled flag and next-run time. In
-  the default non-cloudHost mode, the local scheduler checks every 30 seconds,
-  enqueues at most one ordinary session turn per bot per tick, skips a busy bot,
-  and does not backfill missed intervals. It claims the run
-  (`lastRunAt`/next `nextAt`) before enqueueing, so a crash cannot replay it; a
-  failed enqueue waits for the next interval instead. In cloudHost mode the
-  local scheduler is disabled: the bridge mirrors `routines.json` and `bot.json`
-  while the machine is Running, the cloud host claims schedule state and
-  enqueues the task, expands it with the mirrored bot instructions and approval
-  hint (the DSH session carries the conversation), and `routines.sync` imports
-  routine results into local history. That cloud path has a fake E2E and a
-  Rayrun dev/test live E2E (2026-11-24); production is still waiting for the
-  platform deployment. A routine is a normal user turn and does not bypass
-  approval. Because it uses the normal send path, a due routine may
-  wake a stopped or paused machine and incur machine-hour charges; the interval
-  and enabled switch are standing authorization, not per-run approval.
-- Host half: `session.send`, `session.history` and `session.status` persist a
-  per-bot `session.json` and append-only `transcript.jsonl` beside `bot.json`.
-  Sends are queued one turn at a time; a runtime failure writes a redacted
-  system line and leaves the transcript intact; a host restart marks a running
-  turn `interrupted` instead of replaying it. When the dependency's
-  `rayrun_agent` tool is registered, a queued turn is sent to the existing cloud
-  computer (the adapter refuses to auto-create one); a stopped or paused machine
-  is woken by the dependency, which may incur machine-hour charges. Without the
-  tool, `session.send` returns `E_RUNTIME_UNAVAILABLE` and writes no session.
-- Host half: `approvals.list/get/decide/propose/sync` operate on one request,
-  decision and execution claim per approval under `bots/<id>/approvals/`.
-  Requests carry an action id, nonce and canonical SHA-256 action hash; background
-  requests expire after 30 minutes, chat requests wait; duplicate decisions are
-  idempotent and a conflicting or replayed decision is refused. Every request,
-  decision, refusal and execution is appended to `logs/audit.log` without the
-  action payload. `propose` is host-side only and validates a typed action
-  (`rayrun.machine.start`, `stop`, `pause`, `resume`). On approve, the local
-  executor writes an `exec-<id>.json` claim and calls the dependency's Rayrun RPC
-  with the token kept in the Harness vault; a failed execution is recorded and
-  not retried. `sync` imports typed proposals from the cloud workspace with
-  `rayrun_files`, validates them again and deduplicates by proposal id; decisions
-  and execution results are written back to `approval-results/` (a stopped
-  machine queues results locally for the next sync). The next cloud prompt also
-  includes recent approval kind/target/state/execution/status, without payloads. Other action kinds are not
-  built; the proposal bridge has fake-tool tests, and a live cloud-bot proposal
-  E2E is still pending.
-- Client half: a `Bots` sidebar entry and the three-column shell from
-  [docs/design/ui-design.md](../../docs/design/ui-design.md) — chat list, conversation,
-  details (Activity / Library), new bot, the four-step setup wizard, and
-  settings. When the host roster has entries, the chat list shows those bots
-  instead of the sample list; creating a bot in the new-bot screen or the setup
-  wizard writes through to the host and selects the saved bot. For real roster
-  bots, messages and approval cards come from the host session and approval
-  store; real bots also create, pause and remove routines through the host, and
-  the five-second poll imports cloud routine results into the conversation.
-  Sample bots, receipts, sample routines and settings still live in the page
-  only. Deny /
-  Allow once for real approvals goes through the host and can execute a typed
-  local action; after a decision the real card offers Continue bot, which sends
-  the next turn only when the user clicks it. Sample cards update in-memory state. The client
-  activates Bots on load and covers the DSH
-  sidebar and bottom bar; there is no in-product return to the Harness shell
-  (ADR-017). The setup Rayrun step calls the cloud-computer plugin's
-  same-origin RPC with a pasted token and shows the real balance/machine count.
-  The computer step calls `overview` and adopts an existing machine, or calls
-  `machine.create` with the plugin's defaults; a pasted DeepSeek key is passed as
-  `modelKey` and becomes the machine's Rayrun credential, then the input is
-  cleared. The step says the machine is billable, and the button is disabled
-  until Rayrun is connected. When several machines exist, Bots prefers
-  `rayrun-bot`, then a machine with a desktop URL, then the first. Creating a
-  machine was run on a real Rayrun account from a local harness with test keys
-  (the keys never entered the sandbox); the Bots page adoption and Continue
-  paths were run in a local DSH page, but the page-level create button itself
-  still needs a pass with no existing machine.
-  `Open` / `Take over` on the computer card uses the same RPC to start or resume
-  the machine, wait for `Running`, repair the desktop service, read `desktop_url` and the desktop password,
-  then open the desktop in a new tab and show the password in a dismissible
-  toast; both buttons currently run the same path. It fails closed with one
-  actionable line when Rayrun is not connected, there is no machine, the popup
-  is blocked, the machine does not start in time, or it has no desktop. The
-  start/repair/desktop/password path was run locally against a real machine, and
-  the Bots page Open flow was run in a local DSH page (desktop window and
-  password toast). When the machine is running, `Stop` asks for inline
-  confirmation, calls `machine.action` with `stop`, polls to Stopped, and never
-  destroys; the page-level Open to Stop path was also run in the local page.
-  The Settings Usage row reads the real balance, machine-hours and machine count
-  through the same RPC; without a connection it says so instead of showing sample
-  numbers. The details panel's computer and usage blocks use the same overview
-  data: real machine name/status, balance and machine-hours when connected, and
-  an explicit Not connected / connect prompt when not. The copy ships in Chinese
-  and English, Chinese primary and following the DSH language; the Settings
-  language row writes the choice back to DSH so it survives a reload. The rest
-  stays in the page, and the client keeps neither the token nor a DeepSeek key.
+> **Pre-alpha.** v0.1 is not delivered, the three-minute first-run path is not
+> built, and this is not a production bot layer or a product for a general
+> audience. What works, what is missing, and which combinations were actually
+> checked is [docs/12-status.md](https://github.com/RayrunOS/Rayrun-Bot/blob/main/docs/12-status.md).
+> If this file and that doc disagree, the status doc wins. Summary below is as
+> of 2026-11-25.
 
-Not built yet: approval actions beyond machine start/stop/pause/resume, cloud-only
-credential approvals, a Bots-page-level verified computer-creation success path,
-production validation of the cloud-host routine scheduler, cron/event triggers,
-a production cloud image, and the npm release path. The local routine store/
-scheduler, cloud routine bridge, cloud scheduler, failed-result history and
-result merge have plain-Node coverage, a fake end-to-end test, and a Rayrun
-dev/test live E2E (cloud run while local DSH was stopped); the detail-panel
-create, pause and remove paths passed a local DSH + Firefox smoke on 2026-11-23
-without a Rayrun token, but no local scheduled turn was waited on. Approved
-start/stop, denial/Continue, and the next-turn approval context were verified live
-on 2026-11-23; pause/resume is also live. See the repo-level
-[MVP plan](../../docs/plans/mvp-plan.md) and [client plan](../../docs/plans/client-plan.md).
+<p align="center">
+  <img src="https://github.com/RayrunOS/Rayrun-Bot/raw/main/docs/mockups/conversation.png" width="920" alt="Design preview of the Bots conversation">
+</p>
+<p align="center"><sub>Design preview, not a screenshot of today's build.</sub></p>
 
-## DSH compatibility
+## Who it is for
 
-`package.json` declares `engines.dsh: >=0.2.0-rc.2 <0.3.0`. DSH `0.2.2-rc.5`'s
-compatibility check reads that range: an out-of-range install is refused and the
-profile is restored, and an incompatible row is disabled at composition. Older
-runtimes that ignore `engines.dsh` still load the bundle. The range covers the verified runtimes: `0.2.0-rc.2` (the Rayrun
-cloud image), `0.2.2-rc.5`, and `0.2.1-rc.5` from the CI matrix. It is not a claim
-that every feature works on every version; see the repository's
-[version matrix](../../docs/version-matrix.md) for the combinations actually
-verified.
+People who already run DeepSeek Harness and want a named bot on a Rayrun computer
+they pay for, using their own DeepSeek key, with an approval stop on starting,
+stopping, pausing, and resuming that computer.
 
-## Install from a checkout
+It is for someone who can read the status doc and tolerate gaps. It is not a
+hosted assistant, a bot marketplace, or a multi-tenant platform.
 
-Install this directory into the current DSH profile: **Plugins → Add plugin** and
-point it at `packages/dsh-rayrun-bots`, or use the `plugin_manager`
-`install_bundle` action with the package's absolute path. Refresh the DSH page;
-the client half loads when the page starts.
+## Install
 
-The cloud-computer dependency (`dsh-rayrun-computer`) is **not declared as a
-package dependency**: install both packages in one `dsh plugin add` command so
-both bundles are selected. Installing only this package does not activate the
-dependency's bundle. The host detects the installed version at runtime and
-reports it through health.
+You need [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) first.
+This package declares `engines.dsh` `>=0.2.0-rc.2 <0.3.0`. The command below was
+checked with DSH `0.2.2-rc.5`. Checked combinations are in the
+[version matrix](https://github.com/RayrunOS/Rayrun-Bot/blob/main/docs/version-matrix.md).
 
-Install the packed artifact instead of the checkout:
+Install both plugins from the official npm registry, in one command, with the
+versions pinned. Do not install this package by itself.
 
 ```bash
-npm pack ./packages/dsh-rayrun-bots --pack-destination /tmp
-dsh plugin --profile web add /tmp/dsh-rayrun-bots-0.1.1-alpha.1.tgz
+npm_config_registry=https://registry.npmjs.org \
+  dsh plugin --profile web add \
+  dsh-rayrun-computer@1.2.1 dsh-rayrun-bots@0.1.1-alpha.1
 ```
 
-`test/package-contents.mjs` checks the tarball with `npm pack --dry-run`: the
-host half, client half, locale, bundle patch, `lib/*.js`, icon, README and
-LICENSE must ship; tests, docs, tools and environment files must not.
+Restart DSH after that. The Bots page loads when the page starts.
 
-## Checks
+Then, in Bots:
 
-No build step, no runtime dependencies. Plain ESM, Node 24+.
+1. Connect Rayrun. The token stays in the Harness vault on the host. The page does not receive it.
+2. Adopt a computer you already have, or create one. Creating a computer is billed by Rayrun. The page can stop a machine. It does not destroy one.
+3. If the computer does not already have a DeepSeek credential, the setup step can store your key as a Rayrun credential. The key is injected into the agent process. It does not go into the workspace or the chat.
+4. Create a bot and send a message. The sample bots shown before you create one are an in-memory preview. They do not run on a computer.
 
-```bash
-node --check index.js
-node --check client.js
-node test/manifest-check.mjs
-node test/locale-audit.mjs
-node test/rpc-contract.mjs
-node test/client-contract.mjs
-node test/bot-schema.mjs
-node test/bot-store.mjs
-node test/session-runtime.mjs
-node test/rayrun-runtime.mjs
-node test/rayrun-detached-runtime.mjs
-node test/runtime-rpc.mjs
-node test/cloud-host-runtime.mjs
-node test/host-projection.mjs
-node test/cloud-host.mjs
-node test/cloud-host-routines.mjs
-node test/cloud-host-dsh-agent.mjs
-node test/cloud-routine-bridge.mjs
-node test/cloud-routine-e2e.mjs
-node test/bot-workspace.mjs
-node test/dependency.mjs
-node test/approvals.mjs
-node test/approval-executor.mjs
-node test/cloud-approval-bridge.mjs
-node test/cloud-host-proposal.mjs
-node test/routines.mjs
-node test/routine-results.mjs
-node test/package-contents.mjs
+`dsh-rayrun-bots@0.1.1-alpha.1` is the npm `alpha` dist-tag. `latest` is still
+`0.1.0-alpha.0`. There is no stable release. An untagged
+`npm install dsh-rayrun-bots`, or `dsh plugin add` without these versions, does
+not select `0.1.1-alpha.1`. Installing the bots package alone does not turn on
+the computer plugin: both packages have to be in the same `dsh plugin add`.
+Pin `dsh-rayrun-computer` at `1.2.1`. The `1.2.0` package on npm is an older
+build. A mirror can lag behind the official registry, which is why the command
+sets the registry.
+
+On 2026-11-25 that command was checked against the official registry: both
+plugins loaded, and one turn sent to an existing stopped hosted machine came
+back. That check used the preview on-machine host (off unless you enable it)
+and a maintainer machine. The machine from that check is not a setup
+requirement, and the check is not a promise for every account or image.
+
+The on-machine host stays off until you enable `cloudHost`. The switch, and the
+longer operator notes, are in
+[docs/09-deployment.md](https://github.com/RayrunOS/Rayrun-Bot/blob/main/docs/09-deployment.md).
+
+## What you can do today
+
+Still pre-alpha. This is the short version; evidence is in
+[docs/12-status.md](https://github.com/RayrunOS/Rayrun-Bot/blob/main/docs/12-status.md).
+
+- Load both plugins and open a Bots page: roster, conversation, details, new bot, setup, and settings, in Chinese and English.
+- Keep bots you create: name, instructions, session, and transcript survive a page reload.
+- Send a turn to a Rayrun computer you already have. A stopped or paused machine may be started for that turn, which spends machine time. Closing the page does not have to drop the turn.
+- Open the computer's desktop, and stop the machine. Stop does not destroy it.
+- Approve or deny start, stop, pause, and resume. Allow once runs that action from your local host. Deny, expiry, or an unknown result does not run it.
+- Create, pause, and remove an interval routine. A routine is an ordinary turn. Turning one on can wake a machine and spend money on later runs. Cron and event triggers are not built.
+- Optionally run a preview host on the computer, one process shared by your bots. With it on, a routine can run while local DSH is stopped. It is off by default. The hosted check used a machine image new enough for Rayrun runtimes (`dsh-bot@1`). Older official images can reject the runtime with `guestd_outdated`.
+
+## What it does not do
+
+- It does not deliver v0.1, and it does not give you the three-minute first-run path. Approving a bot's first restricted action end to end, from a clean install, is not a finished path.
+- It does not publish a stable release. `latest` remains the older alpha.
+- It does not host the bot for you, meter you, or hold your accounts. There is no project relay in the middle.
+- It does not approve actions other than machine start, stop, pause, and resume. Credential actions on the computer are not covered. The agent on the machine is not an approval sandbox, and a bot is not a security boundary: your bots share one computer.
+- It does not offer IM channels, a per-bot spend report, or cron and event triggers.
+
+## How the pieces fit
+
+```
+you ── chat / approve ──▶ DSH (your desk)
+                           │  bot layer
+                           ▼
+                      Rayrun API
+                           ▼
+       your Rayrun cloud computer   (one per person, shared by your bots)
+         ├─ workspace, browser, desktop
+         └─ model calls ──▶ DeepSeek (your key, injected into the agent process)
 ```
 
-The same commands run in the repository's checks-only CI workflow on push and
-pull requests, on Node 24 and 26: [`.github/workflows/checks.yml`](../../.github/workflows/checks.yml).
-CI also installs this package into a throwaway DSH profile and composes its
-config against DSH `0.2.1-rc.5` and `0.2.2-rc.5`; it does not start the web app,
-test the cloud-computer plugin, or make Rayrun calls. Live integration tests
-need real Rayrun credentials and never run in CI.
+You pay Rayrun for the computer and DeepSeek for the model. This project does
+not sit on either bill. The license for the code is MIT.
 
-## Layout
+One computer per person is the design: cheaper, and the bots share files the way
+one person's tools do. A bot may work inside that computer; the machine actions
+that are built stop for approval, and a timeout is a no.
 
-```
-package.json       # name, exports, dsh.bundle + dsh.client
-cordis.patch.yml   # the bundle row (id rayrun-bots -> package dsh-rayrun-bots)
-index.js           # host half: same-origin RPC, health + bots.* + session.* + approvals.*
-client.js          # client half: v0.1 shell, roster read/write, preview conversation
-lib/approvals.js   # approval request/decision protocol, TTL, action hash, audit
-lib/approval-actions.js # typed local action allowlist (machine start/stop/pause/resume)
-lib/approval-executor.js # local at-most-once execution claim and audit
-lib/cloud-approval-bridge.js # import cloud proposals and write results
-lib/bots.js        # persistent roster: list/get/create/update/delete
-lib/bot-schema.js  # bot.json validation, defaults and creation
-lib/bot-workspace.js # per-bot local git checkout for detached tasks
-lib/dependency.js  # dsh-rayrun-computer detection, version, detached/runtime gates
-lib/errors.js      # stable error codes (shared with docs/plans/mvp-plan.md §4.3)
-lib/local-store.js # state-directory resolution and atomic JSON writes
-lib/rpc.js         # JSON responses and request-body parsing
-lib/runtime.js     # single-turn and detached runtime contracts
-lib/runtime-rpc.js # host-side runtime.* client (cloud bot host)
-lib/cloud-host-runtime.js # opt-in persistent host runtime over runtime.* + rayrun_files
-lib/host-projection.js # SHA-256 manifest and projection of cloud-host assets
-lib/routines.js    # per-bot routine definitions and local schedule state
-lib/routine-scheduler.js # local due checks and ordinary session turns
-lib/routine-results.js # imported cloud routine results for history
-lib/cloud-routine-bridge.js # definitions upload and result import; never starts a machine
-cloud-host/host.mjs # cloud host entry point (projected to the machine)
-cloud-host/lib/host.mjs # queue/transcript/outbox/session id/DSH agent wiring
-cloud-host/lib/dsh-agent.mjs # headless DSH profile + --session-id runner
-cloud-host/lib/proposal.mjs  # structured approval block parser/writer
-cloud-host/lib/routines.mjs  # cloud routine definitions/state and due selection
-cloud-host/lib/prompt.mjs    # full routine prompt from bot.json + cloud transcript
-cloud-host/bin/propose.mjs   # typed approval proposal writer for the bot
-lib/rayrun-rpc.js  # shared same-origin dependency RPC caller
-lib/rayrun-runtime.js # rayrun_agent-backed runtime adapter
-lib/rayrun-detached-runtime.js # dsh.start/status/result adapter
-lib/sessions.js    # per-bot queue, transcript and detached polling
-locale/en.json     # source copy
-locale/zh.json     # mirror; keys must match
-icon.svg           # plugin icon (Rayrun blue, monitor mark)
-test/              # plain-Node checks, no framework
-```
+## Read next
+
+| | |
+| --- | --- |
+| [Status](https://github.com/RayrunOS/Rayrun-Bot/blob/main/docs/12-status.md) | What works, what is missing, and the checked combinations. This page defers to it. |
+| [Install and run](https://github.com/RayrunOS/Rayrun-Bot/blob/main/docs/09-deployment.md) | Operator notes, including how to turn on the preview host. |
+| [Version matrix](https://github.com/RayrunOS/Rayrun-Bot/blob/main/docs/version-matrix.md) | Combinations that were actually checked. |
+| [Security](https://github.com/RayrunOS/Rayrun-Bot/blob/main/docs/07-security.md) | What is protected, and what is not. |
+| [FAQ](https://github.com/RayrunOS/Rayrun-Bot/blob/main/docs/faq.md) | Pricing, credentials, models, and limits. |
+| [Repository README](https://github.com/RayrunOS/Rayrun-Bot/blob/main/README.md) | The same page, plus the Chinese mirror. |
 
 MIT © RayrunOS.

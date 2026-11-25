@@ -49,10 +49,13 @@ key 存在 Rayrun credential 里，只注入 agent 进程；机器里的 `exec` 
 
 今天需要：Rayrun Bot，以及独立的
 [RayrunOS/dsh-rayrun-computer](https://github.com/RayrunOS/dsh-rayrun-computer)
-项目。Rayrun Bot 把它当作外部依赖复用，不修改、不 fork、不 vendor。两个包都未上
-npm；从各自的 checkout/tarball 用**一条** `dsh plugin add` 命令装进同一个 DSH
-profile，会同时启用两个 bundle（S6 已验证，2026-11-24）。只安装 Rayrun Bot 并在
-`package.json` 声明依赖，只会安装依赖包，不会自动启用依赖 bundle。
+项目。Rayrun Bot 把它当作外部依赖复用，不修改、不 fork、不 vendor。两个包都在
+npm 上。用**一条** `dsh plugin add` 把
+`dsh-rayrun-computer@1.2.1` 和 `dsh-rayrun-bots@0.1.1-alpha.1` 装进同一个 DSH
+profile，会同时启用两个 bundle。`0.1.1-alpha.1` 在 `alpha` tag 上；`latest` 仍是
+`0.1.0-alpha.0`，不带版本的安装不会选中它。只安装 Rayrun Bot 并在 `package.json`
+声明依赖，只会安装依赖包，不会自动启用依赖 bundle。命令见根 README；事实以
+[12-status.md](12-status.md) 为准（2026-11-25）。
 
 ## 为什么这个仓库文档这么多？
 
@@ -63,12 +66,11 @@ profile，会同时启用两个 bundle（S6 已验证，2026-11-24）。只安�
 
 ## 今天能做什么？
 
-把独立的云电脑插件从 checkout 装进 DeepSeek Harness，使用它的七个工具：
-create/stop/pause/destroy 机器、跑命令、搬文件、驱动桌面、委派任务、同步 workspace、
-project worker 层。它是 Rayrun Bot 的依赖，不是本仓库的一部分。本仓库的
-`dsh-rayrun-bots` 也能从 checkout 装进同一个 profile，打开 Bots 壳并持久化本地名册；
-真实 bot 的对话和审批卡已接 host，示例 bot 与设置仍是页内预览。[安装与运行](09-deployment.md)有确切命令和“还缺什么”表，
-实现状态见 [12-status.md](12-status.md)。
+从官方 registry 一条命令安装两个插件，见根 README。云电脑插件提供机器生命周期、
+命令、文件、桌面、任务委派和 workspace sync；它是独立项目，不是本仓库的一部分。
+Bot 页可以保存名册，并向已有云电脑发一轮；示例 bot 仍是页内预览。v0.1 和三分钟
+路径还没打通。短述在根 README，证据在 [12-status.md](12-status.md)（2026-11-25）。
+更长的运行说明见[安装与运行](09-deployment.md)。
 
 ## 和 Grok Bot 有什么不同？
 
@@ -111,10 +113,12 @@ agent 在自己的 workspace 内不受审批约束。云端凭据动作仍需 Ra
 
 ## 上 npm 了吗？能作为插件安装吗？
 
-两个包都不在 npm 上。bot 包——`dsh-rayrun-bots`，预期的安装名——还不可安装。独立的
-`RayrunOS/dsh-rayrun-computer` 云电脑包也不在 npm 上；从 checkout 用
-`dsh plugin --profile web add <absolute path>` 安装，然后重启 DSH。发布之前，两者都
-保持 checkout 安装。
+在。`dsh-rayrun-bots@0.1.1-alpha.1` 在 npm 的 `alpha` tag 上，`latest` 仍是
+`0.1.0-alpha.0`，没有稳定版。`dsh-rayrun-computer@1.2.1` 在 `latest`。安装不是
+不带版本的 `npm install`：用一条 `dsh plugin --profile web add` 同时装这两个
+版本，然后重启 DSH。只装 bots 包不会启用云电脑 bundle。命令和限制见根 README，
+事实以 [12-status.md](12-status.md) 为准（2026-11-25）。开发或离线仍可从 checkout
+安装。
 
 ## 我的数据会被上传到什么地方吗？
 

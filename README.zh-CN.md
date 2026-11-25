@@ -7,191 +7,122 @@
 **给 Bot 一个名字、一副身体和一个家。**
 
 Rayrun Bot 是 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 的
-bot 层。它给每个 bot 一个名字、一份职责说明、一段记忆和一个日程——还有一个住的地方：
-你自己的 [Rayrun](https://rayrunos.com/) 云电脑，一台你能看见、也能接管的 Linux
-机器。Bot 被设计为用你自己的 DeepSeek key 思考。
+bot 层。每个 bot 有名字、职责说明、记忆和日程，住在你自己的
+[Rayrun](https://rayrunos.com/) 云电脑上：一台你能看见、也能接管的 Linux 机器。
+它用你的 DeepSeek key 思考。云电脑记在你的 Rayrun 账号上，模型账单也是你的。
 
-没有项目方账号、中继或控制面。算力跑在你的 Rayrun 账号上，模型账单是你的，
-审批提示就是约定。
+没有项目方账号、中继或控制面。把本仓库装进 DeepSeek Harness。
 
 [English](README.md) | 简体中文
 
-<sub>DeepSeek Harness &nbsp;·&nbsp; Rayrun 云电脑 &nbsp;·&nbsp; 本地优先审批 &nbsp;·&nbsp; MIT</sub>
-
 </div>
 
+> **Pre-alpha。** v0.1 还没有交付，三分钟首次运行路径还没有建成，bot 层也不是
+> 生产可用的产品，不面向普通用户。今天能做什么、还缺什么、哪些组合真正验证过，
+> 以 [docs/12-status.md](docs/12-status.md) 为准。本页和该文档不一致时，以状态
+> 文档为准。下面的短述截至 2026-11-25。
+
 <p align="center">
-  <img src="docs/mockups/conversation.png" width="920" alt="Bots 对话的设计稿">
+  <img src="docs/mockups/conversation.png" width="920" alt="Bots 对话的设计预览">
 </p>
-<p align="center"><sub>设计预览。今天实际接通了什么，以 <a href="docs/12-status.md">docs/12-status.md</a> 为准。</sub></p>
+<p align="center"><sub>设计预览，不是今天这个构建的截图。实际接通了什么见 <a href="docs/12-status.md">docs/12-status.md</a>。</sub></p>
 
-> Rayrun Bot 处于 pre-alpha。产品叙事写在这里；今天能做什么、还不能做什么，以及
-> 实际验证过的组合，以 [docs/12-status.md](docs/12-status.md) 为准。
+## 适合谁
 
-## Bot 不是聊天
+已经在用 DeepSeek Harness、希望有一个有名字的 bot 跑在自己付费的 Rayrun 云电脑上、
+使用自己的 DeepSeek key，并在启动、停止、暂停和恢复这台电脑之前停下来等审批的人。
 
-标签页一关，聊天会话就结束了。Bot 会留下它的名字、职责说明、记忆和工作区。你派活、
-合上笔记本，回来时面对的是一位同事：它汇报做了什么、需要什么，以及哪些事情它刻意
-没有做。
+它适合愿意读状态文档、也能接受缺口的人。它不是托管助手、bot 市场，也不是多租户平台。
 
-Rayrun Bot 为这种交接而设计，不是又一个聊天窗口。
+## 安装
 
-## 你会得到什么
+先安装 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)。
+本包声明 `engines.dsh` 为 `>=0.2.0-rc.2 <0.3.0`。下面这条命令在 DSH `0.2.2-rc.5`
+上验证过。实际验证过的组合见 [docs/version-matrix.md](docs/version-matrix.md)。
 
-<table>
-<tr>
-<td width="50%" valign="top">
+从官方 npm registry 一次安装两个插件，并写上版本：
 
-### 一位同事，不是一个会话
+```bash
+npm_config_registry=https://registry.npmjs.org \
+  dsh plugin --profile web add \
+  dsh-rayrun-computer@1.2.1 dsh-rayrun-bots@0.1.1-alpha.1
+```
 
-Bot 有名字、性格、长期指令和持续的对话线程。名册就是产品表面：像选联系人一样选
-一个 bot，而不是像开新标签页那样开一个新会话。
+装完后重启 DSH。Bots 页面在页面启动时加载。
 
-</td>
-<td width="50%" valign="top">
+然后在 Bots 里：
 
-### 一台能动手的电脑
+1. 连接 Rayrun。token 留在 host 侧的 Harness vault 里，页面拿不到它。
+2. 采用一台已有的云电脑，或新建一台。新建会计入 Rayrun 账单。页面可以停止机器，不会销毁机器。
+3. 如果这台电脑还没有 DeepSeek credential，设置步骤可以把你的 key 存成 Rayrun credential。key 注入 agent 进程，不进入工作区，也不进入聊天。
+4. 创建一个 bot 并发送一条消息。你创建之前列表里的示例 bot 是页内预览，不会在云电脑上运行。
 
-每人一台 Linux 云电脑，由这个人的所有 bot 共享：真实的 `workspace`、浏览器
-profile、X11 桌面，并且能跑命令、搬文件、开浏览器。你可以看着屏幕工作，也可以随时
-接管。
+`dsh-rayrun-bots@0.1.1-alpha.1` 在 npm 的 `alpha` dist-tag 上。`latest` 仍是
+`0.1.0-alpha.0`。没有稳定版。不带版本的 `npm install dsh-rayrun-bots`，或不带这些
+版本的 `dsh plugin add`，不会装到 `0.1.1-alpha.1`。只安装 bots 包也不会启用云电脑
+插件：两个包必须出现在同一条 `dsh plugin add` 里。云电脑插件钉在
+`dsh-rayrun-computer@1.2.1`。npm 上的 `1.2.0` 是更旧的构建。镜像站可能落后于
+官方 registry，所以这条命令指定了 registry。
 
-</td>
-</tr>
-<tr>
-<td width="50%" valign="top">
+2026-11-25 用官方 registry 核对过这条命令：两个插件都加载，并向一台已经处于
+Stopped 的 hosted 机器发了一轮，收到了回复。那次核对打开了预览用的机内 host
+（不启用就关着），用的是维护者的机器。那台机器不是安装要求，这次核对也不保证
+每个账号或每张镜像都能同样跑通。
 
-### 你的 key，你的账单
+机内 host 在你启用 `cloudHost` 之前保持关闭。开关和更长的运行说明在
+[docs/09-deployment.md](docs/09-deployment.md)。
 
-你的 DeepSeek key 存为 Rayrun credential，被注入机器里的 agent 进程。模型调用从
-你的账号发出，不是我们的。key 不进入工作区，也不进入聊天消息。
+## 今天能做什么
 
-</td>
-<td width="50%" valign="top">
+仍然是 pre-alpha。这是短述；证据在 [docs/12-status.md](docs/12-status.md)。
 
-### 外部动作先停在审批
+- 装上两个插件并打开 Bots 页：名册、对话、详情、新建 bot、设置向导和设置，中英双语。
+- 留下你创建的 bot：名字、指令、session 和 transcript 在刷新页面后还在。
+- 向一台已有的 Rayrun 云电脑发一轮。停止或暂停的机器可能会为这一轮被启动，并产生机时费用。关掉页面不一定丢掉这一轮。
+- 打开云电脑桌面，以及停止机器。停止不会销毁机器。
+- 批准或拒绝 start、stop、pause、resume。Allow once 从本地 host 执行该动作。拒绝、过期或未知结果都不会执行。
+- 创建、暂停和删除按间隔重复的 routine。routine 就是普通的一轮。打开它之后，后续运行可能唤醒机器并花钱。cron 和事件触发还没有。
+- 可选：在云电脑上跑一个预览 host，你的 bot 共用一个进程。打开之后，本地 DSH 停着时 routine 仍可以跑。默认关闭。hosted 核对用的是新到足以跑 Rayrun runtime 的镜像（`dsh-bot@1`）。更旧的官方镜像可能以 `guestd_outdated` 拒绝 runtime。
 
-电脑内部的工作可以继续。有外部副作用的动作会停在审批卡上，卡片出现在动作停下的
-对话里。未知、超时、无人回答都算「不」。Fail-closed 是默认，不是设置项。
+## 今天不能做什么
 
-</td>
-</tr>
-<tr>
-<td width="50%" valign="top">
-
-### 关掉标签页，工作还在
-
-会话、队列和 transcript 留在你这一侧和机器上。关掉页面、重启本地 host，或者让云
-host 在你的笔记本合上后继续工作。对话从停下的地方接着走。
-
-</td>
-<td width="50%" valign="top">
-
-### 跑完会回来汇报的 routine
-
-Bot 可以按日程跑一个 prompt——清理收件箱、盯一个频道、做一份周报——再把结果放回
-同一段持续 history。日程工作被设计为在本地页面没打开时也能继续。
-
-</td>
-</tr>
-</table>
-
-## 产品表面
-
-Bots 页面被设计为 DSH 里的三栏：左边是名册，中间是 markdown 对话，右边是当前 bot
-的详情。设置流程是四步：依赖、Rayrun、云电脑和第一个 bot。审批请求出现在需要它的
-地方，而不是另一个收件箱。
-
-<table>
-<tr>
-<td width="50%" valign="top">
-
-<img src="docs/mockups/setup.png" width="100%" alt="设置流程设计">
-
-<sub><b>设置。</b> 依赖、Rayrun、云电脑、第一个 bot——每一步都说清还缺什么、去哪里补。</sub>
-
-</td>
-<td width="50%" valign="top">
-
-<img src="docs/mockups/library.png" width="100%" alt="Library 设计">
-
-<sub><b>Library。</b> Bot 产出的东西按日期分组，和产生它的对话放在一起。</sub>
-
-</td>
-</tr>
-</table>
-
-视觉设计与可点击 mockup 见 [docs/design/ui-design.md](docs/design/ui-design.md) 和
-[docs/mockups/index.html](docs/mockups/index.html)。
+- 没有交付 v0.1，也没有三分钟首次运行路径。从干净安装走到批准 bot 的第一个受限动作，这条路径还没走通。
+- 没有稳定版。`latest` 仍是更早的 alpha。
+- 不替你托管 bot，不计你的用量，也不保管你的账号。中间没有项目方中继。
+- 审批不覆盖机器 start、stop、pause、resume 以外的动作。云电脑上的凭据动作不在范围内。机器上的 agent 不是审批沙箱；bot 也不是安全边界：你的 bot 共用一台电脑。
+- 没有 IM 通道，没有按 bot 的花费报表，也没有 cron 和事件触发。
 
 ## 它怎么组合起来
 
 ```
-你 ── 聊天 / 审批 ──▶ DSH（你的桌面）                   浏览器标签页或桌面 App
-                       │  bot 层：工具 · 同源 RPC · 审批
+你 ── 聊天 / 审批 ──▶ DSH（你的桌面）
+                       │  bot 层
                        ▼
-                  Rayrun API · https://api.rayrunos.com/v1
+                  Rayrun API
                        ▼
-     你的 Rayrun 云电脑   （每人一台，由你的多个 Bot 共享）
-       ├─ 机器上的 DSH host：每个 Bot 一个 session
-       ├─ /workspace · 浏览器 profile · X11 桌面
-       └─ 模型调用 ──▶ DeepSeek API（你的 key，按进程注入）
+     你的 Rayrun 云电脑   （每人一台，由你的 bot 共享）
+       ├─ workspace、浏览器、桌面
+       └─ 模型调用 ──▶ DeepSeek（你的 key，注入 agent 进程）
 ```
 
-桌面是你回来的地方。身体是工作发生的地方。大脑是你已经在付费的 key。记忆是 bot
-自己在机器上的状态。Bot 工作时，只有其中一部分需要一直在线。
+云电脑付给 Rayrun，模型付给 DeepSeek。本项目不站在这两笔账单中间。代码许可是 MIT。
 
-## 设计取舍
-
-- **每人一台电脑，不是每个 bot 一台。** 更便宜也更简单，bot 像一个人的工具那样共享
-  文件、浏览器会话和凭据。代价是：bot 不是安全边界——不要把两个 bot 当成彼此的沙箱。
-- **自带账号。** 我们没有控制面持有你的 key，也不计量你的用量。Rayrun 是你的基础
-  设施供应商，DeepSeek 是你的模型供应商，本仓库是胶水。
-- **在保护你的地方 local-first。** 工作区、profile 和凭据留在你这一侧；执行可以离开
-  机器，决策和密钥不行。
-- **审批 fail-closed。** Bot 可以在自己的电脑里自由工作，但任何有外部副作用的动作都
-  要等你。超时就是拒绝。
-- **刻意无聊。** 纯 ESM，无运行时依赖，无构建步骤；你桌面上的 DSH 和云上的 DSH 是
-  同一个 DSH。
-- **两个插件，一个产品。** Rayrun Bot 通过已发布的 tools 和版本契约消费独立的
-  [dsh-rayrun-computer](https://github.com/RayrunOS/dsh-rayrun-computer) 项目。
-  我们不 fork，也不 vendor 它。
-
-## 它不是什么
-
-Rayrun Bot 不是托管 SaaS、bot 市场或多租户平台。没有项目方账号、中继或控制面。
-它不是 DSH 的替代品，也不会把云端 agent 变成它
-[不应被当成](docs/07-security.md)的安全边界。
-
-## 适合谁
-
-Rayrun Bot 适合这样的人：想要一位真正干活的个人 AI 同事，在由自己控制的真实电脑上
-工作——清理收件箱、盯一个频道、从老系统里拉一份报表——而不必把账号交给托管服务。
+设计是每人一台电脑：更便宜，bot 也像一个人的工具那样共享文件。代价就是上面那一条。
+Bot 可以在这台电脑里工作；已经做出来的机器动作会停下来等审批，超时就是拒绝。
 
 ## 接着读
 
 | | |
 | --- | --- |
-| [状态](docs/12-status.md) | 今天能做什么、还缺什么，以及验证过的组合。 |
-| [运行今天的版本](docs/09-deployment.md) | 安装两个插件、配置 Rayrun、创建第一个 bot。 |
-| [产品方向](docs/00-product-direction.md) | 面向谁、v0.1 范围和产品决策。 |
-| [系统架构](docs/01-system-architecture.md) | 分层、边界和信任模型。 |
-| [审批](docs/05-approvals.md) | 什么需要同意、谁在本地执行、什么还在等平台。 |
-| [安全](docs/07-security.md) | 什么受保护、什么不受保护，以及如何报告漏洞。 |
-| [FAQ](docs/faq.md) | 定价、凭据、模型、自托管和诚实的限制。 |
-| [贡献](CONTRIBUTING.md) | 如何提改动，以及本地检查。 |
-| [文档索引](docs/README.md) | 完整文档地图和 ADR 登记册。 |
-
-## 致谢
-
-- [Rayrun](https://rayrunos.com/) 提供云电脑，以及本项目构建其上的独立
-  [dsh-rayrun-computer](https://github.com/RayrunOS/dsh-rayrun-computer) 插件。
-- [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 提供本插件
-  接入的 agent runtime。
-- Grok Bot、dsh-superagent 和 OpenMausBot：它们展示了这个形状应该是什么样，
-  以及它会在哪里坏掉。
+| [状态](docs/12-status.md) | 今天能做什么、还缺什么，以及验证过的组合。本页以它为准。 |
+| [安装与运行](docs/09-deployment.md) | 运行说明，包括如何打开预览 host。 |
+| [版本矩阵](docs/version-matrix.md) | 实际核对过的 DSH、云电脑插件和 bot 包组合。 |
+| [安全](docs/07-security.md) | 什么受保护，什么不受保护。 |
+| [FAQ](docs/faq.md) | 定价、凭据、模型和限制。 |
+| [产品方向](docs/00-product-direction.md) | 面向谁，以及 v0.1 的范围。v0.1 还没有交付。 |
+| [贡献](CONTRIBUTING.md) | 如何提出改动。 |
+| [文档索引](docs/README.md) | 其余文档。 |
 
 ## 许可证
 
-MIT。你的 Rayrun 账号、你的云电脑和你的 DeepSeek key 始终属于你；许可证覆盖本仓库
-的代码。
+MIT。你的 Rayrun 账号、云电脑和 DeepSeek key 属于你。许可证覆盖本仓库的代码。
