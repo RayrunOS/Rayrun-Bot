@@ -44,8 +44,10 @@
 - `packages/dsh-rayrun-bots/` — 目前唯一的包：host half（`index.js`）、client half（`client.js`）、`lib/`、`cloud-host/`（随包交付的云 host 资产：queue/DSH agent）、`locale/en.json` + `zh.json`、`test/`、`cordis.patch.yml`、包 `README.md`、`package.json`。
 - `tools/update-poc/` — 更新内核原型（签名 manifest、校验、暂存、原子切换、回滚）；不进入插件运行时，也不进 npm 包。
 - `tools/rayrun-deploy/` — CI 部署 helper（`fetch-url.mjs`）与部署契约测试；不进入插件运行时，也不进 npm 包。
-- 根 `package.json` — 私有 workspace 根；无依赖、无构建步骤。
-- `.github/workflows/checks.yml` — push/PR 的 checks CI，以及 main-only 的可选 Rayrun deploy job。
+- `tools/npm-publish/` — `publish.yml` 用的 dist-tag helper；不进入插件运行时，也不进 npm 包。
+- 根 `package.json` — 私有 workspace 根；无依赖、无构建步骤。不要从仓库根 `npm publish`。
+- `.github/workflows/checks.yml` — push/PR 的 checks CI，以及 main-only 的可选 Rayrun deploy job。deploy 只上传 tarball 到 Rayrun 沙盒，不是 npm publish。
+- `.github/workflows/publish.yml` — 仅 GitHub Release `published` 时用 OIDC trusted publishing 发布 `packages/dsh-rayrun-bots`；`workflow_dispatch` 只 dry run。不配置 `NPM_TOKEN` / `NODE_AUTH_TOKEN`，不设 GitHub Environment。prerelease 用 prerelease dist-tag，不移动 `latest`。
 - `.github/scripts/deploy-rayrun.mjs` — deploy job 调用的 Rayrun 沙盒部署脚本（上传、安装、重启 `dsh web`）。
 - `LICENSE`、`SECURITY.md`、`CONTRIBUTING.md`、`CODE_OF_CONDUCT.md` — 许可证、漏洞上报、PR 规则与行为准则。
 - 非本仓库：`dsh-rayrun-computer`（独立项目，绝不修改、fork 或 vendor）、Rayrun 平台、DeepSeek Harness 运行时。
@@ -149,6 +151,7 @@ node packages/dsh-rayrun-bots/test/bot-workspace.mjs
 node packages/dsh-rayrun-bots/test/dependency.mjs
 node packages/dsh-rayrun-bots/test/approvals.mjs
 node packages/dsh-rayrun-bots/test/package-contents.mjs
+node packages/dsh-rayrun-bots/test/publish-workflow.mjs
 node tools/update-poc/test/update.mjs
 node tools/rayrun-deploy/test/contract.mjs
 ```
@@ -158,7 +161,8 @@ node tools/rayrun-deploy/test/contract.mjs
 - 绝不为了让改动通过而削弱或删除安全测试；修行为，或说明为什么测试本身错了。
 - 实时集成测试需要真实 Rayrun 凭据，绝不在 CI 运行。
 - 页面变更只做语法/契约检查不算打通；v0.1 没有浏览器测试框架，手工 golden path 见 `docs/plans/client-plan.md`。
-- CI（`.github/workflows/checks.yml`）在 push/PR 上跑语法检查、所有 `test/*.mjs`、更新内核原型的测试和 Rayrun 部署契约。push 到 main 的可选 `deploy` job 只在配置了 `RAYRUN_TOKEN`/`RAYRUN_SANDBOX_ID` 且 `packages/dsh-rayrun-bots/**` 有变更时运行；它使用真实 Rayrun token，只做部署，不做集成测试。
+- CI（`.github/workflows/checks.yml`）在 push/PR 上跑语法检查、所有 `test/*.mjs`、更新内核原型的测试和 Rayrun 部署契约。push 到 main 的可选 `deploy` job 只在配置了 `RAYRUN_TOKEN`/`RAYRUN_SANDBOX_ID` 且 `packages/dsh-rayrun-bots/**` 有变更时运行；它使用真实 Rayrun token，只做部署，不做集成测试，也不是 npm publish。
+- `.github/workflows/publish.yml` 不在 push/PR 上运行。只有 GitHub Release `published` 会发布 `packages/dsh-rayrun-bots`；`workflow_dispatch` 是 dry run。不要把 npm publish 加进 `checks.yml`，也不要配置 `NPM_TOKEN` 或 `NODE_AUTH_TOKEN`。
 
 **“完成”的标准：**
 
@@ -200,6 +204,7 @@ node tools/rayrun-deploy/test/contract.mjs
 | `node packages/dsh-rayrun-bots/test/dependency.mjs` | 依赖检测与 1.1+ detached 版本门 |
 | `node packages/dsh-rayrun-bots/test/approvals.mjs` | 审批协议：schema、canonical hash、TTL、幂等/重放、审计 |
 | `node packages/dsh-rayrun-bots/test/package-contents.mjs` | npm tarball 内容：host/client/locale/lib/bundle 与排除项 |
+| `node packages/dsh-rayrun-bots/test/publish-workflow.mjs` | npm publish workflow：OIDC、只发 `packages/dsh-rayrun-bots`、prerelease 不移动 `latest` |
 | `node tools/update-poc/test/update.mjs` | 更新内核原型：签名、哈希、版本、原子切换、回滚 |
 | `node tools/rayrun-deploy/test/contract.mjs` | Rayrun 部署契约：main-only、secret 来源、URL 不打印 |
 | `dsh plugin --profile web add <绝对路径>` | 从 checkout 载入 DSH profile；改 client half 后需重启 DSH |
