@@ -70,7 +70,7 @@ file API），CI Node 22/24 全绿；已包含在 npm `1.2.1`（`gitHead=3604e33
 未采用该码的特殊重试。
 hosted `rayrun-bot-test` 在收窄 mock 后冷启动 8.8 秒成功（`REAL_FIX_OK`）；
 dev `rayrun-bot-coldstart` 冷启动成功（`COLD_OK`），后按用户授权 destroy。
-两台 hosted 测试机保留、保持 Stopped，清理待用户确认。2026-11-24 生产 daemon
+三台 hosted 测试机保留、保持 Stopped，清理待用户确认。2026-11-24 生产 daemon
 部署到 `5c2ff48`（build 493，tag `prod-20261124-2`），包含 `rayrun-bot-gaps`；
 `/v1/runtimes`、`/v1/ci/capabilities` 未认证返回 401；CI 代码已上生产但
 `RAYRUN_GITHUB_CI_ENABLED` 未开。hosted `rayrun-bot-test` 首次 `runtime.put`

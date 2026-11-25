@@ -194,7 +194,7 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
   收窄
   mock 后 hosted `rayrun-bot-test` 冷启动 8.8 秒成功（`REAL_FIX_OK`）。adapter
   和平台正常，不需要 cold-start retry。生产 daemon `92a77d0` 早于 R-G008，
-  `/runtimes`、`/host` 404 是独立的未部署差异。两台 hosted 测试机保留、保持
+  `/runtimes`、`/host` 404 是独立的未部署差异。三台 hosted 测试机保留、保持
   Stopped；清理待用户确认，当前不 destroy。
 - A8 续接已在 2026-11-22 用本机 DSH 页面 + 已有 `rayrun-bot-test` 验证：第一轮
   `TURN1_OK` 后把机器 stop 到 Stopped，关闭页面并 kill 本地 DSH；重启同一
