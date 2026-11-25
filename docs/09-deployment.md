@@ -37,13 +37,24 @@
 Rayrun Bot 不 vendor 云电脑层；它是独立项目、必需依赖。今天两个插件要装进同一个 DSH
 profile。S6 已验证（2026-11-24，本地 tarball）：**一条命令安装两个包**会同时选中
 两个 bundle；只安装 `dsh-rayrun-bots` 即使它声明依赖，也只会安装依赖包、
-不会自动启用依赖的 bundle。先装依赖：
+不会自动启用依赖的 bundle。两个包都已发布到 npm：`dsh-rayrun-bots@0.1.0-alpha.0`
+（alpha/latest）和 `dsh-rayrun-computer@1.2.1`（latest，含 prompt-root/mock 修复；
+`1.2.0` 的 tarball 来自较旧的 `fe965c1`，不要再用）。本机 npmmirror 可能滞后，
+安装时可用官方 registry：
+
+```bash
+npm_config_registry=https://registry.npmjs.org \
+  dsh plugin --profile web add \
+  dsh-rayrun-computer@1.2.1 dsh-rayrun-bots@0.1.0-alpha.0
+# 重启 DSH：client half 只在页面启动时加载
+```
+
+或从 checkout 安装依赖（开发/离线）：
 
 ```bash
 git clone https://github.com/RayrunOS/dsh-rayrun-computer.git
 cd dsh-rayrun-computer
 dsh plugin --profile web add "$(pwd)"
-# 重启 DSH：client half 只在页面启动时加载
 ```
 
 Windows 用 PowerShell，路径写 `"$PWD"`。
@@ -147,7 +158,7 @@ npm 归属与发布账号仍未定（[`plans/mvp-plan.md`](plans/mvp-plan.md) §
 
 ## 4. v0.1 目标三分钟路径（未构建）
 
-1. 用一条命令安装两个包（S6 已验证；npm 未发布，checkout/tarball 可用）。
+1. 用一条命令安装两个包（S6 已验证；npm alpha/latest 可用）。
 2. 登录 Rayrun 一次；向导创建云电脑。
 3. 创建 bot：名字、职责、指令、skills；它在电脑上有自己的 session。
 4. 和它对话，或创建一个 routine 让 bot 按间隔运行（本地 DSH host 需保持运行）。
@@ -156,7 +167,8 @@ npm 归属与发布账号仍未定（[`plans/mvp-plan.md`](plans/mvp-plan.md) §
 第 2 步的 Rayrun 登录和云电脑创建经云电脑插件的同源 RPC 真正到达 Rayrun；本地
 routine 已能在 host 存活时入队普通 turn，详情面板的创建/暂停/删除已在本地 DSH
 页面验证，但本地 mode 尚未等待一次自动触发；cloudHost 模式的云端 routine 调度
-已在 dev/test 环境 live E2E 通过（2026-11-24），生产待 R-G008 部署。云 bot 自主
+已在 dev/test 环境 live E2E 通过（2026-11-24），生产 R-G008 已部署且 hosted
+routine E2E 已通过（`CLOUD_ROUTINE_PROD_OK`，2026-11-24）。云 bot 自主
 审批提案和更多受控动作已部分打通。
 host 的 `session.*` 已可执行一轮；真实 bot 的审批卡和本地 typed
 start/stop/pause/resume 执行已接，示例 bot 与设置仍是页内预览。

@@ -8,7 +8,8 @@
 
 ## 1. 一句话状态
 
-Pre-alpha。没有可发布版本。本项目依赖的云电脑插件
+Pre-alpha。`dsh-rayrun-bots@0.1.0-alpha.0` 已发布到 npm（alpha/latest），但没有
+稳定版；生产部署与 release tag/CI 仍待完成。本项目依赖的云电脑插件
 [`RayrunOS/dsh-rayrun-computer`](https://github.com/RayrunOS/dsh-rayrun-computer)
 是独立、可用的项目；本仓库的 bot 层已有可加载的插件壳、持久化本地名册、本地
 session/transcript，以及按轮次的 runtime（依赖 1.1+ 用 detached
@@ -57,13 +58,13 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
 | 对话与审批 | 客户端对话对真实名册 bot 读取并发送 `session.send/history/status`；示例 bot 仍走页内预览。真实 bot 的审批卡已接 host：显示 typed 动作、目标、风险和执行结果；Deny / Allow once 只写本地决定，批准后由本地 executor 执行；决定后卡片提供 Continue bot，下一轮 prompt 带最近结果。示例 bot 卡片和设置仍是页内预览。 |
 | 本地名册 | Host half 持久化已校验的 bot 名册到 `$DSH_HOME/state/rayrun-bot/`，原子写入；聊天列表有名册时读取真实名册，新建 bot 会写回 host。 |
 | Session 与 transcript | Host half 持久化每 bot 的 `session.json` + `transcript.jsonl`，提供 `session.send/history/status`；队列单飞、失败脱敏、host 重启后普通 running turn 标为 interrupted。依赖 1.1+ 时使用 detached `dsh.start/status/result`：每 turn 一个 task id、每 bot 一个本地 git checkout、`reply.md` 收取，task id 持久化，host 重启后恢复 poll；页面关闭 + 本地 DSH 重启后继续，以及机器 stop/start 后的第二轮续接（A8），已在本机 DSH + 已有 Rayrun 机器验证（2026-11-22）；1.0.x 回退单轮 `rayrun_agent`。常驻 `cloudHost` host 是预览、默认关闭；2026-11-23 多 bot 单 host 页面 E2E 已通过，生产镜像/部署未交付。单轮真实一轮已在本机 DSH + 已有 Rayrun 机器验证（2026-11-22）；示例 bot 仍是预览。 |
-| Routines | 每 bot 的 `routines.json` 由 host half 原子持久化；`routines.list/create/update/remove/sync` 校验标题、prompt、间隔、开关和上限。非 cloudHost 模式使用本地 `routine-scheduler`：每 30 秒检查到期项，入队普通 prompt；每 tick 每 bot 最多一条，busy 时跳过，runtime 不可用时保留 due，错过多个间隔只补一次；运行前先写 lastRunAt/nextAt claim，入队失败不重放。cloudHost 模式停用本地 scheduler，由云 host 读取镜像定义，在 `host/routines-state.json` claim nextAt 后入队 `origin: routine` task；结果写 `routine-results/`，本地 `routines.sync` 导入并被 `session.history` 合并；失败任务显示为 `E_ROUTINE_FAILED` system error。dev/test 环境的 cloudHost live E2E 已通过（2026-11-24，本地 DSH 关闭后云端执行）；生产待 R-G008 部署。同一 bot 的定义 sync 串行执行，较慢的旧上传不会覆盖新定义；scheduler 在机器停止时不运行，机器停止期间改定义仍可能在上传前让旧定义先跑一次（MVP 不承诺该场景强一致）。结果文件有保留上限。cron 和事件触发未实现。客户端详情面板对真实 bot 可创建、启停、删除和显示 interval，示例 bot 仍用页内数据。 |
+| Routines | 每 bot 的 `routines.json` 由 host half 原子持久化；`routines.list/create/update/remove/sync` 校验标题、prompt、间隔、开关和上限。非 cloudHost 模式使用本地 `routine-scheduler`：每 30 秒检查到期项，入队普通 prompt；每 tick 每 bot 最多一条，busy 时跳过，runtime 不可用时保留 due，错过多个间隔只补一次；运行前先写 lastRunAt/nextAt claim，入队失败不重放。cloudHost 模式停用本地 scheduler，由云 host 读取镜像定义，在 `host/routines-state.json` claim nextAt 后入队 `origin: routine` task；结果写 `routine-results/`，本地 `routines.sync` 导入并被 `session.history` 合并；失败任务显示为 `E_ROUTINE_FAILED` system error。dev/test 环境的 cloudHost live E2E 已通过（2026-11-24，本地 DSH 关闭后云端执行）；生产 R-G008 已部署，hosted routine E2E 已通过（`CLOUD_ROUTINE_PROD_OK`，2026-11-24）。同一 bot 的定义 sync 串行执行，较慢的旧上传不会覆盖新定义；scheduler 在机器停止时不运行，机器停止期间改定义仍可能在上传前让旧定义先跑一次（MVP 不承诺该场景强一致）。结果文件有保留上限。cron 和事件触发未实现。客户端详情面板对真实 bot 可创建、启停、删除和显示 interval，示例 bot 仍用页内数据。 |
 | setup | Rayrun 步骤经云电脑插件的同源 RPC 接收粘贴的 token；云电脑步骤采用已有机器或经同一 RPC 创建第一台机器。 |
 | 电脑卡片 | Open / Take over 经同一 RPC 启动或恢复机器、等待 `Running`、修复桌面服务并打开 `desktop_url`；Stop 在确认后停止，永不 destroy。 |
 | 用量 | 详情面板的电脑块和用量块，以及 Settings 的用量行，读取真实机器状态、余额与机时。 |
 | 测试 | Host/client 名册接线、session/transcript、`rayrun_agent`/detached adapter、per-bot workspace 与审批协议由普通 Node 契约测试覆盖；客户端 session 失败路径、单轮真实一轮、页面关闭 + host 重启后的 detached 收取，以及机器 stop/start 后的第二轮续接另有本机页面 smoke。包清单、locale、RPC、客户端、名册、session、runtime、workspace、审批和 tarball 内容都有检查；cloud host 8 项、cloud host routines 8 项、DSH agent 5 项、host projection 5 项、runtime.* client 5 项、cloud host runtime adapter 14 项、cloud host proposal 5 项、approval executor 7 项、cloud approval bridge 6 项、routines 16 项、cloud routine bridge 7 项、cloud routine E2E 1 项、routine results 6 项纯 Node 检查，runtime.* client 与 cloud host 另有 dev live 联调，cloudHost adapter 另有页面 E2E（手动、自动 projection 与多 bot 单 host），审批卡另有拒绝/失败关闭与 Continue 按钮的页面 E2E。Routine 页面另做本地 DSH + Firefox smoke：真实表单创建、暂停、删除并写入 routines.json（2026-11-23，无 Rayrun token），截图 `/tmp/bot/routines-ui.png`（临时文件，不入库）；本地 mode 尚未等待一次 scheduler 自动触发；cloudHost mode 的 dev live E2E 已通过（2026-11-24，见 §3.1）。 |
 | 审批执行 | 协议后端（request/decision schema、canonical actionHash、TTL、幂等/重放/错 bot 负向测试、审计、`approvals.list/get/decide/propose/sync`）已实现。ADR-019（2026-11-23）把本地 DSH host 定为本地 typed 动作的审批权威与执行方：`approvals.decide` 批准后由本地 executor 执行 `rayrun.machine.start/stop/pause/resume`，先写 `executing` claim，拒绝/过期/重放/崩溃 claim 失败关闭；客户端真实卡片已接。云端 proposal bridge 已接并 live 验证：云 bot 在回复末尾输出结构化 `rayrun-approval` block，cloud host 解析后写 proposal（`propose.mjs` 保留为可选 shell 路径），本地用 `rayrun_files` 导入并去重，结果写回 `approval-results/`；机器停机时结果先落本地 outbox，下次 Running 补传。start/stop/pause/resume、denial、Continue 均真机通过。下一轮 prompt 会带最近审批结果，bot 无工具直接回答 approved/done/Running 或 denied/not_executed。本地 routine 轮次会把 `origin: routine` 传到 cloud task，云端提案标为 background 并沿用 30 分钟 TTL。其他动作和云端凭据动作仍未完成；平台隔离仍用于云端凭据（ADR-001）。`rayrun_agent` adapter 不拦截外部动作，prompt 指引不是安全边界。 |
-| 发布 | 没有可发布版本；npm 发布路径不存在。S6 已验证（2026-11-24，本地 tarball）：一条 `dsh plugin add` 安装两个包会同时选中两个 bundle；只安装 bots 包即使声明依赖也不会启用依赖 bundle。 |
+| 发布 | `dsh-rayrun-bots@0.1.0-alpha.0` 已发布 npm（当前 dist-tags `latest`/`alpha` 都指向它，手动发布）；依赖 `dsh-rayrun-computer@1.2.1` 已发布 npm（latest）。一条 `dsh plugin add` 安装两个包的路径已用官方 registry 验证：两个 bundle 都被选中、两个插件都加载、health `ok`。`.github/workflows/publish.yml` 已加入（Release `published` 时 OIDC 发布，`workflow_dispatch` 仅 dry run；contract test 通过），但尚无 `v0.1.0-alpha.0` tag/Release，workflow 尚未实际运行。只安装 bots 包即使声明依赖也不会启用依赖 bundle。 |
 
 ### 3.1 验证记录
 
@@ -186,7 +187,10 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
   destroy（HTTP 204）。依赖侧曾在 hosted 报
   `worker_files_unavailable`，后确认是其 live 测试脚本的 fetch mock 误拦截
   `.../node_modules/dsh-rayrun-computer/...` file PUT，请求未到 nginx；修正已合入
-  依赖 main `956d595`（CI Node 22/24 全绿），该码已移除，尚未 npm 发布。收窄
+  依赖 main `956d595`（CI Node 22/24 全绿），该码已移除。npm `1.2.1` 已于
+  2026-11-24 发布（latest，`gitHead=3604e33`，含 mock 修复）；`1.2.0` 的 npm
+  tarball 来自较旧的 `fe965c1`，不要再用。生产 E2E 用的是 checkout `956d595`。
+  收窄
   mock 后 hosted `rayrun-bot-test` 冷启动 8.8 秒成功（`REAL_FIX_OK`）。adapter
   和平台正常，不需要 cold-start retry。生产 daemon `92a77d0` 早于 R-G008，
   `/runtimes`、`/host` 404 是独立的未部署差异。两台 hosted 测试机保留、保持
@@ -263,8 +267,8 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
   唯一 `bot-host`（pid 636），分别回复 `MULTI_A_OK`/`MULTI_B_OK`，host state 中
   session id 不同、queueDepth 0。host
   资产已随包发布；projection 页面 E2E 已通过（2026-11-23）。
-- 依赖 1.2.0 的 `runtime.*` host RPC 已合入 main（`fe965c1`，CI
-  45041519563 在 Node 22/24 全绿；未发布 npm）：`runtime.put/list/get/start/stop/restart/delete`，sandbox 必须已存在，
+- 依赖 1.2.x 的 `runtime.*` host RPC 已合入 main（`fe965c1`，CI
+  45041519563 在 Node 22/24 全绿；`1.2.1` 已发布 npm，latest）：`runtime.put/list/get/start/stop/restart/delete`，sandbox 必须已存在，
   credentials 只传绑定名；依赖侧 fake-fetch 测试 12/12。Bots 侧 `lib/runtime-rpc.js`
   client 5/5，错误码映射已接；2026-11-22 在临时 DSH profile 里用 scoped dev token
   做了 live 联调：`rayrun-bot` 启动后 `put → running`、`get/list`、`delete → null`，
@@ -306,8 +310,7 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
   context live E2E 已通过；其他动作和云端凭据动作仍未完成；云端 agent 本身仍不受
   审批 containment（ADR-001 的平台隔离仍缺）。
 - A7/A11 的完整审批验收：更多动作类型和云端凭据动作。
-- 生产环境的 cloudHost routine live 验证（dev live 已过，生产 R-G008 待部署）、
-  机器停止期间编辑定义的强一致同步、cron 表达式和事件触发器；本地与 cloudHost
+- 机器停止期间编辑定义的强一致同步、cron 表达式和事件触发器；本地与 cloudHost
   实现见 §3。
 - 按 bot 的花费归因。
 - A11 工作区扫描（2026-11-22）：`tmp/` 下有未跟踪的本地 key 文件
@@ -317,7 +320,8 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
 - IM 通道。
 - npm 发布后的两插件安装验证：S6 已用本地 tarball 验证一条命令装两个包会同时启用
   两个 bundle；npm 归属/发布账号和发布 CI 仍未定。
-- npm 包发布与 release workflow。
+- Bots 的 GitHub Release/tag：npm `0.1.0-alpha.0` 已发布，`.github/workflows/publish.yml`
+  已加入并通过契约测试，但尚无对应 tag/Release，因此 workflow 尚未实际运行。
 
 ## 5. 平台缺口
 

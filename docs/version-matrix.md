@@ -19,7 +19,9 @@ DSH `0.2.2-rc.5` 会读取并强制执行 `engines.dsh`：超出范围的插件�
 旧运行时忽略该字段。`dsh-rayrun-computer` 的版本由 host 在启动时读取，缺失或不在
 1.x 时分别返回 `E_DEP_MISSING` / `E_DEP_VERSION`。依赖 `1.0.x` 使用单轮
 `rayrun_agent`；`1.1+` 使用 detached `dsh.start/status/result`；`1.2+` 另有
-host-callable `runtime.*`（main 已合并，尚未发布 npm）。
+host-callable `runtime.*`。npm `1.2.1` 已于 2026-11-24 发布，dist-tag `latest`，
+tarball `gitHead=3604e33`，包含 prompt-root 与测试 mock 修复；`1.2.0` 的 npm tarball
+来自较旧的 `fe965c1`，不要再用它作为最新依赖。
 
 ## 2. 已验证组合
 
@@ -54,6 +56,8 @@ host-callable `runtime.*`（main 已合并，尚未发布 npm）。
 | `0.2.2-rc.5` | `1.0.0` | `0.1.0-alpha.0` | 24 + Rayrun 沙盒 | 云端 ingress、`dsh web` 部署与 token URL | [`09-deployment.md`](09-deployment.md)、[`10-rayrun-verification.md`](10-rayrun-verification.md) §3.1 |
 
 “未安装”表示该 CI 矩阵只验证 Bots 包本身能安装和合成，不验证依赖或云端行为。
+表中“未发布 npm”标注是当次验证时的状态；`dsh-rayrun-computer@1.2.0` 已于
+2026-11-24 发布到官方 npm。
 表中“机器 stop”是当次测试收尾动作；devcheck 的 `rayrun-bot`、`rayrun-bot-idle`、
 `rayrun-bot-scoped`、`rayrun-bot-coldstart` 与 botclean 的 `rayrun-bot-clean` 已于
 2026-11-24 按用户明确授权 destroy；dev 侧现无 bot 测试机。botclean 租户保留。
@@ -81,7 +85,21 @@ S6（2026-11-24，本地 tarball）：`dsh plugin add` 一条命令安装两个�
 
 ## 3. 安装与打包检查
 
-包尚未发布到 npm；今天从 checkout 或本地 tarball 安装：
+`dsh-rayrun-bots@0.1.0-alpha.0` 已发布到 npm（2026-11-24，alpha/latest）；依赖
+`dsh-rayrun-computer@1.2.1` 也已发布（latest，`gitHead=3604e33`，含
+prompt-root/mock 修复）。`1.2.0` 的 npm tarball 来自较旧的 `fe965c1`，不要再用。
+本机默认 registry 是 npmmirror，可能滞后；安装验证用
+`--registry=https://registry.npmjs.org` 或等待镜像。
+
+一条命令安装两个包（已用官方 registry 验证两个插件都加载、health `ok`）：
+
+```bash
+npm_config_registry=https://registry.npmjs.org \
+  dsh plugin --profile web add \
+  dsh-rayrun-computer@1.2.1 dsh-rayrun-bots@0.1.0-alpha.0
+```
+
+从 checkout/tarball 安装（开发/离线）：
 
 ```bash
 # checkout
@@ -109,6 +127,8 @@ dsh plugin --profile web add /tmp/dsh-rayrun-bots-0.1.0-alpha.0.tgz
 - `dsh-rayrun-computer` 上 npm 与“一次安装带两个包”的依赖路径（S6）；
 - DSH `0.2.2-rc.5` 的 subprocess/terminal 完整安装路径（R-G005）；
 - 镜像 DSH `0.2.0-rc.2` 与本机/桌面 `0.2.2-rc.5` 的功能一致性（R-G007）；
-- 从 npm 安装 Rayrun Bot（包尚未发布）。
+- GitHub Release/tag：`dsh-rayrun-bots@0.1.0-alpha.0` 已发布 npm（手动，当前
+  `latest`/`alpha` 都指向它），`.github/workflows/publish.yml` 已加入并通过契约
+  测试，但尚无对应 tag/Release，workflow 尚未实际运行。
 
 新增验证后更新本表；不要把未测试的组合写成已支持。
