@@ -1,0 +1,243 @@
+# Publishes dsh-rayrun-bots to npm from a GitHub Release.
+#
+# The workspace root (rayrun-bot) is private. Publish only
+# packages/dsh-rayrun-bots. Never publish from the repository root.
+#
+# One-time setup on https://www.npmjs.com/package/dsh-rayrun-bots
+# → Trusted Publisher / Packaging & build, add a GitHub publisher:
+#   organization: RayrunOS
+#   repository:   Rayrun-Bot
+#   workflow:     publish.yml
+#   environment:  (leave empty — this job sets no GitHub Environment)
+#   allowed actions: tick npm publish, not only the default npm stage publish
+# NPM_TOKEN and NODE_AUTH_TOKEN must stay absent. If either is set, the npm
+# CLI can prefer it over OIDC, and this job stops before it publishes.
+#
+# Release flow: bump "version" in packages/dsh-rayrun-bots/package.json on
+# main, tag v<that version> on that commit, then publish the GitHub Release.
+# The tag must be an ancestor of origin/main. A prerelease (any hyphen, e.g.
+# 0.1.0-alpha.0) is published with --tag set to the prerelease identifier
+# (alpha) and does not move latest. Only a stable version uses latest.
+#
+# checks.yml is not called. Its deploy job uploads a tarball to a Rayrun
+# sandbox; that is not an npm publish. This job runs the plain Node package
+# checks itself, then publishes.
+#
+# workflow_dispatch is a dry run: checks and pack only, no publish.
+# Do not unpublish an existing version (including 0.0.0-stage) and do not
+# republish a version that is already on the registry.
+
+name: Publish
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish to npm
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write # OIDC trusted publishing; no long-lived npm token
+    steps:
+      - name: Check out the release tag
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'release' && github.event.release.tag_name || github.sha }}
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24' # engines.node >=24; npm on this line is >=11.5.1 for OIDC
+          registry-url: 'https://registry.npmjs.org'
+          package-manager-cache: false
+
+      - name: Require Node 24 and npm 11.5.1
+        run: |
+          set -euo pipefail
+          node --version
+          npm --version
+          node -e '
+            const nodeMajor = Number(process.versions.node.split(".")[0])
+            if (nodeMajor < 24) {
+              console.error(`node ${process.versions.node} is older than engines.node >=24`)
+              process.exit(1)
+            }
+            const [major, minor, patch] = process.argv[1].split(".").map(Number)
+            const ok = major > 11 || (major === 11 && (minor > 5 || (minor === 5 && patch >= 1)))
+            if (!ok) {
+              console.error(`npm ${process.argv[1]} is older than 11.5.1, which trusted publishing needs`)
+              process.exit(1)
+            }
+          ' "$(npm --version)"
+
+      - name: Drop token auth so OIDC is not overridden
+        run: |
+          set -euo pipefail
+          if [ -n "${NODE_AUTH_TOKEN:-}" ] || [ -n "${NPM_TOKEN:-}" ]; then
+            echo "::error::NODE_AUTH_TOKEN or NPM_TOKEN is set. They must stay absent so they cannot override npm Trusted Publishing (OIDC)."
+            exit 1
+          fi
+          for npmrc in "${NPM_CONFIG_USERCONFIG:-}" "$HOME/.npmrc" "$GITHUB_WORKSPACE/.npmrc" "$GITHUB_WORKSPACE/packages/dsh-rayrun-bots/.npmrc"; do
+            if [ -n "$npmrc" ] && [ -f "$npmrc" ]; then
+              sed -i '/_authToken/d' "$npmrc"
+            fi
+          done
+
+      - name: Load the dist-tag helper
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          if git cat-file -e origin/main:tools/npm-publish/dist-tag.mjs 2>/dev/null; then
+            git checkout origin/main -- tools/npm-publish/dist-tag.mjs
+          fi
+          test -f tools/npm-publish/dist-tag.mjs
+
+      - name: Refuse the private workspace root
+        run: |
+          set -euo pipefail
+          NAME=$(node -p 'require("./package.json").name')
+          PRIVATE=$(node -p 'Boolean(require("./package.json").private)')
+          if [ "$NAME" != "rayrun-bot" ] || [ "$PRIVATE" != "true" ]; then
+            echo "::error::workspace root must stay private (name=$NAME private=$PRIVATE); do not publish it"
+            exit 1
+          fi
+
+      - name: Read the package version and dist-tag
+        working-directory: packages/dsh-rayrun-bots
+        run: |
+          set -euo pipefail
+          NAME=$(node -p 'require("./package.json").name')
+          PRIVATE=$(node -p 'Boolean(require("./package.json").private)')
+          VERSION=$(node -p 'require("./package.json").version')
+          if [ "$NAME" != "dsh-rayrun-bots" ] || [ "$PRIVATE" != "false" ]; then
+            echo "::error::refusing to publish ${NAME} (private=${PRIVATE}); publish only packages/dsh-rayrun-bots"
+            exit 1
+          fi
+          DIST_TAG=$(node "$GITHUB_WORKSPACE/tools/npm-publish/dist-tag.mjs" "$VERSION")
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "DIST_TAG=$DIST_TAG" >> "$GITHUB_ENV"
+          echo "dsh-rayrun-bots@$VERSION dist-tag $DIST_TAG"
+
+      - name: Check the tag against package.json
+        if: github.event_name == 'release'
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          if [ "$TAG" != "v$VERSION" ]; then
+            echo "::error::release tag $TAG does not match package.json version $VERSION (expected v$VERSION)"
+            exit 1
+          fi
+          git fetch origin "refs/tags/$TAG:refs/tags/$TAG"
+          git fetch origin main
+          TAG_SHA=$(git rev-parse "refs/tags/$TAG^{commit}")
+          HEAD_SHA=$(git rev-parse HEAD)
+          if [ "$HEAD_SHA" != "$TAG_SHA" ]; then
+            echo "::error::HEAD $HEAD_SHA is not tag $TAG ($TAG_SHA)"
+            exit 1
+          fi
+          if ! git merge-base --is-ancestor "$TAG_SHA" origin/main; then
+            echo "::error::tag $TAG ($TAG_SHA) is not an ancestor of origin/main"
+            exit 1
+          fi
+
+      - name: Run the package checks
+        run: |
+          set -euo pipefail
+          node --check packages/dsh-rayrun-bots/index.js
+          node --check packages/dsh-rayrun-bots/client.js
+          for test in packages/dsh-rayrun-bots/test/*.mjs; do
+            echo "--- $test"
+            node "$test"
+          done
+
+      - name: Refuse to republish an existing version
+        run: |
+          set -euo pipefail
+          if npm view "dsh-rayrun-bots@$VERSION" version >/dev/null 2>/tmp/npm-view.err; then
+            echo "::error::dsh-rayrun-bots@$VERSION is already on the registry; not publishing it again"
+            exit 1
+          fi
+          if ! grep -q 'E404' /tmp/npm-view.err; then
+            echo "::error::could not check whether dsh-rayrun-bots@$VERSION is already published; not publishing"
+            cat /tmp/npm-view.err
+            exit 1
+          fi
+
+      - name: Remember the latest dist-tag
+        if: github.event_name == 'release'
+        run: |
+          set -euo pipefail
+          LATEST_BEFORE=$(npm view dsh-rayrun-bots dist-tags.latest 2>/dev/null || true)
+          echo "LATEST_BEFORE=$LATEST_BEFORE" >> "$GITHUB_ENV"
+          echo "latest before publish: ${LATEST_BEFORE:-<none>}"
+
+      - name: Report the dry run
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          set -euo pipefail
+          echo "dry run: dsh-rayrun-bots@$VERSION was not published (dist-tag $DIST_TAG)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publish
+        if: github.event_name == 'release'
+        working-directory: packages/dsh-rayrun-bots
+        run: |
+          set -euo pipefail
+          if [ -n "${NODE_AUTH_TOKEN:-}" ] || [ -n "${NPM_TOKEN:-}" ]; then
+            echo "::error::NODE_AUTH_TOKEN or NPM_TOKEN is set. They must stay absent so they cannot override npm Trusted Publishing (OIDC)."
+            exit 1
+          fi
+          case "$VERSION" in
+            *-*)
+              if [ "$DIST_TAG" = "latest" ]; then
+                echo "::error::refusing to publish prerelease $VERSION to latest"
+                exit 1
+              fi
+              ;;
+            *)
+              if [ "$DIST_TAG" != "latest" ]; then
+                echo "::error::stable $VERSION must use the latest dist-tag"
+                exit 1
+              fi
+              ;;
+          esac
+          npm publish --provenance --access public --tag "$DIST_TAG"
+
+      - name: Verify the release
+        if: github.event_name == 'release'
+        run: |
+          set -euo pipefail
+          attempts=15
+          sleep_seconds=10
+          for attempt in $(seq 1 "$attempts"); do
+            if npm view "dsh-rayrun-bots@$VERSION" version >/dev/null 2>&1; then
+              echo "published dsh-rayrun-bots@$VERSION (dist-tag $DIST_TAG)" >> "$GITHUB_STEP_SUMMARY"
+              npm view dsh-rayrun-bots dist-tags --json >> "$GITHUB_STEP_SUMMARY" || true
+              if [ "$DIST_TAG" != "latest" ]; then
+                latest_after=$(npm view dsh-rayrun-bots dist-tags.latest 2>/dev/null || true)
+                if [ -n "${LATEST_BEFORE:-}" ] && [ "$latest_after" != "$LATEST_BEFORE" ]; then
+                  echo "::warning::prerelease $VERSION is on the registry, but dist-tag latest changed from ${LATEST_BEFORE:-<none>} to ${latest_after:-<none>}. Do not republish. Inspect with: npm view dsh-rayrun-bots dist-tags"
+                else
+                  echo "latest stayed at ${latest_after:-<none>}" >> "$GITHUB_STEP_SUMMARY"
+                fi
+              fi
+              exit 0
+            fi
+            echo "attempt $attempt/$attempts: registry does not serve dsh-rayrun-bots@$VERSION yet"
+            sleep "$sleep_seconds"
+          done
+          echo "::warning::npm publish exited 0, but the registry still does not serve dsh-rayrun-bots@$VERSION after $((attempts * sleep_seconds))s. The publish may have succeeded and npm can take a while to show a new version. Confirm with: npm view dsh-rayrun-bots@$VERSION. Do not republish this version."
+          echo "publish may have succeeded; confirm with npm view dsh-rayrun-bots@$VERSION; do not republish" >> "$GITHUB_STEP_SUMMARY"
+          exit 0
