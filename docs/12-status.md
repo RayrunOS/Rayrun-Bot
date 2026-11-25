@@ -333,6 +333,9 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
 - IM 通道。
 - 稳定版发布：当前只有 `0.1.1-alpha.1`（npm `alpha` tag）；`latest` 仍是旧的
   `0.1.0-alpha.0`，需要单独的稳定版发布决策。
+- CI 可选 main-only deploy job：2026-11-25 的 `checks` 任务全绿，但 deploy job 用
+  GitHub secret `RAYRUN_TOKEN` 调 Rayrun 时返回 401 `invalid credentials`；需要维护者
+  更新/撤销该 secret，或明确停用该可选 job。npm 发布和普通测试不受影响。
 
 ## 5. 平台缺口
 
