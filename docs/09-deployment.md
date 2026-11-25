@@ -1,7 +1,8 @@
 # 09 — 部署与运行
 
-> 状态：2026-11-24。本文说明依赖、安装、运行、配置、检查与故障处理，是安装与运行的
-> 操作页；实现状态以 [`12-status.md`](12-status.md) 为准。产品方向见
+> 状态：2026-11-25。本文说明依赖、安装、运行、配置、检查与故障处理，是安装与运行的
+> 操作页；实现状态以 [`12-status.md`](12-status.md) 为准。产品页的安装短述与本文
+> 冲突时，以 [`12-status.md`](12-status.md) 为准。产品方向见
 > [`00-product-direction.md`](00-product-direction.md)；技术基线见
 > [`01-system-architecture.md`](01-system-architecture.md)；平台 handoff 见
 > [`08-integration.md`](08-integration.md)。
@@ -23,7 +24,7 @@
 | 需要 | 为什么 | 状态 |
 | --- | --- | --- |
 | [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) | 运行时；桌面 App 或 `dsh web` | `0.2.0-rc.2` / `0.2.2-rc.5` 已验证；组合见[版本矩阵](version-matrix.md) |
-| [`dsh-rayrun-computer`](https://github.com/RayrunOS/dsh-rayrun-computer) | 云电脑层；独立项目，必需依赖 | 未上 npm；从 checkout 安装 |
+| [`dsh-rayrun-computer`](https://github.com/RayrunOS/dsh-rayrun-computer) | 云电脑层；独立项目，必需依赖 | npm `1.2.1`（`latest`）。开发或离线仍可从 checkout 安装 |
 | [Rayrun](https://rayrunos.com/) 账号 | 提供云电脑；按秒计费 | 必需；用户直接付 Rayrun |
 | DeepSeek API key | 机器内 agent 的模型调用 | 必需；key 与模型账单属于用户 |
 | Node / 构建工具 | 不需要：纯 ESM、无构建 | 无 |
@@ -151,8 +152,10 @@ dsh plugin --profile web add <dsh-rayrun-computer 路径或 tarball> <dsh-rayrun
 `bundles` 仍只有 `dsh-rayrun-bots`，依赖 bundle **不会自动启用**。因此不要把它
 写成“单包安装”；真正的单包安装需要 DSH 支持传递 bundle 激活，或新增 meta-package。
 
-npm 归属与发布账号仍未定（[`plans/mvp-plan.md`](plans/mvp-plan.md) §11 第 5 项），
-所以现在没有发布 job。
+`dsh-rayrun-bots@0.1.1-alpha.1` 已通过 `publish.yml` 发到 npm 的 `alpha` tag；
+`latest` 仍是 `0.1.0-alpha.0`，没有稳定版。依赖 `dsh-rayrun-computer@1.2.1` 在
+npm `latest`。不带版本的安装不会选中 `0.1.1-alpha.1`。用户安装命令见上文和根
+README；发布事实以 [`12-status.md`](12-status.md) 为准。
 
 ---
 
@@ -219,7 +222,9 @@ adapter 先解析已有机器，机器不存在时拒绝；由于 `rayrun_files`
 `autoCreate` 处理缺失机器，Bots 用 profile 建议把云电脑行设为 `autoCreate: false`。
 一台机器一个 `bot-host` runtime，内部是全局串行队列，每个 bot 独立 transcript/session；2026-11-23 手动机器路径的页面 E2E 已通过
 （`HOST_E2E_OK`）；自动 projection 页面 E2E 也已通过；多 bot 单 host 的页面 E2E 已通过
-（`MULTI_A_OK`/`MULTI_B_OK`，两个独立 session）；生产镜像未做。cloudHost 的 prompt
+（`MULTI_A_OK`/`MULTI_B_OK`，两个独立 session）。hosted 上 `dsh-bot@1` 的聊天与
+routine 核对见 [`12-status.md`](12-status.md)；更旧的官方镜像仍可能
+`guestd_outdated`。这不是生产交付承诺。cloudHost 的 prompt
 会让 bot 在回复末尾输出结构化 `rayrun-approval` block，cloud host 解析后写 proposal
 （`propose.mjs` 是可选 shell 路径）；本地 approval bridge 通过 `rayrun_files` 导入并
 去重，结果写回 `approval-results/`（机器停机时先落本地 outbox）。真实 cloud proposal
@@ -244,9 +249,11 @@ adapter 先解析已有机器，机器不存在时拒绝；由于 `rayrun_files`
   关注余额；需要时设 `idle_stop_minutes`（只停，不 destroy）。
 - **第二个任务 `409 sandbox_busy`**：一台电脑一次只跑一个 agent 任务，不排队；
   等待或换机器。
-- **`dsh-rayrun-computer` 未安装**：今天需要两个插件；把云电脑插件从 checkout 装进
-  同一个 profile 并重启 DSH。缺少它，bot 层依赖的云工具不存在。
-- **`npm i dsh-rayrun-bots` 失败**：预期；两个包都未上 npm。
+- **`dsh-rayrun-computer` 未安装**：今天需要两个插件，并且要用一条 `dsh plugin add`
+  同时安装。只装 bots 包不会启用云电脑 bundle。缺少它，bot 层依赖的云工具不存在。
+- **`npm i dsh-rayrun-bots` 不是这条安装路径**：不带版本时 npm 给出 `latest`，目前仍是
+  `0.1.0-alpha.0`，不是 `0.1.1-alpha.1`。`npm install` 也不会把 bundle 选进 DSH
+  profile。用上文的 `dsh plugin add`，并写上两个包的版本。
 
 每个错误应该给一句可执行提示，不给假成功；审批相关失败一律拒绝。
 
@@ -275,7 +282,9 @@ CI（`.github/workflows/checks.yml`）在 push/PR 上、Node 24 和 26 上跑语
 `engines.dsh: >=0.2.0-rc.2 <0.3.0`；DSH `0.2.2-rc.5` 的兼容性检查会在安装时拒绝
 不兼容的包并恢复 profile，组合预检也会禁用不兼容的 row。该矩阵不覆盖云电脑插件，也不发真实
 Rayrun 调用。实时集成测试仍需要真实 Rayrun 凭据，不在 CI 运行；唯一的例外是下面
-可选、main-only 的部署 job。发布与发布自动化尚不存在；release checklist 见
+可选、main-only 的部署 job。npm 发布走 `.github/workflows/publish.yml`（GitHub
+Release），不在本 workflow 里；`alpha` 当前是 `0.1.1-alpha.1`，`latest` 仍是
+`0.1.0-alpha.0`。release checklist 见
 [`plans/mvp-plan.md`](plans/mvp-plan.md) §12。v1.0 桌面发行版采用 B1 预配置 DSH
 发行包（bootstrap 安装器），B2 整包更新是升级路径；见
 [`design/desktop-distribution.md`](design/desktop-distribution.md)。

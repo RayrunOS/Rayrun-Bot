@@ -1,7 +1,8 @@
 # Contributing
 
-Thanks for looking. Rayrun Bot is in pre-alpha: the repository is being
-bootstrapped and nothing in it is published to npm yet. Please be kind to scope —
+Thanks for looking. Rayrun Bot is in pre-alpha. `dsh-rayrun-bots@0.1.1-alpha.1`
+is on the npm `alpha` tag; `latest` is still `0.1.0-alpha.0`, and there is no
+stable release. Please be kind to scope —
 much of the design is still moving, and a small, correct change is easier to
 land than a large speculative one.
 
@@ -26,8 +27,9 @@ land than a large speculative one.
   any link you add resolves in the tree. `docs/12-status.md` is the single source
   of implementation status; keep it dated and evidence-backed.
 - Documentation under `docs/` is written in Chinese (technical identifiers, code
-  and UI copy stay in English). The root README is a bilingual marketing page,
-  not a source of record.
+  and UI copy stay in English). The root README is a bilingual product page
+  (what it is, the install, and a short today/not-today). It is not a source of
+  record; `docs/12-status.md` is.
 - Link the issue you are closing (`Closes #123`) when there is one.
 
 ## Local checks
