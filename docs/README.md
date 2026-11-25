@@ -1,16 +1,16 @@
 # Rayrun Bot 文档索引
 
 > 本文件只做导航与约定，不复制项目状态、验收读数或版本号。
-> 状态入口：[`12-status.md`](12-status.md)。根 `README.md` 是营销页，不承载事实，
-> 也不作为事实依据。
+> 状态入口：[`12-status.md`](12-status.md)。根 README 是产品页：是什么、给谁、
+> 最短安装路径，以及今天能与不能做什么的短述。短述与 12-status 冲突时以 12-status 为准。
 > 工程指令：`../CLAUDE.md`。
 
 ## 1. 真相源与入口
 
 | 入口 | 负责什么 |
 | --- | --- |
-| [`../README.md`](../README.md) | 英文营销页；不承载状态或事实，英中双语 |
-| [`../README.zh-CN.md`](../README.zh-CN.md) | 中文营销页，同一 commit 更新 |
+| [`../README.md`](../README.md) | 英文产品页。安装和能力短述不替代 12-status |
+| [`../README.zh-CN.md`](../README.zh-CN.md) | 中文产品页，与英文同一 commit 更新 |
 | [`12-status.md`](12-status.md) | 实现状态的唯一事实源：今天有什么、缺什么、验证到哪一步 |
 | [`00-product-direction.md`](00-product-direction.md) | 产品方向：定位、目标用户、v0.1 范围与产品决策 |
 | [`01-system-architecture.md`](01-system-architecture.md) | 技术基线：分层、边界、信任模型 |
@@ -91,12 +91,13 @@ ADR-014 已定为 B1，属于 v1.0，不阻塞 v0.1。
 - **真相源优先级**：产品方向 → `00-product-direction.md`；实现状态 → `12-status.md`；
   技术基线 → `01-system-architecture.md`；安全 → `07-security.md`；范围与验收 →
   `plans/mvp-plan.md`；未决架构 → `adr/architecture-decisions.md`；导航 → 本文件。
-  文档冲突时按此顺序回落。根 `README.md` 只在最后作为营销叙事，不作为事实依据。
+  文档冲突时按此顺序回落。根 README 的产品短述与 `12-status.md` 冲突时以
+  `12-status.md` 为准。
 - **分类**：`plans/` 记“为什么这么做、怎么做”；`adr/` 记不可轻易逆转的决策；
   `design/` 记视觉、交互与人格；`research/` 是调研材料，不是真相源；
   `09-deployment.md` 记“怎么跑起来”。
 - **语言**：`docs/` 全部用中文（技术标识、代码、schema、UI 文案保持英文）；根
-  README 是英中双语营销页，英文为准并维护中文镜像；代码、注释、接口命名和提交信息
+  README 是英中双语产品页，英文为准并维护中文镜像；代码、注释、接口命名和提交信息
   用英文。
 - **新增文档**：先在本文件 §2 加一行；新增决策在 §3 加一行，并把“下一个可用编号”
   加一；新增未收口计划在 §4 加一行。

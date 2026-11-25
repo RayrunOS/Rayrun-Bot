@@ -4,211 +4,140 @@
 
 # Rayrun Bot
 
-**Bots with a name, a body and a home.**
+**Bots with a name, a body, and a home.**
 
 Rayrun Bot is the bot layer for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness).
-It gives each bot a name, a job brief, memory and a schedule — and a place to live:
-your own [Rayrun](https://rayrunos.com/) cloud computer, a Linux machine you can watch
-and take over. Bots are designed to think with your own DeepSeek key.
+Each bot has a name, a job brief, memory, and a schedule, and it lives on your own
+[Rayrun](https://rayrunos.com/) cloud computer: a Linux machine you can watch and
+take over. It thinks with your DeepSeek key. The computer is billed to your Rayrun
+account, and the model bill is yours.
 
-No project-run account, relay or control plane. The compute runs on your Rayrun
-account, the model bill is yours, and the approval prompt is the contract.
+There is no project-run account, relay, or control plane. You install this
+repository into DeepSeek Harness.
 
 English | [简体中文](README.zh-CN.md)
 
-<sub>DeepSeek Harness &nbsp;·&nbsp; Rayrun cloud computer &nbsp;·&nbsp; Local-first approvals &nbsp;·&nbsp; MIT</sub>
-
 </div>
 
+> **Pre-alpha.** v0.1 is not delivered, the three-minute first-run path has not
+> been timed end to end, and this is not a production bot layer or a product for
+> a general audience. What works, what is missing, and which combinations were
+> actually checked is [docs/12-status.md](docs/12-status.md). If this page and
+> that doc disagree, the status doc wins. Summary below is as of 2026-11-25.
+
 <p align="center">
-  <img src="docs/mockups/conversation.png" width="920" alt="The Bots conversation, as designed">
+  <img src="docs/mockups/conversation.png" width="920" alt="Design preview of the Bots conversation">
 </p>
-<p align="center"><sub>Design preview. What is wired up today is tracked separately in <a href="docs/12-status.md">docs/12-status.md</a>.</sub></p>
-
-> Rayrun Bot is pre-alpha. The product story lives here; the source of record for
-> what works, what is missing and which combinations were verified live is
-> [docs/12-status.md](docs/12-status.md).
-
-## A bot is not a chat
-
-A chat session ends when the tab closes. A bot keeps its name, its job brief, its
-memory and its workspace. You assign work, close the laptop, and come back to a
-colleague that reports what it did, what it needs, and what it deliberately did
-not do.
-
-Rayrun Bot is built for that handoff, not for another chat window.
-
-## What you get
-
-<table>
-<tr>
-<td width="50%" valign="top">
-
-### A colleague, not a session
-
-Bots have a name, a personality, standing instructions and a persistent thread.
-The roster is the product surface: pick a bot the way you pick a contact, not the
-way you open a new tab.
-
-</td>
-<td width="50%" valign="top">
-
-### A computer with hands
-
-Each person gets a Linux cloud computer shared by their bots: a real `workspace`,
-a browser profile, an X11 desktop, and the ability to run commands, move files
-and drive a browser. You can watch the screen and take over at any time.
-
-</td>
-</tr>
-<tr>
-<td width="50%" valign="top">
-
-### Your key, your bill
-
-Your DeepSeek key is stored as a Rayrun credential and injected into the agent
-process inside your machine. Model calls come from your account, not ours. The
-key does not go into the workspace or the chat.
-
-</td>
-<td width="50%" valign="top">
-
-### Approvals before the outside world
-
-Work inside the computer can proceed. Actions with an outside effect stop at an
-approval card, in the conversation where the action stopped. Unknown, expired or
-unanswered means no. Fail-closed is the default, not a setting.
-
-</td>
-</tr>
-<tr>
-<td width="50%" valign="top">
-
-### Work that survives the tab
-
-Sessions, queues and transcripts live on your side and on the machine. Close the
-page, restart the local host, or let the cloud host keep working while your
-laptop is shut. The conversation picks up where it stopped.
-
-</td>
-<td width="50%" valign="top">
-
-### Routines that come back with a report
-
-A bot can run a prompt on a schedule — an inbox sweep, a channel watch, a weekly
-digest — and put the result back into the same persistent history. Scheduled
-work is designed to continue when the local page is not open.
-
-</td>
-</tr>
-</table>
-
-## The surface
-
-The Bots page is designed as three columns inside DSH: the roster on the left, a
-markdown conversation in the middle, and the current bot's details on the right.
-Setup is four steps: the dependency, Rayrun, the computer and the first bot.
-Approval requests appear inline, where they are needed.
-
-<table>
-<tr>
-<td width="50%" valign="top">
-
-<img src="docs/mockups/setup.png" width="100%" alt="Setup design">
-
-<sub><b>Setup.</b> Dependency, Rayrun, computer, first bot — each step says what is missing and where to fix it.</sub>
-
-</td>
-<td width="50%" valign="top">
-
-<img src="docs/mockups/library.png" width="100%" alt="Library design">
-
-<sub><b>Library.</b> What the bot produced, grouped by day, next to the conversation that produced it.</sub>
-
-</td>
-</tr>
-</table>
-
-The visual design and clickable mockups are in
-[docs/design/ui-design.md](docs/design/ui-design.md) and
-[docs/mockups/index.html](docs/mockups/index.html).
-
-## How it fits together
-
-```
-you ── chat / approve ──▶ DSH (your desk)                browser tab or desktop app
-                           │  bot layer: tools · same-origin RPC · approvals
-                           ▼
-                      Rayrun API · https://api.rayrunos.com/v1
-                           ▼
-       your Rayrun cloud computer   (one per person, shared by your bots)
-         ├─ DSH host on the machine: one session per bot
-         ├─ /workspace · browser profile · X11 desktop
-         └─ model calls ──▶ DeepSeek API (your key, injected per process)
-```
-
-The desk is where you come back to. The body is where the work happens. The brain
-is the key you already pay for. Memory is the bot's own state on the machine.
-Only one of those needs to be online while the bot works.
-
-## Design choices
-
-- **One computer per person, not per bot.** It is cheaper and simpler, and bots
-  share files, browser sessions and credentials the way a person's tools do. The
-  tradeoff: a bot is not a security boundary — do not use two bots as sandboxes
-  against each other.
-- **Bring your own accounts.** No control plane of ours holds your keys or meters
-  your usage. Rayrun is your infrastructure vendor, DeepSeek is your model vendor,
-  and this repository is the glue.
-- **Local-first where it protects you.** Your workspace, profile and credentials
-  stay on your side. Execution can leave the machine; decisions and secrets do
-  not.
-- **Approvals are fail-closed.** A bot may work freely inside its own computer,
-  but anything with an outside effect waits for you. A timeout is a no.
-- **Boring on purpose.** Plain ESM, no runtime dependencies, no build step. The
-  DSH on your desk is the same DSH that runs in the cloud.
-- **Two plugins, one product.** Rayrun Bot consumes the independent
-  [dsh-rayrun-computer](https://github.com/RayrunOS/dsh-rayrun-computer) project
-  through its published tools and version contract. We do not fork or vendor it.
-
-## What it is not
-
-Rayrun Bot is not a hosted SaaS, a bot marketplace or a multi-tenant platform.
-There is no project-run account, relay or control plane. It is not a replacement
-for DSH, and it does not make the cloud agent a security boundary it is not
-[designed to be](docs/07-security.md).
+<p align="center"><sub>Design preview, not a screenshot of today's build. Wired behavior is in <a href="docs/12-status.md">docs/12-status.md</a>.</sub></p>
 
 ## Who it is for
 
-Rayrun Bot is for people who want a personal AI colleague that does real work on a
-real computer they control — clearing an inbox, watching a channel, pulling a
-report from a legacy portal — without handing their accounts to a hosted service.
+People who already run DeepSeek Harness and want a named bot on a Rayrun computer
+they pay for, using their own DeepSeek key, with an approval stop on starting,
+stopping, pausing, and resuming that computer.
 
-## Start here
+It is for someone who can read the status doc and tolerate gaps. It is not a
+hosted assistant, a bot marketplace, or a multi-tenant platform.
+
+## Install
+
+You need [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) first.
+This package declares `engines.dsh` `>=0.2.0-rc.2 <0.3.0`. The command below was
+checked with DSH `0.2.2-rc.5`. Checked combinations are in
+[docs/version-matrix.md](docs/version-matrix.md).
+
+Install both plugins from the official npm registry, in one command, with the
+versions pinned:
+
+```bash
+npm_config_registry=https://registry.npmjs.org \
+  dsh plugin --profile web add \
+  dsh-rayrun-computer@1.2.1 dsh-rayrun-bots@0.1.1-alpha.1
+```
+
+Restart DSH after that. The Bots page loads when the page starts.
+
+Then, in Bots:
+
+1. Connect Rayrun. The token stays in the Harness vault on the host. The page does not receive it.
+2. Adopt a computer you already have, or create one. Creating a computer is billed by Rayrun. The page can stop a machine. It does not destroy one.
+3. If the computer does not already have a DeepSeek credential, the setup step can store your key as a Rayrun credential. The key is injected into the agent process. It does not go into the workspace or the chat.
+4. Create a bot and send a message. The sample bots shown before you create one are an in-memory preview. They do not run on a computer.
+
+`dsh-rayrun-bots@0.1.1-alpha.1` is the npm `alpha` dist-tag. `latest` is still
+`0.1.0-alpha.0`. There is no stable release. An untagged
+`npm install dsh-rayrun-bots`, or `dsh plugin add` without these versions, does
+not select `0.1.1-alpha.1`. Installing the bots package alone does not turn on
+the computer plugin: both packages have to be in the same `dsh plugin add`.
+Pin `dsh-rayrun-computer` at `1.2.1`. The `1.2.0` package on npm is an older
+build. A mirror can lag behind the official registry, which is why the command
+sets the registry.
+
+On 2026-11-25 that command was checked against the official registry: both
+plugins loaded, and one turn sent to an existing stopped hosted machine came
+back. That check used the preview on-machine host (off unless you enable it)
+and a maintainer machine. The machine from that check is not a setup
+requirement, and the check is not a promise for every account or image.
+
+The on-machine host stays off until you enable `cloudHost`. The switch, and the
+longer operator notes, are in [docs/09-deployment.md](docs/09-deployment.md).
+
+## What you can do today
+
+Still pre-alpha. This is the short version; evidence is in
+[docs/12-status.md](docs/12-status.md).
+
+- Load both plugins and open a Bots page: roster, conversation, details, new bot, setup, and settings, in Chinese and English.
+- Keep bots you create: name, instructions, session, and transcript survive a page reload.
+- Send a turn to a Rayrun computer you already have. A stopped or paused machine may be started for that turn, which spends machine time. Closing the page does not have to drop the turn.
+- Open the computer's desktop, and stop the machine. Stop does not destroy it.
+- Approve or deny start, stop, pause, and resume. Allow once runs that action from your local host. Deny, expiry, or an unknown result does not run it.
+- Create, pause, and remove an interval routine. A routine is an ordinary turn. Turning one on can wake a machine and spend money on later runs. Cron and event triggers are not built.
+- Optionally run a preview host on the computer, one process shared by your bots. With it on, a routine can run while local DSH is stopped. It is off by default. The hosted check used a machine image new enough for Rayrun runtimes (`dsh-bot@1`). Older official images can reject the runtime with `guestd_outdated`.
+
+## What it does not do
+
+- It does not deliver v0.1, and the three-minute first-run path has not been timed end to end. A clean-install browser turn and the start/stop/pause/resume approval cards have been checked on a maintainer machine; that is not a promise for every account.
+- It does not publish a stable release. `latest` remains the older alpha.
+- It does not host the bot for you, meter you, or hold your accounts. There is no project relay in the middle.
+- It does not approve actions other than machine start, stop, pause, and resume. Credential actions on the computer are not covered. The agent on the machine is not an approval sandbox, and a bot is not a security boundary: your bots share one computer.
+- It does not offer IM channels, a per-bot spend report, or cron and event triggers.
+
+## How the pieces fit
+
+```
+you ── chat / approve ──▶ DSH (your desk)
+                           │  bot layer
+                           ▼
+                      Rayrun API
+                           ▼
+       your Rayrun cloud computer   (one per person, shared by your bots)
+         ├─ workspace, browser, desktop
+         └─ model calls ──▶ DeepSeek (your key, injected into the agent process)
+```
+
+You pay Rayrun for the computer and DeepSeek for the model. This project does
+not sit on either bill. The license for the code is MIT.
+
+One computer per person is the design: cheaper, and the bots share files the way
+one person's tools do. The tradeoff is the one in the list above. A bot may work
+inside that computer; the machine actions that are built stop for approval, and
+a timeout is a no.
+
+## Read next
 
 | | |
 | --- | --- |
-| [Status](docs/12-status.md) | What works today, what is missing, and the verified combinations. |
-| [Running what exists today](docs/09-deployment.md) | Install the two plugins, configure Rayrun, create the first bot. |
-| [Product direction](docs/00-product-direction.md) | Who it is for, the v0.1 scope and the product decisions. |
-| [System architecture](docs/01-system-architecture.md) | Layers, boundaries and the trust model. |
-| [Approvals](docs/05-approvals.md) | What needs a yes, who executes it locally, and what still waits for the platform. |
-| [Security](docs/07-security.md) | What is protected, what is not, and how to report a vulnerability. |
-| [FAQ](docs/faq.md) | Pricing, credentials, models, self-hosting and the honest limits. |
-| [Contributing](CONTRIBUTING.md) | How to propose a change and the local checks. |
-| [Documentation index](docs/README.md) | The full doc map and the ADR register. |
-
-## Acknowledgements
-
-- [Rayrun](https://rayrunos.com/) for the cloud computers and the separate
-  [dsh-rayrun-computer](https://github.com/RayrunOS/dsh-rayrun-computer) plugin
-  this project builds on.
-- [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) for the agent
-  runtime this plugs into.
-- Grok Bot, dsh-superagent and OpenMausBot, which showed what this shape should be
-  — and where it breaks.
+| [Status](docs/12-status.md) | What works, what is missing, and the checked combinations. This page defers to it. |
+| [Install and run](docs/09-deployment.md) | Operator notes, including how to turn on the preview host. |
+| [Version matrix](docs/version-matrix.md) | DSH, computer plugin, and bot package combinations that were actually checked. |
+| [Security](docs/07-security.md) | What is protected, and what is not. |
+| [FAQ](docs/faq.md) | Pricing, credentials, models, and limits. |
+| [Product direction](docs/00-product-direction.md) | Who it is aimed at, and the v0.1 scope. v0.1 is not delivered. |
+| [Contributing](CONTRIBUTING.md) | How to propose a change. |
+| [Documentation index](docs/README.md) | The rest of the docs. |
 
 ## License
 
-MIT. Your Rayrun account, your cloud computer and your DeepSeek key stay yours;
-the license covers the code in this repository.
+MIT. Your Rayrun account, your cloud computer, and your DeepSeek key stay yours.
+The license covers the code in this repository.

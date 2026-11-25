@@ -10,7 +10,8 @@ start/stop/pause/resume）与云提案 bridge 已有预览；真实 cloud propos
 start/stop/pause/resume、denial/Continue 与下一轮 context 已 live。本地最小
 routines 与 cloudHost 云端调度已实现，生产单 bot routine E2E 已通过。干净 npm
 安装（`0.1.1-alpha.1`）已跑通 cloudHost、真实浏览器 golden 与审批 Deny/Allow。
-v0.1 的主要验收路径已打通；剩余是稳定版决策和更广动作集。实现状态以
+v0.1 的主要验收路径已打通；剩余是三分钟计时签收、A11 key 轮换、稳定版决策和更广
+动作集。实现状态以
 [12-status.md](../12-status.md) 为准。日期刻意省略。*
 
 ## 我们在哪（M0 — bootstrap）

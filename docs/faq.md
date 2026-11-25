@@ -49,10 +49,13 @@ key 存在 Rayrun credential 里，只注入 agent 进程；机器里的 `exec` 
 
 今天需要：Rayrun Bot，以及独立的
 [RayrunOS/dsh-rayrun-computer](https://github.com/RayrunOS/dsh-rayrun-computer)
-项目。Rayrun Bot 把它当作外部依赖复用，不修改、不 fork、不 vendor。两个包都已发布
-到 npm；用**一条** `dsh plugin add` 命令装进同一个 DSH profile，会同时启用两个
-bundle（S6 已验证，2026-11-24）。只安装 Rayrun Bot 并在 `package.json` 声明依赖，
-只会安装依赖包，不会自动启用依赖 bundle。
+项目。Rayrun Bot 把它当作外部依赖复用，不修改、不 fork、不 vendor。两个包都在
+npm 上。用**一条** `dsh plugin add` 把
+`dsh-rayrun-computer@1.2.1` 和 `dsh-rayrun-bots@0.1.1-alpha.1` 装进同一个 DSH
+profile，会同时启用两个 bundle。`0.1.1-alpha.1` 在 `alpha` tag 上；`latest` 仍是
+`0.1.0-alpha.0`，不带版本的安装不会选中它。只安装 Rayrun Bot 并在 `package.json`
+声明依赖，只会安装依赖包，不会自动启用依赖 bundle。命令见根 README；事实以
+[12-status.md](12-status.md) 为准（2026-11-25）。
 
 ## 为什么这个仓库文档这么多？
 
@@ -63,12 +66,12 @@ bundle（S6 已验证，2026-11-24）。只安装 Rayrun Bot 并在 `package.jso
 
 ## 今天能做什么？
 
-从 npm 用一条 `dsh plugin add` 把两个包装进同一个 DeepSeek Harness profile。独立的
-云电脑插件提供七个工具：create/stop/pause/destroy 机器、跑命令、搬文件、驱动桌面、
-委派任务、同步 workspace、project worker 层。它是 Rayrun Bot 的依赖，不是本仓库的
-一部分。本仓库的 `dsh-rayrun-bots` 一并装进同一个 profile，打开 Bots 壳并持久化名册；
-真实 bot 的对话和审批卡已接 host，示例 bot 与设置仍是页内预览。[安装与运行](09-deployment.md)有确切命令和“还缺什么”表，
-实现状态见 [12-status.md](12-status.md)。
+从官方 registry 一条命令安装两个插件，见根 README。云电脑插件提供机器生命周期、
+命令、文件、桌面、任务委派和 workspace sync；它是独立项目，不是本仓库的一部分。
+Bot 页可以保存名册，并已在真实浏览器验证创建 bot、发送一轮和审批 Deny/Allow；示例
+bot 仍是页内预览。v0.1 尚未签收：三分钟路径未计时，A11 key 轮换也未完成。短述在
+根 README，证据在 [12-status.md](12-status.md)（2026-11-25）。更长的运行说明见
+[安装与运行](09-deployment.md)。
 
 ## 和 Grok Bot 有什么不同？
 
@@ -111,10 +114,12 @@ agent 在自己的 workspace 内不受审批约束。云端凭据动作仍需 Ra
 
 ## 上 npm 了吗？能作为插件安装吗？
 
-两个包都已发布到 npm：`dsh-rayrun-bots@0.1.1-alpha.1`（`alpha` tag；`latest` 仍是
-旧的 `0.1.0-alpha.0`）和独立的 `dsh-rayrun-computer@1.2.1`（latest）。用一条
-`dsh plugin --profile web add` 命令安装两个包，然后重启 DSH；只安装 bot 包即使声明
-依赖，也不会启用依赖的 bundle。安装步骤见 [09-deployment.md](09-deployment.md)。
+在。`dsh-rayrun-bots@0.1.1-alpha.1` 在 npm 的 `alpha` tag 上，`latest` 仍是
+`0.1.0-alpha.0`，没有稳定版。`dsh-rayrun-computer@1.2.1` 在 `latest`。安装不是
+不带版本的 `npm install`：用一条 `dsh plugin --profile web add` 同时装这两个
+版本，然后重启 DSH。只装 bots 包不会启用云电脑 bundle。命令和限制见根 README，
+事实以 [12-status.md](12-status.md) 为准（2026-11-25）。开发或离线仍可从 checkout
+安装。
 
 ## 我的数据会被上传到什么地方吗？
 
