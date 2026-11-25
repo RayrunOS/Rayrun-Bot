@@ -1,6 +1,6 @@
 {
   "name": "dsh-rayrun-bots",
-  "version": "0.1.1-alpha",
+  "version": "0.1.1-alpha.1",
   "description": "Rayrun cloud bots for DeepSeek Harness: named bots that live on your own Rayrun cloud computer, run on your DeepSeek key, and come back for approvals.",
   "license": "MIT",
   "type": "module",
