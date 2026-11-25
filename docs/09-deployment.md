@@ -299,8 +299,9 @@ Release），不在本 workflow 里；`alpha` 当前是 `0.1.1-alpha.1`，`lates
 1. `npm pack` 当前插件；
 2. 按 `RAYRUN_DEPLOY_SANDBOX_NAME`（默认 `dsh-ci-deploy`）查找 non-Terminated
    sandbox；没有则用 `POST /sandboxes` 创建：默认镜像 `deepseek-harness@1`、
-   2 vCPU / 4 GB、`remote_desktop: true`、`max_lifetime_seconds: 7200`，不传
-   credential；已有 stopped/paused sandbox 会 start/resume；计费从 Running 开始；
+   2 vCPU / 4 GB、`remote_desktop: true`、`max_lifetime_seconds: 7200`，
+   `egress_allow: ['registry.npmjs.org']`，不传 credential；已有 stopped/paused
+   sandbox 会 start/resume；计费从 Running 开始；
 3. 上传 tarball 到 `/workspace/pkgs/`；
 4. `dsh plugin --profile web add` 安装，停 `rayrun-desktop`，重启 `dsh web`
    （绑定沙盒 IP:6080，`--trusted-host` / `--public-url` 用公网 6080 ingress）；

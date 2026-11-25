@@ -129,6 +129,7 @@ async function createSandbox(name) {
       memory_mb: MEMORY_MB,
       remote_desktop: true,
       max_lifetime_seconds: 7200,
+      egress_allow: ['registry.npmjs.org'],
     },
   })
   const created = machineFrom(body)
