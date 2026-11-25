@@ -195,7 +195,7 @@ Continue、pause/resume → 下一轮结果 context）；云端凭据动作仍�
 
 ### 4.1 文件控制通道语义（P1）
 
-今天：用 workspace 文件做审批/控制邮箱，每 3 秒轮询。
+今天：用 workspace 文件做审批/控制邮箱，每 1 秒轮询。
 
 需要：原子写/rename 语义、下载 revision/ETag、list 分页、文档化限流；或下面的消息
 通道。

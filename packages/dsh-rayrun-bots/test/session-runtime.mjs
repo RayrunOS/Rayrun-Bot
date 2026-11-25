@@ -10,13 +10,17 @@ import path from 'node:path'
 import { openBotStore } from '../lib/bots.js'
 import { ERROR_CODES } from '../lib/errors.js'
 import {
-  HISTORY_MAX_LIMIT, MESSAGE_MAX_BYTES, QUEUE_MAX, openSessionRunner, openSessionStore,
+  DEFAULT_DETACHED_POLL_MS, HISTORY_MAX_LIMIT, MESSAGE_MAX_BYTES, QUEUE_MAX, openSessionRunner, openSessionStore,
 } from '../lib/sessions.js'
 
 const errors = []
 const checks = []
 const check = (name, fn) => checks.push({ name, fn })
 const roots = []
+
+check('detached polling defaults to one second', () => {
+  assert.equal(DEFAULT_DETACHED_POLL_MS, 1000)
+})
 
 function setup(handler) {
   const root = mkdtempSync(path.join(tmpdir(), 'rayrun-bots-session-'))

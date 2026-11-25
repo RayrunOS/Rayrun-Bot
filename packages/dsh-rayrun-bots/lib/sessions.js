@@ -600,15 +600,17 @@ export function openSessionStore(stateRoot) {
  * runtime fails the send before anything is queued, so the page never gets a
  * fake reply. A failure after queueing becomes a `failed` session with a
  * redacted system line; the next send resumes the remaining queue.
- * @param {{ stateRoot: string, runtime: object, getBot: (id: string) => object, logger?: object }} options
+ * @param {{ stateRoot: string, runtime: object, getBot: (id: string) => object, logger?: object, detachedPollMs?: number }} options
  */
-export function openSessionRunner({ stateRoot, runtime, getBot, logger, detachedPollMs = 3000 } = {}) {
+export const DEFAULT_DETACHED_POLL_MS = 1000
+
+export function openSessionRunner({ stateRoot, runtime, getBot, logger, detachedPollMs = DEFAULT_DETACHED_POLL_MS } = {}) {
   if (typeof getBot !== 'function') throw new TypeError('getBot is required.')
   const store = openSessionStore(stateRoot)
   store.recover()
   const active = new Map()
   const detachedPolls = new Map()
-  const pollDelay = Number.isInteger(detachedPollMs) && detachedPollMs > 0 ? detachedPollMs : 3000
+  const pollDelay = Number.isInteger(detachedPollMs) && detachedPollMs > 0 ? detachedPollMs : DEFAULT_DETACHED_POLL_MS
 
   function detachedCapable() {
     return runtime.available === true

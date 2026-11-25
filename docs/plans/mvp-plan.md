@@ -53,7 +53,7 @@ Alpha 第一天我们必须能录下来的演示：
 
 A6/A7 中“本地 typed 动作”已由 ADR-019 解阻；云端凭据动作仍受 [08 §3.3](../08-integration.md)
 限制，云提案 bridge、start/stop、denial/Continue 与下一轮 context 已 live；它们仍是签收
-标准。
+标准。2026-11-25 的逐项证据与缺口见 [`v0.1-acceptance.md`](v0.1-acceptance.md)。
 
 A1–A12 之后的 alpha 门：10–20 名种子用户；首个 bot 成功率 ≥ 80%；第 2 周留存 ≥ 40%；
 零计费投诉。这些是信号，不是发布门。
@@ -211,7 +211,7 @@ spike S6 决定。
 | C2 | 启动 + 握手 | `exec` 启动、pid/state、首次心跳 | C1 | 1 | host 无需手工 shell 就能启动 |
 | C3 | 队列 worker | FIFO、单飞、重试/退避 | C2 | 2 | 第二个项等待，绝不丢弃 |
 | C4 | DSH 调用 | 按 S1 策略：prompt 进，stream 出 | C3 | 2 | 任务 → session 里的回复 |
-| C5 | Inbox/outbox 轮询 | 3 秒轮询、游标、去重 | C3 | 1.5 | 消息往返 < 5 秒 |
+| C5 | Inbox/outbox 轮询 | 1 秒轮询、游标、去重 | C3 | 1.5 | 消息往返 < 5 秒 |
 | C6 | Watchdog | 本地 `exec` 在心跳缺失时重启 | C2 | 1 | 被杀 host 60 秒内回来 |
 | C7 | 健康与状态 | 心跳 → `host/state.json` → 名册状态 | C2 | 1 | 聊天列表显示 needs-attention / working / idle |
 | C8 | 恢复 | 重启后重读队列和审批状态 | C3 | 1.5 | 杀死 host 不丢工作 |
