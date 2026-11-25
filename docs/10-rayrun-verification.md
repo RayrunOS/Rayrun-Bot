@@ -452,6 +452,21 @@
   token 文件删除，路由恢复走 VPN。此前同路径用 alpha.1 之前的 `0.1.1-alpha`
   tarball 复现了 stale `stopped` 冷启动失败（约 3 秒 `E_RUNTIME_UNAVAILABLE`），
   手工替换 `lib/cloud-host-runtime.js` 后才通过；alpha.1 是修复后的正式发布产物。
+- 生产多 bot 单 host（2026-11-25，同一 clean alpha.1 安装）：`rayrun-bot-prod-e2e`
+  从 Stopped 启动，两个 bot 并发发送；session 均为 `running → idle`，约 14.1 秒，
+  transcript 分别为 user + bot `MULTI_A_OK` / `MULTI_B_OK`；`runtime.list` 只有一个
+  `bot-host`（running，pid 636）。测试后 bot 删除、runtime 删除、机器 Stopped、
+  未 destroy。
+- 干净 npm 安装的浏览器与审批（2026-11-25，同一 clean alpha.1 安装，本机 Firefox
+  + geckodriver 0.37.1，headless）：在真实 Bots 页面通过 New bot 表单创建
+  `Browser Golden`，发送后页面和 transcript 都得到 `BROWSER_OK`，session `idle`。
+  云 bot 提出 `rayrun.machine.pause`：审批卡 pending；Deny 后卡片显示
+  `Denied. Nothing was executed.`，机器保持 Running；另一次提案点击 Allow once，
+  卡片显示 `Approved and executed on your local side.`，本地 executor 执行 pause，
+  机器 Paused、execution `done`。测试后机器 resume → Stopped、runtime 删除、bot
+  删除；截图 `/tmp/bot/browser-golden.png`、`browser-approval-pending.png`、
+  `browser-approval-denied.png`、`browser-approval-allow-pending.png`、
+  `browser-approval-allowed.png`（临时文件，不入库）。
 - 打包产物安装（2026-11-22，本机 DSH `0.2.2-rc.5`；本地打包检查）：`npm pack` 生成
   15 个文件的 tarball（host/client、locale、`lib/*.js`、bundle patch、icon、README、
   LICENSE；54.6 kB），`test/`、`docs/`、`tools/` 未进入；`dsh plugin --profile

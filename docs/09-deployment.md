@@ -100,7 +100,7 @@ bot 的审批卡已接 host；示例 bot 卡片和设置仍是页内预览。本
 云电脑（没有机器时拒绝自动创建）；1.0.x 回退单轮 `rayrun_agent`；两者都不可用时
 `session.send` 返回 `E_RUNTIME_UNAVAILABLE`。依赖 1.2+ 另有 host-side `runtime.*`
 client（`lib/runtime-rpc.js`），cloudHost 预览用它在机器上注册常驻 `bot-host`；
-默认关闭，启用后 `session.*` 走该 adapter（多 bot 单 host 已 dev E2E 通过），未启用
+默认关闭，启用后 `session.*` 走该 adapter（dev 与生产两 bot 单 host 已通过），未启用
 时仍走 detached/agent。发送一轮会让依赖启动已停止/暂停的机器，
 可能产生机时费用。真实一轮（单轮 adapter）、detached 的页面关闭 + 本地 DSH 重启后
 继续，以及机器 stop/start 后的第二轮续接（A8），已在本机页面 + 已有 Rayrun 机器验证
@@ -156,7 +156,7 @@ npm 归属与发布账号仍未定（[`plans/mvp-plan.md`](plans/mvp-plan.md) §
 
 ---
 
-## 4. v0.1 目标三分钟路径（RPC 已验证；浏览器待验收）
+## 4. v0.1 目标三分钟路径（RPC 与浏览器已验证）
 
 1. 用一条命令安装两个包（S6 已验证；`dsh-rayrun-bots@0.1.1-alpha.1` 在 `alpha`
    tag，依赖 `1.2.1` 在 `latest`）。
@@ -220,7 +220,8 @@ adapter 先解析已有机器，机器不存在时拒绝；由于 `rayrun_files`
 `autoCreate` 处理缺失机器，Bots 用 profile 建议把云电脑行设为 `autoCreate: false`。
 一台机器一个 `bot-host` runtime，内部是全局串行队列，每个 bot 独立 transcript/session；2026-11-23 手动机器路径的页面 E2E 已通过
 （`HOST_E2E_OK`）；自动 projection 页面 E2E 也已通过；多 bot 单 host 的页面 E2E 已通过
-（`MULTI_A_OK`/`MULTI_B_OK`，两个独立 session）；生产镜像未做。cloudHost 的 prompt
+（`MULTI_A_OK`/`MULTI_B_OK`，两个独立 session）；生产镜像 `dsh-bot@1` 已发布，
+生产两 bot 单 host 于 2026-11-25 通过。cloudHost 的 prompt
 会让 bot 在回复末尾输出结构化 `rayrun-approval` block，cloud host 解析后写 proposal
 （`propose.mjs` 是可选 shell 路径）；本地 approval bridge 通过 `rayrun_files` 导入并
 去重，结果写回 `approval-results/`（机器停机时先落本地 outbox）。真实 cloud proposal

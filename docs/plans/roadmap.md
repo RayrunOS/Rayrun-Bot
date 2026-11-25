@@ -5,12 +5,12 @@
 仓库的产品调研；它们是方向，不是承诺。v0.1 客户端壳、health 路由、持久化本地名册
 和按轮次的 runtime（依赖 1.1+ 用 detached，1.0.x 用单轮 `rayrun_agent`）已经存在；
 常驻云端 runtime 与 bot↔云端 session 映射已在生产完成单 bot cloudHost 聊天和
-routine E2E；多 bot 单 host 仍只有 dev 页面 E2E。本地 typed 审批执行（机器
+routine E2E，两 bot 单 host 也已通过。本地 typed 审批执行（机器
 start/stop/pause/resume）与云提案 bridge 已有预览；真实 cloud proposal、
 start/stop/pause/resume、denial/Continue 与下一轮 context 已 live。本地最小
 routines 与 cloudHost 云端调度已实现，生产单 bot routine E2E 已通过。干净 npm
-安装（`0.1.1-alpha.1`）已跑通一轮 cloudHost；尚未完成该安装产物的浏览器与审批
-验收，也尚未完成生产多 bot 单 host 验收。实现状态以
+安装（`0.1.1-alpha.1`）已跑通 cloudHost、真实浏览器 golden 与审批 Deny/Allow。
+v0.1 的主要验收路径已打通；剩余是稳定版决策和更广动作集。实现状态以
 [12-status.md](../12-status.md) 为准。日期刻意省略。*
 
 ## 我们在哪（M0 — bootstrap）
@@ -41,8 +41,8 @@ routines 与 cloudHost 云端调度已实现，生产单 bot routine E2E 已通�
   映射在 DSH 重启后仍然存在，而不是住在 host 内存里。
 - **机器上的常驻 DSH host。** 把“每个 prompt 跑一次 `headless`”换成受监督的 host，
   让 bot 在笔记本合上后继续工作。平台 R-G008 runtimes API 已实现并本机 dev 全量
-  验收通过，2026-11-24 已部署生产（`5c2ff48`）；hosted 单 bot cloudHost 聊天和
-  routine E2E 已通过。接下来是在同一生产 host 上验证多 bot 隔离。
+  验收通过，2026-11-24 已部署生产（`5c2ff48`）；hosted 单 bot cloudHost 聊天、
+  routine E2E 和两 bot 单 host 均已通过。
 - **Fail-closed 审批。** 云端 proposal → 本地 host 的决定/执行 claim → 浏览器卡片。
   超时、未知或面板关闭都算拒绝。ADR-019 首版允许本地执行机器 start/stop/pause/
   resume；云端凭据动作仍等待平台 host/agent 隔离（ADR-001）；云提案 bridge、
@@ -142,7 +142,8 @@ profile 持久化、完整品牌化或 analytics 让 B1 不够时才作为升级
   `4709ac0`），2026-11-24 已部署生产（`5c2ff48`）；session 由 bot host 写
   `/workspace`，host 资产已进包（`cloud-host/`），projection 页面 E2E 已通过；
   hosted 生产 cloudHost 聊天 E2E 已通过（`PROD_OK`，2026-11-24），生产 routine
-  E2E 已通过（`CLOUD_ROUTINE_PROD_OK`，2026-11-24）；生产多 bot 单 host 尚未执行；
+  E2E 已通过（`CLOUD_ROUTINE_PROD_OK`，2026-11-24）；生产两 bot 单 host 已通过
+  （2026-11-25）；
 - host/agent 权限隔离与 host-only 审批端点（ADR-001：云端凭据动作）。平台答复
   （2026-11-22）：同沙箱不可行，平台端点非首版；host/agent 分域路径需要本项目新
   ADR；本地 typed 审批执行已按 ADR-019 走本地路径，云端凭据动作仍无执行；
