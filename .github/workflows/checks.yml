@@ -112,9 +112,10 @@ jobs:
 
   deploy:
     name: deploy to Rayrun sandbox
-    # Only main pushes and manual runs deploy; PRs and feature branches never
-    # receive the Rayrun token. Missing configuration skips the job.
-    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
+    # Temporarily disabled: the CI-created Rayrun sandbox deployment is paused
+    # while the sandbox egress/bootstrap issue is being resolved. Keep the job
+    # and its script in the tree for an easy restore.
+    if: false
     needs: [checks, dsh-plugin]
     runs-on: ubuntu-latest
     timeout-minutes: 15

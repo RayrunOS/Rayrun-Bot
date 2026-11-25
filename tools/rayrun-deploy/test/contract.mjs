@@ -1,9 +1,10 @@
 /**
  * Rayrun deploy contract.
  *
- * The deploy job is the only CI path that receives a real Rayrun token. Keep
- * it main-only, serialized, dependent on the checks, and free of the tokenized
- * DSH URL in logs. The packed URL lives in the sandbox at mode 600.
+ * The deploy job is the only CI path that would receive a real Rayrun token.
+ * It is temporarily disabled while the sandbox bootstrap/egress issue is
+ * resolved. Keep its script, serialization and secret handling intact for an
+ * easy restore; the tokenized DSH URL must never appear in logs.
  *
  *   node tools/rayrun-deploy/test/contract.mjs
  */
@@ -18,10 +19,11 @@ const deploy = readFileSync(path.join(root, '.github/scripts/deploy-rayrun.mjs')
 
 assert.match(workflow, /^  deploy:$/m, 'missing deploy job')
 assert.match(workflow, /needs: \[checks, dsh-plugin\]/, 'deploy must wait for both check matrices')
-assert.match(
+assert.match(workflow, /if: false/, 'deploy job must stay temporarily disabled')
+assert.doesNotMatch(
   workflow,
   /if: \(github\.event_name == 'push' && github\.ref == 'refs\/heads\/main'\) \|\| github\.event_name == 'workflow_dispatch'/,
-  'deploy must be main-only or manually dispatched',
+  'deploy must not be re-enabled until the sandbox bootstrap issue is resolved',
 )
 assert.match(workflow, /secrets\.RAYRUN_TOKEN/, 'deploy token must come from an Actions secret')
 assert.doesNotMatch(workflow, /vars\.RAYRUN_SANDBOX_ID/, 'deploy must create its own sandbox, not require a fixed id')

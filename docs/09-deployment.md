@@ -290,9 +290,10 @@ Release），不在本 workflow 里；`alpha` 当前是 `0.1.1-alpha.1`，`lates
 发行包（bootstrap 安装器），B2 整包更新是升级路径；见
 [`design/desktop-distribution.md`](design/desktop-distribution.md)。
 
-### 7.1 自动部署到 Rayrun 沙盒（可选）
+### 7.1 自动部署到 Rayrun 沙盒（可选，暂时停用）
 
-`.github/workflows/checks.yml` 的 `deploy` job 在 push 到 main（且
+`.github/workflows/checks.yml` 的 `deploy` job 目前是 `if: false`，不会触发
+sandbox 部署；下面的流程保留为脚本和恢复参考。它恢复后在 push 到 main（且
 `packages/dsh-rayrun-bots/**` 有变更）或手动 `workflow_dispatch` 时运行，必须等
 `checks` 和 `dsh-plugin` 两个矩阵通过。它：
 

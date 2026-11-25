@@ -333,12 +333,12 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
 - IM 通道。
 - 稳定版发布：当前只有 `0.1.1-alpha.1`（npm `alpha` tag）；`latest` 仍是旧的
   `0.1.0-alpha.0`，需要单独的稳定版发布决策。
-- CI 可选 main-only deploy job：2026-11-25 更新 `RAYRUN_TOKEN` 后 401 已消失；旧
-  `RAYRUN_SANDBOX_ID` 指向的 `dsh-desktop-build` 已 Terminated，因此 deploy 曾以
-  `sandbox is Terminated; it cannot be started automatically` 失败。deploy 脚本已
-  改为按 `RAYRUN_DEPLOY_SANDBOX_NAME`（默认 `dsh-ci-deploy`）查找或创建
-  `deepseek-harness@1` sandbox，验证后 stop、不 destroy；本地 contract 与 mock API
-  流程测试通过，GitHub Actions 实跑待 push 后确认。npm 发布和普通测试不受影响。
+- CI deploy job **暂时停用**（`if: false`）：2026-11-25 两次真实运行已证明 token、
+  创建/复用 sandbox、启动、上传和 stop 生效。第一次创建 `dsh-ci-deploy` 后因镜像
+  PATH 没有 pnpm 失败；第二次创建带 `egress_allow: ['registry.npmjs.org']` 的
+  `dsh-ci-deploy-2`，pnpm 下载仍 `ENOTFOUND`。两次 sandbox 都已 Stopped、未
+  destroy；脚本和契约保留，解决 sandbox bootstrap/egress 后再恢复 deploy。
+  npm 发布、普通测试和 checks 不受影响。
 
 ## 5. 平台缺口
 

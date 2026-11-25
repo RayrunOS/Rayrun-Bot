@@ -161,7 +161,7 @@ node tools/rayrun-deploy/test/contract.mjs
 - 绝不为了让改动通过而削弱或删除安全测试；修行为，或说明为什么测试本身错了。
 - 实时集成测试需要真实 Rayrun 凭据，绝不在 CI 运行。
 - 页面变更只做语法/契约检查不算打通；v0.1 没有浏览器测试框架，手工 golden path 见 `docs/plans/client-plan.md`。
-- CI（`.github/workflows/checks.yml`）在 push/PR 上跑语法检查、所有 `test/*.mjs`、更新内核原型的测试和 Rayrun 部署契约。push 到 main 的可选 `deploy` job 只在配置了 `RAYRUN_TOKEN` 且 `packages/dsh-rayrun-bots/**` 有变更时运行；它使用真实 Rayrun token 按名称复用或创建一个 disposable sandbox，部署验证后 stop（绝不 destroy），只做部署，不做集成测试，也不是 npm publish。PR/fork 不运行该 job。
+- CI（`.github/workflows/checks.yml`）在 push/PR 上跑语法检查、所有 `test/*.mjs`、更新内核原型的测试和 Rayrun 部署契约。可选 `deploy` job 目前**暂时停用**（`if: false`）：它曾按名称复用或创建 disposable sandbox，部署验证后 stop（绝不 destroy）；脚本和契约保留，解决 sandbox bootstrap/egress 后再恢复。它只做部署，不做集成测试，也不是 npm publish；PR/fork 永远不运行部署。
 - `.github/workflows/publish.yml` 不在 push/PR 上运行。只有 GitHub Release `published` 会发布 `packages/dsh-rayrun-bots`；`workflow_dispatch` 是 dry run。不要把 npm publish 加进 `checks.yml`，也不要配置 `NPM_TOKEN` 或 `NODE_AUTH_TOKEN`。
 
 **“完成”的标准：**
