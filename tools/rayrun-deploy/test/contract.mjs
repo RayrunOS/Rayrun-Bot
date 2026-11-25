@@ -35,6 +35,7 @@ assert.doesNotMatch(deploy, /RAYRUN_SANDBOX_ID/, 'deploy must not depend on the 
 assert.match(deploy, /POST', '\/sandboxes'/, 'deploy must create a sandbox through the Rayrun API')
 assert.match(deploy, /remote_desktop: true/, 'deploy sandbox must expose a desktop ingress')
 assert.match(deploy, /deepseek-harness@1/, 'deploy sandbox must use a DSH image')
+assert.match(deploy, /pnpm@10/, 'deploy must bootstrap pnpm when the image does not provide it')
 assert.match(deploy, /\/stop`/, 'deploy must stop the sandbox after the check')
 assert.doesNotMatch(deploy, /\/destroy/, 'deploy must never destroy a sandbox')
 assert.match(deploy, /dsh-web-url\.txt/, 'deploy must write the tokenized URL to the sandbox')
