@@ -1,6 +1,6 @@
 # 12 — 实现状态
 
-> 状态：2026-11-24。本文是 Rayrun Bot **实现状态的唯一事实源**。根 `README.md` 是
+> 状态：2026-11-25。本文是 Rayrun Bot **实现状态的唯一事实源**。根 `README.md` 是
 > 营销页，不承载状态，也不作为事实依据；其他文档提到“今天能做什么、验证到哪一步”
 > 时以本文为准。验证证据见 [`10-rayrun-verification.md`](10-rayrun-verification.md)
 > 与 [`version-matrix.md`](version-matrix.md)；计划与验收标准见
@@ -8,7 +8,7 @@
 
 ## 1. 一句话状态
 
-Pre-alpha。`dsh-rayrun-bots@0.1.1-alpha` 已通过 `publish.yml` 发布到 npm，`alpha`
+Pre-alpha。`dsh-rayrun-bots@0.1.1-alpha.1` 已通过 `publish.yml` 发布到 npm，`alpha`
 dist-tag 指向它；`latest` 仍是手动发布的 `0.1.0-alpha.0`，没有稳定版。本项目依赖的
 云电脑插件
 [`RayrunOS/dsh-rayrun-computer`](https://github.com/RayrunOS/dsh-rayrun-computer)
@@ -65,7 +65,7 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
 | 用量 | 详情面板的电脑块和用量块，以及 Settings 的用量行，读取真实机器状态、余额与机时。 |
 | 测试 | Host/client 名册接线、session/transcript、`rayrun_agent`/detached adapter、per-bot workspace 与审批协议由普通 Node 契约测试覆盖；客户端 session 失败路径、单轮真实一轮、页面关闭 + host 重启后的 detached 收取，以及机器 stop/start 后的第二轮续接另有本机页面 smoke。包清单、locale、RPC、客户端、名册、session、runtime、workspace、审批和 tarball 内容都有检查；cloud host 8 项、cloud host routines 8 项、DSH agent 5 项、host projection 5 项、runtime.* client 5 项、cloud host runtime adapter 15 项、cloud host proposal 5 项、approval executor 7 项、cloud approval bridge 6 项、routines 16 项、cloud routine bridge 7 项、cloud routine E2E 1 项、routine results 6 项纯 Node 检查，runtime.* client 与 cloud host 另有 dev live 联调，cloudHost adapter 另有页面 E2E（手动、自动 projection 与多 bot 单 host），审批卡另有拒绝/失败关闭与 Continue 按钮的页面 E2E。Routine 页面另做本地 DSH + Firefox smoke：真实表单创建、暂停、删除并写入 routines.json（2026-11-23，无 Rayrun token），截图 `/tmp/bot/routines-ui.png`（临时文件，不入库）；本地 mode 尚未等待一次 scheduler 自动触发；cloudHost mode 的 dev live E2E 已通过（2026-11-24，见 §3.1）。 |
 | 审批执行 | 协议后端（request/decision schema、canonical actionHash、TTL、幂等/重放/错 bot 负向测试、审计、`approvals.list/get/decide/propose/sync`）已实现。ADR-019（2026-11-23）把本地 DSH host 定为本地 typed 动作的审批权威与执行方：`approvals.decide` 批准后由本地 executor 执行 `rayrun.machine.start/stop/pause/resume`，先写 `executing` claim，拒绝/过期/重放/崩溃 claim 失败关闭；客户端真实卡片已接。云端 proposal bridge 已接并 live 验证：云 bot 在回复末尾输出结构化 `rayrun-approval` block，cloud host 解析后写 proposal（`propose.mjs` 保留为可选 shell 路径），本地用 `rayrun_files` 导入并去重，结果写回 `approval-results/`；机器停机时结果先落本地 outbox，下次 Running 补传。start/stop/pause/resume、denial、Continue 均真机通过。下一轮 prompt 会带最近审批结果，bot 无工具直接回答 approved/done/Running 或 denied/not_executed。本地 routine 轮次会把 `origin: routine` 传到 cloud task，云端提案标为 background 并沿用 30 分钟 TTL。其他动作和云端凭据动作仍未完成；平台隔离仍用于云端凭据（ADR-001）。`rayrun_agent` adapter 不拦截外部动作，prompt 指引不是安全边界。 |
-| 发布 | `dsh-rayrun-bots@0.1.1-alpha` 已通过 `publish.yml` 从 `v0.1.1-alpha` GitHub Prerelease 发布（OIDC，run `45520396429`，`_npmUser=GitHub Actions`）；npm `alpha` tag 指向 0.1.1-alpha，`latest` 仍是手动发布的 0.1.0-alpha.0（prerelease 不移动 latest，符合 workflow 契约）。依赖 `dsh-rayrun-computer@1.2.1` 已发布 npm（latest）。一条 `dsh plugin add` 安装两个包的路径已用官方 registry 验证：两个 bundle 都被选中、两个插件都加载、health `ok`。只安装 bots 包即使声明依赖也不会启用依赖 bundle。 |
+| 发布 | `dsh-rayrun-bots@0.1.1-alpha.1` 已通过 `publish.yml` 从 `v0.1.1-alpha.1` GitHub Prerelease 发布（OIDC，run `45522791512`，`_npmUser=GitHub Actions`）；npm `alpha` tag 指向 0.1.1-alpha.1，`latest` 仍是手动发布的 0.1.0-alpha.0（prerelease 不移动 latest，符合 workflow 契约）。依赖 `dsh-rayrun-computer@1.2.1` 已发布 npm（latest）。一条 `dsh plugin add` 安装两个包的路径已用官方 registry 验证：两个 bundle 都被选中、两个插件都加载、health `ok`。只安装 bots 包即使声明依赖也不会启用依赖 bundle。2026-11-25 用官方 registry 从 alpha.1 tarball 干净安装并跑通一轮 cloudHost（`GOLDEN_OK`，约 10.0 秒），未手工修改安装包。 |
 
 ### 3.1 验证记录
 
@@ -258,6 +258,15 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
   回答 `ALPHA`；host 两轮 `HOST1_OK` → `BETA`，session id 持久化。`dsh.start`
   在 devcheck 镜像上的空 `reply.md` 是镜像 oneshot manifest 为 `/bin/sh -c` 导致
   （R-G014），不是依赖 bug。
+- 干净 npm 安装 golden path（2026-11-25，本机 DSH `0.2.2-rc.5`，官方 registry）：
+  临时 `DSH_HOME` 加 web-app 后一条 `dsh plugin add dsh-rayrun-computer@1.2.1
+  dsh-rayrun-bots@0.1.1-alpha.1` 完成安装，两个 bundle 都被选中；health 报
+  `version=0.1.1-alpha.1`、依赖 `1.2.1` ok、runtime available。对 Stopped 的
+  `rayrun-bot-prod-e2e` 发送一轮，session `running → idle`，约 10.0 秒，transcript
+  为 user `GOLDEN…` + bot `GOLDEN_OK`，host runtime running pid 635；测试后 runtime
+  删除、runtimes=[]、机器 Stopped、未 destroy。安装包来自 npm tarball，未手工修改。
+  此前同一路径的 `0.1.1-alpha` 会因上一轮 host 留下的 stale `stopped` 状态在约
+  3 秒内以 `E_RUNTIME_UNAVAILABLE` 失败；alpha.1 是该缺陷的补丁发布。
 - 本地 cloud host transport adapter（2026-11-23，`lib/cloud-host-runtime.js`，预览）：
   通过 `runtime.*` 确保机器/runtime，`rayrun_files` 上传 inbox/读取 outbox，映射到
   `session.*`；fake 测试 15/15（机器 start/resume、runtime 复用、projection、并发 bot 共享 setup、无 token/无机器/无文件工具失败
@@ -319,7 +328,7 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
   `.gitignore` 忽略，且从未进入 git 历史或 npm 包，但仍留在工作区；需轮换并
   移出/删除后才能声称 A11 通过。扫描未打印任何值。
 - IM 通道。
-- 稳定版发布：当前只有 `0.1.1-alpha`（npm `alpha` tag）；`latest` 仍是旧的
+- 稳定版发布：当前只有 `0.1.1-alpha.1`（npm `alpha` tag）；`latest` 仍是旧的
   `0.1.0-alpha.0`，需要单独的稳定版发布决策。
 
 ## 5. 平台缺口

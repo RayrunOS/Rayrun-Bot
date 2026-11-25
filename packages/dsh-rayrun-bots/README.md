@@ -174,9 +174,10 @@ point it at `packages/dsh-rayrun-bots`, or use the `plugin_manager`
 the client half loads when the page starts.
 
 The cloud-computer dependency (`dsh-rayrun-computer`) is **not declared as a
-package dependency yet**: whether one bundle can declare it so one install brings
-both is spike S6. Until then a user installs both plugins separately; the host
-detects the installed version at runtime and reports it through health.
+package dependency**: install both packages in one `dsh plugin add` command so
+both bundles are selected. Installing only this package does not activate the
+dependency's bundle. The host detects the installed version at runtime and
+reports it through health.
 
 Install the packed artifact instead of the checkout:
 

@@ -54,10 +54,11 @@ tarball `gitHead=3604e33`，包含 prompt-root 与测试 mock 修复；`1.2.0` �
 | `0.2.2-rc.5`（本机）/ `0.2.0-rc.2`（镜像 `dsh-bot@1`） | `1.2.0`（main `956d595`，未发布 npm） | `0.1.0-alpha.0`（cloudHost runtime adapter + `cloud-host/` assets） | 24.22 + Rayrun hosted prod | hosted prod 新 sandbox `rayrun-bot-prod-e2e`（guestd 0.6.0）冷启动 → `bot-host` runtime running pid 636 → bot 回复 `PROD_OK`（约 12 秒）；runtime 删除、机器 Stopped、未 destroy | [`10-rayrun-verification.md`](10-rayrun-verification.md) §3.1（2026-11-24） |
 | `0.2.2-rc.5`（本机）/ `0.2.0-rc.2`（镜像 `dsh-bot@1`） | `1.2.0`（main `956d595`，未发布 npm） | `0.1.0-alpha.0`（cloudHost routine scheduler） | 24.22 + Rayrun hosted prod | 本地 DSH 在 due 前停止；云 host 于 14:48:16Z 产出 `CLOUD_ROUTINE_PROD_OK`；重启后 `routines.sync` imported=1，history 合并 routine user/bot；runtime 删除、机器 Stopped、未 destroy | [`10-rayrun-verification.md`](10-rayrun-verification.md) §3.1（2026-11-24） |
 | `0.2.2-rc.5` | `1.0.0` | `0.1.0-alpha.0` | 24 + Rayrun 沙盒 | 云端 ingress、`dsh web` 部署与 token URL | [`09-deployment.md`](09-deployment.md)、[`10-rayrun-verification.md`](10-rayrun-verification.md) §3.1 |
+| `0.2.2-rc.5`（本机）/ `0.2.0-rc.2`（镜像 `dsh-bot@1`） | `1.2.1`（npm） | `0.1.1-alpha.1`（npm，cloudHost adapter） | 24.22 + Rayrun hosted prod | 官方 registry 一条命令安装两包；临时 `DSH_HOME` health `version=0.1.1-alpha.1`；Stopped 机器 → `bot-host` pid 635 → `GOLDEN_OK`，约 10.0 秒；runtime 删除、机器 Stopped、未手动改包 | [`10-rayrun-verification.md`](10-rayrun-verification.md) §3.1（2026-11-25） |
 
 “未安装”表示该 CI 矩阵只验证 Bots 包本身能安装和合成，不验证依赖或云端行为。
 表中 `0.1.0-alpha.0` 与“未发布 npm”是当次验证时的状态；当前包版本是
-`0.1.1-alpha`，已通过 `publish.yml` 发布到 npm 的 `alpha` tag。`latest` 仍是旧的
+`0.1.1-alpha.1`，已通过 `publish.yml` 发布到 npm 的 `alpha` tag。`latest` 仍是旧的
 `0.1.0-alpha.0`，稳定版尚未发布。
 表中“机器 stop”是当次测试收尾动作；devcheck 的 `rayrun-bot`、`rayrun-bot-idle`、
 `rayrun-bot-scoped`、`rayrun-bot-coldstart` 与 botclean 的 `rayrun-bot-clean` 已于
@@ -65,7 +66,8 @@ tarball `gitHead=3604e33`，包含 prompt-root 与测试 mock 修复；`1.2.0` �
 
 依赖 main `956d595` 已移除 `worker_files_unavailable` 映射（来自依赖侧 live 测试
 脚本的 fetch mock 误拦截 `.../node_modules/dsh-rayrun-computer/...`，不是平台
-file API），CI Node 22/24 全绿；尚未 npm 发布；本仓库未采用该码的特殊重试。
+file API），CI Node 22/24 全绿；已包含在 npm `1.2.1`（`gitHead=3604e33`）；本仓库
+未采用该码的特殊重试。
 hosted `rayrun-bot-test` 在收窄 mock 后冷启动 8.8 秒成功（`REAL_FIX_OK`）；
 dev `rayrun-bot-coldstart` 冷启动成功（`COLD_OK`），后按用户授权 destroy。
 两台 hosted 测试机保留、保持 Stopped，清理待用户确认。2026-11-24 生产 daemon
@@ -86,7 +88,7 @@ S6（2026-11-24，本地 tarball）：`dsh plugin add` 一条命令安装两个�
 
 ## 3. 安装与打包检查
 
-`dsh-rayrun-bots@0.1.1-alpha` 已通过 `publish.yml` 发布到 npm（2026-11-25，`alpha` tag）；依赖
+`dsh-rayrun-bots@0.1.1-alpha.1` 已通过 `publish.yml` 发布到 npm（2026-11-25，`alpha` tag）；依赖
 `dsh-rayrun-computer@1.2.1` 也已发布（latest，`gitHead=3604e33`，含
 prompt-root/mock 修复）。`1.2.0` 的 npm tarball 来自较旧的 `fe965c1`，不要再用。
 本机默认 registry 是 npmmirror，可能滞后；安装验证用
@@ -97,7 +99,7 @@ prompt-root/mock 修复）。`1.2.0` 的 npm tarball 来自较旧的 `fe965c1`�
 ```bash
 npm_config_registry=https://registry.npmjs.org \
   dsh plugin --profile web add \
-  dsh-rayrun-computer@1.2.1 dsh-rayrun-bots@0.1.1-alpha
+  dsh-rayrun-computer@1.2.1 dsh-rayrun-bots@0.1.1-alpha.1
 ```
 
 从 checkout/tarball 安装（开发/离线）：
@@ -108,7 +110,7 @@ dsh plugin --profile web add /absolute/path/to/packages/dsh-rayrun-bots
 
 # tarball（发布产物的内容）
 npm pack ./packages/dsh-rayrun-bots --pack-destination /tmp
-dsh plugin --profile web add /tmp/dsh-rayrun-bots-0.1.1-alpha.tgz
+dsh plugin --profile web add /tmp/dsh-rayrun-bots-0.1.1-alpha.1.tgz
 ```
 
 `node packages/dsh-rayrun-bots/test/package-contents.mjs` 用
@@ -116,8 +118,8 @@ dsh plugin --profile web add /tmp/dsh-rayrun-bots-0.1.1-alpha.tgz
 `cordis.patch.yml`、`lib/*.js`、`icon.svg`、README 和 LICENSE 必须在；`test/`、
 `docs/`、`tools/`、`node_modules/`、`.env` 和 `.tgz` 不得进入。
 
-发布前仍需决定 npm 归属与发布账号（[`plans/mvp-plan.md`](plans/mvp-plan.md) §11
-第 5 项），并配置 OIDC trusted publishing。在这之前不要创建会发布的 CI job。
+npm 归属与 OIDC trusted publishing 已配置；发布只走 `.github/workflows/publish.yml`
+的 Release 事件，`NPM_TOKEN` / `NODE_AUTH_TOKEN` 必须保持 absent。
 
 ## 4. 未验证
 
@@ -125,10 +127,9 @@ dsh plugin --profile web add /tmp/dsh-rayrun-bots-0.1.1-alpha.tgz
 - 依赖 1.1.0 发布到 npm 后安装（今天从 main `720f30a` checkout 验证）；同一
   host 不重启的连续两轮 detached；
 - 依赖 1.2.0 `runtime.*` 发布到 npm 后安装（今天从 main `fe965c1` checkout 验证）；
-- `dsh-rayrun-computer` 上 npm 与“一次安装带两个包”的依赖路径（S6）；
 - DSH `0.2.2-rc.5` 的 subprocess/terminal 完整安装路径（R-G005）；
 - 镜像 DSH `0.2.0-rc.2` 与本机/桌面 `0.2.2-rc.5` 的功能一致性（R-G007）；
-- 稳定版发布：`0.1.1-alpha` 已通过 `publish.yml` 从 `v0.1.1-alpha` Release 发布
+- 稳定版发布：`0.1.1-alpha.1` 已通过 `publish.yml` 从 `v0.1.1-alpha.1` Release 发布
   （npm `alpha` tag）；`latest` 仍是旧的 `0.1.0-alpha.0`，稳定版尚未发布。
 
 新增验证后更新本表；不要把未测试的组合写成已支持。

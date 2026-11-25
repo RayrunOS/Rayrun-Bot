@@ -37,15 +37,15 @@
 Rayrun Bot 不 vendor 云电脑层；它是独立项目、必需依赖。今天两个插件要装进同一个 DSH
 profile。S6 已验证（2026-11-24，本地 tarball）：**一条命令安装两个包**会同时选中
 两个 bundle；只安装 `dsh-rayrun-bots` 即使它声明依赖，也只会安装依赖包、
-不会自动启用依赖的 bundle。两个包都已发布到 npm：`dsh-rayrun-bots@0.1.1-alpha`
-（alpha/latest）和 `dsh-rayrun-computer@1.2.1`（latest，含 prompt-root/mock 修复；
-`1.2.0` 的 tarball 来自较旧的 `fe965c1`，不要再用）。本机 npmmirror 可能滞后，
-安装时可用官方 registry：
+不会自动启用依赖的 bundle。两个包都已发布到 npm：`dsh-rayrun-bots@0.1.1-alpha.1`
+（`alpha` tag；`latest` 仍是旧的 `0.1.0-alpha.0`）和 `dsh-rayrun-computer@1.2.1`
+（latest，含 prompt-root/mock 修复；`1.2.0` 的 tarball 来自较旧的 `fe965c1`，
+不要再用）。本机 npmmirror 可能滞后，安装时可用官方 registry：
 
 ```bash
 npm_config_registry=https://registry.npmjs.org \
   dsh plugin --profile web add \
-  dsh-rayrun-computer@1.2.1 dsh-rayrun-bots@0.1.1-alpha
+  dsh-rayrun-computer@1.2.1 dsh-rayrun-bots@0.1.1-alpha.1
 # 重启 DSH：client half 只在页面启动时加载
 ```
 
@@ -126,7 +126,7 @@ prompt 里的“先询问”只是指引。
 
 ```bash
 npm pack ./packages/dsh-rayrun-bots --pack-destination /tmp
-dsh plugin --profile web add /tmp/dsh-rayrun-bots-0.1.1-alpha.tgz
+dsh plugin --profile web add /tmp/dsh-rayrun-bots-0.1.1-alpha.1.tgz
 ```
 
 `node packages/dsh-rayrun-bots/test/package-contents.mjs` 用

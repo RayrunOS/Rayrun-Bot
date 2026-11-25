@@ -440,6 +440,18 @@
   machine.resume → Allow → done/Running，云端结果 approved/done。测试后 runtime
   删除、机器 stop，未 destroy；scoped token 已撤销。截图
   `/tmp/bot/approval-pause-resume.png`（临时文件，不入库）。
+- 干净 npm 安装 golden path（2026-11-25，本机 DSH `0.2.2-rc.5`，官方 registry）：
+  新建临时 `DSH_HOME`，先加 web-app，再用一条
+  `dsh plugin add dsh-rayrun-computer@1.2.1 dsh-rayrun-bots@0.1.1-alpha.1` 安装；
+  `package.json` 中两个 bundle 都被选中，安装版本为 `0.1.1-alpha.1`，安装文件含
+  `HOST_READY_ATTEMPTS`，未手工替换。health 返回 `version=0.1.1-alpha.1`、依赖
+  `1.2.1` status ok、runtime available。对 Stopped 的 `rayrun-bot-prod-e2e`
+  （`01a20dfd…`，`dsh-bot@1`）发送 `GOLDEN…`：session `running → idle`，约 10.0
+  秒，transcript 为 user + bot `GOLDEN_OK`，`bot-host` runtime running pid 635。
+  测试后 runtime 删除、runtimes=[]、机器 Stopped、未 destroy；临时 profile 和
+  token 文件删除，路由恢复走 VPN。此前同路径用 alpha.1 之前的 `0.1.1-alpha`
+  tarball 复现了 stale `stopped` 冷启动失败（约 3 秒 `E_RUNTIME_UNAVAILABLE`），
+  手工替换 `lib/cloud-host-runtime.js` 后才通过；alpha.1 是修复后的正式发布产物。
 - 打包产物安装（2026-11-22，本机 DSH `0.2.2-rc.5`；本地打包检查）：`npm pack` 生成
   15 个文件的 tarball（host/client、locale、`lib/*.js`、bundle patch、icon、README、
   LICENSE；54.6 kB），`test/`、`docs/`、`tools/` 未进入；`dsh plugin --profile
