@@ -3,18 +3,24 @@
  * Deploy dsh-rayrun-bots to a Rayrun sandbox.
  *
  * The CI workflow calls this after the checks on a main-branch push. It uses
- * the Rayrun API to ensure the sandbox is running, upload the packed plugin,
- * install it into the sandbox's DSH web profile, and restart `dsh web` on the
- * public 6080 ingress. The tokenized DSH URL is written to
- * `/workspace/dsh-web-url.txt` (mode 600) and is never printed; the Rayrun
- * token stays in the environment and never reaches the sandbox.
+ * the Rayrun API to reuse or create a disposable sandbox, ensure it is running,
+ * upload the packed plugin, install it into the sandbox's DSH web profile, and
+ * restart `dsh web` on the public 6080 ingress. The tokenized DSH URL is
+ * written to `/workspace/dsh-web-url.txt` (mode 600) and is never printed; the
+ * Rayrun token stays in the environment and never reaches the sandbox.
+ *
+ * The sandbox is stopped after the check, never destroyed. A maintainer can
+ * start it again or destroy it explicitly.
  *
  * Required environment:
  *   RAYRUN_TOKEN        Rayrun API token (GitHub Actions secret)
- *   RAYRUN_SANDBOX_ID   sandbox id with a public 6080 ingress (repo variable)
  *   PLUGIN_TARBALL      path to the npm-packed plugin
  * Optional:
  *   RAYRUN_API_URL      default https://api.rayrunos.com/v1
+ *   RAYRUN_DEPLOY_SANDBOX_NAME  default dsh-ci-deploy
+ *   RAYRUN_DEPLOY_AGENT         default deepseek-harness@1
+ *   RAYRUN_DEPLOY_CPU_CORES     default 2
+ *   RAYRUN_DEPLOY_MEMORY_MB     default 4096
  *   DEPLOY_LABEL        tarball suffix; the commit sha in CI
  */
 import { readFileSync } from 'node:fs'
@@ -22,13 +28,21 @@ import { basename } from 'node:path'
 
 const API_BASE = (process.env.RAYRUN_API_URL || 'https://api.rayrunos.com/v1').replace(/\/+$/, '')
 const TOKEN = String(process.env.RAYRUN_TOKEN || '').trim()
-const SANDBOX_ID = String(process.env.RAYRUN_SANDBOX_ID || '').trim()
+const SANDBOX_NAME = String(process.env.RAYRUN_DEPLOY_SANDBOX_NAME || 'dsh-ci-deploy')
+  .trim()
+  .replace(/[^A-Za-z0-9._-]/g, '-')
+  .replace(/^-+|-+$/g, '')
+  .slice(0, 40) || 'dsh-ci-deploy'
+const SANDBOX_AGENT = String(process.env.RAYRUN_DEPLOY_AGENT || 'deepseek-harness@1').trim()
+const CPU_CORES = Math.max(1, Number(process.env.RAYRUN_DEPLOY_CPU_CORES) || 2)
+const MEMORY_MB = Math.max(2048, Number(process.env.RAYRUN_DEPLOY_MEMORY_MB) || 4096)
 const TARBALL = String(process.env.PLUGIN_TARBALL || '').trim()
 const LABEL = String(process.env.DEPLOY_LABEL || `local-${Date.now()}`)
   .toLowerCase()
   .replace(/[^a-z0-9._-]/g, '')
   .slice(0, 24) || 'local'
 const TARBALL_NAME = `dsh-rayrun-bots-${LABEL}.tgz`
+let SANDBOX_ID = ''
 
 function fail(message) {
   console.error(`deploy failed: ${message}`)
@@ -36,7 +50,8 @@ function fail(message) {
 }
 
 if (!TOKEN) fail('RAYRUN_TOKEN is required')
-if (!/^[0-9a-fA-F-]{8,64}$/.test(SANDBOX_ID)) fail('RAYRUN_SANDBOX_ID is not a sandbox id')
+if (!/^[A-Za-z0-9._-]{1,40}$/.test(SANDBOX_NAME)) fail('RAYRUN_DEPLOY_SANDBOX_NAME is not a valid sandbox name')
+if (!/^[A-Za-z0-9._@-]{1,64}$/.test(SANDBOX_AGENT)) fail('RAYRUN_DEPLOY_AGENT is not a valid image name')
 if (!TARBALL) fail('PLUGIN_TARBALL is required')
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -88,6 +103,60 @@ async function waitForState(want, seconds) {
   throw new Error(`sandbox did not reach ${want} within ${seconds}s (last: ${last})`)
 }
 
+async function listSandboxes() {
+  const body = await jsonRequest('GET', '/sandboxes')
+  const list = Array.isArray(body)
+    ? body
+    : Array.isArray(body?.sandboxes)
+      ? body.sandboxes
+      : Array.isArray(body?.machines)
+        ? body.machines
+        : Array.isArray(body?.items) ? body.items : null
+  if (!list) throw new Error('GET /sandboxes did not return a sandbox list')
+  return list
+}
+
+function machineFrom(body) {
+  return body?.sandbox ?? body?.machine ?? body
+}
+
+async function createSandbox(name) {
+  const body = await jsonRequest('POST', '/sandboxes', {
+    json: {
+      name,
+      agent: SANDBOX_AGENT,
+      cpu_cores: CPU_CORES,
+      memory_mb: MEMORY_MB,
+      remote_desktop: true,
+      max_lifetime_seconds: 7200,
+    },
+  })
+  const created = machineFrom(body)
+  if (!created?.id) throw new Error('POST /sandboxes returned no sandbox id')
+  SANDBOX_ID = String(created.id)
+  console.log(`created sandbox ${created.name || name} (${SANDBOX_ID})`)
+}
+
+async function ensureSandbox() {
+  const sandboxes = await listSandboxes()
+  const existing = sandboxes.find((item) => (
+    (item?.name === SANDBOX_NAME || item?.name?.startsWith(`${SANDBOX_NAME}-`))
+    && item.status !== 'Terminated'
+  ))
+  if (existing?.id) {
+    SANDBOX_ID = String(existing.id)
+    console.log(`reusing sandbox ${existing.name || SANDBOX_NAME} (${SANDBOX_ID}): ${existing.status}`)
+  } else {
+    try {
+      await createSandbox(SANDBOX_NAME)
+    } catch (error) {
+      if (!/\b409\b|already|exists|duplicate/i.test(String(error?.message ?? error))) throw error
+      await createSandbox(`${SANDBOX_NAME}-${LABEL.slice(0, 8)}`)
+    }
+  }
+  return ensureRunning()
+}
+
 async function ensureRunning() {
   let machine = await getMachine()
   console.log(`sandbox ${machine.name || SANDBOX_ID}: ${machine.status}`)
@@ -102,24 +171,49 @@ async function ensureRunning() {
   } else if (machine.status !== 'Starting') {
     throw new Error(`sandbox is ${machine.status}; it cannot be started automatically`)
   }
-  machine = await waitForState('Running', 120)
+  machine = await waitForState('Running', 180)
   console.log(`sandbox ${machine.name || SANDBOX_ID}: Running`)
   return machine
 }
 
-function publicIngress(machine) {
-  const entry = (machine.ingress ?? []).find(
+async function stopSandbox() {
+  if (!SANDBOX_ID) return
+  const machine = await getMachine()
+  const status = String(machine.status || '')
+  if (status === 'Stopping') {
+    await waitForState('Stopped', 120)
+    console.log(`sandbox ${machine.name || SANDBOX_ID}: Stopped (not destroyed)`)
+    return
+  }
+  if (status === 'Running' || status === 'Paused' || status === 'Starting') {
+    await request('POST', `/sandboxes/${SANDBOX_ID}/stop`)
+    await waitForState('Stopped', 120)
+    console.log(`sandbox ${machine.name || SANDBOX_ID}: Stopped (not destroyed)`)
+    return
+  }
+  console.log(`sandbox ${machine.name || SANDBOX_ID}: ${status} (not destroyed)`)
+}
+
+async function publicIngress(machine) {
+  let entry = (machine.ingress ?? []).find(
     (item) => Number(item?.port) === 6080 && typeof item?.url === 'string' && item.url,
   )
-  if (!entry) throw new Error('sandbox has no public 6080 ingress; create it with remote_desktop: true')
+  if (!entry) {
+    await request('PUT', `/sandboxes/${SANDBOX_ID}/ingress/6080`)
+    machine = await getMachine()
+    entry = (machine.ingress ?? []).find(
+      (item) => Number(item?.port) === 6080 && typeof item?.url === 'string' && item.url,
+    )
+  }
+  if (!entry) throw new Error('sandbox has no public 6080 ingress')
   return entry.url.replace(/\/+$/, '')
 }
 
-async function main() {
-  let machine = await ensureRunning()
+async function deploy() {
+  let machine = await ensureSandbox()
   const ip = String(machine.ip || '')
   if (!ip) throw new Error('sandbox has no ip')
-  const ingressUrl = publicIngress(machine)
+  const ingressUrl = await publicIngress(machine)
   const ingressHost = new URL(ingressUrl).host
 
   const bytes = readFileSync(TARBALL)
@@ -190,6 +284,24 @@ async function main() {
   console.log(`installed ${basename(TARBALL)} as ${installPath}`)
   console.log(`public ingress: ${ingressUrl}`)
   console.log('the tokenized DSH URL is in /workspace/dsh-web-url.txt (mode 600)')
+}
+
+async function main() {
+  let failure = null
+  try {
+    await deploy()
+  } catch (error) {
+    failure = error
+  }
+  if (SANDBOX_ID) {
+    try {
+      await stopSandbox()
+    } catch (error) {
+      if (failure) console.error(`sandbox stop failed: ${String(error?.message ?? error)}`)
+      else failure = new Error(`sandbox stop failed: ${String(error?.message ?? error)}`)
+    }
+  }
+  if (failure) throw failure
 }
 
 main().catch((error) => fail(error?.message ?? 'unknown error'))

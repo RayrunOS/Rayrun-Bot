@@ -134,11 +134,10 @@ jobs:
         id: gate
         env:
           RAYRUN_TOKEN: ${{ secrets.RAYRUN_TOKEN }}
-          RAYRUN_SANDBOX_ID: ${{ vars.RAYRUN_SANDBOX_ID }}
         run: |
-          if [ -z "$RAYRUN_TOKEN" ] || [ -z "$RAYRUN_SANDBOX_ID" ]; then
+          if [ -z "$RAYRUN_TOKEN" ]; then
             echo "Rayrun deploy is not configured; skipping."
-            echo "Set the RAYRUN_TOKEN secret and the RAYRUN_SANDBOX_ID variable to enable it."
+            echo "Set the RAYRUN_TOKEN secret to enable it."
             echo "enabled=false" >> "$GITHUB_OUTPUT"
           else
             echo "enabled=true" >> "$GITHUB_OUTPUT"
@@ -173,7 +172,10 @@ jobs:
         if: steps.gate.outputs.enabled == 'true' && steps.changes.outputs.changed == 'true'
         env:
           RAYRUN_TOKEN: ${{ secrets.RAYRUN_TOKEN }}
-          RAYRUN_SANDBOX_ID: ${{ vars.RAYRUN_SANDBOX_ID }}
+          RAYRUN_DEPLOY_SANDBOX_NAME: ${{ vars.RAYRUN_DEPLOY_SANDBOX_NAME }}
+          RAYRUN_DEPLOY_AGENT: ${{ vars.RAYRUN_DEPLOY_AGENT }}
+          RAYRUN_DEPLOY_CPU_CORES: ${{ vars.RAYRUN_DEPLOY_CPU_CORES }}
+          RAYRUN_DEPLOY_MEMORY_MB: ${{ vars.RAYRUN_DEPLOY_MEMORY_MB }}
           PLUGIN_TARBALL: ${{ steps.pack.outputs.path }}
           DEPLOY_LABEL: ${{ github.sha }}
         run: node .github/scripts/deploy-rayrun.mjs

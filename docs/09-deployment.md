@@ -297,27 +297,37 @@ Release），不在本 workflow 里；`alpha` 当前是 `0.1.1-alpha.1`，`lates
 `checks` 和 `dsh-plugin` 两个矩阵通过。它：
 
 1. `npm pack` 当前插件；
-2. 用 Rayrun API 确保目标沙盒 Running（Stopped 会 start，计费开始）；
+2. 按 `RAYRUN_DEPLOY_SANDBOX_NAME`（默认 `dsh-ci-deploy`）查找 non-Terminated
+   sandbox；没有则用 `POST /sandboxes` 创建：默认镜像 `deepseek-harness@1`、
+   2 vCPU / 4 GB、`remote_desktop: true`、`max_lifetime_seconds: 7200`，不传
+   credential；已有 stopped/paused sandbox 会 start/resume；计费从 Running 开始；
 3. 上传 tarball 到 `/workspace/pkgs/`；
 4. `dsh plugin --profile web add` 安装，停 `rayrun-desktop`，重启 `dsh web`
    （绑定沙盒 IP:6080，`--trusted-host` / `--public-url` 用公网 6080 ingress）；
 5. 把带 token 的 DSH URL 写入 `/workspace/dsh-web-url.txt`（mode 600），并从
    runner 验证公网 URL 返回 303。**URL 和 Rayrun token 都不打印。**
+6. 测试完成后 **stop** sandbox（不 destroy）；sandbox 和 `/workspace` 保留，
+   下一次 deploy 复用并重新 start。
 
 配置（GitHub → Settings → Secrets and variables → Actions）：
 
 | 名称 | 类型 | 值 |
 | --- | --- | --- |
 | `RAYRUN_TOKEN` | secret | Rayrun API token；优先用专用、可吊销的账号/token |
-| `RAYRUN_SANDBOX_ID` | variable | 目标沙盒 id；必须已有 public 6080 ingress（`remote_desktop: true`） |
+| `RAYRUN_DEPLOY_SANDBOX_NAME` | variable | 可选；默认 `dsh-ci-deploy` |
+| `RAYRUN_DEPLOY_AGENT` | variable | 可选；默认 `deepseek-harness@1` |
+| `RAYRUN_DEPLOY_CPU_CORES` | variable | 可选；默认 `2` |
+| `RAYRUN_DEPLOY_MEMORY_MB` | variable | 可选；默认 `4096`，最低 `2048` |
 
-没有配置时 job 自动跳过，workflow 保持绿色；PR/fork 不运行该 job。部署会重启公网
-DSH，所以每次部署的 launch token URL 都会变。但首次用 token 交换后，浏览器会拿到
-30 天、绑定 host:port 的签名 cookie；签名 secret 存在沙盒 DSH 的 credential store
-（`$DSH_HOME/.credentials.yaml`），跨 DSH 重启/部署仍然有效（2026-11-21 实测：
-部署前的 cookie 在部署后仍返回 200）。同一浏览器可以继续用不带 token 的公网 URL；
-只有新浏览器/新设备、清 cookie、30 天到期，或 DSH home / ingress host 改变时才
-需要新的 token URL。取新链接（不要贴到公开渠道）：
+没有配置 token 时 job 自动跳过，workflow 保持绿色；PR/fork 不运行该 job。旧的
+`RAYRUN_SANDBOX_ID` 变量不再被 deploy job 使用；它仍可用于手动
+`tools/rayrun-deploy/fetch-url.mjs`。deploy 每次会重启公网 DSH，所以每次部署的
+launch token URL 都会变；sandbox 在验证后停止，URL 不继续服务。首次用 token 交换
+后，浏览器会拿到 30 天、绑定 host:port 的签名 cookie；签名 secret 存在沙盒 DSH 的
+credential store（`$DSH_HOME/.credentials.yaml`），跨 DSH 重启/部署仍然有效
+（2026-11-21 实测：部署前的 cookie 在部署后仍返回 200）。同一浏览器可以继续用不带
+token 的公网 URL；只有新浏览器/新设备、清 cookie、30 天到期，或 DSH home / ingress
+host 改变时才需要新的 token URL。取新链接（不要贴到公开渠道）：
 
 ```bash
 RAYRUN_TOKEN="$(cat <path-to-rayrun-token>)" \
