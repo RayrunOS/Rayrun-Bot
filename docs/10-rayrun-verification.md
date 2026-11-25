@@ -467,6 +467,11 @@
   删除；截图 `/tmp/bot/browser-golden.png`、`browser-approval-pending.png`、
   `browser-approval-denied.png`、`browser-approval-allow-pending.png`、
   `browser-approval-allowed.png`（临时文件，不入库）。
+- CI deploy sandbox 尝试（2026-11-25，GitHub Actions）：run `45626382460` 创建
+  `dsh-ci-deploy`，startup/upload/stop 成功，但镜像无 pnpm；run `45628656084`
+  创建带 `egress_allow: ['registry.npmjs.org']` 的 `dsh-ci-deploy-2`，pnpm 下载仍
+  `ENOTFOUND`。两次 sandbox 均 Stopped、未 destroy。deploy job 随后改为
+  `if: false` 暂时停用；run `45629800138` 的 checks 全绿、deploy skipped。
 - 打包产物安装（2026-11-22，本机 DSH `0.2.2-rc.5`；本地打包检查）：`npm pack` 生成
   15 个文件的 tarball（host/client、locale、`lib/*.js`、bundle patch、icon、README、
   LICENSE；54.6 kB），`test/`、`docs/`、`tools/` 未进入；`dsh plugin --profile
