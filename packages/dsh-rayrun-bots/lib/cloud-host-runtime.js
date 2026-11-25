@@ -27,6 +27,7 @@ import { createRuntimeRpc } from './runtime-rpc.js'
 import { RUNTIME_CONTRACT_VERSION } from './runtime.js'
 
 const TASK_TIMEOUT_SECONDS = 900
+const HOST_READY_ATTEMPTS = 30
 const HOST_PROFILE = 'bot'
 const HOST_RUNTIME = 'bot-host'
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -307,13 +308,15 @@ export function createCloudHostRuntime({
 
   async function waitHostReady(sandbox) {
     const statePath = '.rayrun/host/state.json'
-    for (let attempt = 0; attempt < 15; attempt += 1) {
+    // A previous host leaves `stopped` behind. A newly started host may not
+    // have overwritten it yet, so wait for a fresh `running`, not the first
+    // value read. The bound covers a cold worker bootstrap.
+    for (let attempt = 0; attempt < HOST_READY_ATTEMPTS; attempt += 1) {
       const text = await readFile(sandbox, statePath)
       if (text !== null) {
         let state
         try { state = JSON.parse(text) } catch { state = null }
         if (state?.state === 'running') return
-        if (state?.state === 'stopped') break
       }
       await sleep(1000)
     }

@@ -63,7 +63,7 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
 | setup | Rayrun 步骤经云电脑插件的同源 RPC 接收粘贴的 token；云电脑步骤采用已有机器或经同一 RPC 创建第一台机器。 |
 | 电脑卡片 | Open / Take over 经同一 RPC 启动或恢复机器、等待 `Running`、修复桌面服务并打开 `desktop_url`；Stop 在确认后停止，永不 destroy。 |
 | 用量 | 详情面板的电脑块和用量块，以及 Settings 的用量行，读取真实机器状态、余额与机时。 |
-| 测试 | Host/client 名册接线、session/transcript、`rayrun_agent`/detached adapter、per-bot workspace 与审批协议由普通 Node 契约测试覆盖；客户端 session 失败路径、单轮真实一轮、页面关闭 + host 重启后的 detached 收取，以及机器 stop/start 后的第二轮续接另有本机页面 smoke。包清单、locale、RPC、客户端、名册、session、runtime、workspace、审批和 tarball 内容都有检查；cloud host 8 项、cloud host routines 8 项、DSH agent 5 项、host projection 5 项、runtime.* client 5 项、cloud host runtime adapter 14 项、cloud host proposal 5 项、approval executor 7 项、cloud approval bridge 6 项、routines 16 项、cloud routine bridge 7 项、cloud routine E2E 1 项、routine results 6 项纯 Node 检查，runtime.* client 与 cloud host 另有 dev live 联调，cloudHost adapter 另有页面 E2E（手动、自动 projection 与多 bot 单 host），审批卡另有拒绝/失败关闭与 Continue 按钮的页面 E2E。Routine 页面另做本地 DSH + Firefox smoke：真实表单创建、暂停、删除并写入 routines.json（2026-11-23，无 Rayrun token），截图 `/tmp/bot/routines-ui.png`（临时文件，不入库）；本地 mode 尚未等待一次 scheduler 自动触发；cloudHost mode 的 dev live E2E 已通过（2026-11-24，见 §3.1）。 |
+| 测试 | Host/client 名册接线、session/transcript、`rayrun_agent`/detached adapter、per-bot workspace 与审批协议由普通 Node 契约测试覆盖；客户端 session 失败路径、单轮真实一轮、页面关闭 + host 重启后的 detached 收取，以及机器 stop/start 后的第二轮续接另有本机页面 smoke。包清单、locale、RPC、客户端、名册、session、runtime、workspace、审批和 tarball 内容都有检查；cloud host 8 项、cloud host routines 8 项、DSH agent 5 项、host projection 5 项、runtime.* client 5 项、cloud host runtime adapter 15 项、cloud host proposal 5 项、approval executor 7 项、cloud approval bridge 6 项、routines 16 项、cloud routine bridge 7 项、cloud routine E2E 1 项、routine results 6 项纯 Node 检查，runtime.* client 与 cloud host 另有 dev live 联调，cloudHost adapter 另有页面 E2E（手动、自动 projection 与多 bot 单 host），审批卡另有拒绝/失败关闭与 Continue 按钮的页面 E2E。Routine 页面另做本地 DSH + Firefox smoke：真实表单创建、暂停、删除并写入 routines.json（2026-11-23，无 Rayrun token），截图 `/tmp/bot/routines-ui.png`（临时文件，不入库）；本地 mode 尚未等待一次 scheduler 自动触发；cloudHost mode 的 dev live E2E 已通过（2026-11-24，见 §3.1）。 |
 | 审批执行 | 协议后端（request/decision schema、canonical actionHash、TTL、幂等/重放/错 bot 负向测试、审计、`approvals.list/get/decide/propose/sync`）已实现。ADR-019（2026-11-23）把本地 DSH host 定为本地 typed 动作的审批权威与执行方：`approvals.decide` 批准后由本地 executor 执行 `rayrun.machine.start/stop/pause/resume`，先写 `executing` claim，拒绝/过期/重放/崩溃 claim 失败关闭；客户端真实卡片已接。云端 proposal bridge 已接并 live 验证：云 bot 在回复末尾输出结构化 `rayrun-approval` block，cloud host 解析后写 proposal（`propose.mjs` 保留为可选 shell 路径），本地用 `rayrun_files` 导入并去重，结果写回 `approval-results/`；机器停机时结果先落本地 outbox，下次 Running 补传。start/stop/pause/resume、denial、Continue 均真机通过。下一轮 prompt 会带最近审批结果，bot 无工具直接回答 approved/done/Running 或 denied/not_executed。本地 routine 轮次会把 `origin: routine` 传到 cloud task，云端提案标为 background 并沿用 30 分钟 TTL。其他动作和云端凭据动作仍未完成；平台隔离仍用于云端凭据（ADR-001）。`rayrun_agent` adapter 不拦截外部动作，prompt 指引不是安全边界。 |
 | 发布 | `dsh-rayrun-bots@0.1.1-alpha` 已通过 `publish.yml` 从 `v0.1.1-alpha` GitHub Prerelease 发布（OIDC，run `45520396429`，`_npmUser=GitHub Actions`）；npm `alpha` tag 指向 0.1.1-alpha，`latest` 仍是手动发布的 0.1.0-alpha.0（prerelease 不移动 latest，符合 workflow 契约）。依赖 `dsh-rayrun-computer@1.2.1` 已发布 npm（latest）。一条 `dsh plugin add` 安装两个包的路径已用官方 registry 验证：两个 bundle 都被选中、两个插件都加载、health `ok`。只安装 bots 包即使声明依赖也不会启用依赖 bundle。 |
 
@@ -206,7 +206,7 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
   - 无 token 发送：session `failed`，`E_TOKEN_REQUIRED`，无 bot 回复；保存 token 后
     下一轮恢复 `RECOVERED_OK`。同轮修复 `cloud-host-runtime.ensureMachine` 先检查
     `connection.configured`，不再把缺 token 误报为 `E_MACHINE_STOPPED`；fake 测试
-    14/14（含文件工具 token 错误映射）。
+    15/15（含文件工具 token 错误映射）。
   - 同一 host 连续两轮：`bot-host` pid 635、DSH session
     `session-5aa1302e-…` 不变，`TURN1_OK` → `ALPHA`。
   - 删除 `bot-host` 并重启本地 DSH：新 host pid 704，DSH session 仍为
@@ -260,7 +260,7 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
   （R-G014），不是依赖 bug。
 - 本地 cloud host transport adapter（2026-11-23，`lib/cloud-host-runtime.js`，预览）：
   通过 `runtime.*` 确保机器/runtime，`rayrun_files` 上传 inbox/读取 outbox，映射到
-  `session.*`；fake 测试 14/14（机器 start/resume、runtime 复用、projection、并发 bot 共享 setup、无 token/无机器/无文件工具失败
+  `session.*`；fake 测试 15/15（机器 start/resume、runtime 复用、projection、并发 bot 共享 setup、无 token/无机器/无文件工具失败
   关闭、文件工具 token 错误映射）。多 bot host 单进程/全局串行队列/每 bot session 的 fake 测试 7/7；此前页面
   E2E 用 per-bot runtime（`bot-host-cloud-host`）通过 `HOST_E2E_OK`；多 bot 单 host
   的 dev live 页面 E2E 已于 2026-11-23 通过：受 scoped token（仅见私有

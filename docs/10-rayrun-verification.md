@@ -353,7 +353,7 @@
   token_id `cd0f5810…`）：无 token 发送时 session `failed`、`E_TOKEN_REQUIRED`，
   无 bot 回复；保存 token 后下一轮 `RECOVERED_OK`。同轮修复
   `cloud-host-runtime.ensureMachine` 先检查 `connection.configured`，避免把缺
-  token 误报成 `E_MACHINE_STOPPED`；`test/cloud-host-runtime.mjs` 14/14。随后同一
+  token 误报成 `E_MACHINE_STOPPED`；`test/cloud-host-runtime.mjs` 15/15。随后同一
   host 连续两轮：`bot-host` pid 635、DSH session `session-5aa1302e-…` 不变，
   `TURN1_OK` → `ALPHA`。删除 `bot-host` 并重启本地 DSH 后，下一轮自动重建 host
   （pid 704），DSH session 仍为 `session-5aa1302e-…`，`RECOVERY_TURN` → `ALPHA`；

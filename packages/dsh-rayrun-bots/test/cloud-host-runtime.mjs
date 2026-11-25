@@ -16,7 +16,7 @@ const checks = []
 const check = (name, fn) => checks.push({ name, fn })
 const roots = []
 
-function setup({ machineStatus = 'Running', runtime: existing = null, withTool = true, project = false, configured = true, tokenMissing = false } = {}) {
+function setup({ machineStatus = 'Running', runtime: existing = null, withTool = true, project = false, configured = true, tokenMissing = false, hostReadyAfter = 0 } = {}) {
   const root = mkdtempSync(path.join(tmpdir(), 'rayrun-cloud-host-runtime-'))
   roots.push(root)
   const calls = []
@@ -28,6 +28,7 @@ function setup({ machineStatus = 'Running', runtime: existing = null, withTool =
     runtimes: new Map(existing === null ? [] : [[existing.name, existing]]),
     puts: [],
   }
+  let hostStateReads = 0
   const tool = {
     async execute(args) {
       if (tokenMissing) {
@@ -39,6 +40,10 @@ function setup({ machineStatus = 'Running', runtime: existing = null, withTool =
         uploads.push(args)
         files.set(args.path, args.text)
         return 'uploaded'
+      }
+      if (args.action === 'download' && args.path === '.rayrun/host/state.json' && hostReadyAfter > 0) {
+        hostStateReads += 1
+        return JSON.stringify({ state: hostStateReads > hostReadyAfter ? 'running' : 'stopped' })
       }
       if (args.action === 'download') {
         if (files.has(args.path)) return files.get(args.path)
@@ -203,6 +208,12 @@ check('recreates a deleted host runtime on the next turn', async () => {
   assert.equal(state.puts.length, 2)
   assert.equal(state.runtimes.get('bot-host')?.state, 'running')
   assert.equal(uploads.filter((item) => item.path.includes('/inbox/')).length, 2)
+})
+
+check('waits past a stale stopped host state until the new host is running', async () => {
+  const { root, runtime } = setup({ hostReadyAfter: 1 })
+  const started = await runtime.start({ bot, text: 'hello', messageSeq: 1, botId: bot.id, stateRoot: root })
+  assert.match(started.taskId, /^task-/)
 })
 
 check('status stays running until the outbox exists, then collect returns the reply', async () => {
