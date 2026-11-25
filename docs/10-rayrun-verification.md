@@ -117,8 +117,12 @@
 > `rayrun-bot-idle`、`rayrun-bot-scoped`、`rayrun-bot-coldstart`，以及 botclean 的
 > `rayrun-bot-clean`；dev 侧现无 bot 测试机。hosted 的 `rayrun-bot-test`、
 > `rayrun-bot-fresh-mwu9kgwj`、`rayrun-bot-prod-e2e`（`dsh-bot@1` 生产 E2E）按用户
-> 决定保留、保持 Stopped、未 destroy。下文各条
-> 记录里的“stop / 未 destroy”描述的是当次测试收尾动作；botclean 租户本身保留。
+> 决定保留、未 destroy；`rayrun-bot-prod-e2e` 在 2026-11-25 聊天/时延测试后为
+> Running，是否 stop 待用户决定。下文各条记录里的“stop / 未 destroy”描述的是
+> 当次测试收尾动作；botclean 租户本身保留。
+>
+> 2026-11-25 新增并保留（Stopped、未 destroy）：`rayrun-bot-a1-20261125`
+> （A1 沙盒）与 `rayrun-bot-a3-20261125`（A3 创建计时）。
 
 - 两个插件的安装、bundle 合成、Bots/云电脑页面渲染、health、跨源 POST 拒绝
   （2026-11-21，Rayrun 沙箱；[`design/desktop-distribution.md`](design/desktop-distribution.md) §5.8）；
@@ -329,9 +333,9 @@
   `E_RUNTIMES_UNAVAILABLE` / HTTP 404
   “This Rayrun deployment does not expose the runtimes API”。测试在创建 bot/routine
   前中止；机器已 stop，本次未创建 runtime，token 未打印，临时 DSH profile（含
-  vault token）已删除；保留的本地 token 文件未打印、未改动。该结果与 R-G008 的
-  生产部署状态一致，说明**生产环境**的 cloudHost routine live 验证仍被平台阻塞；
-  dev/test 环境的 live E2E 见下一条。
+  vault token）已删除；保留的本地 token 文件未打印、未改动。该结果与当时 R-G008
+  的生产部署状态一致：生产环境尚未暴露 runtimes API，cloudHost routine live 验证
+  暂时被平台阻塞；后续生产部署和 `dsh-bot@1` 已解阻，见 R-G008 与下文的生产 E2E。
 - 云端 routine dev live E2E（2026-11-24，Rayrun dev daemon
   `http://192.168.3.75:8080/v1`，本机 DSH `0.2.2-rc.5`，依赖 checkout `1.2.0`，
   Bots `0.1.0-alpha.0`，机器 `rayrun-bot-scoped`
@@ -349,6 +353,20 @@
   测试后 runtime 删除、runtimes=[]、机器 stop（Stopped，未 destroy）；scoped token
   已撤销（token_id `321a872f…`），临时 token/base-url 文件和临时 DSH profile 已
   删除；保留的本地 token 文件未打印、未改动。
+- 云端 routine 生产 E2E（2026-11-24，hosted 生产 sandbox，镜像 `dsh-bot@1`）：
+  本地 DSH 在 due 前停机；机器上的云 host 于 14:48:16Z 产出
+  `CLOUD_ROUTINE_PROD_OK`；重启本地 DSH 后 `routines.sync` imported=1，
+  `session.history` 合并 routine user/bot。测试后 runtime 删除、机器 Stopped、
+  未 destroy。详见 [`12-status.md`](12-status.md) §3.1。
+- hosted 生产 bot host 的模型凭据 slot（2026-11-24）：`dsh-bot@1` 的 manifest
+  声明 `DEEPSEEK_API_KEY`，现有 hosted `dsh-model-sinnet`（provider=deepseek）
+  映射到该槽位；不需要新建 credential。旧 `rayrun-bot-test` 仍是旧镜像，未用于
+  该验证。
+- 本地 routines 页面 smoke（2026-11-23，本机 DSH + Firefox，无 Rayrun token）：
+  在真实详情面板创建、暂停、删除一条 routine，并确认写入 `routines.json`；未等待
+  一次本地 scheduler 自动触发（触发路径由 fake runtime 集成测试覆盖）。截图
+  `/tmp/bot/routines-ui.png`（临时文件，不入库）。详见
+  [`12-status.md`](12-status.md) §3.1。
 - v0.1 失败/续接/恢复 live（2026-11-24，同一 dev daemon / 机器 / scoped token，
   token_id `cd0f5810…`）：无 token 发送时 session `failed`、`E_TOKEN_REQUIRED`，
   无 bot 回复；保存 token 后下一轮 `RECOVERED_OK`。同轮修复
@@ -467,6 +485,68 @@
   删除；截图 `/tmp/bot/browser-golden.png`、`browser-approval-pending.png`、
   `browser-approval-denied.png`、`browser-approval-allow-pending.png`、
   `browser-approval-allowed.png`（临时文件，不入库）。
+- A1 沙盒干净安装（2026-11-25，Rayrun 在线 sandbox `rayrun-bot-a1-20261125`
+  （`01a21329…`），镜像 `deepseek-harness@1`，2 vCPU / 4 GB）：在线 API 直连；
+  通过 `PUT /v1/sandboxes/{id}/egress` 放行 `registry.npmjs.org`。沙盒内 Node
+  24.22.0、DSH 0.2.0-rc.2，corepack 准备 pnpm 10.20.0。全新 `DSH_HOME` + 全新
+  pnpm store/cache，一条
+  `dsh plugin --profile web add dsh-rayrun-computer@1.2.1 dsh-rayrun-bots@0.1.1-alpha.1`
+  安装 7.38 秒；`dsh web` 启动到 URL ready 2.56 秒；从安装开始到 Bots 与云电脑
+  两页都渲染 20.04 秒。Bots 根节点 `#rayrun-bots-root`、云电脑 `.rr-root` 均出现；
+  截图 `/tmp/bot/a1-sandbox-bots.png`、`a1-sandbox-cloud.png`（临时文件，不入库）。
+  只安装 bots 包时 health 返回 `ready:false`、`dependency.status:"missing"`、
+  `code:"E_DEP_MISSING"`、`runtime.available:false`。测试后 stop sandbox、未
+  destroy；沙盒内 DSH launch-token 日志/URL/cookie 已删除。
+- A2 无 token 与 vault 存储（2026-11-25）：在 A1 沙盒（无 Rayrun token）里，
+  云电脑插件 `connection.status` 返回 `configured:false`、`tokenSource:null`，
+  `account` 返回 `token_required`（HTTP 400），`overview` 仍为 `ok:true` 但
+  `connection.configured:false`。本机临时 DSH profile 通过同源 RPC
+  `connection.save` 把在线 token 存入 Harness vault：返回 `configured:true`、
+  `tokenSource:"credentials"`；`connection.save { clearToken:true }` 后
+  `configured:false`，`account` 再返回 `token_required`。token 未打印、未进沙盒、
+  未进仓库；临时 profile 已删除。DeepSeek key 作为 Rayrun credential 的正向路径
+  沿用 2026-11-21 的 setup 验证，本次未新建 credential。
+- A3 连接、用量与创建（2026-11-25）：本机临时 DSH profile 通过一个仅监听
+  localhost 的反向代理访问在线 API；代理用 `curl --interface wlp4s0` 绕过 VPN
+  路由，Rayrun token 只存在本机 DSH vault，未进沙盒/仓库/日志。`connection.save`
+  后 `overview` 返回 `configured:true`、4 台机器（含 Stopped 的
+  `rayrun-bot-prod-e2e` 与 A1 沙盒）、余额 CNY 22.35、机时 256.16、默认 2 vCPU /
+  2048 MB / remote_desktop true；`account` 返回 owner 角色和同一余额/用量。
+  随后通过同一 RPC `machine.create`（页面创建按钮走同一路径）创建
+  `rayrun-bot-a3-20261125`（2 vCPU / 2048 MB / remote desktop true，无
+  credentials），从请求开始到 `Running` 为 **4.30 秒**（≤15 秒）；`machine.action
+  stop` 后 `Stopped`、未 destroy。机器保留为 Stopped。`clearToken` 后恢复
+  `configured:false`。读数不是承诺。代理是临时测试 harness，不在仓库中。
+- A4 创建 bot 与对话（2026-11-25）：本机临时 profile 启用 `cloudHost`（固定
+  `rayrun-bot-prod-e2e`，credentials `['dsh-model-sinnet']`）并通过 localhost
+  反向代理访问在线 API。`bots.create` 创建 `A4 Cloud Bot`（id `a4-cloud-bot`，
+  label `verification bot`，instructions “Reply with exactly A4_OK. Do not use
+  tools.”）；`session.send` 后 session `queued → running → idle`，机器
+  `Stopped → Running`，约 16 秒收到 `A4_OK`，transcript 为 user + bot。Bots 页面
+  聊天列表显示该 bot，最终回复可见；截图 `/tmp/bot/a4-bot-chat.png`（临时文件，
+  不入库）；未逐 token 验证流式呈现。机器上
+  `/workspace/.rayrun/bots/a4-cloud-bot/` 存在，含 `host/session-id`、`inbox/`、
+  `processing/`、`done/task-*.json`、`outbox/task-*.json`、`transcript.jsonl`
+  （内容含 bot 名称/instructions 和 `A4_OK`），作为 `rayrun_files` 证据。观察到
+  详情面板电脑块显示 `dsh-ci-deploy-2`，而 runtime spec 的 `DSH_BOT_MACHINE` 为
+  `rayrun-bot-prod-e2e`；执行使用的是后者。测试后删除 `bot-host` runtime（204）、
+  移除机器上的测试目录、机器 stop、未 destroy；本地 proxy/DSH/geckodriver 停止，
+  临时 profile 删除，token 和 baseUrl 清除。
+- 聊天热轮次时延（2026-11-25）：同一 `rayrun-bot-prod-e2e` + cloudHost 的
+  连续 `PING` 测试，3 秒 outbox 轮询时热轮次 **7.32 秒**；在 checkout working
+  tree 中把默认 `detachedPollMs` 改为 1000ms（npm `0.1.1-alpha.1` 仍是 3 秒）
+  后，同一热机器下一轮 **4.64 秒**。host 日志
+  分解：本地发送→host 取任务约 1.9 秒，模型约 2.2 秒，本地收取约 1 秒；首轮
+  还包含 host 冷启动（约 3.8 秒）和机器上遗留 `prod-routine` 抢先执行（约
+  3.4 秒），合计约 **13.8 秒**。`session-runtime.mjs` 18/18。机器上其他测试
+  bot 未删除；`latency-bot` 已删除。
+- CI deploy egress 根因（2026-11-25）：`.github/scripts/deploy-rayrun.mjs` 创建
+  沙盒时用了不在 Rayrun 创建 schema 中的 `egress_allow`；该字段被忽略，导致
+  pnpm 下载 `ENOTFOUND`。在线沙盒验证 `PUT /v1/sandboxes/{id}/egress` 后同一
+  沙盒内 `registry.npmjs.org` 可解析、pnpm 可安装；脚本已改为
+  `egress: { allow: ['registry.npmjs.org'] }`，契约测试改为拒绝 `egress_allow`。
+  deploy job 仍为 `if: false`，待完整 deploy 跑通后再恢复；`dsh-ci-deploy-2`
+  在 2026-11-25 查询时为 Running、未 destroy。
 - CI deploy sandbox 尝试（2026-11-25，GitHub Actions）：run `45626382460` 创建
   `dsh-ci-deploy`，startup/upload/stop 成功，但镜像无 pnpm；run `45628656084`
   创建带 `egress_allow: ['registry.npmjs.org']` 的 `dsh-ci-deploy-2`，pnpm 下载仍
@@ -504,19 +584,6 @@
 - A11 本地 workspace 扫描发现 `tmp/` 下有未跟踪的本地 key 文件（`dp-code.key`、
   `rayrun-dev.key`）。它们被 `.gitignore` 忽略，且未进入 git 历史或 npm 包，但仍
   留在工作区；需轮换并移出/删除后才能声称 A11 通过。扫描未打印值；
-- 生产环境的 cloudHost routine live 验证：dev daemon 的 live E2E 已通过（§3.1，
-  2026-11-24）。生产已于 2026-11-24 部署 `5c2ff48`（build 493），未认证
-  `/v1/runtimes` 返回 401。hosted production 尝试在 `runtime.put` 收到 409
-  `guestd_outdated`（`E_GUESTD_OUTDATED`），机器已 stop、无 runtime。2026-11-24
-  已发布 `dsh-bot@1`（builder@1 换 guestd 0.6.0；Node 24.22.0，DSH 0.2.0-rc.2，
-  manifest `DEEPSEEK_API_KEY`），平台测试 sandbox 的 `runtime.put bot-host` 返回
-  200 applied/restarted，heartbeat 正常；测试后 stop、未 destroy。hosted 用户租户
-  cloudHost 聊天 E2E 已通过：`rayrun-bot-prod-e2e`（`dsh-bot@1`）从 Stopped 启动，
-  bot-host runtime running pid 636，bot 回复 `PROD_OK`，约 12 秒；runtime 删除、
-  机器 Stopped、未 destroy。生产 routine E2E 仍未跑。本地 mode 页面 smoke 已通过。
-- hosted 生产 bot host 的模型凭据 slot：`dsh-bot@1` 的 manifest 声明
-  `DEEPSEEK_API_KEY`，现有 hosted `dsh-model-sinnet`（provider=deepseek）会映射到
-  该槽位；不需要新建 credential。旧 `rayrun-bot-test` 仍是旧镜像，未用于该验证。
 - bot 会话、审批往返、远程审批、队列与恢复：R-G008 已部署生产，hosted cloudHost
   聊天 E2E 已通过（`PROD_OK`，2026-11-24）；生产 routine E2E 已通过（`CLOUD_ROUTINE_PROD_OK`，2026-11-24）。bot 侧常驻
   host 已有 dev 预览（多 bot 单 host E2E 通过）；本地 typed 审批执行已通过拒绝/
@@ -526,9 +593,8 @@
   本地 session store、`session.*` RPC、`rayrun_agent`/detached adapter 已有 fake
   测试；页面层真实一轮、detached 的页面关闭 + host 重启收取、同一 host 连续两轮、
   无 token 失败恢复、runtime 重建，以及三条消息排队 + 本地 DSH 崩溃恢复已在
-  Rayrun dev/test 验证（§3.1）；host 挂载即恢复 detached task 已有 fake 测试和
-  本机 DSH 无 token 冒烟，真实云端 task 在无页面情况下的完整收取未单独做 live；
-- DeepSeek 模型调用（至今只创建了 model credential，没有发模型请求）；
+  Rayrun dev/test 验证（§3.1）；host 挂载即恢复 detached task 已有 fake 测试，并
+  在无页面的 live 验证中自动排空队列（§3.1）；
 - 零余额宽限/force-destroy 行为（R-G009，不做破坏性验证）；
 - 在 Rayrun 上构建自定义 Dockerfile 镜像（R-G013）。
 
