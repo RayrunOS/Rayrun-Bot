@@ -177,8 +177,8 @@ check('projects the host assets before starting when no override is set', async 
   await runtime.start({ bot, text: 'hello', messageSeq: 1, botId: bot.id, stateRoot: root })
   const hostUploads = uploads.filter((item) => String(item.path).startsWith('.rayrun/host/'))
   assert.ok(hostUploads.length >= 4)
-  assert.equal(state.puts[0].spec.argv[1], '/workspace/.rayrun/host/0.1.0-alpha.0/host.mjs')
-  assert.equal(state.puts[0].spec.env.DSH_BOT_PROPOSE, '/workspace/.rayrun/host/0.1.0-alpha.0/bin/propose.mjs')
+  assert.equal(state.puts[0].spec.argv[1], '/workspace/.rayrun/host/0.1.1-alpha/host.mjs')
+  assert.equal(state.puts[0].spec.env.DSH_BOT_PROPOSE, '/workspace/.rayrun/host/0.1.1-alpha/bin/propose.mjs')
 })
 
 check('concurrent bots share one host setup', async () => {

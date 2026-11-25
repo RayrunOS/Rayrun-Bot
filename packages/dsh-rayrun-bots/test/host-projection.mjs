@@ -38,7 +38,7 @@ check('the package ships the host files and a deterministic manifest', () => {
   assert.equal(manifest.schema, 1)
   assert.equal(manifest.version, '1.2.3')
   assert.deepEqual(manifest.files.map((file) => file.path), files.map((file) => file.path))
-  assert.equal(HOST_ASSET_VERSION, '0.1.0-alpha.0')
+  assert.equal(HOST_ASSET_VERSION, '0.1.1-alpha')
 })
 
 check('projects the files once and then serves them from the verified cache', async () => {

@@ -182,7 +182,7 @@ Install the packed artifact instead of the checkout:
 
 ```bash
 npm pack ./packages/dsh-rayrun-bots --pack-destination /tmp
-dsh plugin --profile web add /tmp/dsh-rayrun-bots-0.1.0-alpha.0.tgz
+dsh plugin --profile web add /tmp/dsh-rayrun-bots-0.1.1-alpha.tgz
 ```
 
 `test/package-contents.mjs` checks the tarball with `npm pack --dry-run`: the
