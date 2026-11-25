@@ -1,6 +1,6 @@
 # 10 — 验证、测试与 Rayrun 缺口
 
-> 状态：2026-11-24。本文是**验证/测试资源政策**和 **Rayrun 缺口登记册**。
+> 状态：2026-11-25。本文是**验证/测试资源政策**和 **Rayrun 缺口登记册**。
 > 所有需要计算资源的验证与测试都走 Rayrun（真实 token 页面例外见 §2.6）；Rayrun 不满足
 > 的项记在这里，不静默改用本地或其他云，也不把未验证写成已实现。平台能力需求本身仍以
 > [`08-integration.md`](08-integration.md) 为准。
@@ -403,8 +403,8 @@
   临时 token 文件已删除。依赖侧随后确认：
   hosted 上的 `worker_files_unavailable` 是其 live 测试脚本的 fetch mock 误拦截
   `.../node_modules/dsh-rayrun-computer/...` file PUT；请求未到 nginx。修正已合入
-  依赖 main `956d595`（CI Node 22/24 全绿），`worker_files_unavailable` 已移除，
-  尚未 npm 发布。收窄 mock 后 hosted `rayrun-bot-test` 冷启动 8.8 秒成功
+  依赖 main `956d595`（CI Node 22/24 全绿），`worker_files_unavailable` 已移除；
+  修复已随 npm `1.2.1` 发布。收窄 mock 后 hosted `rayrun-bot-test` 冷启动 8.8 秒成功
   （`REAL_FIX_OK`）。adapter 和平台正常，不需要 cold-start retry。
 - 真实 cloud proposal 闭环（2026-11-23，本机 DSH `0.2.2-rc.5`，依赖 main
   `fe965c1`，Bots `0.1.0-alpha.0`，`rayrun-bot-scoped`，私有 `deepseek-flash`）：

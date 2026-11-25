@@ -1,6 +1,6 @@
 # 09 — 部署与运行
 
-> 状态：2026-11-24。本文说明依赖、安装、运行、配置、检查与故障处理，是安装与运行的
+> 状态：2026-11-25。本文说明依赖、安装、运行、配置、检查与故障处理，是安装与运行的
 > 操作页；实现状态以 [`12-status.md`](12-status.md) 为准。产品方向见
 > [`00-product-direction.md`](00-product-direction.md)；技术基线见
 > [`01-system-architecture.md`](01-system-architecture.md)；平台 handoff 见
@@ -23,7 +23,7 @@
 | 需要 | 为什么 | 状态 |
 | --- | --- | --- |
 | [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) | 运行时；桌面 App 或 `dsh web` | `0.2.0-rc.2` / `0.2.2-rc.5` 已验证；组合见[版本矩阵](version-matrix.md) |
-| [`dsh-rayrun-computer`](https://github.com/RayrunOS/dsh-rayrun-computer) | 云电脑层；独立项目，必需依赖 | 未上 npm；从 checkout 安装 |
+| [`dsh-rayrun-computer`](https://github.com/RayrunOS/dsh-rayrun-computer) | 云电脑层；独立项目，必需依赖 | npm `1.2.1`（latest）；与 bots 包一条命令同装 |
 | [Rayrun](https://rayrunos.com/) 账号 | 提供云电脑；按秒计费 | 必需；用户直接付 Rayrun |
 | DeepSeek API key | 机器内 agent 的模型调用 | 必需；key 与模型账单属于用户 |
 | Node / 构建工具 | 不需要：纯 ESM、无构建 | 无 |
@@ -156,9 +156,10 @@ npm 归属与发布账号仍未定（[`plans/mvp-plan.md`](plans/mvp-plan.md) §
 
 ---
 
-## 4. v0.1 目标三分钟路径（未构建）
+## 4. v0.1 目标三分钟路径（RPC 已验证；浏览器待验收）
 
-1. 用一条命令安装两个包（S6 已验证；npm alpha/latest 可用）。
+1. 用一条命令安装两个包（S6 已验证；`dsh-rayrun-bots@0.1.1-alpha.1` 在 `alpha`
+   tag，依赖 `1.2.1` 在 `latest`）。
 2. 登录 Rayrun 一次；向导创建云电脑。
 3. 创建 bot：名字、职责、指令、skills；它在电脑上有自己的 session。
 4. 和它对话，或创建一个 routine 让 bot 按间隔运行（本地 DSH host 需保持运行）。
@@ -244,9 +245,10 @@ adapter 先解析已有机器，机器不存在时拒绝；由于 `rayrun_files`
   关注余额；需要时设 `idle_stop_minutes`（只停，不 destroy）。
 - **第二个任务 `409 sandbox_busy`**：一台电脑一次只跑一个 agent 任务，不排队；
   等待或换机器。
-- **`dsh-rayrun-computer` 未安装**：今天需要两个插件；把云电脑插件从 checkout 装进
-  同一个 profile 并重启 DSH。缺少它，bot 层依赖的云工具不存在。
-- **`npm i dsh-rayrun-bots` 失败**：预期；两个包都未上 npm。
+- **`dsh-rayrun-computer` 未安装**：今天需要两个插件；从 npm 把两个包装进同一个
+  profile 并重启 DSH。缺少它，bot 层依赖的云工具不存在。
+- **`npm i dsh-rayrun-bots` 不启用 DSH bundle**：用 `dsh plugin` 安装；单包安装
+  不会启用依赖 bundle，需一条命令装两个包。
 
 每个错误应该给一句可执行提示，不给假成功；审批相关失败一律拒绝。
 

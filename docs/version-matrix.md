@@ -1,6 +1,6 @@
 # 版本矩阵
 
-> 状态：2026-11-24。本文记录 DSH、云电脑依赖 `dsh-rayrun-computer` 与 Rayrun Bot
+> 状态：2026-11-25。本文记录 DSH、云电脑依赖 `dsh-rayrun-computer` 与 Rayrun Bot
 > 包的兼容范围，以及**实际验证过**的组合。它不承诺未测试的组合；实现状态仍以
 > [`12-status.md`](12-status.md) 为准。
 > 依赖边界见 [`08-integration.md`](08-integration.md)；验证环境缺口见

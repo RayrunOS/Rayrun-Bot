@@ -31,11 +31,12 @@ Rayrun dev/test 环境完成 live E2E（本地 DSH 停止期间由云 host 调�
 返回 200 applied/restarted，heartbeat 正常；测试后 stop、未 destroy。2026-11-24
 hosted 用户租户 cloudHost 聊天 E2E 通过：`rayrun-bot-prod-e2e`（`dsh-bot@1`）从
 Stopped 启动，bot-host runtime running pid 636，bot 回复 `PROD_OK`，约 12 秒；
-runtime 删除、机器 Stopped、未 destroy。生产 routine E2E 已通过（`CLOUD_ROUTINE_PROD_OK`，2026-11-24）。其他审批动作、
-cron/事件触发和发布路径仍未打通。CI 代码已上生产但 `RAYRUN_GITHUB_CI_ENABLED` 未开。bot 侧常驻 host 的本地
+runtime 删除、机器 Stopped、未 destroy。生产 routine E2E 已通过（`CLOUD_ROUTINE_PROD_OK`，2026-11-24）。其他审批动作和
+cron/事件触发仍未打通；发布路径已通过 `publish.yml` 发布 alpha.1。CI 代码已上生产但 `RAYRUN_GITHUB_CI_ENABLED` 未开。bot 侧常驻 host 的本地
 transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；host 资产已随包
-发布（`cloud-host/`），projection 页面 E2E 已通过，多 bot 单 host 页面 E2E 也已通过
-（2026-11-23）；镜像与生产交付未做。
+发布（`cloud-host/`），projection 页面 E2E 已通过，多 bot 单 host 的 dev 页面 E2E
+也已通过（2026-11-23）；生产镜像 `dsh-bot@1` 与 R-G008 部署已完成，多 bot 单 host
+的生产验收未做。
 
 ## 2. 依赖项目今天可用
 
@@ -267,6 +268,8 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
   删除、runtimes=[]、机器 Stopped、未 destroy。安装包来自 npm tarball，未手工修改。
   此前同一路径的 `0.1.1-alpha` 会因上一轮 host 留下的 stale `stopped` 状态在约
   3 秒内以 `E_RUNTIME_UNAVAILABLE` 失败；alpha.1 是该缺陷的补丁发布。
+  `0.1.1-alpha` 仍留在 npm registry 上，显式 pin 该版本会命中缺陷；`alpha` tag
+  已移开。未配置长期 npm token，因此没有从 CI 执行 deprecate。
 - 本地 cloud host transport adapter（2026-11-23，`lib/cloud-host-runtime.js`，预览）：
   通过 `runtime.*` 确保机器/runtime，`rayrun_files` 上传 inbox/读取 outbox，映射到
   `session.*`；fake 测试 15/15（机器 start/resume、runtime 复用、projection、并发 bot 共享 setup、无 token/无机器/无文件工具失败
@@ -297,24 +300,10 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
 
 ## 4. 尚未构建或验证
 
-- 常驻云端 bot runtime 的生产镜像与部署：平台 R-G008 runtimes API 已实现并本机 dev
-  全量验收通过（`rayrun-bot-gaps`，`4709ac0`，2026-11-22：runtime 启动、凭证注入、
-  sandbox stop/start autostart、SIGKILL 重启、删除；keep_alive 与 daemon 重启保留；
-  旧镜像 `ci@1` 负测 409 `guestd_outdated`）；本地 transport adapter
-  （`lib/cloud-host-runtime.js`）、随包 host 资产、自动 projection 与多 bot 单 host
-  已在 dev 页面 E2E 通过（2026-11-23）。生产 2026-11-24 部署到 `5c2ff48`
-  （build 493），包含 `rayrun-bot-gaps`，`/v1/runtimes` 未认证返回 401；hosted
-  首次尝试在 `runtime.put` 返回 409 `guestd_outdated`（`E_GUESTD_OUTDATED`）。
-  2026-11-24 已发布 `dsh-bot@1`（来源 builder@1 已换 guestd 0.6.0）：guestd 0.6.0、
-  Node 24.22.0、DSH 0.2.0-rc.2，manifest `credential_slots=["DEEPSEEK_API_KEY"]`。
-  测试 sandbox 的 `runtime.put bot-host` 返回 200 applied/restarted，state running、
-  heartbeat 更新；测试后 stop、未 destroy。`ubuntu@1` 等其他官方镜像仍是 guestd
-  0.5.0，不能用于 runtime。2026-11-24 hosted 用户租户 cloudHost 聊天 E2E 通过：
-  `rayrun-bot-prod-e2e`（`dsh-bot@1`）从 Stopped 启动，bot-host runtime running
-  pid 636，bot 回复 `PROD_OK`，约 12 秒；runtime 删除、机器 Stopped、未 destroy。
-  生产 routine E2E 已通过（`CLOUD_ROUTINE_PROD_OK`，2026-11-24）。credential 不需要新建：现有 hosted deepseek
-  credential 会映射到新镜像声明的 `DEEPSEEK_API_KEY` 槽位。依赖 1.2.0
-  `runtime.*` client（`lib/runtime-rpc.js`）已过 fake 测试和 dev live 联调。
+- 生产多 bot 单 host 验收：单 bot cloudHost 聊天和 routine E2E 已通过；同一生产
+  host 上两个 bot 的并发与隔离尚未验证。
+- 干净 npm 安装产物的浏览器与审批验收：alpha.1 已通过 RPC golden path，但尚未在
+  该安装产物上用真实 Bots 页面验证创建/发送和 fail-closed 审批卡。
 - 能拦住 worker 的远程审批执行：ADR-019 已让本地 host 对 typed 机器
   start/stop/pause/resume 做审批/执行，真实 cloud proposal、denial/Continue 和下一轮
   context live E2E 已通过；其他动作和云端凭据动作仍未完成；云端 agent 本身仍不受

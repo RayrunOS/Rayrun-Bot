@@ -1,6 +1,6 @@
 # 常见问题
 
-*状态：2026-11-22。Pre-alpha。两个独立项目：云电脑插件
+*状态：2026-11-25。Pre-alpha。两个独立项目：云电脑插件
 [RayrunOS/dsh-rayrun-computer](https://github.com/RayrunOS/dsh-rayrun-computer)
 独立可用；本仓库的 bot 层在它之上构建，并把它作为外部依赖复用。实现状态以
 [12-status.md](12-status.md) 为准；本文只给短答，细节见[系统架构](01-system-architecture.md)、
@@ -49,10 +49,10 @@ key 存在 Rayrun credential 里，只注入 agent 进程；机器里的 `exec` 
 
 今天需要：Rayrun Bot，以及独立的
 [RayrunOS/dsh-rayrun-computer](https://github.com/RayrunOS/dsh-rayrun-computer)
-项目。Rayrun Bot 把它当作外部依赖复用，不修改、不 fork、不 vendor。两个包都未上
-npm；从各自的 checkout/tarball 用**一条** `dsh plugin add` 命令装进同一个 DSH
-profile，会同时启用两个 bundle（S6 已验证，2026-11-24）。只安装 Rayrun Bot 并在
-`package.json` 声明依赖，只会安装依赖包，不会自动启用依赖 bundle。
+项目。Rayrun Bot 把它当作外部依赖复用，不修改、不 fork、不 vendor。两个包都已发布
+到 npm；用**一条** `dsh plugin add` 命令装进同一个 DSH profile，会同时启用两个
+bundle（S6 已验证，2026-11-24）。只安装 Rayrun Bot 并在 `package.json` 声明依赖，
+只会安装依赖包，不会自动启用依赖 bundle。
 
 ## 为什么这个仓库文档这么多？
 
@@ -63,10 +63,10 @@ profile，会同时启用两个 bundle（S6 已验证，2026-11-24）。只安�
 
 ## 今天能做什么？
 
-把独立的云电脑插件从 checkout 装进 DeepSeek Harness，使用它的七个工具：
-create/stop/pause/destroy 机器、跑命令、搬文件、驱动桌面、委派任务、同步 workspace、
-project worker 层。它是 Rayrun Bot 的依赖，不是本仓库的一部分。本仓库的
-`dsh-rayrun-bots` 也能从 checkout 装进同一个 profile，打开 Bots 壳并持久化本地名册；
+从 npm 用一条 `dsh plugin add` 把两个包装进同一个 DeepSeek Harness profile。独立的
+云电脑插件提供七个工具：create/stop/pause/destroy 机器、跑命令、搬文件、驱动桌面、
+委派任务、同步 workspace、project worker 层。它是 Rayrun Bot 的依赖，不是本仓库的
+一部分。本仓库的 `dsh-rayrun-bots` 一并装进同一个 profile，打开 Bots 壳并持久化名册；
 真实 bot 的对话和审批卡已接 host，示例 bot 与设置仍是页内预览。[安装与运行](09-deployment.md)有确切命令和“还缺什么”表，
 实现状态见 [12-status.md](12-status.md)。
 
@@ -111,10 +111,10 @@ agent 在自己的 workspace 内不受审批约束。云端凭据动作仍需 Ra
 
 ## 上 npm 了吗？能作为插件安装吗？
 
-两个包都不在 npm 上。bot 包——`dsh-rayrun-bots`，预期的安装名——还不可安装。独立的
-`RayrunOS/dsh-rayrun-computer` 云电脑包也不在 npm 上；从 checkout 用
-`dsh plugin --profile web add <absolute path>` 安装，然后重启 DSH。发布之前，两者都
-保持 checkout 安装。
+两个包都已发布到 npm：`dsh-rayrun-bots@0.1.1-alpha.1`（`alpha` tag；`latest` 仍是
+旧的 `0.1.0-alpha.0`）和独立的 `dsh-rayrun-computer@1.2.1`（latest）。用一条
+`dsh plugin --profile web add` 命令安装两个包，然后重启 DSH；只安装 bot 包即使声明
+依赖，也不会启用依赖的 bundle。安装步骤见 [09-deployment.md](09-deployment.md)。
 
 ## 我的数据会被上传到什么地方吗？
 

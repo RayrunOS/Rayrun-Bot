@@ -1,6 +1,6 @@
 # UI 设计 — v0.1
 
-*状态：2026-11-24（rev 8）。客户端照搬用户分享的参考截图里 Grok Bot 桌面 App 的布局
+*状态：2026-11-25（rev 8）。客户端照搬用户分享的参考截图里 Grok Bot 桌面 App 的布局
 ——左栏聊天列表、中间 markdown 对话、右侧每 bot 详情面板——但使用 rayrunos.com 的
 视觉语言：白色画布、深蓝主按钮、蓝色强调、细线边框。审批是内联卡，不是单独收件箱。
 可点击参考是 [`docs/mockups/index.html`](../mockups/index.html)；在 URL 后追加
@@ -113,8 +113,8 @@ Harness”控件。DSH 仍是宿主；setup、Plugins、云电脑和 Workspaces 
 - **Upcoming** — routines：每行一个 routine，带标题、日程和开关。所有 routine 都关时，
   行上方出现一行安静的 `All routines are paused`。真实 bot 可创建每 N 分钟重复的
   routine、启停和删除；示例 bot 的行仍是示意形态。cloudHost 模式的云端调度已在
-  Rayrun dev/test 环境 live 验证，routine 结果会在轮询后并入对话；生产待部署，
-  cron/事件触发不在 v0.1。
+  Rayrun dev/test 环境 live 验证，生产单 bot routine E2E 已通过，routine 结果会在
+  轮询后并入对话；cron/事件触发不在 v0.1。
 - **Computer** — 靠近底部的紧凑行，像参考一样：左边是名字和状态（`live` /
   `reconnecting…` / `sleeping` / `unreachable`；Rayrun 未配置时 `Not connected`），
   带彩色点（绿 / 琥珀 / 灰 / 红），右边是 44×30 的小屏幕缩略图，下面右对齐
