@@ -8,8 +8,9 @@
 
 ## 1. 一句话状态
 
-Pre-alpha。`dsh-rayrun-bots@0.1.0-alpha.0` 已发布到 npm（alpha/latest），但没有
-稳定版；生产部署与 release tag/CI 仍待完成。本项目依赖的云电脑插件
+Pre-alpha。`dsh-rayrun-bots@0.1.1-alpha` 已通过 `publish.yml` 发布到 npm，`alpha`
+dist-tag 指向它；`latest` 仍是手动发布的 `0.1.0-alpha.0`，没有稳定版。本项目依赖的
+云电脑插件
 [`RayrunOS/dsh-rayrun-computer`](https://github.com/RayrunOS/dsh-rayrun-computer)
 是独立、可用的项目；本仓库的 bot 层已有可加载的插件壳、持久化本地名册、本地
 session/transcript，以及按轮次的 runtime（依赖 1.1+ 用 detached
@@ -64,7 +65,7 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
 | 用量 | 详情面板的电脑块和用量块，以及 Settings 的用量行，读取真实机器状态、余额与机时。 |
 | 测试 | Host/client 名册接线、session/transcript、`rayrun_agent`/detached adapter、per-bot workspace 与审批协议由普通 Node 契约测试覆盖；客户端 session 失败路径、单轮真实一轮、页面关闭 + host 重启后的 detached 收取，以及机器 stop/start 后的第二轮续接另有本机页面 smoke。包清单、locale、RPC、客户端、名册、session、runtime、workspace、审批和 tarball 内容都有检查；cloud host 8 项、cloud host routines 8 项、DSH agent 5 项、host projection 5 项、runtime.* client 5 项、cloud host runtime adapter 14 项、cloud host proposal 5 项、approval executor 7 项、cloud approval bridge 6 项、routines 16 项、cloud routine bridge 7 项、cloud routine E2E 1 项、routine results 6 项纯 Node 检查，runtime.* client 与 cloud host 另有 dev live 联调，cloudHost adapter 另有页面 E2E（手动、自动 projection 与多 bot 单 host），审批卡另有拒绝/失败关闭与 Continue 按钮的页面 E2E。Routine 页面另做本地 DSH + Firefox smoke：真实表单创建、暂停、删除并写入 routines.json（2026-11-23，无 Rayrun token），截图 `/tmp/bot/routines-ui.png`（临时文件，不入库）；本地 mode 尚未等待一次 scheduler 自动触发；cloudHost mode 的 dev live E2E 已通过（2026-11-24，见 §3.1）。 |
 | 审批执行 | 协议后端（request/decision schema、canonical actionHash、TTL、幂等/重放/错 bot 负向测试、审计、`approvals.list/get/decide/propose/sync`）已实现。ADR-019（2026-11-23）把本地 DSH host 定为本地 typed 动作的审批权威与执行方：`approvals.decide` 批准后由本地 executor 执行 `rayrun.machine.start/stop/pause/resume`，先写 `executing` claim，拒绝/过期/重放/崩溃 claim 失败关闭；客户端真实卡片已接。云端 proposal bridge 已接并 live 验证：云 bot 在回复末尾输出结构化 `rayrun-approval` block，cloud host 解析后写 proposal（`propose.mjs` 保留为可选 shell 路径），本地用 `rayrun_files` 导入并去重，结果写回 `approval-results/`；机器停机时结果先落本地 outbox，下次 Running 补传。start/stop/pause/resume、denial、Continue 均真机通过。下一轮 prompt 会带最近审批结果，bot 无工具直接回答 approved/done/Running 或 denied/not_executed。本地 routine 轮次会把 `origin: routine` 传到 cloud task，云端提案标为 background 并沿用 30 分钟 TTL。其他动作和云端凭据动作仍未完成；平台隔离仍用于云端凭据（ADR-001）。`rayrun_agent` adapter 不拦截外部动作，prompt 指引不是安全边界。 |
-| 发布 | `dsh-rayrun-bots@0.1.0-alpha.0` 已发布 npm（当前 dist-tags `latest`/`alpha` 都指向它，手动发布）；依赖 `dsh-rayrun-computer@1.2.1` 已发布 npm（latest）。一条 `dsh plugin add` 安装两个包的路径已用官方 registry 验证：两个 bundle 都被选中、两个插件都加载、health `ok`。`.github/workflows/publish.yml` 已加入（Release `published` 时 OIDC 发布，`workflow_dispatch` 仅 dry run；contract test 通过），但尚无 `v0.1.0-alpha.0` tag/Release，workflow 尚未实际运行。只安装 bots 包即使声明依赖也不会启用依赖 bundle。 |
+| 发布 | `dsh-rayrun-bots@0.1.1-alpha` 已通过 `publish.yml` 从 `v0.1.1-alpha` GitHub Prerelease 发布（OIDC，run `45520396429`，`_npmUser=GitHub Actions`）；npm `alpha` tag 指向 0.1.1-alpha，`latest` 仍是手动发布的 0.1.0-alpha.0（prerelease 不移动 latest，符合 workflow 契约）。依赖 `dsh-rayrun-computer@1.2.1` 已发布 npm（latest）。一条 `dsh plugin add` 安装两个包的路径已用官方 registry 验证：两个 bundle 都被选中、两个插件都加载、health `ok`。只安装 bots 包即使声明依赖也不会启用依赖 bundle。 |
 
 ### 3.1 验证记录
 
@@ -318,10 +319,8 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
   `.gitignore` 忽略，且从未进入 git 历史或 npm 包，但仍留在工作区；需轮换并
   移出/删除后才能声称 A11 通过。扫描未打印任何值。
 - IM 通道。
-- npm 发布后的两插件安装验证：S6 已用本地 tarball 验证一条命令装两个包会同时启用
-  两个 bundle；npm 归属/发布账号和发布 CI 仍未定。
-- Bots 的 GitHub Release/tag：npm `0.1.0-alpha.0` 已发布，`.github/workflows/publish.yml`
-  已加入并通过契约测试，但尚无对应 tag/Release，因此 workflow 尚未实际运行。
+- 稳定版发布：当前只有 `0.1.1-alpha`（npm `alpha` tag）；`latest` 仍是旧的
+  `0.1.0-alpha.0`，需要单独的稳定版发布决策。
 
 ## 5. 平台缺口
 
