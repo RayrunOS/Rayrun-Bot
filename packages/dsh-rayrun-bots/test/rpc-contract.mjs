@@ -311,7 +311,7 @@ check('the roster starts empty, persists a created bot, and lists it after a rel
   const { handler } = hostFor()
   const empty = await request(handler, { action: 'bots.list' })
   assert.equal(empty.status, 200)
-  assert.deepEqual(empty.json, { ok: true, bots: [], routines: {} })
+  assert.deepEqual(empty.json, { ok: true, bots: [], routines: {}, computers: {} })
 
   const created = await request(handler, post('bots.create', {
     name: 'Weekly Watch',
@@ -581,7 +581,7 @@ check('resumes a persisted detached task without a page RPC', () => withState(as
       return { text: 'recovered' }
     },
   }
-  hostFor({ runtime })
+  const { handler } = hostFor({ runtime })
   for (let attempt = 0; attempt < 40 && store.status(bot.id).state !== 'idle'; attempt += 1) {
     await new Promise((resolve) => setTimeout(resolve, 100))
   }
@@ -591,6 +591,8 @@ check('resumes a persisted detached task without a page RPC', () => withState(as
     store.history(bot.id).messages.map((message) => message.text),
     ['hello', 'recovered'],
   )
+  const roster = await request(handler, { action: 'bots.list' })
+  assert.equal(roster.json.computers[bot.id], 'box')
 }))
 
 check('session replies expose no credential shape', () => withState(async () => {

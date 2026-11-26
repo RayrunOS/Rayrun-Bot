@@ -140,8 +140,10 @@ attention、snippet 与时间。chat 来源没有 TTL，显示 `waits for you`�
 `machine.create`，规格取插件的 `defaults`（默认 `deepseek-harness@1`、2 vCPU、至少 2 GB、
 远程桌面）。key 只作为 `modelKey` 交给云电脑插件存成机器凭据，不进入 Bots 的 host 状态，
 成功后清空输入。按钮文案明确说明这是 Rayrun 账号上的计费机器，且 Bots 永不销毁它；
-未连接时按钮不可用，失败显示一句可执行错误。多台机器时优先选 `rayrun-bot`，其次选有
-`desktop_url` 的机器，最后才用第一台；setup、Open 和重复创建检查共用这个选择。依赖层
+未连接时按钮不可用，失败显示一句可执行错误。多台机器时 setup 和重复创建检查优先选
+`rayrun-bot`，其次选有 `desktop_url` 的机器，最后才用第一台；Open/Take over 不用这个
+猜测：host 从 bot 的 session 提供实际机器名（`bots.list.computers`），客户端只查
+这个名字；找不到时按钮不可用并显示 host 管理/未连接状态。依赖层
 创建成功路径已在本机用真实 token 和 model key 验证（token 未进入沙箱）；Bots 页面内的
 已有机器采用和 Continue 已在本机 DSH 页面验证，创建按钮本身因账号已有机器尚未点击，
 仍需补验，见 [`10-rayrun-verification.md`](10-rayrun-verification.md) §4。

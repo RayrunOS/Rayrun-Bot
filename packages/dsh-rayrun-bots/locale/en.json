@@ -1,14 +1,18 @@
 {
   "meta": {
     "title": "Rayrun Bot",
-    "description": "Adds a Bots entry and the v0.1 three-column shell: chat list, conversation with approval cards, details, setup and settings. Everything on the page is an in-memory preview; no machine and no credential are used."
+    "description": "Adds a Bots entry and the v0.1 three-column shell: chat list, conversation with approval cards, details, setup and settings. Real bots and sessions run on your own Rayrun cloud computer. Sample data is available only in the explicit ?preview=1 demo."
   },
   "panel": {
     "label": "Bots"
   },
   "brand": "Rayrun Bot",
   "preview": {
-    "badge": "Preview"
+    "badge": "Preview",
+    "demoBadge": "Demo",
+    "sample": "Sample",
+    "demoBanner": "Demo data. Nothing here is real.",
+    "demoSnippet": "Sample conversation"
   },
   "chat": {
     "working": "Working…",
@@ -162,14 +166,16 @@
     "copy": "Copy",
     "copied": "Copied",
     "copyFailed": "Copy failed. Select the password manually.",
-    "close": "Close"
+    "close": "Close",
+    "hostManaged": "Managed by host"
   },
   "notice": {
     "recovering": "The bot host is restarting. This conversation resumes on its own.",
     "reconnecting": "Computer reconnecting… retrying in 5s",
     "sleeping": "Computer is sleeping. Open it in the cloud-computer plugin to wake it.",
-    "attach": "Attachments aren't available in this preview.",
-    "preview": "In-memory preview. Nothing on this page is saved, and approvals are not sent to a worker."
+    "attach": "Attachments are not available yet.",
+    "preview": "In-memory preview. Nothing on this page is saved, and approvals are not sent to a worker.",
+    "cloud": "Bots run on your own Rayrun cloud computer. Approval decisions stay on your local host."
   },
   "composer": {
     "placeholder": "Message {name}…",
@@ -259,7 +265,8 @@
     "computerCreateFailed": "Could not create the computer: {message}",
     "computerCost": "Creates a billable machine on your Rayrun account. Bots never destroys it.",
     "botTitle": "First bot",
-    "botBody": "Give it a name and one job. It is added to this page only, not to a cloud computer."
+    "botBody": "Give it a name and one job. It is saved to your local roster and runs on your cloud computer.",
+    "open": "Set up Rayrun Bot"
   },
   "settings": {
     "title": "Settings",
@@ -280,7 +287,7 @@
     "hostDepVersion": "Cloud-computer plugin {version} is not supported (need {required}).",
     "retry": "Retry",
     "plugin": "Cloud-computer plugin",
-    "pluginHint": "dsh-rayrun-computer v1.0.0",
+    "pluginHint": "dsh-rayrun-computer v{version}",
     "pluginOk": "OK",
     "pluginMissing": "Missing",
     "pluginIncompatible": "Incompatible",
@@ -377,5 +384,9 @@
   "error": {
     "hostDown": "The bot host is not responding.",
     "botCreate": "Could not save the bot: {message}"
+  },
+  "user": {
+    "you": "You",
+    "youInitials": "Y"
   }
 }

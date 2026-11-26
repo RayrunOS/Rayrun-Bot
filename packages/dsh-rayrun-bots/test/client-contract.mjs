@@ -124,6 +124,7 @@ const required = [
   'computer.sleeping',
   'computer.unreachable',
   'computer.takeOver',
+  'computer.hostManaged',
   'computer.open',
   'computer.noMachine',
   'computer.noMachineShort',
@@ -151,6 +152,14 @@ const required = [
   'computer.close',
   'usage.liveLine',
   'preview.badge',
+  'preview.demoBadge',
+  'preview.sample',
+  'preview.demoBanner',
+  'preview.demoSnippet',
+  'notice.cloud',
+  'user.you',
+  'user.youInitials',
+  'setup.open',
   'setup.computerTitle',
   'setup.computerExisting',
   'setup.computerNeedsRayrun',
@@ -246,6 +255,10 @@ assert.match(client, /item\.remote_desktop && item\.desktop_url/)
 assert.match(client, /machineStatus\(machine\.status\)/)
 assert.match(client, /realOverview/)
 assert.match(client, /realMachine/)
+assert.match(client, /body\.computers\?\.\[bot\.id\]/)
+assert.match(client, /machineFor\(selected\)/)
+assert.match(client, /disabled: !available/)
+assert.match(client, /computer: session\?\.computer \?\? bot\.computer/)
 assert.match(client, /modelKey/)
 assert.match(client, /disabled: machineBusy \|\| !computerName\.trim\(\)/)
 assert.equal(client.includes('setup.keySave'), false)
@@ -276,6 +289,13 @@ assert.match(client, /t\('approval\.expired'\)/)
 assert.match(client, /t\('approval\.expires', \{ n: approval\.expiresMin \}\)/)
 assert.match(client, /rb-card-expired/)
 assert.match(client, /FIRST_RUN_PREVIEW/)
+assert.match(client, /PREVIEW\.get\('preview'\) === '1'/)
+assert.match(client, /demoBots\(\)/)
+assert.match(client, /state\.demo \? h\('span', \{ className: 'rb-preview-pill' \}/)
+assert.match(client, /t\('notice\.cloud'\)/)
+assert.match(client, /t\('user\.you'\)/)
+assert.match(client, /t\('setup\.open'\)/)
+assert.match(client, /t\('settings\.pluginHint', \{ version: host\.dependency\?\.version/)
 assert.match(client, /state\.bots\.length === 0/)
 assert.match(client, /rb-firstrun/)
 assert.match(client, /rb-thread-welcome/)

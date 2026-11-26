@@ -20,6 +20,7 @@ window.__ModuleLoader__.load({
     const { useEffect, useRef, useState } = React
     const PREVIEW = new URLSearchParams(window.location.search)
     const FIRST_RUN_PREVIEW = PREVIEW.get('first-run') === '1'
+    const DEMO_PREVIEW = PREVIEW.get('preview') === '1'
     const LOW_BALANCE_PREVIEW = PREVIEW.get('low-balance') === '1'
     const COMPUTER_PREVIEW = ['live', 'reconnecting', 'sleeping', 'unreachable'].includes(PREVIEW.get('computer'))
       ? PREVIEW.get('computer')
@@ -28,14 +29,18 @@ window.__ModuleLoader__.load({
     const EN = {
   "meta": {
     "title": "Rayrun Bot",
-    "description": "Adds a Bots entry and the v0.1 three-column shell: chat list, conversation with approval cards, details, setup and settings. Everything on the page is an in-memory preview; no machine and no credential are used."
+    "description": "Adds a Bots entry and the v0.1 three-column shell: chat list, conversation with approval cards, details, setup and settings. Real bots and sessions run on your own Rayrun cloud computer. Sample data is available only in the explicit ?preview=1 demo."
   },
   "panel": {
     "label": "Bots"
   },
   "brand": "Rayrun Bot",
   "preview": {
-    "badge": "Preview"
+    "badge": "Preview",
+    "demoBadge": "Demo",
+    "sample": "Sample",
+    "demoBanner": "Demo data. Nothing here is real.",
+    "demoSnippet": "Sample conversation"
   },
   "chat": {
     "working": "Working…",
@@ -189,14 +194,16 @@ window.__ModuleLoader__.load({
     "copy": "Copy",
     "copied": "Copied",
     "copyFailed": "Copy failed. Select the password manually.",
-    "close": "Close"
+    "close": "Close",
+    "hostManaged": "Managed by host"
   },
   "notice": {
     "recovering": "The bot host is restarting. This conversation resumes on its own.",
     "reconnecting": "Computer reconnecting… retrying in 5s",
     "sleeping": "Computer is sleeping. Open it in the cloud-computer plugin to wake it.",
-    "attach": "Attachments aren't available in this preview.",
-    "preview": "In-memory preview. Nothing on this page is saved, and approvals are not sent to a worker."
+    "attach": "Attachments are not available yet.",
+    "preview": "In-memory preview. Nothing on this page is saved, and approvals are not sent to a worker.",
+    "cloud": "Bots run on your own Rayrun cloud computer. Approval decisions stay on your local host."
   },
   "composer": {
     "placeholder": "Message {name}…",
@@ -286,7 +293,8 @@ window.__ModuleLoader__.load({
     "computerCreateFailed": "Could not create the computer: {message}",
     "computerCost": "Creates a billable machine on your Rayrun account. Bots never destroys it.",
     "botTitle": "First bot",
-    "botBody": "Give it a name and one job. It is added to this page only, not to a cloud computer."
+    "botBody": "Give it a name and one job. It is saved to your local roster and runs on your cloud computer.",
+    "open": "Set up Rayrun Bot"
   },
   "settings": {
     "title": "Settings",
@@ -307,7 +315,7 @@ window.__ModuleLoader__.load({
     "hostDepVersion": "Cloud-computer plugin {version} is not supported (need {required}).",
     "retry": "Retry",
     "plugin": "Cloud-computer plugin",
-    "pluginHint": "dsh-rayrun-computer v1.0.0",
+    "pluginHint": "dsh-rayrun-computer v{version}",
     "pluginOk": "OK",
     "pluginMissing": "Missing",
     "pluginIncompatible": "Incompatible",
@@ -404,19 +412,27 @@ window.__ModuleLoader__.load({
   "error": {
     "hostDown": "The bot host is not responding.",
     "botCreate": "Could not save the bot: {message}"
+  },
+  "user": {
+    "you": "You",
+    "youInitials": "Y"
   }
 }
     const ZH = {
   "meta": {
     "title": "Rayrun Bot",
-    "description": "在侧边栏加入 Bots 入口和 v0.1 三栏界面：会话列表、带审批卡的对话、详情面板、初始化与设置。页面内容全部是内存预览，不连接机器，也不使用凭据。"
+    "description": "在侧边栏加入 Bots 入口和 v0.1 三栏界面：会话列表、带审批卡的对话、详情面板、初始化与设置。真实 bot 和会话运行在你自己的 Rayrun 云电脑上；示例数据只出现在显式的 ?preview=1 演示中。"
   },
   "panel": {
     "label": "Bots"
   },
   "brand": "Rayrun Bot",
   "preview": {
-    "badge": "预览"
+    "badge": "预览",
+    "demoBadge": "演示",
+    "sample": "示例",
+    "demoBanner": "演示数据，内容不是真的。",
+    "demoSnippet": "示例对话"
   },
   "chat": {
     "working": "正在处理…",
@@ -570,14 +586,16 @@ window.__ModuleLoader__.load({
     "copy": "复制",
     "copied": "已复制",
     "copyFailed": "复制失败，请手动选中密码。",
-    "close": "关闭"
+    "close": "关闭",
+    "hostManaged": "由 host 管理"
   },
   "notice": {
     "recovering": "Bot host 正在重启，这个会话会自动恢复。",
     "reconnecting": "电脑正在重连… 5 秒后重试",
     "sleeping": "电脑正在休眠。打开云电脑插件即可唤醒。",
-    "attach": "这个预览里还不能添加附件。",
-    "preview": "这是页内预览。内容不会保存，审批也不会发给 worker。"
+    "attach": "暂时还不能添加附件。",
+    "preview": "这是页内预览。内容不会保存，审批也不会发给 worker。",
+    "cloud": "Bot 运行在你自己的 Rayrun 云电脑上；审批决定留在本地 host。"
   },
   "composer": {
     "placeholder": "给 {name} 发消息…",
@@ -667,7 +685,8 @@ window.__ModuleLoader__.load({
     "computerCreateFailed": "创建云电脑失败：{message}",
     "computerCost": "会在你的 Rayrun 账号上创建一台计费机器。Bots 永不销毁它。",
     "botTitle": "第一个 Bot",
-    "botBody": "给它一个名字和一项职责。它只加到这一页，不会出现在云电脑上。"
+    "botBody": "给它一个名字和一项职责。它会保存到本地名册，并在你的云电脑上运行。",
+    "open": "首次设置"
   },
   "settings": {
     "title": "设置",
@@ -688,7 +707,7 @@ window.__ModuleLoader__.load({
     "hostDepVersion": "云电脑插件 {version} 不受支持（需要 {required}）。",
     "retry": "重试",
     "plugin": "云电脑插件",
-    "pluginHint": "dsh-rayrun-computer v1.0.0",
+    "pluginHint": "dsh-rayrun-computer v{version}",
     "pluginOk": "正常",
     "pluginMissing": "缺失",
     "pluginIncompatible": "不兼容",
@@ -785,6 +804,10 @@ window.__ModuleLoader__.load({
   "error": {
     "hostDown": "Bot host 没有响应。",
     "botCreate": "无法保存 Bot：{message}"
+  },
+  "user": {
+    "you": "你",
+    "youInitials": "你"
   }
 }
 
@@ -850,6 +873,8 @@ window.__ModuleLoader__.load({
 .rb-list-top { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px 8px; gap: 8px; }
 .rb-brand { display: flex; align-items: center; gap: 8px; color: #0e2050; font-weight: 650; font-size: 13px; min-width: 0; }
 .rb-preview-pill { padding: 1px 7px; border: 1px solid #d8e3f5; border-radius: 999px; background: #eef4ff; color: #1d4ed8; font-size: 10.5px; font-weight: 600; line-height: 1.7; letter-spacing: .02em; }
+.rb-demo-banner { margin: 0 10px 8px; padding: 7px 10px; border: 1px solid #f1d9b5; border-radius: 8px; background: #fff8ec; color: #92400e; font-size: 11.5px; line-height: 1.45; }
+.rb-sample-chip { padding: 0 5px; border: 1px solid #d8e3f5; border-radius: 999px; background: #eef4ff; color: #1d4ed8; font-size: 9.5px; font-weight: 600; line-height: 1.6; letter-spacing: .02em; }
 .rb-mark { flex: none; }
 .rb-tools { display: flex; gap: 4px; }
 .rb-icon { width: 28px; height: 28px; border: 0; border-radius: 8px; background: transparent; color: #5b6472; display: grid; place-items: center; padding: 0; }
@@ -885,7 +910,7 @@ window.__ModuleLoader__.load({
 .rb-frame button.rb-textbtn.rb-textbtn-low { color: #b45309; }
 .rb-textbtn .rb-dot { margin-right: 4px; vertical-align: middle; }
 .rb-empty-list { color: #8a93a3; font-size: 12px; padding: 8px 10px; }
-.rb-firstrun { padding: 10px; }
+.rb-firstrun { padding: 10px; display: grid; gap: 8px; }
 .rb-main { background: #fff; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 .rb-thread { flex: 1; overflow: auto; padding: 26px 34px 12px; display: flex; flex-direction: column; gap: 20px; }
 .rb-thread > * { max-width: 760px; width: 100%; align-self: center; }
@@ -1138,12 +1163,13 @@ window.__ModuleLoader__.load({
     }
 
     /** Map one host roster entry to the client's bot shape; its session comes from the host. */
-    function realBot(bot, routines = []) {
+    function realBot(bot, routines = [], computer = null) {
       return {
         id: bot.id,
         name: bot.name,
         job: bot.label,
         source: 'real',
+        computer,
         attention: null,
         time: '',
         snippetKey: 'empty.snippet',
@@ -1319,6 +1345,7 @@ window.__ModuleLoader__.load({
       return {
         ...bot,
         session,
+        computer: session?.computer ?? bot.computer,
         sessionCursor: Number.isInteger(session?.lastSeq) ? session.lastSeq : bot.sessionCursor,
         historyLoaded: true,
         working: sessionWorking(session),
@@ -1525,10 +1552,27 @@ window.__ModuleLoader__.load({
       ]
     }
 
+    function demoBots() {
+      return seedBots().map((bot) => ({
+        ...bot,
+        sample: true,
+        attention: null,
+        snippet: undefined,
+        snippetKey: 'preview.demoSnippet',
+        time: '',
+        timeKey: undefined,
+        approvals: {},
+        receipts: [],
+        routines: [],
+        messages: bot.messages.filter((entry) => entry.kind !== 'approval' && entry.kind !== 'computer'),
+      }))
+    }
+
     function createState() {
       return {
         screen: 'chat',
-        selectedId: 'nora',
+        selectedId: DEMO_PREVIEW && !FIRST_RUN_PREVIEW ? 'nora' : null,
+        demo: DEMO_PREVIEW && !FIRST_RUN_PREVIEW,
         tab: 'activity',
         computer: COMPUTER_PREVIEW,
         realOverview: null,
@@ -1550,7 +1594,7 @@ window.__ModuleLoader__.load({
           notifications: true,
           lang: null,
         },
-        bots: FIRST_RUN_PREVIEW ? [] : seedBots(),
+        bots: FIRST_RUN_PREVIEW ? [] : DEMO_PREVIEW ? demoBots() : [],
       }
     }
 
@@ -1902,13 +1946,15 @@ window.__ModuleLoader__.load({
           try {
             const body = await hostRpc('bots.list')
             const bots = Array.isArray(body.bots) ? body.bots : []
-            if (cancelled || bots.length === 0) return
+            if (cancelled) return
             setState((current) => {
-              const roster = bots.map((bot) => realBot(bot, body.routines?.[bot.id]))
+              if (DEMO_PREVIEW) return current
+              if (bots.length === 0) return { ...current, bots: [], selectedId: null, demo: false }
+              const roster = bots.map((bot) => realBot(bot, body.routines?.[bot.id], body.computers?.[bot.id]))
               const selectedId = roster.some((bot) => bot.id === current.selectedId)
                 ? current.selectedId
                 : roster[0].id
-              return { ...current, bots: roster, selectedId }
+              return { ...current, bots: roster, selectedId, demo: false }
             })
           } catch {
             // Keep the preview; the Settings host row reports the failure.
@@ -2294,6 +2340,16 @@ window.__ModuleLoader__.load({
         }
       }
 
+      const machineIn = (machines, bot) => {
+        const name = bot?.computer
+        if (!name) return null
+        return machines.find((item) => item.name === name || item.id === name) ?? null
+      }
+      const machineFor = (bot) => machineIn(
+        Array.isArray(state.realOverview?.machines) ? state.realOverview.machines : [],
+        bot,
+      )
+
       const openComputer = async () => {
         const win = window.open('', '_blank')
         if (!win) {
@@ -2309,7 +2365,7 @@ window.__ModuleLoader__.load({
             return
           }
           const machines = Array.isArray(overview.machines) ? overview.machines : []
-          const selectedMachine = pickMachine(machines)
+          const selectedMachine = machineIn(machines, selected)
           patch({ realOverview: overview, realMachine: selectedMachine || null, realError: '' })
           let machine = selectedMachine
           if (!machine) {
@@ -2357,7 +2413,7 @@ window.__ModuleLoader__.load({
       }
 
       const stopComputer = async () => {
-        const machine = state.realMachine
+        const machine = machineFor(selected)
         if (!machine?.id) {
           flash(t('computer.noMachineShort'))
           return
@@ -2446,7 +2502,7 @@ window.__ModuleLoader__.load({
         'div',
         { className: 'rb-frame', ref: frameRef, id: 'rayrun-bots-root' },
         h('style', null, CSS),
-        h('p', { className: 'rb-sr' }, t('notice.preview')),
+        h('p', { className: 'rb-sr' }, state.demo ? t('notice.preview') : t('notice.cloud')),
         h('div', { className: 'rb-sr', 'aria-live': 'polite' }, state.live),
         h(
           'div',
@@ -2477,7 +2533,7 @@ window.__ModuleLoader__.load({
             tab: state.tab,
             onTab: (tab) => patch({ tab }),
             computer: state.computer,
-            machine: state.realMachine,
+            machine: machineFor(selected),
             configured: realConfigured,
             overview: state.realOverview,
             usageError: state.realError,
@@ -2520,14 +2576,16 @@ window.__ModuleLoader__.load({
     }
 
     function ChatList({ t, state, rows, selected, searchRef, low, connected, balance, onSearchToggle, onSearch, onSelect, onNew, onSettings, onSetup }) {
-      const userName = t('sample.user.name')
+      const userName = state.demo ? t('sample.user.name') : t('user.you')
+      const userInitials = state.demo ? t('sample.user.initials') : t('user.youInitials')
+      const setupLabel = !connected || state.bots.length === 0 ? t('setup.open') : t('sample.user.foot', { balance })
       return h(
         'aside',
         { className: 'rb-list', 'aria-label': t('panel.label') },
         h(
           'div',
           { className: 'rb-list-top' },
-          h('div', { className: 'rb-brand' }, h(Mark), h('span', null, t('brand')), h('span', { className: 'rb-preview-pill' }, t('preview.badge'))),
+          h('div', { className: 'rb-brand' }, h(Mark), h('span', null, t('brand')), state.demo ? h('span', { className: 'rb-preview-pill' }, t('preview.demoBadge')) : null),
           h(
             'div',
             { className: 'rb-tools' },
@@ -2535,6 +2593,7 @@ window.__ModuleLoader__.load({
             h('button', { type: 'button', className: 'rb-icon', title: t('list.newBot'), 'aria-label': t('list.newBot'), onClick: onNew }, '+'),
           ),
         ),
+        state.demo ? h('div', { className: 'rb-demo-banner', role: 'status' }, t('preview.demoBanner')) : null,
         state.searchOpen ? h(
           'div',
           { className: 'rb-search' },
@@ -2550,7 +2609,7 @@ window.__ModuleLoader__.load({
           'div',
           { className: 'rb-current' },
           h(Avatar, { size: 'big', name: botName(selected, t) }),
-          h('div', { className: 'rb-name' }, botName(selected, t)),
+          h('div', { className: 'rb-name' }, botName(selected, t), state.demo ? h('span', { className: 'rb-sample-chip' }, t('preview.sample')) : null),
           h('div', { className: 'rb-label' }, attentionText(selected, t) ? `${botJob(selected, t)} · ${attentionText(selected, t)}` : botJob(selected, t)),
         ) : h(
           'div',
@@ -2582,6 +2641,7 @@ window.__ModuleLoader__.load({
                   'div',
                   { className: 'rb-nm' },
                   name,
+                  bot.sample ? h('span', { className: 'rb-sample-chip' }, t('preview.sample')) : null,
                   bot.attention ? h('span', { className: `rb-dot rb-${bot.attention}`, title: attention }) : null,
                 ),
                 h('div', { className: 'rb-sn' }, snippet),
@@ -2593,6 +2653,7 @@ window.__ModuleLoader__.load({
               'div',
               { className: 'rb-firstrun' },
               h('button', { type: 'button', className: 'rb-btn rb-primary', onClick: onNew }, t('newBot.create')),
+              h('button', { type: 'button', className: 'rb-btn rb-ghost', onClick: onSetup }, t('setup.open')),
             )
             : state.search.trim()
               ? h('div', { className: 'rb-empty-list' }, t('list.empty'))
@@ -2601,7 +2662,7 @@ window.__ModuleLoader__.load({
         h(
           'div',
           { className: 'rb-foot' },
-          h(Avatar, { size: 'sm', name: userName, text: t('sample.user.initials') }),
+          h(Avatar, { size: 'sm', name: userName, text: userInitials }),
           h(
             'div',
             { className: 'rb-who' },
@@ -2616,7 +2677,7 @@ window.__ModuleLoader__.load({
                 title: t('setup.title'),
               },
               low ? h('span', { className: 'rb-dot rb-needs', 'aria-hidden': 'true' }) : null,
-              connected ? t('sample.user.foot', { balance }) : t('setup.notConnected'),
+              setupLabel,
               low ? h('span', { className: 'rb-sr' }, t('cost.lowShort')) : null),
             ),
           ),
@@ -2866,7 +2927,8 @@ window.__ModuleLoader__.load({
         ['older', 'library.older'],
       ]
       const computerStatus = computer || (machine ? machineStatus(machine.status) : 'offline')
-      const computerName = machine?.name ?? (computer ? t('sample.computerName') : '—')
+      const computerName = machine?.name ?? bot.computer ?? (computer ? t('sample.computerName') : '—')
+      const hostManaged = Boolean(bot.computer && !machine && configured)
       return h(
         'aside',
         { className: 'rb-detail', 'aria-label': name },
@@ -3005,7 +3067,7 @@ window.__ModuleLoader__.load({
               ),
             ) : null,
           ),
-          h(ComputerBlock, { t, status: computerStatus, name: computerName, configured, onComputer, onStop }),
+          h(ComputerBlock, { t, status: computerStatus, name: computerName, configured, available: Boolean(machine), managed: hostManaged, onComputer, onStop }),
           h(UsageBlock, { t, catalog, idle, low, overview, configured, error: usageError, preview: usagePreview }),
         ) : h(
           'div',
@@ -3029,17 +3091,17 @@ window.__ModuleLoader__.load({
       )
     }
 
-    function ComputerBlock({ t, status, name, configured, onComputer, onStop }) {
+    function ComputerBlock({ t, status, name, configured, available, managed, onComputer, onStop }) {
       const [confirming, setConfirming] = useState(false)
       useEffect(() => {
         if (status !== 'live') setConfirming(false)
       }, [status])
-      const canStop = status === 'live' && Boolean(onStop)
+      const canStop = status === 'live' && available && Boolean(onStop)
       const label = status === 'live' ? t('computer.live')
         : status === 'sleeping' ? t('computer.sleeping')
         : status === 'unreachable' ? t('computer.unreachable')
         : status === 'reconnecting' ? t('computer.reconnecting')
-        : configured ? t('computer.noMachineShort')
+        : configured ? (managed ? t('computer.hostManaged') : t('computer.noMachineShort'))
         : t('setup.notConnected')
       const dot = status === 'live' ? 'rb-working'
         : status === 'unreachable' ? 'rb-danger'
@@ -3071,8 +3133,8 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { className: 'rb-comp-acts' },
-            h('button', { type: 'button', className: 'rb-btn', onClick: onComputer }, t('computer.open')),
-            h('button', { type: 'button', className: 'rb-btn', onClick: onComputer }, t('computer.takeOver')),
+            h('button', { type: 'button', className: 'rb-btn', disabled: !available, onClick: onComputer }, t('computer.open')),
+            h('button', { type: 'button', className: 'rb-btn', disabled: !available, onClick: onComputer }, t('computer.takeOver')),
             canStop ? h('button', { type: 'button', className: 'rb-btn', onClick: () => setConfirming(true) }, t('computer.stop')) : null,
           ),
           canStop && confirming ? h(
@@ -3221,7 +3283,7 @@ window.__ModuleLoader__.load({
         return h(
           'main',
           { className: 'rb-main', 'data-screen': 'chat' },
-          h('div', { className: 'rb-center-empty' }, h('h2', null, t('empty.heading')), h('p', null, t('empty.body')), h('button', { type: 'button', className: 'rb-btn rb-primary', onClick: () => ctx.onScreen('newbot') }, t('newBot.create'))),
+          h('div', { className: 'rb-center-empty' }, h('h2', null, t('empty.heading')), h('p', null, t('empty.body')), h('button', { type: 'button', className: 'rb-btn rb-primary', onClick: () => ctx.onScreen('newbot') }, t('newBot.create')), h('button', { type: 'button', className: 'rb-btn rb-ghost', onClick: () => { ctx.onSetupStep(0); ctx.onScreen('setup') } }, t('setup.open'))),
         )
       }
       return h(Conversation, {
@@ -3679,7 +3741,7 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { className: 'rb-srow' },
-            h('div', { className: 'rb-l' }, t('settings.plugin'), h('small', null, t('settings.pluginHint'))),
+            h('div', { className: 'rb-l' }, t('settings.plugin'), h('small', null, t('settings.pluginHint', { version: host.dependency?.version ?? '—' }))),
             h(
               'span',
               { className: 'rb-status' },

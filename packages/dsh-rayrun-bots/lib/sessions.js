@@ -173,6 +173,7 @@ function validateSession(value, botId) {
     if (typeof value.error.message !== 'string') fail('Session error message is invalid.')
   }
   const detached = value.detached === undefined ? undefined : validateDetached(value.detached)
+  const computer = value.computer === undefined ? undefined : textOf(value.computer, 'computer')
   return {
     schema: SESSION_SCHEMA_VERSION,
     botId,
@@ -182,6 +183,7 @@ function validateSession(value, botId) {
     queue,
     createdAt,
     updatedAt,
+    ...(computer === undefined ? {} : { computer }),
     ...(detached === undefined ? {} : { detached }),
     ...(value.error === undefined ? {} : { error: { code: value.error.code, message: value.error.message } }),
   }
@@ -197,11 +199,16 @@ function publicSession(session) {
     pending: session.queue.length,
     createdAt: session.createdAt,
     updatedAt: session.updatedAt,
+    ...(session.computer === undefined ? {} : { computer: session.computer }),
     ...(session.detached === undefined ? {} : {
       detached: { taskId: session.detached.taskId, startedAt: session.detached.startedAt },
     }),
     ...(session.error === undefined ? {} : { error: session.error }),
   }
+}
+
+function computerField(session) {
+  return session.computer === undefined ? {} : { computer: session.computer }
 }
 
 function readSession(stateRoot, botId) {
@@ -392,6 +399,7 @@ export function openSessionStore(stateRoot) {
       ],
       createdAt: session.createdAt,
       updatedAt: at,
+      ...computerField(session),
       ...(session.detached === undefined ? {} : { detached: session.detached }),
     }
     writeSession(root, next)
@@ -413,6 +421,7 @@ export function openSessionStore(stateRoot) {
       queue: session.queue.slice(1),
       createdAt: session.createdAt,
       updatedAt: at,
+      ...computerField(session),
     }
     writeSession(root, next)
     return { session: publicSession(next), item }
@@ -434,6 +443,7 @@ export function openSessionStore(stateRoot) {
       queue: session.queue,
       createdAt: session.createdAt,
       updatedAt: at,
+      ...computerField(session),
     }
     writeSession(root, next)
     return { session: publicSession(next), message }
@@ -459,6 +469,7 @@ export function openSessionStore(stateRoot) {
       queue: session.queue,
       createdAt: session.createdAt,
       updatedAt: at,
+      ...computerField(session),
       error: { code, message: detail },
     }
     writeSession(root, next)
@@ -474,6 +485,7 @@ export function openSessionStore(stateRoot) {
       fail(`session for ${botId} is not running; cannot attach a detached task.`)
     }
     const at = isoNow(now)
+    const record = validateDetached({ ...detached, startedAt: detached?.startedAt ?? at })
     const next = {
       schema: SESSION_SCHEMA_VERSION,
       botId,
@@ -483,7 +495,8 @@ export function openSessionStore(stateRoot) {
       queue: session.queue,
       createdAt: session.createdAt,
       updatedAt: at,
-      detached: validateDetached({ ...detached, startedAt: detached?.startedAt ?? at }),
+      computer: record.sandbox,
+      detached: record,
     }
     writeSession(root, next)
     return publicSession(next)
@@ -493,6 +506,11 @@ export function openSessionStore(stateRoot) {
   function detached(id) {
     const session = load(id)
     return session?.detached ?? null
+  }
+
+  /** The last machine this bot ran on, if known. */
+  function computer(id) {
+    return load(id)?.computer ?? null
   }
 
   /** Sessions whose cloud task must be resumed by this host process. */
@@ -570,6 +588,7 @@ export function openSessionStore(stateRoot) {
           queue: session.queue,
           createdAt: session.createdAt,
           updatedAt: at,
+          ...computerField(session),
           error: { code: ERROR_CODES.hostDown, message: detail },
         })
       } else if (session.state === 'queued' && session.queue.length === 0) {
@@ -582,6 +601,7 @@ export function openSessionStore(stateRoot) {
           queue: [],
           createdAt: session.createdAt,
           updatedAt: new Date().toISOString(),
+          ...computerField(session),
         })
       }
     }
@@ -589,7 +609,7 @@ export function openSessionStore(stateRoot) {
 
   return {
     status, history, enqueue, shift, complete, failTurn, recover,
-    attach, detached, detachedSessions, finishDetached, failDetached,
+    attach, detached, detachedSessions, finishDetached, failDetached, computer,
   }
 }
 
@@ -818,6 +838,7 @@ export function openSessionRunner({ stateRoot, runtime, getBot, logger, detached
     send,
     status: (botId) => store.status(botId),
     history: (botId, options) => store.history(botId, options),
+    computer: (botId) => store.computer(botId),
     settled,
     close,
   }

@@ -70,7 +70,7 @@ function profileDirectory(ctx) {
 }
 
 /** Run one roster action and return the success body. */
-function botAction(action, payload, ctx) {
+function botAction(action, payload, ctx, computerFor = () => null) {
   const stateRoot = resolveStateRoot({ profileDir: profileDirectory(ctx) })
   const store = openBotStore(stateRoot)
   const routines = openRoutineStore(stateRoot)
@@ -81,11 +81,12 @@ function botAction(action, payload, ctx) {
         ok: true,
         bots,
         routines: Object.fromEntries(bots.map((bot) => [bot.id, routines.list(bot.id)])),
+        computers: Object.fromEntries(bots.map((bot) => [bot.id, computerFor(bot.id)])),
       }
     }
     case 'bots.get': {
       const bot = store.get(payload.id)
-      return { ok: true, bot, routines: routines.list(bot.id) }
+      return { ok: true, bot, routines: routines.list(bot.id), computer: computerFor(bot.id) }
     }
     case 'bots.create': {
       const input = { ...payload }
@@ -355,6 +356,12 @@ export function apply(ctx, options = {}) {
     return sessionService
   }
 
+  function computerFor(botId) {
+    const pinned = cloudHostRuntime?.machineName
+    if (typeof pinned === 'string' && pinned !== '') return pinned
+    return sessions().runner.computer(botId) ?? null
+  }
+
   let approvalService
   function approvals() {
     if (approvalService === undefined) {
@@ -457,7 +464,7 @@ export function apply(ctx, options = {}) {
               }
               if (typeof payload?.action === 'string' && payload.action.startsWith('bots.')) {
                 try {
-                  sendJson(res, 200, botAction(payload.action, payload, ctx))
+                  sendJson(res, 200, botAction(payload.action, payload, ctx, computerFor))
                 } catch (error) {
                   sendActionError(res, error)
                 }

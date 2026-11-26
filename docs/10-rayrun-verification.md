@@ -1,6 +1,6 @@
 # 10 — 验证、测试与 Rayrun 缺口
 
-> 状态：2026-11-25。本文是**验证/测试资源政策**和 **Rayrun 缺口登记册**。
+> 状态：2026-11-26。本文是**验证/测试资源政策**和 **Rayrun 缺口登记册**。
 > 所有需要计算资源的验证与测试都走 Rayrun（真实 token 页面例外见 §2.6）；Rayrun 不满足
 > 的项记在这里，不静默改用本地或其他云，也不把未验证写成已实现。平台能力需求本身仍以
 > [`08-integration.md`](08-integration.md) 为准。
@@ -529,7 +529,8 @@
   `processing/`、`done/task-*.json`、`outbox/task-*.json`、`transcript.jsonl`
   （内容含 bot 名称/instructions 和 `A4_OK`），作为 `rayrun_files` 证据。观察到
   详情面板电脑块显示 `dsh-ci-deploy-2`，而 runtime spec 的 `DSH_BOT_MACHINE` 为
-  `rayrun-bot-prod-e2e`；执行使用的是后者。测试后删除 `bot-host` runtime（204）、
+  `rayrun-bot-prod-e2e`；执行使用的是后者（该显示问题已于 2026-11-26 修复，见
+  Phase 2 机器真相）。测试后删除 `bot-host` runtime（204）、
   移除机器上的测试目录、机器 stop、未 destroy；本地 proxy/DSH/geckodriver 停止，
   临时 profile 删除，token 和 baseUrl 清除。
 - 聊天热轮次时延（2026-11-25）：同一 `rayrun-bot-prod-e2e` + cloudHost 的
@@ -540,13 +541,30 @@
   还包含 host 冷启动（约 3.8 秒）和机器上遗留 `prod-routine` 抢先执行（约
   3.4 秒），合计约 **13.8 秒**。`session-runtime.mjs` 18/18。机器上其他测试
   bot 未删除；`latency-bot` 已删除。
+- UX trust pass Phase 1（2026-11-26，本机 DSH + Firefox）：默认空名册渲染
+  `No bots yet` 与 `Set up Rayrun Bot`，不显示 Nora/Eli/June；`?preview=1` 显示
+  Demo 横幅、`Demo` 徽标和逐条 `Sample` 标签，示例的审批/金额/日程已移除；
+  `notice.cloud`、`user.you`、`setup.open` 生效；`setup.botBody`、
+  `settings.pluginHint` 版本和页脚用户名修正。页面 smoke 通过；机器真相已在
+  Phase 2 修复；审批卡健壮性、死控件清理仍未做（Phase 3–4）。
+- UX trust pass Phase 2 机器真相（2026-11-26，本机 DSH + Firefox）：session
+  `session.json` 持久化实际机器名 `computer`，host `bots.list` 返回
+  `computers[botId]`；客户端按名字在云电脑 overview 中查找机器。页面 smoke 用
+  隔离 `DSH_HOME` 和当前 checkout 启动 `dsh web`，seed 两个 bot 的 session 分别
+  带 `computer: alpha-box` / `beta-box`，但没有 Rayrun 连接（overview 不可用）。
+  选择 Alpha 时详情显示 `alpha-box`，选择 Beta 后切到 `beta-box`；两次打开/接管
+  均为 disabled，页面未再显示列表第一台机器。截图
+  `/tmp/bot/machine-truth.png`（临时文件）。`session-runtime`、`rpc-contract`
+  （`bots.list.computers[botId] === 'box'`）、`client-contract`（`machineFor`、
+  `body.computers`、`disabled: !available`）覆盖数据契约；A4 的
+  `dsh-ci-deploy-2` 错机显示由此修复。
 - CI deploy egress 根因（2026-11-25）：`.github/scripts/deploy-rayrun.mjs` 创建
   沙盒时用了不在 Rayrun 创建 schema 中的 `egress_allow`；该字段被忽略，导致
   pnpm 下载 `ENOTFOUND`。在线沙盒验证 `PUT /v1/sandboxes/{id}/egress` 后同一
   沙盒内 `registry.npmjs.org` 可解析、pnpm 可安装；脚本已改为
   `egress: { allow: ['registry.npmjs.org'] }`，契约测试改为拒绝 `egress_allow`。
   deploy job 仍为 `if: false`，待完整 deploy 跑通后再恢复；`dsh-ci-deploy-2`
-  在 2026-11-25 查询时为 Running、未 destroy。
+  在 2026-11-25 查询时为 Running，2026-11-26 查询为 Stopped、未 destroy。
 - CI deploy sandbox 尝试（2026-11-25，GitHub Actions）：run `45626382460` 创建
   `dsh-ci-deploy`，startup/upload/stop 成功，但镜像无 pnpm；run `45628656084`
   创建带 `egress_allow: ['registry.npmjs.org']` 的 `dsh-ci-deploy-2`，pnpm 下载仍

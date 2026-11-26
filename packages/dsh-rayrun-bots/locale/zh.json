@@ -1,14 +1,18 @@
 {
   "meta": {
     "title": "Rayrun Bot",
-    "description": "在侧边栏加入 Bots 入口和 v0.1 三栏界面：会话列表、带审批卡的对话、详情面板、初始化与设置。页面内容全部是内存预览，不连接机器，也不使用凭据。"
+    "description": "在侧边栏加入 Bots 入口和 v0.1 三栏界面：会话列表、带审批卡的对话、详情面板、初始化与设置。真实 bot 和会话运行在你自己的 Rayrun 云电脑上；示例数据只出现在显式的 ?preview=1 演示中。"
   },
   "panel": {
     "label": "Bots"
   },
   "brand": "Rayrun Bot",
   "preview": {
-    "badge": "预览"
+    "badge": "预览",
+    "demoBadge": "演示",
+    "sample": "示例",
+    "demoBanner": "演示数据，内容不是真的。",
+    "demoSnippet": "示例对话"
   },
   "chat": {
     "working": "正在处理…",
@@ -162,14 +166,16 @@
     "copy": "复制",
     "copied": "已复制",
     "copyFailed": "复制失败，请手动选中密码。",
-    "close": "关闭"
+    "close": "关闭",
+    "hostManaged": "由 host 管理"
   },
   "notice": {
     "recovering": "Bot host 正在重启，这个会话会自动恢复。",
     "reconnecting": "电脑正在重连… 5 秒后重试",
     "sleeping": "电脑正在休眠。打开云电脑插件即可唤醒。",
-    "attach": "这个预览里还不能添加附件。",
-    "preview": "这是页内预览。内容不会保存，审批也不会发给 worker。"
+    "attach": "暂时还不能添加附件。",
+    "preview": "这是页内预览。内容不会保存，审批也不会发给 worker。",
+    "cloud": "Bot 运行在你自己的 Rayrun 云电脑上；审批决定留在本地 host。"
   },
   "composer": {
     "placeholder": "给 {name} 发消息…",
@@ -259,7 +265,8 @@
     "computerCreateFailed": "创建云电脑失败：{message}",
     "computerCost": "会在你的 Rayrun 账号上创建一台计费机器。Bots 永不销毁它。",
     "botTitle": "第一个 Bot",
-    "botBody": "给它一个名字和一项职责。它只加到这一页，不会出现在云电脑上。"
+    "botBody": "给它一个名字和一项职责。它会保存到本地名册，并在你的云电脑上运行。",
+    "open": "首次设置"
   },
   "settings": {
     "title": "设置",
@@ -280,7 +287,7 @@
     "hostDepVersion": "云电脑插件 {version} 不受支持（需要 {required}）。",
     "retry": "重试",
     "plugin": "云电脑插件",
-    "pluginHint": "dsh-rayrun-computer v1.0.0",
+    "pluginHint": "dsh-rayrun-computer v{version}",
     "pluginOk": "正常",
     "pluginMissing": "缺失",
     "pluginIncompatible": "不兼容",
@@ -377,5 +384,9 @@
   "error": {
     "hostDown": "Bot host 没有响应。",
     "botCreate": "无法保存 Bot：{message}"
+  },
+  "user": {
+    "you": "你",
+    "youInitials": "你"
   }
 }

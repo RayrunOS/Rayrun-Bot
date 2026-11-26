@@ -201,6 +201,7 @@ check('a detached turn survives a runner restart and is collected later', async 
   })
   first.send(bot.id, 'first')
   await until(() => first.status(bot.id)?.detached?.taskId === 'task-1', 'detached task did not attach')
+  assert.equal(first.status(bot.id).computer, 'box')
   first.close()
 
   const second = openSessionRunner({
@@ -221,6 +222,7 @@ check('a detached turn survives a runner restart and is collected later', async 
   const status = second.status(bot.id)
   assert.equal(status.state, 'idle')
   assert.equal(status.detached, undefined)
+  assert.equal(status.computer, 'box')
   assert.deepEqual(second.history(bot.id).messages.map((message) => message.text), ['first', 'done'])
   second.close()
 })

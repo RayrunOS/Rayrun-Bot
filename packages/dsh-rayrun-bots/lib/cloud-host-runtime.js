@@ -330,6 +330,9 @@ export function createCloudHostRuntime({
     get available() {
       return supported && Boolean(getOrigin?.()) && filesTool() !== undefined
     },
+    get machineName() {
+      return pinnedMachine ?? null
+    },
     async start({ bot, text, history = [], messageSeq, origin, botId, stateRoot } = {}) {
       if (typeof botId !== 'string' || botId === '') throw rayrunFailure(ERROR_CODES.runtimeUnavailable, 'botId is required.')
       const { machine, host } = await prepareHost()
