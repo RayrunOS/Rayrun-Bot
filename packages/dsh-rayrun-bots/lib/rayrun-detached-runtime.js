@@ -196,7 +196,7 @@ export function createRayrunDetachedRuntime({ getOrigin, fetchImpl = globalThis.
         const named = known ? ` This computer image is "${known}".` : ''
         throw rayrunFailure(
           ERROR_CODES.workerNoReply,
-          `The cloud worker ended without writing reply.md (files: ${resultNames(body)}).${named} If this computer image runs a shell oneshot (for example dsh-bot@1), it does not start a DSH worker; use an image such as ${DETACHED_IMAGE}.`,
+          `The cloud worker ended without writing reply.md (files: ${resultNames(body)}).${named} Check the worker session under .rayrun/dsh/sessions/ for the provider error. A missing DeepSeek credential (MISSING_CREDENTIAL) prevents the worker from replying; add a model credential or recreate the computer with one.`,
         )
       }
       if (!info.isFile() || info.size > REPLY_MAX_BYTES) {

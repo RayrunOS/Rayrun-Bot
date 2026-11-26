@@ -343,7 +343,9 @@ check('a missing reply.md fails closed instead of collecting a stale file', asyn
   await assert.rejects(runtime.collect({ detached: started }), (error) => {
     assert.equal(error.code, ERROR_CODES.workerNoReply)
     assert.match(error.message, /reply\.md/)
-    assert.match(error.message, /deepseek-harness@1/)
+    assert.match(error.message, /MISSING_CREDENTIAL/)
+    assert.match(error.message, /DeepSeek credential/)
+    assert.doesNotMatch(error.message, /use an image such as/)
     return true
   })
 })

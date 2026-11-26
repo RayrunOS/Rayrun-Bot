@@ -63,7 +63,7 @@ window.__ModuleLoader__.load({
     "errorTitle": "Turn failed",
     "machineStopped": "Your cloud computer is stopped or unavailable. Open it from Details or the cloud-computer plugin, then send again.",
     "imageUnsupported": "This cloud computer image is missing or does not start a DSH worker, so no task was started. Use an image such as deepseek-harness@1.",
-    "workerNoReply": "The cloud worker ended without writing reply.md. If this computer uses a shell-oneshot image (for example dsh-bot@1), switch to an image such as deepseek-harness@1."
+    "workerNoReply": "The cloud worker ended without writing reply.md. Check its session for the provider error; a missing DeepSeek credential (MISSING_CREDENTIAL) prevents a reply. Add a model credential or recreate the computer with one."
   },
   "list": {
     "search": "Search",
@@ -301,7 +301,7 @@ window.__ModuleLoader__.load({
     "computerLoadFailed": "Could not read your Rayrun computers: {message}",
     "computerName": "Computer name",
     "computerKeyPlaceholder": "Paste a DeepSeek API key (optional)",
-    "computerKeyHint": "Optional if this machine already has a DeepSeek credential.",
+    "computerKeyHint": "New computers need a DeepSeek credential for cloud DSH turns. Leave this blank only if this computer or your Rayrun defaults already provide one.",
     "computerCreate": "Create cloud computer",
     "computerCreating": "Creating… about 15 seconds",
     "computerCreated": "Created · {name}",
@@ -475,7 +475,7 @@ window.__ModuleLoader__.load({
     "errorTitle": "回合失败",
     "machineStopped": "云电脑已停止或不可用。请在详情面板或云电脑插件里打开它，再重新发送。",
     "imageUnsupported": "这台云电脑的镜像读不到，或者不会启动 DSH worker，因此没有创建任务。请使用 deepseek-harness@1 之类的镜像。",
-    "workerNoReply": "云端 worker 结束了，但没有写 reply.md。如果这台电脑用的是 shell oneshot 镜像（例如 dsh-bot@1），请换成 deepseek-harness@1 之类的镜像。"
+    "workerNoReply": "云端 worker 结束了，但没有写 reply.md。请检查 worker session 的 provider 错误；缺少 DeepSeek 凭据（MISSING_CREDENTIAL）会导致无法回复。请添加模型凭据，或用带凭据的电脑重建。"
   },
   "list": {
     "search": "搜索",
@@ -713,7 +713,7 @@ window.__ModuleLoader__.load({
     "computerLoadFailed": "读取 Rayrun 云电脑失败：{message}",
     "computerName": "云电脑名称",
     "computerKeyPlaceholder": "粘贴 DeepSeek API key（可选）",
-    "computerKeyHint": "如果这台机器已有 DeepSeek 凭据，可以留空。",
+    "computerKeyHint": "新电脑需要 DeepSeek 凭据才能运行云端 DSH 回合。只有当这台电脑或你的 Rayrun 默认配置已提供凭据时才留空。",
     "computerCreate": "创建云电脑",
     "computerCreating": "创建中…约 15 秒",
     "computerCreated": "已创建 · {name}",

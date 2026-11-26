@@ -632,6 +632,14 @@
   电脑的记住镜像不能放行；`session-runtime` 覆盖 image 在回复后保留，以及拒绝
   后的 image/computer 会交给下一轮 precheck。不 stop、不 destroy、不自动换镜像。
   未在用户 Windows 环境复验。
+- Issue #6 缺失凭据（2026-11-26，只读线上证据）：`rayrun-bot-a3-20261125`
+  `status=Running`、`agent_state=exited/failure`、`credentials=[]`；worker 的
+  DSH session（`session-91b462fa…`）记录
+  `MISSING_CREDENTIAL: no API key for provider route "deepseek-official"`。任务不是
+  沙盒休眠；`dsh.start` 已调用 `ray.wake`。已把 `E_WORKER_NO_REPLY` 文案改为检查
+  worker session 的 provider 错误并提示添加 DeepSeek 凭据/重建电脑，Setup 明确新
+  机器需要凭据；不新增自动唤醒。`rayrun-detached-runtime` 和 `client-contract`
+  覆盖新文案。真实凭据补齐仍需用户操作或重建机器。
 - CI deploy egress 根因（2026-11-25）：`.github/scripts/deploy-rayrun.mjs` 创建
   沙盒时用了不在 Rayrun 创建 schema 中的 `egress_allow`；该字段被忽略，导致
   pnpm 下载 `ENOTFOUND`。在线沙盒验证 `PUT /v1/sandboxes/{id}/egress` 后同一

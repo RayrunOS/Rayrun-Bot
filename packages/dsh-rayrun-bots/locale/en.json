@@ -35,7 +35,7 @@
     "errorTitle": "Turn failed",
     "machineStopped": "Your cloud computer is stopped or unavailable. Open it from Details or the cloud-computer plugin, then send again.",
     "imageUnsupported": "This cloud computer image is missing or does not start a DSH worker, so no task was started. Use an image such as deepseek-harness@1.",
-    "workerNoReply": "The cloud worker ended without writing reply.md. If this computer uses a shell-oneshot image (for example dsh-bot@1), switch to an image such as deepseek-harness@1."
+    "workerNoReply": "The cloud worker ended without writing reply.md. Check its session for the provider error; a missing DeepSeek credential (MISSING_CREDENTIAL) prevents a reply. Add a model credential or recreate the computer with one."
   },
   "list": {
     "search": "Search",
@@ -273,7 +273,7 @@
     "computerLoadFailed": "Could not read your Rayrun computers: {message}",
     "computerName": "Computer name",
     "computerKeyPlaceholder": "Paste a DeepSeek API key (optional)",
-    "computerKeyHint": "Optional if this machine already has a DeepSeek credential.",
+    "computerKeyHint": "New computers need a DeepSeek credential for cloud DSH turns. Leave this blank only if this computer or your Rayrun defaults already provide one.",
     "computerCreate": "Create cloud computer",
     "computerCreating": "Creating… about 15 seconds",
     "computerCreated": "Created · {name}",

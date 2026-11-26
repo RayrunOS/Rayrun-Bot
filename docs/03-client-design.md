@@ -215,7 +215,8 @@ profile，也不发送 Rayrun token 或 DeepSeek key；命令只更新 bots 包�
   创建 task 前失败。已知镜像会写进 `session.json` 的 `image`，详情和 Setup
   能看到它；Setup 对已有 oneshot 镜像显示警告，不会自动更换镜像
 - worker 结束但没有写 `reply.md`（`E_WORKER_NO_REPLY`）：失败关闭，不收集旧回复；
-  提示检查镜像 oneshot 是否启动 DSH
+  提示检查 worker session 的 provider 错误。缺少 DeepSeek 凭据时 worker 会以
+  `MISSING_CREDENTIAL` 退出；添加模型凭据或用带凭据的电脑重建
 - 电脑忙碌（`E_MACHINE_BUSY`）
 - 云电脑创建失败或超时（显示 Rayrun 返回的原因）
 - bot runtime 恢复中（`E_HOST_DOWN`）

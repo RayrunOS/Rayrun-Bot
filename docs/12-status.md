@@ -283,6 +283,12 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
   用它拒绝同一台电脑上的 oneshot。未知但读得到的镜像仍然放行。不自动更换已有
   机器的镜像。详情和 Setup 会显示镜像名，读不到时显示警告。未在用户 Windows
   环境复验。
+- Issue #6 缺失凭据（2026-11-26，只读线上证据）：`rayrun-bot-a3-20261125`
+  `status=Running`、`agent_state=exited/failure`、`credentials=[]`；worker DSH
+  session 记录 `MISSING_CREDENTIAL`（provider `deepseek-official`）。这不是沙盒
+  休眠，`dsh.start` 已调用 `ray.wake`。`E_WORKER_NO_REPLY` 文案改为检查 worker
+  session 并提示添加 DeepSeek 凭据/重建电脑；Setup 明确新机器需要凭据。不自动
+  唤醒或创建任务；真实凭据补齐仍需用户操作或重建机器。
 - 干净 npm 安装 golden path（2026-11-25，本机 DSH `0.2.2-rc.5`，官方 registry）：
   临时 `DSH_HOME` 加 web-app 后一条 `dsh plugin add dsh-rayrun-computer@1.2.1
   dsh-rayrun-bots@0.1.1-alpha.1` 完成安装，两个 bundle 都被选中；health 报
