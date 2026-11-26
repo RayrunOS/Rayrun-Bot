@@ -1,6 +1,6 @@
 # 10 — 验证、测试与 Rayrun 缺口
 
-> 状态：2026-11-26。本文是**验证/测试资源政策**和 **Rayrun 缺口登记册**。
+> 状态：2026-11-27。本文是**验证/测试资源政策**和 **Rayrun 缺口登记册**。
 > 所有需要计算资源的验证与测试都走 Rayrun（真实 token 页面例外见 §2.6）；Rayrun 不满足
 > 的项记在这里，不静默改用本地或其他云，也不把未验证写成已实现。平台能力需求本身仍以
 > [`08-integration.md`](08-integration.md) 为准。
@@ -695,6 +695,29 @@
   密码。`。真实 Rayrun token、API 和机器都未参与；截图
   `/tmp/bot/popup-blocked-fallback.png`、`/tmp/bot/popup-allowed.png`（临时文件，
   不入库）。
+- 首次运行分段计时（2026-11-27，本机 DSH `0.2.2-rc.5` + Firefox/geckodriver，
+  npm `dsh-rayrun-computer@1.2.1` + `dsh-rayrun-bots@0.1.1-alpha.1`，两次全新
+  `DSH_HOME` + 全新 Rayrun 沙箱）：`dsh plugin --profile web add` 两次分别耗时
+  **61.1s** 和 **128.0s**（pnpm 自身只报告 3.7s/4s，其余在 `dsh` 命令的其他阶段，
+  未细分）；`dsh web` ready **5.3s/6.1s**。浏览器会话到 bot 创建约 **32.9s**
+  （页面加载约 25.1s、依赖步骤 0.055s、`connection.save` 0.52s、
+  `machine.create` 4.64s、bot 创建约 3.1s）；首轮回复 **15.9–16.2s**，内容
+  `FIRST_RUN_OK`。分段合计约 **1m55s（快速安装）–3m03s（慢速安装）**；没有做
+  单一连续的秒表运行，因此不把三分钟签收标为通过。
+  偏差：本机到 `api.rayrunos.com` 走 localhost 反向代理 + `curl --interface
+  wlp4s0`（§2 的 workaround，未计时）；使用已有 DeepSeek credential，未在页面输入
+  key；账号已有机器，setup 的 create 路径会 `pickMachine` 采用已有机器，因此浏览器
+  只在该步骤把 `overview.machines` 过滤为空以触发 `Create`，`machine.create` 本身
+  是真实调用；UI 由 WebDriver 驱动。
+  凭据失败：第一次测试绑定既有 `dsh-model-sinnet`，沙箱事件为 `agent.raw`
+  Authentication Fails、`agent.exited class=failure`，worker 未写 `reply.md`，
+  session 记录 `E_INTERNAL` 和 worker-no-reply 失败信息（没有假成功）。用本地测试 key 经
+  `POST /v1/credentials` 新建 `dsh-model-firstrun-20261127`（provider deepseek）后，
+  新沙箱 `rayrun-bot` 首轮成功。测试机 `rayrun-bot`、
+  `rayrun-bot-timing-20261127`、`rayrun-bot-invalid-credential-20261127` 均
+  **Stopped、未 destroy**；credential 保留。截图
+  `/tmp/bot/clean-firstrun-*.png`、`/tmp/bot/clean-firstrun-reply.png`、
+  `/tmp/bot/firstrun-reply.png`（临时文件，不入库）。
 
 > Rayrun 连接、Open、云电脑创建三条依赖层路径是通过本机 Node 直接 import
 > `dsh-rayrun-computer@1.0.0` 的 `lib/rayrun.js` 验证的，调用的是插件页面使用的同一组

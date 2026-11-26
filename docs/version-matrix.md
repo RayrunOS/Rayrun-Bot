@@ -1,6 +1,6 @@
 # 版本矩阵
 
-> 状态：2026-11-25。本文记录 DSH、云电脑依赖 `dsh-rayrun-computer` 与 Rayrun Bot
+> 状态：2026-11-27。本文记录 DSH、云电脑依赖 `dsh-rayrun-computer` 与 Rayrun Bot
 > 包的兼容范围，以及**实际验证过**的组合。它不承诺未测试的组合；实现状态仍以
 > [`12-status.md`](12-status.md) 为准。
 > 依赖边界见 [`08-integration.md`](08-integration.md)；验证环境缺口见
@@ -61,6 +61,7 @@ tarball `gitHead=3604e33`，包含 prompt-root 与测试 mock 修复；`1.2.0` �
 | `0.2.2-rc.5`（本机） | `1.2.1`（npm） | `0.1.1-alpha.1`（npm） | 24.15.0 | A2/A3：临时 profile + localhost 反向代理（`curl --interface wlp4s0`）；`connection.save` 写 vault、`overview` configured true、余额/机时/机器可见；`machine.create` 创建 `rayrun-bot-a3-20261125`（2 vCPU / 2048 MB / remote desktop true）到 Running 4.30 秒，stop 后 Stopped、未 destroy；`clearToken` 后 `configured:false` 且 `account` 返回 `token_required` | [`10-rayrun-verification.md`](10-rayrun-verification.md) §3.1（2026-11-25） |
 | `0.2.2-rc.5`（本机）/ `0.2.0-rc.2`（镜像 `dsh-bot@1`） | `1.2.1`（npm） | `0.1.1-alpha.1`（npm，cloudHost）/ checkout（1s poll） | 24.15 / 24.22 + Rayrun hosted prod | A4：固定 `rayrun-bot-prod-e2e`、credential `dsh-model-sinnet`；`A4 Cloud Bot` 首轮约 16 秒回复 `A4_OK`；checkout 1s poll 后热轮 4.64 秒（npm alpha.1 仍 3s）；机器 `bots/a4-cloud-bot/` 含 transcript；runtime 删除、机器 Stopped、未 destroy | [`10-rayrun-verification.md`](10-rayrun-verification.md) §3.1（2026-11-25） |
 | `0.2.2-rc.5`（本机）/ `0.2.0-rc.2`（镜像 `deepseek-harness@1`） | `1.2.1`（npm） | checkout（`computer.update`） | 24.15 + Rayrun hosted | `bot-update-smoke-20261126` 经 `computer.update` 换镜像：新机同名、带 `dsh-model-sinnet`，`/workspace/update-smoke.txt` 与 `.dsh` 保留；旧机改名 `...-pre-update-mwxk96k8` 并 Stopped，新机验证后 Stopped，二者未 destroy | [`10-rayrun-verification.md`](10-rayrun-verification.md) §3.1（2026-11-26） |
+| `0.2.2-rc.5`（本机） | `1.2.1`（npm） | `0.1.1-alpha.1`（npm） | 24.15.0 + 全新 Rayrun 沙箱 | 全新 `DSH_HOME` 首次运行分段计时：安装 61.1/128.0s、web ready 5.3/6.1s、浏览器会话→bot 32.9s、首轮回复 15.9–16.2s；合计 1m55s–3m03s，未做单一连续签收；`dsh-model-sinnet` 失效，新 credential `dsh-model-firstrun-20261127`；机器 stop、未 destroy | [`10-rayrun-verification.md`](10-rayrun-verification.md) §3.1（2026-11-27） |
 
 “未安装”表示该 CI 矩阵只验证 Bots 包本身能安装和合成，不验证依赖或云端行为。
 表中 `0.1.0-alpha.0` 与“未发布 npm”是当次验证时的状态；当前包版本是

@@ -1,6 +1,6 @@
 # 12 — 实现状态
 
-> 状态：2026-11-26。本文是 Rayrun Bot **实现状态的唯一事实源**。根 `README.md` 是
+> 状态：2026-11-27。本文是 Rayrun Bot **实现状态的唯一事实源**。根 `README.md` 是
 > 营销页，不承载状态，也不作为事实依据；其他文档提到“今天能做什么、验证到哪一步”
 > 时以本文为准。验证证据见 [`10-rayrun-verification.md`](10-rayrun-verification.md)
 > 与 [`version-matrix.md`](version-matrix.md)；计划与验收标准见
@@ -38,6 +38,9 @@ cron/事件触发仍未打通；发布路径已通过 `publish.yml` 发布 alpha
 transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；host 资产已随包
 发布（`cloud-host/`），projection 页面 E2E 已通过，多 bot 单 host 页面 E2E 已通过
 （dev 2026-11-23；生产 2026-11-25）；生产镜像 `dsh-bot@1` 与 R-G008 部署已完成。
+
+2026-11-27 首次运行分段计时约 **1m55s–3m03s**（插件安装 61–128s 是主要变量）；
+单一连续的三分钟签收尚未完成，见 §3.1。
 
 ## 2. 依赖项目今天可用
 
@@ -476,11 +479,26 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
   URL，提示条不显示拦截文案。contract 增加 `computer.openDesktop`、链接属性和
   http/https 校验断言。截图 `/tmp/bot/popup-blocked-fallback.png`、
   `/tmp/bot/popup-allowed.png`（临时文件，不入库）。
+- 首次运行分段计时（2026-11-27，本机 DSH `0.2.2-rc.5` + Firefox/geckodriver，
+  两次全新 `DSH_HOME` + 全新 Rayrun 沙箱，npm alpha.1）：插件安装 **61.1s /
+  128.0s**（pnpm 自身 3.7–4s），`dsh web` ready **5.3–6.1s**，浏览器会话到 bot
+  创建约 **32.9s**，首轮回复 **15.9–16.2s**（`FIRST_RUN_OK`）；分段合计约
+  **1m55s–3m03s**。没有做单一连续计时，三分钟签收仍未关闭。第一次测试的既有
+  `dsh-model-sinnet` 已失效（worker Authentication Fails、无 `reply.md`，session
+  记录 `E_INTERNAL`）；用本地测试 key 新建 `dsh-model-firstrun-20261127` 后新沙箱
+  首轮成功。测试机 `rayrun-bot`、`rayrun-bot-timing-20261127`、
+  `rayrun-bot-invalid-credential-20261127` 均 Stopped、未 destroy。偏差：localhost
+  代理、既有 credential、非空账号下过滤 overview 以触发 Create、WebDriver 驱动；
+  详见 [`10-rayrun-verification.md`](10-rayrun-verification.md) §3.1。
 - 具体组合、环境和缺口以 [`10-rayrun-verification.md`](10-rayrun-verification.md)
   和 [`version-matrix.md`](version-matrix.md) 为准；未测试的组合不作承诺。
 
 ## 4. 尚未构建或验证
 
+- 三分钟首次运行签收：2026-11-27 已有分段计时（`1m55s–3m03s`，见 §3.1），但还没有
+  单一连续、干净账号的三分钟运行；安装耗时波动是主要变量。
+- 失效模型 credential 的界面诊断：worker 以 provider Authentication Fails 退出时，
+  页面只有 worker-no-reply，尚未把认证错误浮到 Setup 或聊天；2026-11-27 已复现。
 - 本地 routine scheduler 的真实自动触发：fake 集成测试覆盖了到期入队，但尚未等待
   一次真实本地 scheduler 自动触发；页面创建/启停/删除已 smoke。
 - 能拦住 worker 的远程审批执行：ADR-019 已让本地 host 对 typed 机器
