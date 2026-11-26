@@ -104,6 +104,8 @@ const required = [
   'chat.historyFailed',
   'chat.turnTimeout',
   'chat.machineStopped',
+  'chat.imageUnsupported',
+  'chat.workerNoReply',
   'chat.turnInterrupted',
   'empty.threadReal',
   'draft.send',
@@ -173,6 +175,7 @@ const required = [
   'user.you',
   'user.youInitials',
   'setup.open',
+  'setup.imageUnsupported',
   'setup.computerTitle',
   'setup.computerExisting',
   'setup.computerNeedsRayrun',
@@ -292,6 +295,14 @@ assert.match(client, /const showRecent = bot\.source !== 'real'/)
 assert.match(client, /machine\?\.pricing\?\.vm_cents_per_hour/)
 assert.match(client, /computer\.burnLine/)
 assert.match(client, /E_MACHINE_STOPPED: 'chat\.machineStopped'/)
+assert.match(client, /E_IMAGE_UNSUPPORTED: 'chat\.imageUnsupported'/)
+assert.match(client, /E_WORKER_NO_REPLY: 'chat\.workerNoReply'/)
+assert.match(client, /const DETACHED_IMAGE = 'deepseek-harness@1'/)
+assert.match(client, /const SHELL_ONESHOT_IMAGES = new Set\(\['dsh-bot@1', 'dsh-bot-devcheck@1'\]\)/)
+assert.match(client, /SHELL_ONESHOT_IMAGES\.has\(configuredAgent\)/)
+assert.match(client, /machineImageUnsupported/)
+assert.match(client, /t\('setup\.imageUnsupported'\)/)
+assert.match(client, /agent,\s*\n\s*cpu_cores:/)
 assert.match(client, /E_TURN_POLL_TIMEOUT/)
 assert.match(client, /approval\.expiredRunning/)
 assert.match(client, /approval\.stopComputer/)

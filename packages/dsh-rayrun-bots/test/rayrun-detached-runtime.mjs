@@ -18,16 +18,20 @@ const roots = []
 const MACHINE = {
   ok: true,
   connection: { configured: true },
-  machines: [{ id: 'machine-1', name: 'rayrun-bot', status: 'Running' }],
+  machines: [{ id: 'machine-1', name: 'rayrun-bot', status: 'Running', agent: 'deepseek-harness@1' }],
 }
 
-function fakeFetch({ start, status = { running: true, files: ['reply.md'], activity: null }, result } = {}) {
+function machineWith(agent) {
+  return { ...MACHINE, machines: [{ ...MACHINE.machines[0], agent }] }
+}
+
+function fakeFetch({ machine = MACHINE, start, status = { running: true, files: ['reply.md'], activity: null }, result } = {}) {
   const calls = []
   const impl = async (url, options) => {
     const body = JSON.parse(options.body)
     calls.push({ url: String(url), body })
     let payload = null
-    if (body.action === 'overview') payload = MACHINE
+    if (body.action === 'overview') payload = machine
     else if (body.action === 'dsh.start') payload = start ?? {
       ok: true,
       task_id: 'task-test',
@@ -122,6 +126,49 @@ check('status and result collect reply.md from the task directory', async () => 
   assert.equal(collected.released, true)
 })
 
+check('rejects a known shell-oneshot image before dsh.start', async () => {
+  for (const agent of ['dsh-bot@1', 'dsh-bot-devcheck@1']) {
+    const stateRoot = setup()
+    const fetchImpl = fakeFetch({ machine: machineWith(agent) })
+    const runtime = createRayrunDetachedRuntime({
+      getOrigin: () => 'http://127.0.0.1:1234',
+      fetchImpl,
+    })
+    await assert.rejects(runtime.start({
+      bot: { id: 'echo', name: 'Echo', label: 'Echoes', instructions: 'Reply briefly.' },
+      text: 'hello',
+      history: [],
+      messageSeq: 1,
+      botId: 'echo',
+      stateRoot,
+    }), (error) => {
+      assert.equal(error.code, ERROR_CODES.imageUnsupported)
+      assert.match(error.message, /shell oneshot/)
+      assert.match(error.message, /deepseek-harness@1/)
+      return true
+    })
+    assert.equal(fetchImpl.calls.some((call) => call.body.action === 'dsh.start'), false)
+  }
+})
+
+check('an unknown image is not blocked by the known-image precheck', async () => {
+  const stateRoot = setup()
+  const fetchImpl = fakeFetch({ machine: machineWith('custom-image@1') })
+  const runtime = createRayrunDetachedRuntime({
+    getOrigin: () => 'http://127.0.0.1:1234',
+    fetchImpl,
+  })
+  const started = await runtime.start({
+    bot: { id: 'echo', name: 'Echo', label: 'Echoes', instructions: 'Reply briefly.' },
+    text: 'hello',
+    history: [],
+    messageSeq: 1,
+    botId: 'echo',
+    stateRoot,
+  })
+  assert.equal(started.taskId, 'task-test')
+})
+
 check('a missing reply.md fails closed instead of collecting a stale file', async () => {
   const stateRoot = setup()
   const fetchImpl = fakeFetch()
@@ -138,8 +185,9 @@ check('a missing reply.md fails closed instead of collecting a stale file', asyn
     stateRoot,
   })
   await assert.rejects(runtime.collect({ detached: started }), (error) => {
-    assert.equal(error.code, ERROR_CODES.internal)
-    assert.match(error.message, /did not write reply\.md/)
+    assert.equal(error.code, ERROR_CODES.workerNoReply)
+    assert.match(error.message, /reply\.md/)
+    assert.match(error.message, /deepseek-harness@1/)
     return true
   })
 })

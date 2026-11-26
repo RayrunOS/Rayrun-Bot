@@ -265,6 +265,15 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
   回答 `ALPHA`；host 两轮 `HOST1_OK` → `BETA`，session id 持久化。`dsh.start`
   在 devcheck 镜像上的空 `reply.md` 是镜像 oneshot manifest 为 `/bin/sh -c` 导致
   （R-G014），不是依赖 bug。
+- Issue #4 镜像 oneshot（2026-11-26）：detached adapter 在 `dsh.start` 前检查
+  `machine.agent`，已知 `dsh-bot@1` / `dsh-bot-devcheck@1` 直接返回
+  `E_IMAGE_UNSUPPORTED`，不创建 task；其他镜像继续，结束后缺 `reply.md` 返回
+  `E_WORKER_NO_REPLY`，不收集旧回复。session poll 对这两个码不重试。Setup 对已有
+  这类镜像显示警告，创建机器时若依赖默认是已知 oneshot 则改用
+  `deepseek-harness@1`。`rayrun-detached-runtime` 7/7；全量测试 28/28。另用
+  fake Rayrun API 的 `agent: dsh-bot@1` 机器做 host 级验证：第一次轮询即
+  `failed`/`E_IMAGE_UNSUPPORTED`，没有发出 `dsh.start` 或 sandbox 动作。未在用户
+  Windows 环境复现，按同一 `machine.agent`/`reply.md` 路径修复。
 - 干净 npm 安装 golden path（2026-11-25，本机 DSH `0.2.2-rc.5`，官方 registry）：
   临时 `DSH_HOME` 加 web-app 后一条 `dsh plugin add dsh-rayrun-computer@1.2.1
   dsh-rayrun-bots@0.1.1-alpha.1` 完成安装，两个 bundle 都被选中；health 报

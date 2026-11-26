@@ -771,6 +771,8 @@ export function openSessionRunner({ stateRoot, runtime, getBot, logger, detached
         record.failures += 1
         if (error?.code === ERROR_CODES.machineStopped
           || error?.code === ERROR_CODES.tokenRequired
+          || error?.code === ERROR_CODES.imageUnsupported
+          || error?.code === ERROR_CODES.workerNoReply
           || record.failures >= 3) {
           store.failDetached(botId, taskId, error)
           stop()

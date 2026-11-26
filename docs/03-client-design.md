@@ -144,7 +144,10 @@ attention、snippet 与时间。chat 来源没有 TTL，显示 `waits for you`�
 `machine.create`，规格取插件的 `defaults`（默认 `deepseek-harness@1`、2 vCPU、至少 2 GB、
 远程桌面）。key 只作为 `modelKey` 交给云电脑插件存成机器凭据，不进入 Bots 的 host 状态，
 成功后清空输入。按钮文案明确说明这是 Rayrun 账号上的计费机器，且 Bots 永不销毁它；
-未连接时按钮不可用，失败显示一句可执行错误。多台机器时 setup 和重复创建检查优先选
+未连接时按钮不可用，失败显示一句可执行错误。创建时如果插件的默认镜像是已知的
+shell oneshot（`dsh-bot@1`、`dsh-bot-devcheck@1`），Setup 改用
+`deepseek-harness@1`；选中已有这类镜像时显示警告，因为 detached 回合不会启动 DSH
+worker。多台机器时 setup 和重复创建检查优先选
 `rayrun-bot`，其次优先 Running（有 `desktop_url` 再优先），再选有 `desktop_url` 的
 机器，最后才用第一台；Open 不用这个猜测：
 host 从 bot 的 session 提供实际机器名（`bots.list.computers`），客户端只查
@@ -205,6 +208,11 @@ profile，也不发送 Rayrun token 或 DeepSeek key；命令只更新 bots 包�
 - 没有 DeepSeek key（`E_KEY_REQUIRED`）
 - 电脑停止或不可用（`E_MACHINE_STOPPED`）：提示从详情或云电脑插件打开后再发送，
   不再误写成“还没有云电脑”
+- 镜像不支持 detached（`E_IMAGE_UNSUPPORTED`）：已知 shell oneshot 镜像
+  （`dsh-bot@1`、`dsh-bot-devcheck@1`）在 `dsh.start` 前失败，提示换成
+  `deepseek-harness@1` 之类的镜像；Setup 也会对已有这类机器显示警告
+- worker 结束但没有写 `reply.md`（`E_WORKER_NO_REPLY`）：失败关闭，不收集旧回复；
+  提示检查镜像 oneshot 是否启动 DSH
 - 电脑忙碌（`E_MACHINE_BUSY`）
 - 云电脑创建失败或超时（显示 Rayrun 返回的原因）
 - bot runtime 恢复中（`E_HOST_DOWN`）

@@ -33,7 +33,9 @@
     "turnTimeout": "The page stopped waiting, but the cloud turn may still be running. Refresh to check the result.",
     "turnInterrupted": "The previous turn was interrupted. Send it again.",
     "errorTitle": "Turn failed",
-    "machineStopped": "Your cloud computer is stopped or unavailable. Open it from Details or the cloud-computer plugin, then send again."
+    "machineStopped": "Your cloud computer is stopped or unavailable. Open it from Details or the cloud-computer plugin, then send again.",
+    "imageUnsupported": "This cloud computer image does not start a DSH worker, so detached turns cannot run. Recreate the computer with an image such as deepseek-harness@1.",
+    "workerNoReply": "The cloud worker ended without writing reply.md. If this computer uses a shell-oneshot image (for example dsh-bot@1), switch to an image such as deepseek-harness@1."
   },
   "list": {
     "search": "Search",
@@ -277,7 +279,8 @@
     "computerCost": "Creates a billable machine on your Rayrun account. Bots never destroys it.",
     "botTitle": "First bot",
     "botBody": "Give it a name and one job. It is saved to your local roster and runs on your cloud computer.",
-    "open": "Set up Rayrun Bot"
+    "open": "Set up Rayrun Bot",
+    "imageUnsupported": "This image runs a shell oneshot and will not start a DSH worker. Use deepseek-harness@1 or another image that starts DSH headless."
   },
   "settings": {
     "title": "Settings",

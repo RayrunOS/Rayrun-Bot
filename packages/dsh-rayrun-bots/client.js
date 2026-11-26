@@ -61,7 +61,9 @@ window.__ModuleLoader__.load({
     "turnTimeout": "The page stopped waiting, but the cloud turn may still be running. Refresh to check the result.",
     "turnInterrupted": "The previous turn was interrupted. Send it again.",
     "errorTitle": "Turn failed",
-    "machineStopped": "Your cloud computer is stopped or unavailable. Open it from Details or the cloud-computer plugin, then send again."
+    "machineStopped": "Your cloud computer is stopped or unavailable. Open it from Details or the cloud-computer plugin, then send again.",
+    "imageUnsupported": "This cloud computer image does not start a DSH worker, so detached turns cannot run. Recreate the computer with an image such as deepseek-harness@1.",
+    "workerNoReply": "The cloud worker ended without writing reply.md. If this computer uses a shell-oneshot image (for example dsh-bot@1), switch to an image such as deepseek-harness@1."
   },
   "list": {
     "search": "Search",
@@ -305,7 +307,8 @@ window.__ModuleLoader__.load({
     "computerCost": "Creates a billable machine on your Rayrun account. Bots never destroys it.",
     "botTitle": "First bot",
     "botBody": "Give it a name and one job. It is saved to your local roster and runs on your cloud computer.",
-    "open": "Set up Rayrun Bot"
+    "open": "Set up Rayrun Bot",
+    "imageUnsupported": "This image runs a shell oneshot and will not start a DSH worker. Use deepseek-harness@1 or another image that starts DSH headless."
   },
   "settings": {
     "title": "Settings",
@@ -468,7 +471,9 @@ window.__ModuleLoader__.load({
     "turnTimeout": "页面已停止等待，但云端回合可能仍在运行。刷新页面查看结果。",
     "turnInterrupted": "上一回合被中断了。请重新发送。",
     "errorTitle": "回合失败",
-    "machineStopped": "云电脑已停止或不可用。请在详情面板或云电脑插件里打开它，再重新发送。"
+    "machineStopped": "云电脑已停止或不可用。请在详情面板或云电脑插件里打开它，再重新发送。",
+    "imageUnsupported": "这台云电脑的镜像不会启动 DSH worker，detached 回合无法运行。请用 deepseek-harness@1 之类的镜像重建云电脑。",
+    "workerNoReply": "云端 worker 结束了，但没有写 reply.md。如果这台电脑用的是 shell oneshot 镜像（例如 dsh-bot@1），请换成 deepseek-harness@1 之类的镜像。"
   },
   "list": {
     "search": "搜索",
@@ -712,7 +717,8 @@ window.__ModuleLoader__.load({
     "computerCost": "会在你的 Rayrun 账号上创建一台计费机器。Bots 永不销毁它。",
     "botTitle": "第一个 Bot",
     "botBody": "给它一个名字和一项职责。它会保存到本地名册，并在你的云电脑上运行。",
-    "open": "首次设置"
+    "open": "首次设置",
+    "imageUnsupported": "这个镜像的 oneshot 是 shell 命令，不会启动 DSH worker。请使用 deepseek-harness@1 或其他会启动 DSH headless 的镜像。"
   },
   "settings": {
     "title": "设置",
@@ -844,6 +850,8 @@ window.__ModuleLoader__.load({
     const PANEL_ID = 'rayrun-bots'
     const SAMPLE_COMPUTER = 'dsh-workspace'
     const DEFAULT_COMPUTER = 'rayrun-bot'
+    const DETACHED_IMAGE = 'deepseek-harness@1'
+    const SHELL_ONESHOT_IMAGES = new Set(['dsh-bot@1', 'dsh-bot-devcheck@1'])
     const SESSION_POLL_MS = 1000
     const SESSION_POLL_LIMIT_MS = 16 * 60 * 1000
     const APPROVAL_PARSE_ERROR = '[[rayrun-approval-parse-error]]'
@@ -1319,6 +1327,8 @@ window.__ModuleLoader__.load({
       E_RUNTIME_UNAVAILABLE: 'chat.runtimeUnavailable',
       E_TOKEN_REQUIRED: 'chat.connectRayrun',
       E_MACHINE_STOPPED: 'chat.machineStopped',
+      E_IMAGE_UNSUPPORTED: 'chat.imageUnsupported',
+      E_WORKER_NO_REPLY: 'chat.workerNoReply',
       E_MACHINE_BUSY: 'chat.machineBusy',
       E_BALANCE_LOW: 'chat.balanceLow',
       E_QUEUE_FULL: 'chat.queueFull',
@@ -3471,6 +3481,8 @@ window.__ModuleLoader__.load({
             ? t('setup.dependencyIncompatible', { version: dependency.version ?? '?', required: dependency.required ?? '' })
             : t('setup.dependencyStatus')
       const configured = connection?.connection?.configured === true
+      const machineImageUnsupported = Boolean(machine
+        && SHELL_ONESHOT_IMAGES.has(String(machine.agent ?? '').trim()))
       const canContinue = step === 0
         ? dependency?.status === 'ok'
         : step === 1
@@ -3546,9 +3558,13 @@ window.__ModuleLoader__.load({
             return
           }
           const defaults = overview.defaults ?? {}
+          const configuredAgent = String(defaults.agent ?? '').trim()
+          const agent = SHELL_ONESHOT_IMAGES.has(configuredAgent)
+            ? DETACHED_IMAGE
+            : (configuredAgent || DETACHED_IMAGE)
           const result = await rayRpc('machine.create', {
             name,
-            agent: defaults.agent || 'deepseek-harness@1',
+            agent,
             cpu_cores: Number(defaults.cpu_cores) || 2,
             memory_mb: Math.max(2048, Number(defaults.memory_mb) || 2048),
             remote_desktop: true,
@@ -3675,6 +3691,7 @@ window.__ModuleLoader__.load({
                 null,
                 h('p', { className: 'rb-say' }, t('setup.computerExisting', { name: machine.name ?? machine.id ?? '—' })),
                 h('p', { className: 'rb-faint' }, t('setup.computerExistingHint')),
+                machineImageUnsupported ? h('p', { className: 'rb-say', role: 'status', style: { color: '#b45309' } }, t('setup.imageUnsupported')) : null,
               ) : null,
               !machineLoading && !machine && !configured ? h('p', { className: 'rb-say', role: 'status' }, t('setup.computerNeedsRayrun')) : null,
               !machineLoading && !machine && configured ? h(

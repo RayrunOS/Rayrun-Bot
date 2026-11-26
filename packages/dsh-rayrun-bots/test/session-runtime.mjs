@@ -339,6 +339,48 @@ check('a detached start failure fails closed without a detached state', async ()
   runner.close()
 })
 
+check('a detached worker-no-reply failure fails without polling again', async () => {
+  const root = mkdtempSync(path.join(tmpdir(), 'rayrun-bots-session-'))
+  roots.push(root)
+  const bots = openBotStore(root)
+  const bot = bots.create({ name: 'Echo Bot', label: 'Echoes messages' })
+  let collects = 0
+  const runner = openSessionRunner({
+    stateRoot: root,
+    runtime: {
+      contract: 1,
+      name: 'fake-detached-no-reply',
+      available: true,
+      detached: true,
+      async start() {
+        return {
+          taskId: 'task-no-reply',
+          sandbox: 'box',
+          localDir: path.join(root, 'bots', bot.id, 'workspace'),
+          timeoutSeconds: 900,
+        }
+      },
+      async status() { return { running: false } },
+      async collect() {
+        collects += 1
+        const error = new Error('The cloud worker ended without writing reply.md.')
+        error.code = ERROR_CODES.workerNoReply
+        throw error
+      },
+    },
+    getBot: bots.get,
+    detachedPollMs: 10,
+  })
+  runner.send(bot.id, 'first')
+  await runner.settled(bot.id)
+  const status = runner.status(bot.id)
+  assert.equal(status.state, 'failed')
+  assert.equal(status.error.code, ERROR_CODES.workerNoReply)
+  assert.equal(status.detached, undefined)
+  assert.equal(collects, 1)
+  runner.close()
+})
+
 check('a runtime failure fails closed, redacts credentials and resumes on the next send', async () => {
   let calls = 0
   const secret = 'sk-abcdefghijklmnopqrstuvwxyz012345'

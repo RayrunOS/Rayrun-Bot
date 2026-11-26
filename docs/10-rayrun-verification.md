@@ -611,6 +611,17 @@
   响应显示“有新版本 0.1.1-alpha.2”和命令，截图 `/tmp/bot/update-check.png`
   （临时文件）。未下载、未安装、未改 profile；自动安装和云端 host runtime 自动
   刷新仍未做。
+- Issue #4 镜像 oneshot（2026-11-26，代码/测试）：detached adapter 在 `dsh.start`
+  前检查 `machine.agent`；`dsh-bot@1` / `dsh-bot-devcheck@1` 返回
+  `E_IMAGE_UNSUPPORTED` 且不发出 `dsh.start`；未知镜像继续；结束后缺 `reply.md`
+  返回 `E_WORKER_NO_REPLY`，不再混成 `E_INTERNAL`。`rayrun-detached-runtime` 7/7
+  覆盖预检、未知镜像放行和缺失回复；`client-contract` 覆盖客户端错误映射与 Setup
+  默认镜像；`session` poll 对两个码不重试。另用本机 fake Rayrun API 返回
+  `agent: dsh-bot@1` 的 Running machine：发送后第一次轮询即 `failed`，system
+  message code `E_IMAGE_UNSUPPORTED`；fake API 只收到 overview 的
+  `/v1/sandboxes`、`/v1/agents`、余额和用量查询，没有 `dsh.start` 或 sandbox
+  动作。未在用户 Windows 环境复现（同一 `machine.agent`/`reply.md` 路径已覆盖），
+  真实机器验证仍需用户环境。
 - CI deploy egress 根因（2026-11-25）：`.github/scripts/deploy-rayrun.mjs` 创建
   沙盒时用了不在 Rayrun 创建 schema 中的 `egress_allow`；该字段被忽略，导致
   pnpm 下载 `ENOTFOUND`。在线沙盒验证 `PUT /v1/sandboxes/{id}/egress` 后同一

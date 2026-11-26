@@ -30,6 +30,8 @@ export const ERROR_CODES = Object.freeze({
   runtimeNotFound: 'E_RUNTIME_NOT_FOUND',
   runtimesUnavailable: 'E_RUNTIMES_UNAVAILABLE',
   guestdOutdated: 'E_GUESTD_OUTDATED',
+  imageUnsupported: 'E_IMAGE_UNSUPPORTED',
+  workerNoReply: 'E_WORKER_NO_REPLY',
   balanceLow: 'E_BALANCE_LOW',
   internal: 'E_INTERNAL',
 })

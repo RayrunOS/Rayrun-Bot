@@ -102,7 +102,11 @@ bot 的审批卡已接 host；示例 bot 卡片和设置仍是页内预览。本
 `session.send` 返回 `E_RUNTIME_UNAVAILABLE`。依赖 1.2+ 另有 host-side `runtime.*`
 client（`lib/runtime-rpc.js`），cloudHost 预览用它在机器上注册常驻 `bot-host`；
 默认关闭，启用后 `session.*` 走该 adapter（dev 与生产两 bot 单 host 已通过），未启用
-时仍走 detached/agent。发送一轮会让依赖启动已停止/暂停的机器，
+时仍走 detached/agent。detached 需要镜像的 oneshot 启动 DSH headless；已知
+`dsh-bot@1` / `dsh-bot-devcheck@1` 的 oneshot 是 `/bin/sh -c`，任务会立即结束且不会
+写 `reply.md`。Bots 在 `dsh.start` 前对这两个镜像失败关闭（`E_IMAGE_UNSUPPORTED`），
+收集阶段缺失 `reply.md` 返回 `E_WORKER_NO_REPLY`；Setup 创建机器时不会默认这两个
+镜像，已有这类机器会显示警告。发送一轮会让依赖启动已停止/暂停的机器，
 可能产生机时费用。真实一轮（单轮 adapter）、detached 的页面关闭 + 本地 DSH 重启后
 继续，以及机器 stop/start 后的第二轮续接（A8），已在本机页面 + 已有 Rayrun 机器验证
 （2026-11-22）。host half 还提供

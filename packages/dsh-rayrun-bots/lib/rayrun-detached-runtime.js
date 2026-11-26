@@ -22,6 +22,17 @@ import { RUNTIME_CONTRACT_VERSION } from './runtime.js'
 
 const TASK_TIMEOUT_SECONDS = 900
 const REPLY_MAX_BYTES = 64 * 1024
+const DETACHED_IMAGE = 'deepseek-harness@1'
+const SHELL_ONESHOT_IMAGES = new Set(['dsh-bot@1', 'dsh-bot-devcheck@1'])
+
+function assertImageSupported(machine) {
+  const image = typeof machine?.agent === 'string' ? machine.agent.trim() : ''
+  if (!SHELL_ONESHOT_IMAGES.has(image)) return
+  throw rayrunFailure(
+    ERROR_CODES.imageUnsupported,
+    `The cloud computer image "${image}" runs a shell oneshot, not a DSH worker; detached turns cannot run. Recreate the computer with an image such as ${DETACHED_IMAGE}.`,
+  )
+}
 
 function resultNames(body) {
   return Array.isArray(body?.files) && body.files.length ? body.files.join(', ') : 'none'
@@ -44,6 +55,7 @@ export function createRayrunDetachedRuntime({ getOrigin, fetchImpl = globalThis.
     },
     async start({ bot, text, history = [], messageSeq, botId, stateRoot } = {}) {
       const machine = await rpc.resolveMachine()
+      assertImageSupported(machine)
       const localDir = ensureBotWorkspace(stateRoot, botId, { name: bot?.name })
       const objective = [
         buildPrompt({ bot, text, history, messageSeq }),
@@ -110,8 +122,8 @@ export function createRayrunDetachedRuntime({ getOrigin, fetchImpl = globalThis.
         info = statSync(replyPath)
       } catch {
         throw rayrunFailure(
-          ERROR_CODES.internal,
-          `The cloud worker did not write reply.md (files: ${resultNames(body)}).`,
+          ERROR_CODES.workerNoReply,
+          `The cloud worker ended without writing reply.md (files: ${resultNames(body)}). If this computer image runs a shell oneshot (for example dsh-bot@1), it does not start a DSH worker; use an image such as ${DETACHED_IMAGE}.`,
         )
       }
       if (!info.isFile() || info.size > REPLY_MAX_BYTES) {
