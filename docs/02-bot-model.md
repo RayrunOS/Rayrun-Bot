@@ -1,6 +1,6 @@
 # 02 — Bot 模型
 
-> 状态：2026-11-24。本文定义 bot 是什么、`bot.json` 的字段与校验、默认指令模板、
+> 状态：2026-11-26。本文定义 bot 是什么、`bot.json` 的字段与校验、默认指令模板、
 > 生命周期与身份边界。产品方向见 [`00-product-direction.md`](00-product-direction.md)；
 > 技术基线见 [`01-system-architecture.md`](01-system-architecture.md)；未决决策见
 > [`adr/architecture-decisions.md`](adr/architecture-decisions.md)。
@@ -33,7 +33,7 @@
 | Memory | 机器上的每 bot 目录，保存笔记、产物与会话日志 |
 | Session | 持久 DSH session id；续接而不是重启 |
 | Routines | 每 bot 的定时 prompt；存在单独的 `routines.json`，不塞进 `bot.json` |
-| Computer | 用户的一台 Rayrun 云电脑；bots 共享，不是安全边界 |
+| Computer | 用户的一台 Rayrun 云电脑，是 agent 的安全容器（ADR-020）；bots 共享，bot 不是安全边界 |
 
 Bot 的定义是**用户意图**，运行态（session、memory、queue）在云电脑上。两者谁写、
 冲突怎么处理，见 ADR-002；在它定稿前，本文只定义字段，不定义最终所有权。
@@ -206,7 +206,8 @@ v0.1 不提供“复制 bot”“模板市场”“bot 间 handoff”；这些�
 - **Memory**：每 bot 一个目录，保存笔记、产物和会话日志；机器上权威，本地只读镜像。
 - **Transcript**：D3 计划写 `sessions/*.jsonl`，脱敏；v0.1 默认只镜像元数据，不镜像
   完整对话（[`06-local-state.md`](06-local-state.md)）。
-- **Bot 与电脑**：一台电脑共享给该用户的 bots；bot 不是安全边界，不能互相当沙箱。
+- **Bot 与电脑**：云电脑是 agent 的安全容器（ADR-020）；一台电脑共享给该用户的
+  bots；bot 不是安全边界，不能互相当沙箱。
 
 ---
 

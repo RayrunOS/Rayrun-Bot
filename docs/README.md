@@ -47,7 +47,7 @@
 
 > 状态取 `Proposed` / `Accepted` / `Decided`；`Open` 表示还没有提案。本表只登记，
 > 决策细节、证据和修订以 [architecture-decisions.md](adr/architecture-decisions.md)
-> 为准。**下一个可用编号：ADR-020。** 编号一旦占用不再复用。
+> 为准。**下一个可用编号：ADR-021。** 编号一旦占用不再复用。
 
 | 编号 | 标题 | 状态 | 文件 |
 | --- | --- | --- | --- |
@@ -70,8 +70,11 @@
 | ADR-017 | Bots 作为默认产品表面 | Accepted（2026-11-21） | [architecture-decisions.md](adr/architecture-decisions.md#adr-017) |
 | ADR-018 | 文档事实源与语言 | Accepted（2026-11-22） | [architecture-decisions.md](adr/architecture-decisions.md#adr-018) |
 | ADR-019 | 审批执行权威 | Accepted（2026-11-23，本地 DSH host） | [architecture-decisions.md](adr/architecture-decisions.md#adr-019) |
+| ADR-020 | 云电脑是 agent 的安全容器，容器内 `danger-full-access` | Accepted（2026-11-26，用户决定） | [architecture-decisions.md](adr/architecture-decisions.md#adr-020) |
 
-**ADR-019 已定（本地 DSH host 审批/执行）；ADR-001 的平台隔离仍用于云端凭据动作。** ADR-015/016、
+**ADR-019 已定（本地 DSH host 审批/执行）；ADR-020 明确云电脑是 agent 的安全容器，
+容器内 `danger-full-access` 是有意设计，审批只覆盖 typed 的离开容器动作；ADR-001 的
+平台隔离仍只用于云端凭据动作。** ADR-015/016、
 ADR-002 等仍决定控制面/执行面的分层与产物所有权，未定前相应 C/E 工作流不动工。
 ADR-014 已定为 B1，属于 v1.0，不阻塞 v0.1。
 

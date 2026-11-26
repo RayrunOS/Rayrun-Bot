@@ -822,6 +822,40 @@ workspace 内任意运行，也能写/改提案；本 ADR 只保护“需要本�
 `lib/approval-actions.js`、`lib/approval-executor.js` 和
 `test/approval-executor.mjs`。
 
+<a id="adr-020"></a>
+### ADR-020 — 云电脑是 agent 的安全容器，容器内 `danger-full-access`
+
+**状态：** Accepted（2026-11-26，用户决定）.
+
+**问题。** 云端 agent 需要 shell、文件、浏览器和工具才能工作。早期文档把
+`danger-full-access` 写成“workaround、不是沙箱”，容易被读成“缺少 containment，
+应该改成受限沙箱”；产品评审据此把“云端 agent 可执行 shell/发布/花钱”当成审批承诺
+的缺口。
+
+**决策。** 云电脑（用户自己的 Rayrun 机器/VM）是 agent 的**安全容器**；容器内 agent
+需要完整工具权限，worker profile 故意使用 `danger-full-access`。这是产品设计，不是
+待修的沙箱缺口。安全边界是这台云电脑，不是 bot 进程内的权限层：
+
+- 同一台机器上的 bot 共享容器，不互为沙箱。
+- 审批只覆盖离开容器、影响账号的 typed 动作（首版为本地
+  `rayrun.machine.start/stop/pause/resume`）；容器内的工作（shell、文件、浏览、
+  模型输出）不受审批 containment。
+- 不把 `danger-full-access` 描述成 agent 级隔离或沙箱保证；被攻陷的 bot 可以在
+  容器内任意操作，这是已知残余风险（[`07-security.md`](../07-security.md) §4.2/§4.4）。
+- 云端凭据动作仍等待平台 host/agent 隔离与 host-only 端点（ADR-001）；本 ADR 不解决
+  凭据问题，也不使云端 agent 可信。
+
+**后果。**
+
+- 产品文案和 onboarding 必须写“云电脑是容器；容器内完整权限是设计；审批保护
+  typed 的离开容器动作”，不再写“所有副作用都等你批”。
+- 同机多 bot 仍是产品选择；per-bot 隔离需要新的 ADR 或平台能力。
+- 安全测试和文档继续把模型输出当不可信输入；审批不是 containment。
+
+**证据。** 用户 2026-11-26 决定；[`07-security.md`](../07-security.md) §4、
+[`08-integration.md`](../08-integration.md) §3.3、[`12-status.md`](../12-status.md)
+§4/§5；`CLAUDE.md` §6.11。
+
 ## 建议顺序
 
 1. **先定 ADR-015 与 ADR-016。** 它们决定控制面/执行面的分层与权威；没有它们，

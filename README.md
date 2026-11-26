@@ -100,7 +100,7 @@ Still pre-alpha. This is the short version; evidence is in
 - It does not deliver v0.1, and the three-minute first-run path has not been timed end to end. A clean-install browser turn and the start/stop/pause/resume approval cards have been checked on a maintainer machine; that is not a promise for every account.
 - It does not publish a stable release. `latest` remains the older alpha.
 - It does not host the bot for you, meter you, or hold your accounts. There is no project relay in the middle.
-- It does not approve actions other than machine start, stop, pause, and resume. Credential actions on the computer are not covered. The agent on the machine is not an approval sandbox, and a bot is not a security boundary: your bots share one computer.
+- It does not approve actions other than machine start, stop, pause, and resume. Credential actions on the computer are not covered. The cloud computer is the agent's security container; the agent runs with full access inside it by design (ADR-020). It is not an approval sandbox, and a bot is not a security boundary: your bots share one computer.
 - It does not offer IM channels, a per-bot spend report, or cron and event triggers.
 
 ## How the pieces fit

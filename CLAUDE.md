@@ -108,7 +108,7 @@
 8. **同源 RPC。** 新的 page→host 动作保持同源、origin 校验的 RPC 属性；不要把 token 交给页面来绕过它。
 9. **文档诚实。** 绝不把计划中的功能写成已实现。`docs/12-status.md` 中带日期的状态陈述是事实；做了就更新，发现失效的说法就修。README 营销叙事不得声称未实现的功能已经可用。
 10. **默认无遥测。** 不收集、不上传任何东西。未来的遥测必须 opt-in、有文档，且绝不包含 prompt、key 或 workspace 内容。
-11. **没有 bubblewrap 的云端就是 root。** worker profile 故意跑 `danger-full-access`，这是 workaround，不是隔离。绝不把它说成沙箱保证，也不削弱 `docs/07-security.md` 中的警告。
+11. **云电脑是 agent 的安全容器；容器内就是 root。** worker profile 故意跑 `danger-full-access`，这是产品设计（ADR-020）：agent 在用户的云电脑内需要完整工具权限。它不是 agent 级隔离或沙箱保证，也不使 bot 成为安全边界；同机 bot 共享容器。审批只覆盖离开容器/账号级的 typed 动作；绝不把它说成沙箱保证，也不削弱 `docs/07-security.md` 中的警告。
 12. **云电脑插件是依赖，不是我们的代码。** `dsh-rayrun-computer` 在自己的仓库里，绝不从这里编辑、fork 或 vendor。集成只通过其已发布 tools/RPC 表面和版本契约；需要它改行为 → 去那个仓库开 issue/PR，或在本仓库写 adapter。
 13. **CI 部署凭据是维护者凭据，不是产品运行时凭据。** Rayrun deploy token 只存 GitHub Actions secret，只用于 main-only deploy job；不进仓库、日志、沙盒、client 或 RPC。PR/fork 永远不运行部署。今天 Rayrun token 是账号级、无 scope；用专用、可吊销的 token。
 

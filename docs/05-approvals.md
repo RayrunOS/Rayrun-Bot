@@ -1,6 +1,6 @@
 # 05 — 审批
 
-> 状态：2026-11-23。本文定义“什么需要审批、谁来执行、失败怎么拒绝、决定怎么绑定
+> 状态：2026-11-26。本文定义“什么需要审批、谁来执行、失败怎么拒绝、决定怎么绑定
 > 动作”。ADR-019（2026-11-23）把**本地 DSH host** 定为凭据/执行器在本地动作的审批
 > 权威与执行方；云端 bot 只提案。ADR-001 的平台隔离仍用于凭据只在云端、必须云端
 > 执行的动作。技术基线见 [`01-system-architecture.md`](01-system-architecture.md)；
@@ -46,10 +46,10 @@
 - **撤销即时**：停 bot、停电脑、或在 Rayrun 控制台吊销 token。
 - **在凭据所在处执行，在人类所在处审批。** 本地 host 持有 Rayrun token 并执行本地
   动作；云端只提交提案。
-- **审批不是安全沙箱**：它降低误操作和被 prompt injection 的风险；云端 agent 仍在
-  自己的 workspace 内以 `danger-full-access` 运行，多 bot 仍共享机器。ADR-019 只
-  保护需要本地凭据/执行器的 typed 动作；平台隔离仍是云端凭据动作的长期前提
-  （ADR-001/019）。
+- **审批不是安全沙箱**：它降低误操作和被 prompt injection 的风险；云电脑是 agent
+  的安全容器（ADR-020），容器内 agent 仍在自己的 workspace 内以 `danger-full-access`
+  运行，多 bot 仍共享机器。ADR-019 只保护需要本地凭据/执行器的 typed 动作；平台
+  隔离仍是云端凭据动作的长期前提（ADR-001/019）。
 
 ## 2. 信任边界（必须先读）
 
@@ -65,9 +65,9 @@ ADR-019 的本地权威模型：
   不进入 action、RPC 响应、日志或页面。批准后先写 `executing` claim，再执行。
 - **本地不在线就等待。** 本地 DSH 不在线时，chat 审批等待，background 按 TTL 过期
   拒绝；没有后台自动批准。
-- **不是沙箱。** 云端 agent 仍能在自己的 workspace 内任意运行，能写/改提案，也能绕过
-  自己的工具；本机制只保护“需要本地执行的动作”。它不是每 bot 隔离，不使被攻陷的
-  agent 变得可信。
+- **不是沙箱。** 云电脑是 agent 的安全容器（ADR-020）；容器内 agent 仍能在自己的
+  workspace 内任意运行，能写/改提案，也能绕过自己的工具。本机制只保护“需要本地执行
+  的动作”；它不是每 bot 隔离，不使被攻陷的 agent 变得可信。
 - **云端凭据动作仍等待平台。** 凭据只在云端、必须云端执行的动作，在平台提供
   host/agent 隔离或 host-only 端点前继续不执行（ADR-001 仍适用）。
 
@@ -251,7 +251,7 @@ context 已 live 通过（2026-11-23）。其他动作和云端凭据动作仍�
 
 | 问题 | 影响 | 决策 |
 | --- | --- | --- |
-| 审批在哪里执行？ | 它是不是安全边界 | ADR-019：本地 DSH host 执行本地动作；ADR-001 的平台隔离仍用于云端凭据动作 |
+| 审批在哪里执行？ | 它是不是安全边界 | ADR-019：本地 DSH host 执行本地动作；ADR-001 的平台隔离仍用于云端凭据动作；ADR-020：云电脑是 agent 的安全容器，审批不是 agent containment |
 | 云端 bot 如何提案？ | 自主审批闭环 | 结构化 block + host 解析已 live 验证；`propose.mjs` shell 路径未 live；host-only `approvals.propose` 仍为本地 seam |
 | 首版支持哪些动作？ | allowlist 与风险 | start/stop/pause/resume 已定义；其他动作逐项加，默认拒绝 |
 | decision 字段与 canonical hash | 绑定动作、负向测试 | ADR-011：Accepted（2026-11-22，协议已实现） |

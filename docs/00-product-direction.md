@@ -1,6 +1,6 @@
 # 00 — 产品方向：定位与 v0.1 范围
 
-> 状态：2026-11-24。本文是**产品层的唯一真相源**：卖给谁、解决什么问题、v0.1 做什么、怎么算做完。
+> 状态：2026-11-26。本文是**产品层的唯一真相源**：卖给谁、解决什么问题、v0.1 做什么、怎么算做完。
 > 实现状态与进度只看 [`12-status.md`](12-status.md)；本文不复制状态。根
 > [`../README.md`](../README.md) 是产品页（安装和能力的短述）；与 12-status 冲突时以
 > 12-status 为准。
@@ -63,6 +63,10 @@ key 思考；没有项目方托管的账号、控制面、代理或中继。
    销毁电脑、触碰另一台机器或凭据）先请求、后执行；超时、错误或未知状态一律拒绝。
 5. **Thin client。** 客户端是 DSH 插件，复用 DSH 的聊天、session、设置与插件机制；
    不重写聊天 UI，不把 v0.1 做成独立应用。
+6. **云电脑是 agent 的安全容器。** 安全边界是用户自己的 Rayrun 云电脑，不是 bot
+   进程内的沙箱。容器内 agent 需要完整工具权限（`danger-full-access`），这是产品
+   设计；审批只覆盖离开容器/影响账号的 typed 动作。同机 bot 不互为沙箱；被攻陷的
+   bot 可以在容器内任意操作，见 ADR-020、[`07-security.md`](07-security.md)。
 
 ---
 
@@ -177,7 +181,7 @@ v0.1 的完成标准是 [`plans/mvp-plan.md`](plans/mvp-plan.md) §2 的 A1–A1
 | 假设 | 为什么重要 | 如果不成立 |
 | --- | --- | --- |
 | 平台 runtimes API 能覆盖常驻 host（平台答复 2026-11-22：已实现并本机 dev 全量验收通过；2026-11-24 已部署生产 `5c2ff48`，`dsh-bot@1` hosted cloudHost E2E `PROD_OK`） | “合上笔记本”和“续接”是核心卖点 | 回退到逐次 headless + transcript replay，并明确 UX/成本降级（ADR-007） |
-| 审批执行点在 agent 写不到的地方 | “失败即拒绝”才是安全边界，而不只是 UX | 本地 typed 动作由本地 DSH host 执行（ADR-019）；云端凭据动作仍需平台隔离（ADR-001），云端 agent 本身仍不受审批 containment |
+| 审批执行点在 agent 写不到的地方 | “失败即拒绝”才是安全边界，而不只是 UX | 本地 typed 动作由本地 DSH host 执行（ADR-019）；云端凭据动作仍需平台隔离（ADR-001）。云端 agent 在云电脑容器内 `danger-full-access` 是设计（ADR-020）；审批不是 agent containment |
 | 余额护栏可用 | 余额耗尽会 force-destroy 机器与磁盘，是数据丢失风险 | 只能本地预警 + idle stop，无法阻止平台销毁（平台需求 #2） |
 | 常开成本可接受 | 一人一台 2 vCPU / 2 GiB 约 ¥57.6/月（写入时的量级） | idle stop、max lifetime 或云端自停策略；产品页必须说清代价（ADR-006） |
 | DSH 客户端 API 能表达产品 | 复用聊天与审批 UI 决定客户端成本 | 自建 inbox + transcript/composer，或收窄 MVP（client-plan C-S2/C-S3） |

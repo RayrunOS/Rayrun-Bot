@@ -1,6 +1,6 @@
 # 07 — 安全
 
-> 状态：2026-11-24。本文定义安全目标、威胁模型、凭据边界与“不保护什么”。
+> 状态：2026-11-26。本文定义安全目标、威胁模型、凭据边界与“不保护什么”。
 > 技术基线见 [`01-system-architecture.md`](01-system-architecture.md)；审批的信任
 > 边界见 [`05-approvals.md`](05-approvals.md)；本地状态见
 > [`06-local-state.md`](06-local-state.md)；平台 handoff 见
@@ -83,13 +83,16 @@ token 是账号级 API token；读到它就能创建/销毁机器并花余额。
 ### 4.2 模型不可信
 
 agent 执行模型输出。文件、网页、邮件、工具输出里的 prompt injection 是常态，不是
-例外。**缓解不是沙箱**：云镜像以 root 运行且没有 bubblewrap，worker profile 使用
-`danger-full-access`。把 bot 当作拥有整台电脑；不要把两个 bot 当作彼此的隔离边界。
+例外。**云电脑是安全容器，容器内不是沙箱**：云镜像以 root 运行且没有 bubblewrap；
+worker profile 故意使用 `danger-full-access`（ADR-020）。安全边界是这台云电脑，
+不是 bot 进程内的权限层；把 bot 当作拥有整台电脑，不要把两个 bot 当作彼此的隔离
+边界。被攻陷的 bot 可以在容器内任意操作，这是已知残余风险。
 
 ### 4.3 云电脑是共享的
 
 一人一台机器，bots 共享文件、浏览器状态和凭据。这是产品决策（更便宜、更像人的桌面），
-不是安全保证。一个 bot 被攻陷可以触及其他 bot 留下的东西。
+不是安全保证；云电脑是容器边界（ADR-020），但 bots 之间没有隔离。一个 bot 被攻陷
+可以触及其他 bot 留下的东西。
 
 ### 4.4 审批的当前边界（重要）
 
@@ -106,8 +109,9 @@ ADR-019（2026-11-23）把**本地 DSH host** 定为凭据/执行器在本地动
   `rayrun.machine.stop` / `rayrun.machine.pause` / `rayrun.machine.resume`；
   `destroy`、创建机器、shell、任意命令/URL 不在其中。其他本地动作、云端凭据动作
   仍需后续工作。
-- **不是沙箱、不是每 bot 隔离。** 云端 agent 仍是 root、`danger-full-access`；多 bot
-  仍共享机器。审批只保护需要本地执行的动作，不使被攻陷的 bot 变得可信。
+- **不是 agent 级沙箱、不是每 bot 隔离。** 云电脑是 agent 的安全容器（ADR-020）；
+  容器内 agent 仍是 root、`danger-full-access`，多 bot 共享机器。审批只保护需要本地
+  执行的动作，不使被攻陷的 bot 变得可信。
 - **本地不在线就等待。** chat 审批等待，background 按 TTL 拒绝；没有后台自动批准。
 - **云端凭据动作仍等待平台隔离。** ADR-001 仍适用于凭据只在云端、必须云端执行的动作；
   平台 host/agent 隔离和 host-only 端点落地前，这些动作不执行。

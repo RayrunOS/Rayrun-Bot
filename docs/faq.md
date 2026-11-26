@@ -1,6 +1,6 @@
 # 常见问题
 
-*状态：2026-11-25。Pre-alpha。两个独立项目：云电脑插件
+*状态：2026-11-26。Pre-alpha。两个独立项目：云电脑插件
 [RayrunOS/dsh-rayrun-computer](https://github.com/RayrunOS/dsh-rayrun-computer)
 独立可用；本仓库的 bot 层在它之上构建，并把它作为外部依赖复用。实现状态以
 [12-status.md](12-status.md) 为准；本文只给短答，细节见[系统架构](01-system-architecture.md)、
@@ -102,9 +102,10 @@ App。本项目与托管相反——开放代码、你的 Rayrun 账号、你的
 bridge 已 live：bot 输出结构化 block，cloud host 写提案，本地 `rayrun_files` 导入，
 Allow 后真实 stop，停机时结果落本地 outbox、重启后补传；start、denial/Continue 和
 下一轮结果 context 也已真机通过。pause/resume 也已 live；其他动作和云端凭据动作仍未
-验证。云端 worker 仍是 `approval: never`，
-agent 在自己的 workspace 内不受审批约束。云端凭据动作仍需 Rayrun 提供 host/agent
-隔离或 host-only 端点（ADR-001）。云端 bot 仍应只跑在你准备失去的凭据和机器上。
+验证。云电脑是 agent 的安全容器；容器内 worker 按设计使用 `danger-full-access`
+（ADR-020），agent 在自己的 workspace 内不受审批约束。审批只覆盖离开容器、影响账号的
+typed 动作，不是 agent containment。云端凭据动作仍需 Rayrun 提供 host/agent 隔离或
+host-only 端点（ADR-001）。云端 bot 仍应只跑在你准备失去的凭据和机器上。
 
 ## 能自托管吗？
 

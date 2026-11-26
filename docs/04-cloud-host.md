@@ -1,6 +1,6 @@
 # 04 — 云端 bot runtime（bot host）
 
-> 状态：2026-11-25。本文定义云电脑上的 **bot runtime**（历史名 bot host）：进程模型、
+> 状态：2026-11-26。本文定义云电脑上的 **bot runtime**（历史名 bot host）：进程模型、
 > 队列、session 映射、执行、心跳与恢复。本地 bot 控制面见
 > [`01-system-architecture.md`](01-system-architecture.md) §1.4 与 ADR-016；
 > 技术基线见 [`01-system-architecture.md`](01-system-architecture.md)；
@@ -68,9 +68,10 @@ DSH agent sessions（bot）
 | 心跳、恢复、事件 outbox | 模型 key 存储（由平台注入） |
 | 审批**提案**（不是决定/执行；ADR-019） | 多 bot 之间的安全隔离 |
 
-它与 agent 同机、以 root/`danger-full-access` 运行，**不是安全边界**；本地 typed
-审批由本地 DSH host 决定/执行（ADR-019），云端凭据动作仍等待平台隔离（ADR-001），
-见 [`08-integration.md`](08-integration.md) §3.3。
+云电脑是 agent 的安全容器（ADR-020）；host 与 agent 同机、以
+root/`danger-full-access` 运行，host **不是安全边界**。本地 typed 审批由本地 DSH
+host 决定/执行（ADR-019），云端凭据动作仍等待平台隔离（ADR-001），见
+[`08-integration.md`](08-integration.md) §3.3。
 
 ---
 
@@ -96,9 +97,10 @@ DSH agent sessions（bot）
 - **不把 Rayrun token 放进云电脑**：本地控制面通过 Rayrun API 写文件/读文件；bot runtime
   只使用模型 key 与本地文件。它如何被启动/监督，以
   [`08-integration.md`](08-integration.md) §3.1 的 runtimes 契约为准。
-- **权限现实**：agent 以 root、`danger-full-access` 运行；host 与 agent 在同一台机器
-  上没有强隔离。平台答复（2026-11-22）：同沙箱内无法隔离，平台审批端点不是首版；
-  ADR-001 的关闭状态维持，host/agent 分域是新决策。
+- **权限现实**：云电脑是 agent 的安全容器（ADR-020）；agent 以 root、
+  `danger-full-access` 运行，host 与 agent 在同一台机器上没有强隔离。平台答复
+  （2026-11-22）：同沙箱内无法隔离，平台审批端点不是首版；ADR-001 的关闭状态维持，
+  host/agent 分域是新决策。
 
 ---
 

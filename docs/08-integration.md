@@ -1,6 +1,6 @@
 # 08 — 集成与平台需求
 
-> 状态：2026-11-25。本文定义与 `dsh-rayrun-computer` 的依赖边界，以及 Rayrun 平台
+> 状态：2026-11-26。本文定义与 `dsh-rayrun-computer` 的依赖边界，以及 Rayrun 平台
 > 需要补的能力和优先级。技术基线见 [`01-system-architecture.md`](01-system-architecture.md)；
 > 云端 bot runtime 见 [`04-cloud-host.md`](04-cloud-host.md)；未决决策见
 > [`adr/architecture-decisions.md`](adr/architecture-decisions.md)。
@@ -150,6 +150,10 @@ live 联调：`rayrun-bot` 启动后 `put → running`、`get/list`、`delete �
 能被 agent 读写；agent 可以读 nonce/id 并写一个匹配的 decision 自批。唯一文件名、
 tmp+rename 和 checksum 只防半写，不防伪造。
 
+这是产品设计（ADR-020）：云电脑是 agent 的安全容器，容器内完整工具权限是 agent
+工作的前提。下面的平台隔离需求针对 host/agent 分域、host-only 审批端点和云端凭据
+动作，不是要求把 agent 在容器内改成受限沙箱。
+
 需要：
 
 1. 每沙盒一个 host runtime 身份（不同 UID 或 mount namespace），agent 不能读写 host
@@ -159,7 +163,8 @@ tmp+rename 和 checksum 只防半写，不防伪造。
 
 为什么：ADR-001（2026-11-21）仍要求云端凭据动作由平台隔离/端点保护。ADR-019
 （2026-11-23）已把**凭据/执行器在本地的 typed 动作**改为本地 DSH host 审批并执行；
-这不解决云端凭据动作，也不使云端 agent 可信。
+这不解决云端凭据动作，也不使云端 agent 可信，也不改变 ADR-020 的容器内完整权限
+设计。
 
 回退：云端凭据动作继续不执行，云端 bot 保持 `approval: never`；本地 typed 动作走
 ADR-019 的本地 executor。状态文档必须分别写明两者的边界，不能声称审批阻止了被攻陷

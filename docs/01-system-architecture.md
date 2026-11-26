@@ -1,6 +1,6 @@
 # 01 — 系统架构
 
-> 状态：2026-11-24。本文是**技术层的唯一真相源**：系统由什么组成、边界在哪、状态怎么
+> 状态：2026-11-26。本文是**技术层的唯一真相源**：系统由什么组成、边界在哪、状态怎么
 > 流转、信任模型是什么。
 > 产品范围与验收以 [`00-product-direction.md`](00-product-direction.md) 为准；当前实现
 > 状态以 [`12-status.md`](12-status.md) 为准；未决架构决策见
@@ -173,7 +173,9 @@ host half 属于本地控制面。**ADR-015/016 目前是 Proposed**；在它们
 
 这一侧是**云端 bot runtime**（ADR-015）。
 
-- 一人一台机器，bots 共享 `/workspace`、X11、browser profile 和文件；不是安全边界。
+- 一人一台机器，bots 共享 `/workspace`、X11、browser profile 和文件。云电脑是
+  agent 的安全容器（ADR-020），容器内 `danger-full-access` 是设计；bot 不是安全
+  边界，多 bot 不互为沙箱。
 - 平台同时只允许一个 agent 任务；第二个 prompt 返回 `409 sandbox_busy`，不排队。
 - v0.1 设计要常驻 DSH host + 每 bot session/profile。平台答复（2026-11-22）：R-G008
   runtimes API 已实现并本机 dev 全量验收通过（待部署），提供受监督进程、`autostart`、
@@ -211,7 +213,7 @@ billing。token 只在本地控制面使用；云端 agent 只拿模型 key，�
 | 域 | 谁 | 能做什么 | 不能假设 |
 | --- | --- | --- | --- |
 | 用户本地 | 用户、DSH host、Harness vault、本地审批 | 持有 Rayrun token；做审批决定；改本地 profile | 本地机器可能被攻陷；同 profile 的恶意插件是残余风险 |
-| 云电脑 | bot、模型输出、agent 进程、workspace | 以 root 运行；`danger-full-access`；可读写自己的 workspace | **没有 bubblewrap，不是沙箱**；模型输出不可信；bots 之间没有隔离 |
+| 云电脑 | bot、模型输出、agent 进程、workspace | **agent 的安全容器**；以 root 运行、`danger-full-access`（ADR-020）；可读写自己的 workspace | 不是 agent 级/每 bot 沙箱；模型输出不可信；bots 之间没有隔离 |
 | Rayrun 平台 | 云厂商 | 运行机器、注入 credential、计费 | 平台是否能看到静态凭据未验证；条款适用 |
 | DeepSeek | 模型厂商 | 接收 prompt 和输出 | 条款适用；不做 DPA/SOC 2/区域驻留承诺 |
 
@@ -238,7 +240,8 @@ ADR-019（2026-11-23）把凭据/执行器在本地动作的审批权威移到**
 - 本地 host 持 Rayrun token，按 typed allowlist 执行 `rayrun.machine.start/stop/pause/resume`；
   token 不进 action、RPC 响应、日志或页面。
 - 云端 agent 不能写本地 decision/claim，所以不能自批这些本地动作；但它仍能在自己的
-  workspace 内任意运行，能改提案/transcript。**审批不是沙箱，也不是每 bot 隔离。**
+  workspace 内任意运行，能改提案/transcript。**云电脑是 agent 的安全容器（ADR-020）；
+  审批不是沙箱，也不是每 bot 隔离。**
 - 凭据只在云端、必须云端执行的动作仍适用 ADR-001：平台 host/agent 隔离与
   host-only 端点落地前不执行。
 - 本地 DSH 不在线时，chat 审批等待，background 按 TTL 拒绝；没有后台自动批准。
@@ -251,8 +254,8 @@ ADR-019（2026-11-23）把凭据/执行器在本地动作的审批权威移到**
 
 ### 4.4 其他边界
 
-- **Bot 不是安全边界**：一台机器上的 bots 共享文件、浏览器状态和凭据；一个 bot 被
-  攻陷可以触及其他 bot 留下的东西。
+- **Bot 不是安全边界**：云电脑是 agent 的安全容器（ADR-020），但一台机器上的 bots
+  共享文件、浏览器状态和凭据；一个 bot 被攻陷可以触及其他 bot 留下的东西。
 - **公网 desktop**：ingress 的 token 层目前不可用，只有 `public`；不要把 public
   desktop 当产品面板。desktop 的安全路径见 ADR-008。
 - **供应链**：两个 bundle 都运行在 DSH 进程中，拥有用户权限；只从可信来源安装。
