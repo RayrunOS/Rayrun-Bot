@@ -602,6 +602,15 @@
   profile、代理、DSH、cookie 已清理。截图 `/tmp/bot/phase5-golden.png`（临时文件）。
   与完整手工路径的差异是 token 步骤未在页面输入；另修 `pickMachine` 优先 Running
   机器（避免默认选 Stopped 的 A3 机器），`client-contract` 覆盖。全量测试 27/27。
+- 更新提示（2026-11-26，本机 DSH + Firefox）：Settings → 更新 是用户点击触发的只读
+  检查；host `update.check` 固定读取
+  `https://registry.npmjs.org/-/package/dsh-rayrun-bots/dist-tags`，不携带
+  Authorization，校验 HTTP、JSON、响应大小和 semver 后返回当前/最新版本与可复制
+  命令。`update-check.mjs` 6/6；`rpc-contract` 33/33（含同源门、无 Authorization、
+  command）；全量 28/28；真实 npm 查询 `alpha=0.1.1-alpha.1` 显示已是最新。页面 smoke 用 mock
+  响应显示“有新版本 0.1.1-alpha.2”和命令，截图 `/tmp/bot/update-check.png`
+  （临时文件）。未下载、未安装、未改 profile；自动安装和云端 host runtime 自动
+  刷新仍未做。
 - CI deploy egress 根因（2026-11-25）：`.github/scripts/deploy-rayrun.mjs` 创建
   沙盒时用了不在 Rayrun 创建 schema 中的 `egress_allow`；该字段被忽略，导致
   pnpm 下载 `ENOTFOUND`。在线沙盒验证 `PUT /v1/sandboxes/{id}/egress` 后同一

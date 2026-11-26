@@ -33,6 +33,7 @@ import { createRoutineScheduler } from './lib/routine-scheduler.js'
 import { openRoutineStore } from './lib/routines.js'
 import { validateRuntime } from './lib/runtime.js'
 import { openSessionRunner } from './lib/sessions.js'
+import { checkForUpdate, updateCommand } from './lib/update-check.js'
 
 export const name = 'rayrun-bots'
 
@@ -460,6 +461,18 @@ export function apply(ctx, options = {}) {
               const payload = await readJsonBody(req, MAX_BODY)
               if (payload?.action === 'health') {
                 sendJson(res, 200, hostHealth())
+                return
+              }
+              if (payload?.action === 'update.check') {
+                try {
+                  const result = await checkForUpdate({ current: VERSION })
+                  const command = result.updateAvailable
+                    ? updateCommand({ latest: result.latest })
+                    : null
+                  sendJson(res, 200, { ok: true, ...result, command })
+                } catch (error) {
+                  sendError(res, 502, ERROR_CODES.internal, `Could not check npm: ${String(error?.message ?? error).slice(0, 200)}`)
+                }
                 return
               }
               if (typeof payload?.action === 'string' && payload.action.startsWith('bots.')) {

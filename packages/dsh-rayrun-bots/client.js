@@ -339,7 +339,19 @@ window.__ModuleLoader__.load({
     "language": "Language",
     "languageHint": "Chinese is primary; English is available.",
     "langEn": "English",
-    "langZh": "简体中文"
+    "langZh": "简体中文",
+    "updates": "Updates",
+    "updatesHint": "Check the npm registry for a newer dsh-rayrun-bots build. Nothing is downloaded or installed and no token is sent.",
+    "checkUpdates": "Check for updates",
+    "checkingUpdates": "Checking npm…",
+    "updateAvailable": "{latest} is available (you have {current}).",
+    "upToDate": "You are on the newest {channel} build (v{current}).",
+    "updateCheckFailed": "Could not check npm: {message}",
+    "updateCommandHint": "Run this in a terminal, then restart DSH. The cloud-computer plugin stays installed:",
+    "copyUpdateCommand": "Copy command",
+    "updateCopied": "Command copied",
+    "updateCopyFailed": "Copy failed. Select the command manually.",
+    "updateRestart": "This is a notice only; nothing is downloaded or installed automatically."
   },
   "sample": {
     "user": {
@@ -734,7 +746,19 @@ window.__ModuleLoader__.load({
     "language": "语言",
     "languageHint": "以简体中文为主，可切换 English。",
     "langEn": "English",
-    "langZh": "简体中文"
+    "langZh": "简体中文",
+    "updates": "更新",
+    "updatesHint": "从 npm registry 检查更新的 dsh-rayrun-bots 构建。不会下载或安装，也不会发送 token。",
+    "checkUpdates": "检查更新",
+    "checkingUpdates": "正在检查 npm…",
+    "updateAvailable": "有新版本 {latest}（当前 {current}）。",
+    "upToDate": "已是最新的 {channel} 构建（v{current}）。",
+    "updateCheckFailed": "无法检查 npm：{message}",
+    "updateCommandHint": "在终端执行下面的命令，然后重启 DSH；云电脑插件保持已安装：",
+    "copyUpdateCommand": "复制命令",
+    "updateCopied": "命令已复制",
+    "updateCopyFailed": "复制失败，请手动选中命令。",
+    "updateRestart": "这里只做提示；页面不会自动下载或安装。"
   },
   "sample": {
     "user": {
@@ -1046,6 +1070,12 @@ window.__ModuleLoader__.load({
 .rb-srow .rb-l { display: grid; gap: 1px; font-size: 13px; }
 .rb-srow .rb-l small { color: #8a93a3; font-size: 11px; }
 .rb-srow select, .rb-srow input { background: #fff; border: 1px solid #e4e8f0; border-radius: 8px; color: #0f172a; font-size: 12.5px; padding: 5px 8px; }
+.rb-update-row { align-items: flex-start; }
+.rb-update-col { display: grid; gap: 6px; justify-items: end; min-width: 0; max-width: 60%; }
+.rb-update-msg { display: grid; gap: 4px; justify-items: end; color: #5b6472; font-size: 11.5px; text-align: right; }
+.rb-update-error { color: #b42318; }
+.rb-update-cmd { max-width: 100%; padding: 7px 9px; border: 1px solid #e4e8f0; border-radius: 8px; background: #f7f9fc; }
+.rb-update-cmd code { display: block; white-space: pre-wrap; word-break: break-all; user-select: all; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 10.5px; color: #0e2050; }
 .rb-status { display: flex; align-items: center; gap: 6px; color: #5b6472; font-size: 11.5px; border: 0; background: transparent; padding: 0; }
 .rb-status .rb-retry { padding: 2px 8px; font-size: 11px; }
 .rb-center-empty { margin: auto; max-width: 420px; text-align: center; display: grid; gap: 8px; justify-items: center; padding: 48px 24px; }
@@ -3719,6 +3749,10 @@ window.__ModuleLoader__.load({
       const [usage, setUsage] = useState(null)
       const [usageLoading, setUsageLoading] = useState(true)
       const [usageError, setUsageError] = useState('')
+      const [update, setUpdate] = useState(null)
+      const [updateBusy, setUpdateBusy] = useState(false)
+      const [updateError, setUpdateError] = useState('')
+      const [updateCopy, setUpdateCopy] = useState('')
       useEffect(() => {
         let cancelled = false
         void (async () => {
@@ -3748,6 +3782,29 @@ window.__ModuleLoader__.load({
                 machines: Array.isArray(usage.machines) ? usage.machines.length : 0,
               })
             : t('settings.usageConnect')
+      const checkUpdates = async () => {
+        if (updateBusy) return
+        setUpdateBusy(true)
+        setUpdateError('')
+        setUpdateCopy('')
+        try {
+          setUpdate(await hostRpc('update.check'))
+        } catch (error) {
+          setUpdate(null)
+          setUpdateError(String(error?.message ?? error))
+        } finally {
+          setUpdateBusy(false)
+        }
+      }
+      const copyUpdateCommand = async () => {
+        if (!update?.command) return
+        try {
+          await navigator.clipboard.writeText(update.command)
+          setUpdateCopy('copied')
+        } catch {
+          setUpdateCopy('failed')
+        }
+      }
       const scrollTo = (id) => {
         onTab(id)
         const reduce = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -3770,7 +3827,7 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { className: 'rb-snav' },
-            ['account', 'usage', 'appearance'].map((id) => h(
+            ['account', 'usage', 'updates', 'appearance'].map((id) => h(
               'button',
               {
                 type: 'button',
@@ -3845,6 +3902,44 @@ window.__ModuleLoader__.load({
               'aria-label': t('settings.lowBalance'),
               onChange: (event) => onChange({ lowBalance: event.target.value.replace(/[^\d.]/g, '').slice(0, 8) }),
             }),
+          ),
+          h(
+            'div',
+            { id: 'rb-settings-updates', className: 'rb-srow rb-update-row' },
+            h('div', { className: 'rb-l' }, t('settings.updates'), h('small', null, t('settings.updatesHint'))),
+            h(
+              'div',
+              { className: 'rb-update-col' },
+              h('button', {
+                type: 'button',
+                className: 'rb-btn',
+                disabled: updateBusy,
+                onClick: checkUpdates,
+              }, updateBusy ? t('settings.checkingUpdates') : t('settings.checkUpdates')),
+              updateError ? h('div', { className: 'rb-update-msg rb-update-error', role: 'alert' }, t('settings.updateCheckFailed', { message: updateError })) : null,
+              update && !updateError ? h(
+                'div',
+                { className: 'rb-update-msg' },
+                update.updateAvailable ? h(
+                  'div',
+                  null,
+                  h('div', null, t('settings.updateAvailable', { latest: update.latest, current: update.current })),
+                  h('div', { className: 'rb-faint' }, t('settings.updateCommandHint')),
+                  h('div', { className: 'rb-update-cmd' }, h('code', null, update.command || '')),
+                  h(
+                    'div',
+                    { className: 'rb-line' },
+                    h('button', {
+                      type: 'button',
+                      className: 'rb-btn rb-ghost',
+                      onClick: copyUpdateCommand,
+                    }, updateCopy === 'copied' ? t('settings.updateCopied') : t('settings.copyUpdateCommand')),
+                    updateCopy === 'failed' ? h('span', { className: 'rb-faint' }, t('settings.updateCopyFailed')) : null,
+                  ),
+                  h('div', { className: 'rb-faint' }, t('settings.updateRestart')),
+                ) : h('div', null, t('settings.upToDate', { channel: update.channel, current: update.current })),
+              ) : null,
+            ),
           ),
           h(
             'div',

@@ -41,11 +41,11 @@
 | --- | --- | --- | --- |
 | 聊天列表 | 左栏 | 搜索、`+`、当前 bot、最近消息、时间、attention 点 | P0 |
 | 对话 | 中栏 | markdown 消息、日期分隔、内联审批/收据卡、composer | P0 |
-| Bot 详情 | 右栏 | 名字/职责、Activity / Library、receipts、routines、电脑摘要、用量 | P0 |
+| Bot 详情 | 右栏 | 名字/职责、Activity（routines、电脑、用量）；Library 为 P1 | P0 |
 | 内联审批卡 | 对话内 | 动作、风险、来源、TTL；Deny / Allow once；列表 attention 点 | P0 |
 | 首次设置向导 | 独立页 | 依赖检查 → Rayrun 连接（API token）→ DeepSeek key → 电脑 + 第一个 bot | P0 |
-| 用量块 | 详情 + 列表底部 | 余额、机器小时、本周花费、idle-stop 策略、低余额提示 | P0 |
-| 设置 | 独立页 | 默认模型、预算阈值、通知、语言 | P1 |
+| 用量块 | 详情 + 列表底部 | 余额、机器小时、本周花费、低余额提示 | P0 |
+| 设置 | 独立页 | Rayrun 账号、用量、更新提示、低余额、语言 | P1 |
 | 电脑视图 | 深链 | 打开独立云电脑插件的 desktop 页面；不重建 noVNC | P0（路径见 ADR-008） |
 | Library | 详情 tab | 按日期分组的产物；host 拉取；v0.1 无编辑器 | P1 |
 
@@ -90,7 +90,7 @@
 | sessions | `session.history`、`session.send`、`session.subscribe` |
 | approvals | `approvals.list`、`approvals.get`、`approvals.decide`、`approvals.history` |
 | cost | `cost.summary`、`cost.byBot`（P1） |
-| settings | `settings.get`、`settings.update` |
+| settings | `settings.get`、`settings.update`、`update.check`（只读 npm dist-tags） |
 
 规则：
 
@@ -182,6 +182,12 @@ receipts、library、示例 bot 的 routines 和消息仍是页内样本；真�
 显示。真实 bot 不显示未接通的 Recent/Library，只保留 routines、电脑和用量区块；
 Library 标签仅在页内样本里出现。设置页隐藏尚未持久化的 idle stop 与通知开关，避免
 显示无效控件。
+
+**设置 → 更新** 是只读提示：用户点击后才调用 host 的 `update.check`，host 读取官方
+npm registry 的 dist-tags，返回当前/最新版本和可复制命令。它不下载、不安装、不改
+profile，也不发送 Rayrun token 或 DeepSeek key；命令只更新 bots 包，云电脑插件保持
+已安装，由用户在终端执行，随后重启 DSH。云端 host 资产的版本刷新不在这个按钮范围
+内，发布含 `cloud-host/**` 变更时需要额外的 runtime 刷新。
 
 **空 roster**：列表和中心区显示 `No bots yet` + `Create bot`；新建 bot 后进入空对话
 欢迎态并聚焦 composer，details 面板的 Upcoming 显示空态和一句内容出现时机的提示，

@@ -157,6 +157,26 @@ dsh plugin --profile web add <dsh-rayrun-computer 路径或 tarball> <dsh-rayrun
 npm `latest`。不带版本的安装不会选中 `0.1.1-alpha.1`。用户安装命令见上文和根
 README；发布事实以 [`12-status.md`](12-status.md) 为准。
 
+**更新已有安装**：UI 和 host 在同一个 npm 包里，更新就是重新安装新版本并重启 DSH：
+
+```bash
+npm_config_registry=https://registry.npmjs.org \
+  dsh plugin --profile web add dsh-rayrun-bots@<新版本>
+# 然后重启 DSH；dsh-rayrun-computer 保持已安装
+```
+
+现有 `$DSH_HOME/state/rayrun-bot/` 下的 roster、session 和 approval 是 schema 1；
+本次 UI 更新不迁移数据。Settings → 更新 只做只读检查：按钮触发 host 的
+`update.check`，读取官方 registry 的 dist-tags，显示当前/最新版本和可复制的命令；
+它不下载、不安装、不改 profile，也不发送 token。复制命令后仍需用户在终端执行并
+重启 DSH。
+
+包版本变化会把新的 cloud host 资产投影到 `.rayrun/host/<version>/`，但当前
+`ensureHost()` 会复用已运行的 `bot-host` runtime，不会比较脚本路径自动重启。因此
+只更新 UI 不受影响；如果发布同时改了 `cloud-host/**`（例如审批解析），升级后需要
+重建 `bot-host` runtime，或在发布前补上 runtime 版本刷新。该缺口记录在
+[`12-status.md`](12-status.md)。
+
 ---
 
 ## 4. v0.1 目标三分钟路径（安装、RPC 与浏览器已验证；未计时签收）

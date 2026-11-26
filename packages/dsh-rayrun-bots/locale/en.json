@@ -311,7 +311,19 @@
     "language": "Language",
     "languageHint": "Chinese is primary; English is available.",
     "langEn": "English",
-    "langZh": "简体中文"
+    "langZh": "简体中文",
+    "updates": "Updates",
+    "updatesHint": "Check the npm registry for a newer dsh-rayrun-bots build. Nothing is downloaded or installed and no token is sent.",
+    "checkUpdates": "Check for updates",
+    "checkingUpdates": "Checking npm…",
+    "updateAvailable": "{latest} is available (you have {current}).",
+    "upToDate": "You are on the newest {channel} build (v{current}).",
+    "updateCheckFailed": "Could not check npm: {message}",
+    "updateCommandHint": "Run this in a terminal, then restart DSH. The cloud-computer plugin stays installed:",
+    "copyUpdateCommand": "Copy command",
+    "updateCopied": "Command copied",
+    "updateCopyFailed": "Copy failed. Select the command manually.",
+    "updateRestart": "This is a notice only; nothing is downloaded or installed automatically."
   },
   "sample": {
     "user": {

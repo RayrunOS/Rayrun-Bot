@@ -190,6 +190,18 @@ const required = [
   'settings.usageLine',
   'settings.usageConnect',
   'settings.usageFailed',
+  'settings.updates',
+  'settings.updatesHint',
+  'settings.checkUpdates',
+  'settings.checkingUpdates',
+  'settings.updateAvailable',
+  'settings.upToDate',
+  'settings.updateCheckFailed',
+  'settings.updateCommandHint',
+  'settings.copyUpdateCommand',
+  'settings.updateCopied',
+  'settings.updateCopyFailed',
+  'settings.updateRestart',
   'settings.host',
   'settings.hostHint',
   'settings.hostChecking',
@@ -284,7 +296,11 @@ assert.match(client, /E_TURN_POLL_TIMEOUT/)
 assert.match(client, /approval\.expiredRunning/)
 assert.match(client, /approval\.stopComputer/)
 assert.match(client, /h\('div', \{ className: 'rb-error-text' \}, entry\.text\)[\s\S]{0,200}h\('div', \{ className: 'rb-error-code' \}/)
-assert.match(client, /\['account', 'usage', 'appearance'\]/)
+assert.match(client, /\['account', 'usage', 'updates', 'appearance'\]/)
+assert.match(client, /hostRpc\('update\.check'\)/)
+assert.match(client, /navigator\.clipboard\.writeText\(update\.command\)/)
+assert.match(client, /settings\.updateAvailable/)
+assert.match(client, /disabled: updateBusy/)
 assert.equal(client.includes('settings.idle'), false)
 assert.equal(client.includes('settings.notify'), false)
 assert.equal(client.includes('state.settings.idle'), false)

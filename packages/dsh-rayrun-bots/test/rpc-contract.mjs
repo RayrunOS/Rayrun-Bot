@@ -248,6 +248,36 @@ check('without a Host header the Origin is compared with the bind origin', async
   assert.equal(crossOriginReply.status, 403)
 })
 
+check('update.check reads npm dist-tags through the host and is same-origin gated', async () => {
+  const originalFetch = globalThis.fetch
+  let seen
+  globalThis.fetch = async (url, options) => {
+    seen = { url, options }
+    return {
+      ok: true,
+      status: 200,
+      async text() { return JSON.stringify({ alpha: '99.0.0-alpha.1', latest: '99.0.0' }) },
+    }
+  }
+  try {
+    const reply = await request(hostFor().handler, { action: 'update.check' })
+    assert.equal(reply.status, 200)
+    assert.equal(reply.json.ok, true)
+    assert.equal(reply.json.updateAvailable, true)
+    assert.equal(reply.json.latest, '99.0.0-alpha.1')
+    assert.match(reply.json.command, /dsh-rayrun-bots@99\.0\.0-alpha\.1/)
+    assert.equal(seen.url, 'https://registry.npmjs.org/-/package/dsh-rayrun-bots/dist-tags')
+    assert.equal(seen.options.headers.authorization, undefined)
+    const cross = await request(hostFor({ origin: 'http://127.0.0.1:59999' }).handler, {
+      action: 'update.check',
+      headers: { origin: 'http://evil.example' },
+    })
+    assert.equal(cross.status, 403)
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
 check('the error envelope keeps its shape', async () => {
   const reply = await request(hostFor().handler, { action: 'shell.exec' })
   assert.deepEqual(Object.keys(reply.json).sort(), ['error', 'ok'])

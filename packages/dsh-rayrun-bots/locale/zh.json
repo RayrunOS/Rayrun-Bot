@@ -311,7 +311,19 @@
     "language": "语言",
     "languageHint": "以简体中文为主，可切换 English。",
     "langEn": "English",
-    "langZh": "简体中文"
+    "langZh": "简体中文",
+    "updates": "更新",
+    "updatesHint": "从 npm registry 检查更新的 dsh-rayrun-bots 构建。不会下载或安装，也不会发送 token。",
+    "checkUpdates": "检查更新",
+    "checkingUpdates": "正在检查 npm…",
+    "updateAvailable": "有新版本 {latest}（当前 {current}）。",
+    "upToDate": "已是最新的 {channel} 构建（v{current}）。",
+    "updateCheckFailed": "无法检查 npm：{message}",
+    "updateCommandHint": "在终端执行下面的命令，然后重启 DSH；云电脑插件保持已安装：",
+    "copyUpdateCommand": "复制命令",
+    "updateCopied": "命令已复制",
+    "updateCopyFailed": "复制失败，请手动选中命令。",
+    "updateRestart": "这里只做提示；页面不会自动下载或安装。"
   },
   "sample": {
     "user": {
