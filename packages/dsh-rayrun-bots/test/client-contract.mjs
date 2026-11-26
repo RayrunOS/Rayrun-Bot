@@ -205,7 +205,6 @@ const required = [
   'settings.computerNoMachine',
   'settings.computerNotConnected',
   'settings.computerBillable',
-  'settings.computerPreserved',
   'settings.computerConfirm',
   'settings.computerCancel',
   'settings.computerUpdating',

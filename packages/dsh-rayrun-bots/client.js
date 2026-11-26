@@ -367,7 +367,6 @@ window.__ModuleLoader__.load({
     "computerNoMachine": "No cloud computer found.",
     "computerNotConnected": "Connect Rayrun to manage the bot computer.",
     "computerBillable": "This creates a billable computer on your Rayrun account. The old one is stopped, not destroyed.",
-    "computerPreserved": "Preserved: /workspace, /root/.config, /root/.local/share, /root/.mozilla, /root/.ssh. Installed apps, packages, caches and other network egress rules are not copied; api.deepseek.com is allowed for the bot model.",
     "computerConfirm": "Update computer (billable)",
     "computerCancel": "Cancel",
     "computerUpdating": "Updating… creating the new computer and copying data. Do not close this page.",
@@ -795,7 +794,6 @@ window.__ModuleLoader__.load({
     "computerNoMachine": "没有找到云电脑。",
     "computerNotConnected": "连接 Rayrun 后才能管理 Bot 的电脑。",
     "computerBillable": "这会在你的 Rayrun 账号上创建一台计费电脑。旧电脑会被停止，不会被销毁。",
-    "computerPreserved": "保留：/workspace、/root/.config、/root/.local/share、/root/.mozilla、/root/.ssh。已安装的应用、软件包、缓存和其他网络 egress 规则不会复制；新电脑会放行 bot 模型需要的 api.deepseek.com。",
     "computerConfirm": "更新电脑（计费）",
     "computerCancel": "取消",
     "computerUpdating": "正在更新… 正在创建新电脑并复制数据。请不要关闭页面。",
@@ -4086,7 +4084,6 @@ window.__ModuleLoader__.load({
               { className: 'rb-computer-form' },
               h('div', { className: 'rb-faint' }, t('settings.computerTarget', { image: DETACHED_IMAGE })),
               h('div', { className: 'rb-faint' }, t('settings.computerBillable')),
-              h('div', { className: 'rb-faint' }, t('settings.computerPreserved')),
               h('div', { className: 'rb-faint' }, t('settings.computerUpdateHint')),
               h(
                 'div',
