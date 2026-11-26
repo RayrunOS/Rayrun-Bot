@@ -714,8 +714,8 @@
   session 记录 `E_INTERNAL` 和 worker-no-reply 失败信息（没有假成功）。用本地测试 key 经
   `POST /v1/credentials` 新建 `dsh-model-firstrun-20261127`（provider deepseek）后，
   新沙箱 `rayrun-bot` 首轮成功。测试机 `rayrun-bot`、
-  `rayrun-bot-timing-20261127`、`rayrun-bot-invalid-credential-20261127` 均
-  **Stopped、未 destroy**；credential 保留。截图
+  `rayrun-bot-timing-20261127`、`rayrun-bot-invalid-credential-20261127` 已于
+  **2026-11-27 按用户清理授权 destroy**；credential 保留。截图
   `/tmp/bot/clean-firstrun-*.png`、`/tmp/bot/clean-firstrun-reply.png`、
   `/tmp/bot/firstrun-reply.png`（临时文件，不入库）。
 - A6 批准延迟（2026-11-27，本机 DSH `0.2.2-rc.5` + Firefox/geckodriver，Bots 本地
@@ -730,9 +730,10 @@
   Continue，不会自动续跑。proposal/决策记录 id `prop-49cd6b7f-...` /
   `dec-c939af01-...`；截图 `/tmp/bot/a6-pending.png`、`/tmp/bot/a6-allowed.png`、
   `/tmp/bot/a6-continue.png`（临时文件，不入库）。测试机 `rayrun-bot-a6` 已
-  Stopped、`bot-host` runtime 删除、未 destroy；页面经 localhost 代理连接 Rayrun。
-  新建沙箱被 409 `resource_exhausted` 拒绝（组织存储 504/512 GiB），因此改用已有
-  `dsh-bot@1` 测试机；清理旧测试机需用户明确授权 destroy。详情面板同时把
+  **2026-11-27 按用户清理授权 destroy**，`bot-host` runtime 删除；页面经 localhost
+  代理连接 Rayrun。新建沙箱被 409 `resource_exhausted` 拒绝（组织存储 504/512
+  GiB），因此改用已有 `dsh-bot@1` 测试机；同日按用户明确清理授权 destroy 13 台旧
+  测试机，仅保留 `rayrun-bot-prod-e2e`（Stopped、未 destroy）。详情面板同时把
   `dsh-bot@1` 标成 shell oneshot / 不会启动 DSH worker；这是 detached runtime 的
   警告，在 cloudHost 下是误报，已登记为 UI 缺口。
 

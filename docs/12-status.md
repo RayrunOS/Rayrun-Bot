@@ -88,6 +88,16 @@ proposal 的卡片 **2.291s**、执行 **0.779s**、Continue→working **21ms**�
 >
 > 2026-11-25 新增并保留（Stopped、未 destroy）：`rayrun-bot-a1-20261125`
 > （A1 沙盒）与 `rayrun-bot-a3-20261125`（A3 创建计时）。
+>
+> 2026-11-27 按用户明确清理授权 destroy 13 台旧测试机：`dsh-ci-deploy`、
+> `dsh-ci-deploy-2`、`rayrun-bot-a1-20261125`、`rayrun-bot-a3-20261125`、
+> `rayrun-bot-a3-20261125-pre-update-mwxmdt31`、`bot-update-smoke-20261126`、
+> `bot-update-smoke-20261126-pre-update-mwxk96k8`、`rayrun-bot-a6`、
+> `rayrun-bot-a3-20261125-failed-update-mwxmhbnf`、`...-mwxmiti2`、
+> `rayrun-bot-invalid-credential-20261127`、`rayrun-bot-timing-20261127`、
+> `rayrun-bot`。仅保留 `rayrun-bot-prod-e2e`（Stopped、未 destroy），其
+> prior test bots 和 `prod-routine` 仍在；destroy 待确认。下文 2026-11-24/25 的
+> “保留/未 destroy”是当次记录，清理后以本段为准。
 > 2026-11-26 电脑更新实测新增并保留（Stopped、未 destroy）：
 > `bot-update-smoke-20261126`（新机）与
 > `bot-update-smoke-20261126-pre-update-mwxk96k8`（旧机）。
@@ -513,8 +523,9 @@ proposal 的卡片 **2.291s**、执行 **0.779s**、Continue→working **21ms**�
   oneshot / 不会启动 DSH worker；2026-11-27 A6 实测 cloudHost 在该镜像上正常回复。
   该警告只适用于 detached runtime，需要按 runtime 模式区分。
 - Rayrun 账号存储配额：2026-11-27 查询已用 504/512 GiB，创建新沙箱返回 409
-  `resource_exhausted`；A6 改用已有的 `dsh-bot@1` 测试机。清理旧测试机需用户明确
-  授权 destroy。
+  `resource_exhausted`；A6 改用已有的 `dsh-bot@1` 测试机。同日按用户明确清理授权
+  destroy 13 台旧测试机；仅保留 `rayrun-bot-prod-e2e`（Stopped）。清理后的配额
+  读数未重新查询。
 - 本地 routine scheduler 的真实自动触发：fake 集成测试覆盖了到期入队，但尚未等待
   一次真实本地 scheduler 自动触发；页面创建/启停/删除已 smoke。
 - 能拦住 worker 的远程审批执行：ADR-019 已让本地 host 对 typed 机器
@@ -546,8 +557,8 @@ proposal 的卡片 **2.291s**、执行 **0.779s**、Continue→working **21ms**�
   run `45629800138` 全绿，deploy job 显示 skipped；npm 发布、普通测试和 checks
   不受影响。
 - `rayrun-bot-prod-e2e` 上仍保留 prior test bot 目录（`browser-*`、`prod-*`）和
-  `prod-routine`；`prod-routine` 在 host 启动时抢先约 3.4 秒。清理需用户确认
-  保留哪些 bot；机器在 2026-11-26 查询时仍为 Running（聊天/时延测试后未 stop）。
+  `prod-routine`；`prod-routine` 在 host 启动时抢先约 3.4 秒。2026-11-27 已
+  **Stopped、未 destroy**；清理/销毁需用户确认保留哪些 bot。
 
 ## 5. 平台缺口
 
