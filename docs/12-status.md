@@ -40,7 +40,9 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
 （dev 2026-11-23；生产 2026-11-25）；生产镜像 `dsh-bot@1` 与 R-G008 部署已完成。
 
 2026-11-27 首次运行分段计时约 **1m55s–3m03s**（插件安装 61–128s 是主要变量）；
-单一连续的三分钟签收尚未完成，见 §3.1。
+单一连续的三分钟签收尚未完成，见 §3.1。同日 A6 批准延迟已计时：真实 cloudHost
+proposal 的卡片 **2.291s**、执行 **0.779s**、Continue→working **21ms**；A6 的
+10 秒计时缺口已补齐，见 §3.1。
 
 ## 2. 依赖项目今天可用
 
@@ -490,6 +492,14 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
   `rayrun-bot-invalid-credential-20261127` 均 Stopped、未 destroy。偏差：localhost
   代理、既有 credential、非空账号下过滤 overview 以触发 Create、WebDriver 驱动；
   详见 [`10-rayrun-verification.md`](10-rayrun-verification.md) §3.1。
+- A6 批准延迟（2026-11-27，本机 DSH `0.2.2-rc.5` + Firefox/geckodriver，Bots 本地
+  checkout + 依赖 `1.2.1` npm，cloudHost 启用，`rayrun-bot-a6` / `dsh-bot@1`）：
+  真实 DeepSeek 回合 5.81s 后写出 `rayrun.machine.pause` proposal；回合 idle→审批卡
+  **2.291s**（proposal `createdAt`→卡片 **0.464s**），pending 时机器仍 Running；
+  `Allow once`→本地执行完成 **0.779s**、机器 Paused **1.030s**，副作用只在决定之后；
+  `Continue bot` 点击→working **21ms**（UI 需要用户点 Continue，不自动续跑）。测试机
+  Stopped、`bot-host` runtime 删除、未 destroy；截图 `/tmp/bot/a6-pending.png`、
+  `/tmp/bot/a6-allowed.png`、`/tmp/bot/a6-continue.png`（临时文件，不入库）。
 - 具体组合、环境和缺口以 [`10-rayrun-verification.md`](10-rayrun-verification.md)
   和 [`version-matrix.md`](version-matrix.md) 为准；未测试的组合不作承诺。
 
@@ -499,6 +509,12 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
   单一连续、干净账号的三分钟运行；安装耗时波动是主要变量。
 - 失效模型 credential 的界面诊断：worker 以 provider Authentication Fails 退出时，
   页面只有 worker-no-reply，尚未把认证错误浮到 Setup 或聊天；2026-11-27 已复现。
+- cloudHost 镜像警告误报：详情面板把 cloudHost 使用的 `dsh-bot@1` 标成 shell
+  oneshot / 不会启动 DSH worker；2026-11-27 A6 实测 cloudHost 在该镜像上正常回复。
+  该警告只适用于 detached runtime，需要按 runtime 模式区分。
+- Rayrun 账号存储配额：2026-11-27 查询已用 504/512 GiB，创建新沙箱返回 409
+  `resource_exhausted`；A6 改用已有的 `dsh-bot@1` 测试机。清理旧测试机需用户明确
+  授权 destroy。
 - 本地 routine scheduler 的真实自动触发：fake 集成测试覆盖了到期入队，但尚未等待
   一次真实本地 scheduler 自动触发；页面创建/启停/删除已 smoke。
 - 能拦住 worker 的远程审批执行：ADR-019 已让本地 host 对 typed 机器

@@ -718,6 +718,23 @@
   **Stopped、未 destroy**；credential 保留。截图
   `/tmp/bot/clean-firstrun-*.png`、`/tmp/bot/clean-firstrun-reply.png`、
   `/tmp/bot/firstrun-reply.png`（临时文件，不入库）。
+- A6 批准延迟（2026-11-27，本机 DSH `0.2.2-rc.5` + Firefox/geckodriver，Bots 本地
+  checkout `0.1.1-alpha.1` + 依赖 `1.2.1` npm，cloudHost 启用，机器
+  `rayrun-bot-a6`（`dsh-bot@1`，credential `dsh-model-hjyu-thinkpad-l14-gen-1`））：
+  真实 DeepSeek 回合在 **5.81s** 后返回，cloud host 写出
+  `rayrun.machine.pause` proposal；从回合 idle 到审批卡可见 **2.291s**（从 proposal
+  `createdAt` 到卡片 **0.464s**），卡片为 pending，机器仍 Running。点 `Allow once`
+  后本地执行 **0.779s** 完成，机器 **1.030s** 内变为 Paused，审批卡显示
+  `Approved and executed on your local side.`；副作用只发生在决定之后。批准后
+  `Continue bot` 可用，点击后 **21ms** 出现 bot 的 working 状态；UI 需要用户点
+  Continue，不会自动续跑。proposal/决策记录 id `prop-49cd6b7f-...` /
+  `dec-c939af01-...`；截图 `/tmp/bot/a6-pending.png`、`/tmp/bot/a6-allowed.png`、
+  `/tmp/bot/a6-continue.png`（临时文件，不入库）。测试机 `rayrun-bot-a6` 已
+  Stopped、`bot-host` runtime 删除、未 destroy；页面经 localhost 代理连接 Rayrun。
+  新建沙箱被 409 `resource_exhausted` 拒绝（组织存储 504/512 GiB），因此改用已有
+  `dsh-bot@1` 测试机；清理旧测试机需用户明确授权 destroy。详情面板同时把
+  `dsh-bot@1` 标成 shell oneshot / 不会启动 DSH worker；这是 detached runtime 的
+  警告，在 cloudHost 下是误报，已登记为 UI 缺口。
 
 > Rayrun 连接、Open、云电脑创建三条依赖层路径是通过本机 Node 直接 import
 > `dsh-rayrun-computer@1.0.0` 的 `lib/rayrun.js` 验证的，调用的是插件页面使用的同一组
