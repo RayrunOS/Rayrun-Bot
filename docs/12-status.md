@@ -63,7 +63,7 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
 | Session 与 transcript | Host half 持久化每 bot 的 `session.json` + `transcript.jsonl`，提供 `session.send/history/status`；队列单飞、失败脱敏、host 重启后普通 running turn 标为 interrupted。依赖 1.1+ 时使用 detached `dsh.start/status/result`：每 turn 一个 task id、每 bot 一个本地 git checkout、`reply.md` 收取，task id 持久化，host 重启后恢复 poll；页面关闭 + 本地 DSH 重启后继续，以及机器 stop/start 后的第二轮续接（A8），已在本机 DSH + 已有 Rayrun 机器验证（2026-11-22）；1.0.x 回退单轮 `rayrun_agent`。常驻 `cloudHost` host 是预览、默认关闭；2026-11-23 多 bot 单 host 页面 E2E 已通过，生产镜像/部署未交付。单轮真实一轮已在本机 DSH + 已有 Rayrun 机器验证（2026-11-22）；示例 bot 仍是预览。 |
 | Routines | 每 bot 的 `routines.json` 由 host half 原子持久化；`routines.list/create/update/remove/sync` 校验标题、prompt、间隔、开关和上限。非 cloudHost 模式使用本地 `routine-scheduler`：每 30 秒检查到期项，入队普通 prompt；每 tick 每 bot 最多一条，busy 时跳过，runtime 不可用时保留 due，错过多个间隔只补一次；运行前先写 lastRunAt/nextAt claim，入队失败不重放。cloudHost 模式停用本地 scheduler，由云 host 读取镜像定义，在 `host/routines-state.json` claim nextAt 后入队 `origin: routine` task；结果写 `routine-results/`，本地 `routines.sync` 导入并被 `session.history` 合并；失败任务显示为 `E_ROUTINE_FAILED` system error。dev/test 环境的 cloudHost live E2E 已通过（2026-11-24，本地 DSH 关闭后云端执行）；生产 R-G008 已部署，hosted routine E2E 已通过（`CLOUD_ROUTINE_PROD_OK`，2026-11-24）。同一 bot 的定义 sync 串行执行，较慢的旧上传不会覆盖新定义；scheduler 在机器停止时不运行，机器停止期间改定义仍可能在上传前让旧定义先跑一次（MVP 不承诺该场景强一致）。结果文件有保留上限。cron 和事件触发未实现。客户端详情面板对真实 bot 可创建、启停、删除和显示 interval，示例 bot 仍用页内数据。 |
 | setup | Rayrun 步骤经云电脑插件的同源 RPC 接收粘贴的 token；云电脑步骤采用已有机器或经同一 RPC 创建第一台机器。 |
-| 电脑卡片 | Open 经同一 RPC 启动或恢复机器、等待 `Running`、修复桌面服务并打开 `desktop_url`；Stop 在确认后停止，永不 destroy；运行中显示当前机时费率和累计机时。 |
+| 电脑卡片 | Open 经同一 RPC 启动或恢复机器、等待 `Running`、修复桌面服务并打开 `desktop_url`；弹窗被拦截时密码提示条里的真实链接（只接受 http/https）可打开桌面；Stop 在确认后停止，永不 destroy；运行中显示当前机时费率和累计机时。 |
 | 用量 | 详情面板的电脑块和用量块，以及 Settings 的用量行，读取真实机器状态、余额与机时。 |
 | 更新提示 | Settings → 更新 通过同源 RPC `update.check` 读取官方 npm dist-tags；显示当前/最新版本与可复制命令，不下载、不安装、不改 profile、不发送 token。只读，用户点击触发，没有自动检查或遥测。 |
 | 电脑更新 | Settings → Bot 的电脑 显示共用电脑与当前镜像；确认后通过 host `computer.update` 换镜像：旧机改名保留、新机用原名称/固定 `deepseek-harness@1`/自动选中的 DeepSeek credential 创建，复制 workspace 和登录配置路径，最后停止旧机；失败回滚，永不自动 destroy。每次更新创建计费机器，必须显式确认。 |
@@ -467,6 +467,15 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
   `rayrun-bot-test` 验证（独立临时 DSH_HOME，token 只经共享 Harness vault，未新建
   机器）：bot 回复 `SMOKE_OK`；session 为 `idle`，transcript 有 user+bot；刷新后回复
   仍在。机时读数增加约 0.0036 小时（读数不是承诺）；审批未参与。
+- 桌面弹窗兜底（2026-11-26，本机临时 DSH_HOME + DSH web + Firefox/geckodriver，
+  fake Rayrun RPC）：seed 的 bot 绑定 `fake-machine`，用 `window.open` 返回 null
+  模拟弹窗被拦截；点击 Open 后流程继续 `overview` → `machine.desktopRepair` →
+  `machine.password`，密码提示条显示 `弹窗被拦截了。用下面的链接打开桌面。`、
+  `打开桌面` 链接（`https://desktop.example/popup-smoke`，`target=_blank`、
+  `rel=noopener noreferrer`）和密码，未调用 `machine.action`。允许弹窗时仍导航同一
+  URL，提示条不显示拦截文案。contract 增加 `computer.openDesktop`、链接属性和
+  http/https 校验断言。截图 `/tmp/bot/popup-blocked-fallback.png`、
+  `/tmp/bot/popup-allowed.png`（临时文件，不入库）。
 - 具体组合、环境和缺口以 [`10-rayrun-verification.md`](10-rayrun-verification.md)
   和 [`version-matrix.md`](version-matrix.md) 为准；未测试的组合不作承诺。
 

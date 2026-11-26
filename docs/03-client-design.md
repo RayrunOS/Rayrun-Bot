@@ -162,10 +162,11 @@ host 从 bot 的 session 提供实际机器名（`bots.list.computers`），客�
 **打开云电脑**：详情面板的 `Open` 调云电脑插件的 `overview`、
 `machine.action`（start/resume）、`machine.get` 轮询、`machine.desktopRepair` 和
 `machine.password`。连接未配置时
-提示先连接（`computer.connectFirst`）；没有机器、弹窗被拦截、启动超时、没有 desktop
-时各自一句可执行提示。成功时在新标签打开 `desktop_url`，密码只保存在页面状态里，用
-可关闭的提示条显示。v0.1 不提供 `Take over` 共享控制入口；它需要单独的共享控制语义，
-实现前不显示死按钮。依赖层和 Bots 页面内的 Open 成功路径都已在本机 DSH web 页面用
+提示先连接（`computer.connectFirst`）；没有机器、启动超时、没有 desktop 时各自一句
+可执行提示。桌面在新标签打开；弹窗被拦截或窗口被关闭不中止流程，密码提示条里给出
+`desktop_url` 的真实链接（只接受 http/https），用户点击链接即可打开。密码只保存在
+页面状态里，用可关闭的提示条显示。v0.1 不提供 `Take over` 共享控制入口；它需要单独的
+共享控制语义，实现前不显示死按钮。依赖层和 Bots 页面内的 Open 成功路径都已在本机 DSH web 页面用
 真实 token 和真实机器验证（启动、desktop 新窗口、密码提示条；token 未进入沙箱），见
 [`10-rayrun-verification.md`](10-rayrun-verification.md) §3.1。
 

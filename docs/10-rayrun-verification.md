@@ -141,7 +141,8 @@
 - Bots `Open` 负向路径（2026-11-21）：未配置 Rayrun 时云电脑插件的 `overview` 仍返回
   `ok: true` 和 `connection.configured: false`，客户端检查该字段后显示
   `先连接 Rayrun（设置 → 首次设置）`；合成点击触发弹窗拦截时显示
-  `允许此页面弹窗，才能打开桌面`。两次都没有调用启动或密码动作，也没有把真实 token
+  `允许此页面弹窗，才能打开桌面`（2026-11-26 起弹窗被拦截改为提示条链接兜底，见本节末）。
+  两次都没有调用启动或密码动作，也没有把真实 token
   写进页面或沙箱。
 - Bots setup 云电脑步骤负向路径（2026-11-21）：未连接 Rayrun 时进入云电脑步骤，
   `overview` 返回 `connection.configured: false`，界面显示先连接提示，创建按钮不出现，
@@ -682,6 +683,18 @@
   LICENSE；54.6 kB），`test/`、`docs/`、`tools/` 未进入；`dsh plugin --profile
   ci-pack add <tgz>` 成功，`--dump-config` 合成 `- id: rayrun-bots` / `name:
   dsh-rayrun-bots`。
+
+- 桌面弹窗兜底（2026-11-26，本机临时 DSH_HOME + DSH web + Firefox/geckodriver）：
+  用 seed 的 bot（`session.json` 的 `computer: fake-machine`）和浏览器内 fake
+  `/plugins/rayrun/rpc` 响应，overview 返回 Running 且
+  `desktop_url=https://desktop.example/popup-smoke`，`window.open` 返回 null 模拟
+  弹窗被拦截。点击 `打开` 后页面继续 `overview` → `machine.desktopRepair` →
+  `machine.password`，密码提示条显示 `弹窗被拦截了。用下面的链接打开桌面。`、密码和
+  `打开桌面` 链接（`target=_blank`、`rel=noopener noreferrer`）；未调用
+  `machine.action`。放行弹窗的对照路径导航同一 URL，提示条显示 `在桌面页面输入这个
+  密码。`。真实 Rayrun token、API 和机器都未参与；截图
+  `/tmp/bot/popup-blocked-fallback.png`、`/tmp/bot/popup-allowed.png`（临时文件，
+  不入库）。
 
 > Rayrun 连接、Open、云电脑创建三条依赖层路径是通过本机 Node 直接 import
 > `dsh-rayrun-computer@1.0.0` 的 `lib/rayrun.js` 验证的，调用的是插件页面使用的同一组

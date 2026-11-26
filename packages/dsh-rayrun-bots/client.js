@@ -194,12 +194,13 @@ window.__ModuleLoader__.load({
     "stopTimeout": "The computer is still stopping.",
     "stopFailed": "Could not stop the computer: {message}",
     "connectFirst": "Connect Rayrun first (Settings → Set up).",
-    "popupBlocked": "Allow pop-ups for this page to open the desktop.",
+    "popupBlocked": "Pop-ups are blocked. Open the desktop from the link below.",
     "starting": "Starting the computer…",
     "startTimeout": "The computer did not start in time.",
     "noDesktop": "This computer has no remote desktop.",
     "openFailed": "Could not open the computer: {message}",
     "opened": "Computer opened in a new tab.",
+    "openDesktop": "Open desktop",
     "passwordTitle": "Desktop password",
     "passwordBody": "Use this password on the desktop page.",
     "passwordEmpty": "No desktop password found.",
@@ -621,12 +622,13 @@ window.__ModuleLoader__.load({
     "stopTimeout": "云电脑仍在停止中。",
     "stopFailed": "停止云电脑失败：{message}",
     "connectFirst": "先连接 Rayrun（设置 → 首次设置）。",
-    "popupBlocked": "允许此页面弹窗，才能打开桌面。",
+    "popupBlocked": "弹窗被拦截了。用下面的链接打开桌面。",
     "starting": "正在启动云电脑…",
     "startTimeout": "云电脑没有在预期时间内启动。",
     "noDesktop": "这台云电脑没有远程桌面。",
     "openFailed": "打开云电脑失败：{message}",
     "opened": "云电脑已在新标签打开。",
+    "openDesktop": "打开桌面",
     "passwordTitle": "桌面密码",
     "passwordBody": "在桌面页面输入这个密码。",
     "passwordEmpty": "没有读到桌面密码。",
@@ -2442,17 +2444,30 @@ window.__ModuleLoader__.load({
         bot,
       )
 
-      const openComputer = async () => {
-        const win = window.open('', '_blank')
-        if (!win) {
-          flash(t('computer.popupBlocked'))
-          return
+      const desktopLink = (value) => {
+        try {
+          const url = new URL(String(value ?? ''))
+          return url.protocol === 'https:' || url.protocol === 'http:' ? url.href : ''
+        } catch {
+          return ''
         }
-        win.opener = null
+      }
+
+      const openComputer = async () => {
+        let win = null
+        try {
+          win = window.open('', '_blank')
+        } catch {
+          win = null
+        }
+        if (win) win.opener = null
+        const closeWindow = () => {
+          if (win && !win.closed) win.close()
+        }
         try {
           const overview = await rayRpc('overview')
           if (overview.connection?.configured !== true) {
-            win.close()
+            closeWindow()
             flash(t('computer.connectFirst'))
             return
           }
@@ -2461,7 +2476,7 @@ window.__ModuleLoader__.load({
           patch({ realOverview: overview, realMachine: selectedMachine || null, realError: '' })
           let machine = selectedMachine
           if (!machine) {
-            win.close()
+            closeWindow()
             flash(t('computer.noMachine'))
             return
           }
@@ -2478,25 +2493,27 @@ window.__ModuleLoader__.load({
             }
           }
           if (machine?.status !== 'Running') {
-            win.close()
+            closeWindow()
             flash(t('computer.startTimeout'))
             return
           }
           patch({ realMachine: machine })
           await rayRpc('machine.desktopRepair', { id: machine.id }).catch(() => {})
-          if (!machine.desktop_url) {
-            win.close()
+          const url = desktopLink(machine.desktop_url)
+          if (!url) {
+            closeWindow()
             flash(t('computer.noDesktop'))
             return
           }
           const password = await rayRpc('machine.password', { id: machine.id })
           const result = password.result ?? {}
           const secret = [result.stdout, result.stderr].filter(Boolean).join('\n').trim()
-          if (!win.closed) win.location = machine.desktop_url
-          setDesktop({ password: secret, copied: false })
-          flash(t('computer.opened'))
+          const opened = Boolean(win) && !win.closed
+          if (opened) win.location = url
+          setDesktop({ url, password: secret, copied: false, blocked: !opened })
+          flash(opened ? t('computer.opened') : t('computer.popupBlocked'))
         } catch (error) {
-          win.close()
+          closeWindow()
           const detail = String(error?.message ?? error)
           flash(/token_required|unauthorized/i.test(detail)
             ? t('computer.connectFirst')
@@ -2644,11 +2661,18 @@ window.__ModuleLoader__.load({
           'div',
           { className: 'rb-desktop-toast', role: 'status' },
           h('h3', null, t('computer.passwordTitle')),
-          h('p', null, t('computer.passwordBody')),
+          h('p', null, desktop.blocked ? t('computer.popupBlocked') : t('computer.passwordBody')),
           h('code', null, desktop.password || t('computer.passwordEmpty')),
           h(
             'div',
             { className: 'rb-line' },
+            desktop.url ? h('a', {
+              className: 'rb-btn',
+              href: desktop.url,
+              target: '_blank',
+              rel: 'noopener noreferrer',
+              style: { textDecoration: 'none' },
+            }, t('computer.openDesktop')) : null,
             h('button', {
               type: 'button',
               className: 'rb-btn',

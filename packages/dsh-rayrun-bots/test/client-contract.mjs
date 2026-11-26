@@ -155,6 +155,7 @@ const required = [
   'computer.stopFailed',
   'computer.connectFirst',
   'computer.popupBlocked',
+  'computer.openDesktop',
   'computer.starting',
   'computer.startTimeout',
   'computer.noDesktop',
@@ -351,6 +352,11 @@ assert.equal(client.includes('setup.keyIgnored'), false)
 assert.equal(client.includes('settings.connected'), false)
 assert.match(client, /desktop_url/)
 assert.match(client, /window\.open\(/)
+assert.match(client, /const opened = Boolean\(win\) && !win\.closed/)
+assert.match(client, /setDesktop\(\{ url, password: secret, copied: false, blocked: !opened \}\)/)
+assert.match(client, /href: desktop\.url/)
+assert.match(client, /rel: 'noopener noreferrer'/)
+assert.match(client, /url\.protocol === 'https:' \|\| url\.protocol === 'http:'/)
 assert.match(client, /mode: 'same-origin'/)
 assert.match(client, /credentials: 'same-origin'/)
 assert.match(client, /cache: 'no-store'/)

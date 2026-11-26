@@ -121,9 +121,10 @@ Harness”控件。DSH 仍是宿主；setup、Plugins、云电脑和 Workspaces 
   `Open` / `Stop`，Running 时再显示当前费率与累计机时。Stop 只在机器 live 时出现。
   v0.1 没有大预览，也没有 `Take over` 共享控制入口；Open 经依赖的同源 RPC 启动或
   恢复机器，等待 `Running`，修复桌面服务，在新标签页打开 `desktop_url`，并在可关闭的
-  toast 里显示桌面密码。Stop 先做内联确认，调用 `machine.action` 带 `stop`，永不
-  destroy。每种失败给一行：未连接、没有机器、弹窗被拦截、启动超时、没有桌面、停止
-  超时或停止失败。用 `?computer=live|reconnecting|sleeping|unreachable` 预览状态。
+  toast 里显示桌面密码和 `Open desktop` 链接（只接受 http/https）。弹窗被拦截时，
+  流程不中止，用户用 toast 里的链接打开桌面。Stop 先做内联确认，调用 `machine.action`
+  带 `stop`，永不 destroy。每种失败给一行：未连接、没有机器、启动超时、没有桌面、
+  停止超时或停止失败。用 `?computer=live|reconnecting|sleeping|unreachable` 预览状态。
 - **Usage** — 余额、机时、本周花费。余额低于阈值时变琥珀色，下方出现低余额行；
   用 `?low-balance=1` 预览。idle stop 与通知尚未持久化，不在 v0.1 设置里显示。
 
