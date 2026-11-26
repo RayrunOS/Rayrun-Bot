@@ -200,10 +200,7 @@ const required = [
   'settings.computerCurrent',
   'settings.computerUpdate',
   'settings.computerUpdateHint',
-  'settings.computerImage',
-  'settings.computerCredential',
-  'settings.computerCredentialHint',
-  'settings.computerNoCredential',
+  'settings.computerTarget',
   'settings.computerNoMachine',
   'settings.computerNotConnected',
   'settings.computerBillable',
@@ -333,9 +330,10 @@ assert.match(client, /approval\.expiredRunning/)
 assert.match(client, /approval\.stopComputer/)
 assert.match(client, /h\('div', \{ className: 'rb-error-text' \}, entry\.text\)[\s\S]{0,200}h\('div', \{ className: 'rb-error-code' \}/)
 assert.match(client, /\['account', 'usage', 'computer', 'updates', 'appearance'\]/)
-assert.match(client, /rayRpc\('credentials\.list'\)/)
-assert.match(client, /hostRpc\('computer\.update'/)
-assert.match(client, /confirmed: true/)
+assert.match(client, /t\('settings\.computerTarget', \{ image: DETACHED_IMAGE \}\)/)
+assert.match(client, /hostRpc\('computer\.update', \{\s*machine: currentMachine\.name \|\| currentMachine\.id,\s*confirmed: true,?\s*\}\)/s)
+assert.equal(client.includes('settings.computerImage'), false)
+assert.equal(client.includes('settings.computerCredential'), false)
 assert.match(client, /settings\.computerUpdated/)
 assert.match(client, /settings\.computerConfirm/)
 assert.match(client, /hostRpc\('update\.check'\)/)

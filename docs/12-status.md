@@ -66,7 +66,7 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
 | 电脑卡片 | Open 经同一 RPC 启动或恢复机器、等待 `Running`、修复桌面服务并打开 `desktop_url`；Stop 在确认后停止，永不 destroy；运行中显示当前机时费率和累计机时。 |
 | 用量 | 详情面板的电脑块和用量块，以及 Settings 的用量行，读取真实机器状态、余额与机时。 |
 | 更新提示 | Settings → 更新 通过同源 RPC `update.check` 读取官方 npm dist-tags；显示当前/最新版本与可复制命令，不下载、不安装、不改 profile、不发送 token。只读，用户点击触发，没有自动检查或遥测。 |
-| 电脑更新 | Settings → Bot 的电脑 显示共用电脑与当前镜像；确认后通过 host `computer.update` 换镜像：旧机改名保留、新机用原名称/所选镜像/DeepSeek credential 创建，复制 workspace 和登录配置路径，最后停止旧机；失败回滚，永不自动 destroy。每次更新创建计费机器，必须显式确认。 |
+| 电脑更新 | Settings → Bot 的电脑 显示共用电脑与当前镜像；确认后通过 host `computer.update` 换镜像：旧机改名保留、新机用原名称/固定 `deepseek-harness@1`/自动选中的 DeepSeek credential 创建，复制 workspace 和登录配置路径，最后停止旧机；失败回滚，永不自动 destroy。每次更新创建计费机器，必须显式确认。 |
 | 测试 | Host/client 名册接线、session/transcript、`rayrun_agent`/detached adapter、per-bot workspace 与审批协议由普通 Node 契约测试覆盖；客户端 session 失败路径、单轮真实一轮、页面关闭 + host 重启后的 detached 收取，以及机器 stop/start 后的第二轮续接另有本机页面 smoke。包清单、locale、RPC、客户端、名册、session、runtime、workspace、审批和 tarball 内容都有检查；cloud host 8 项、cloud host routines 8 项、DSH agent 5 项、host projection 5 项、runtime.* client 5 项、cloud host runtime adapter 15 项、cloud host proposal 5 项、approval executor 7 项、cloud approval bridge 6 项、routines 16 项、cloud routine bridge 7 项、cloud routine E2E 1 项、routine results 6 项纯 Node 检查，runtime.* client 与 cloud host 另有 dev live 联调，cloudHost adapter 另有页面 E2E（手动、自动 projection 与多 bot 单 host），审批卡另有拒绝/失败关闭与 Continue 按钮的页面 E2E。Routine 页面另做本地 DSH + Firefox smoke：真实表单创建、暂停、删除并写入 routines.json（2026-11-23，无 Rayrun token），截图 `/tmp/bot/routines-ui.png`（临时文件，不入库）；本地 mode 尚未等待一次 scheduler 自动触发；cloudHost mode 的 dev live E2E 已通过（2026-11-24，见 §3.1）。2026-11-25 clean alpha.1 安装另做生产两 bot 单 host 与 headless Firefox golden/审批 Deny/Allow E2E（见 §3.1）。 |
 | 审批执行 | 协议后端（request/decision schema、canonical actionHash、TTL、幂等/重放/错 bot 负向测试、审计、`approvals.list/get/decide/propose/sync`）已实现。ADR-019（2026-11-23）把本地 DSH host 定为本地 typed 动作的审批权威与执行方：`approvals.decide` 批准后由本地 executor 执行 `rayrun.machine.start/stop/pause/resume`，先写 `executing` claim，拒绝/过期/重放/崩溃 claim 失败关闭；客户端真实卡片已接。云端 proposal bridge 已接并 live 验证：云 bot 在回复末尾输出结构化 `rayrun-approval` block，cloud host 解析后写 proposal（`propose.mjs` 保留为可选 shell 路径），本地用 `rayrun_files` 导入并去重，结果写回 `approval-results/`；机器停机时结果先落本地 outbox，下次 Running 补传。start/stop/pause/resume、denial、Continue 均真机通过。下一轮 prompt 会带最近审批结果，bot 无工具直接回答 approved/done/Running 或 denied/not_executed。本地 routine 轮次会把 `origin: routine` 传到 cloud task，云端提案标为 background 并沿用 30 分钟 TTL。其他动作和云端凭据动作仍未完成；平台隔离仍用于云端凭据（ADR-001）。云端 agent 在容器内 `danger-full-access` 是设计（ADR-020），审批不是 containment。`rayrun_agent` adapter 不拦截外部动作，prompt 指引不是安全边界。 |
 | 发布 | `dsh-rayrun-bots@0.1.1-alpha.1` 已通过 `publish.yml` 从 `v0.1.1-alpha.1` GitHub Prerelease 发布（OIDC，run `45522791512`，`_npmUser=GitHub Actions`）；npm `alpha` tag 指向 0.1.1-alpha.1，`latest` 仍是手动发布的 0.1.0-alpha.0（prerelease 不移动 latest，符合 workflow 契约）。依赖 `dsh-rayrun-computer@1.2.1` 已发布 npm（latest）。一条 `dsh plugin add` 安装两个包的路径已用官方 registry 验证：两个 bundle 都被选中、两个插件都加载、health `ok`。只安装 bots 包即使声明依赖也不会启用依赖 bundle。2026-11-25 用官方 registry 从 alpha.1 tarball 干净安装并跑通一轮 cloudHost（`GOLDEN_OK`，约 10.0 秒），未手工修改安装包。 |
@@ -293,14 +293,25 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
   休眠，`dsh.start` 已调用 `ray.wake`。`E_WORKER_NO_REPLY` 文案改为检查 worker
   session 并提示添加 DeepSeek 凭据/重建电脑；Setup 明确新机器需要凭据。不自动
   唤醒或创建任务；真实凭据补齐仍需用户操作或重建机器。
-- 电脑更新（2026-11-26，代码/fake/UI）：`computer.update` 需要确认、镜像和
-  credential；fake 编排覆盖创建/重命名/打包/下载/上传/解包/停止、缺确认/缺镜像/
-  缺凭据失败关闭，以及解包/创建失败时恢复旧名称并停止新机。Settings 页面显示共用电脑、
-  当前镜像、镜像/凭据选择和计费/保留路径/不 destroy 文案；页面 smoke 通过，
-  截图 `/tmp/bot/computer-update-ui.png`（临时文件）。真实 Rayrun 基础迁移通过：
+- 电脑更新（2026-11-26，代码/fake/UI）：`computer.update` 需要显式确认，固定使用
+  `deepseek-harness@1`；credential 优先沿用当前电脑已绑定的名称，否则选择账号里名称
+  匹配 DeepSeek/model 的凭据，找不到就失败关闭。fake 编排覆盖创建/重命名/打包/下载/
+  上传/解包/停止、缺确认/缺镜像/缺凭据失败关闭，以及解包/创建失败时恢复旧名称并停止
+  新机。Settings 页面显示共用电脑、当前镜像、固定镜像/自动凭据和计费/保留路径/
+  不 destroy 文案，不提供镜像或凭据选项；一键更新确认区用注入的 fake overview 在
+  headless Firefox smoke，确认区固定 `deepseek-harness@1`、没有 select，截图
+  `/tmp/bot/oneclick-confirm.png`（临时文件）；本机 Rayrun API 不可达，真实 overview
+  未复验，也未执行更新。真实 Rayrun 基础迁移通过：
   `bot-update-smoke-20261126` 的文件与 `/workspace/.dsh` 复制到同名新机，新机带
   `dsh-model-sinnet`；旧机改名为 `...-pre-update-mwxk96k8`，两机均 Stopped、未
-  destroy。大 workspace、登录数据实际内容和 egress 复制仍未验收。
+  destroy。自动凭据选择只有 fake 证据；大 workspace、登录数据实际内容和 egress
+  复制仍未验收。
+- 电脑更新镜像固定（2026-11-26）：选择 `dsh-bot@1` 时新机没有 `/workspace/.dsh`，
+  tar 解包失败并留下 stopped `...-failed-update-*`。现在 Settings 不再提供镜像
+  选项，host 固定使用 `deepseek-harness@1`，旧客户端传来的镜像/凭据字段被忽略；
+  上传前在新机 `mkdir -p /workspace/.dsh`，上传后 `test -s` 校验。用户当前
+  `rayrun-bot-a3-20261125` 已是同名 `deepseek-harness@1` 新机；旧机与失败新机均
+  Stopped、未 destroy。
 - 干净 npm 安装 golden path（2026-11-25，本机 DSH `0.2.2-rc.5`，官方 registry）：
   临时 `DSH_HOME` 加 web-app 后一条 `dsh plugin add dsh-rayrun-computer@1.2.1
   dsh-rayrun-bots@0.1.1-alpha.1` 完成安装，两个 bundle 都被选中；health 报

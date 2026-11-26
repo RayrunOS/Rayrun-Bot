@@ -192,11 +192,13 @@ profile，也不发送 Rayrun token 或 DeepSeek key；命令只更新 bots 包�
 已安装，由用户在终端执行，随后重启 DSH。云端 host 资产的版本刷新不在这个按钮范围
 内，发布含 `cloud-host/**` 变更时需要额外的 runtime 刷新。
 
-**设置 → Bot 的电脑**：显示所有 bot 共用的电脑、当前镜像和“更新”入口。点更新后
-先展开确认区：选择新镜像和 DeepSeek 凭据，明确提示这会创建计费电脑、旧电脑只
-停止不销毁、文件和登录配置保留、已安装应用/软件包和缓存不复制。确认后 host 执行
-`computer.update`：旧机改名为 `<name>-pre-update-<time>`，用原始名称和所选镜像/凭据
-创建新机，打包并复制 `/workspace`、`/root/.config`、`/root/.local/share`、
+**设置 → Bot 的电脑**：显示所有 bot 共用的电脑、当前镜像和“更新”入口。更新不再
+提供镜像或凭据选项：host 固定使用 `deepseek-harness@1`，并自动沿用当前电脑已绑定的
+DeepSeek credential；当前电脑没有绑定凭据时，自动选择账号里名称匹配 DeepSeek/model
+的凭据，找不到可用凭据就失败关闭。点更新后展开确认区，明确提示这会创建计费电脑、旧电脑只停止不销毁、文件
+和登录配置保留、已安装应用/软件包和缓存不复制。确认后 host 执行
+`computer.update`：旧机改名为 `<name>-pre-update-<time>`，用原始名称和固定镜像创建
+新机，打包并复制 `/workspace`、`/root/.config`、`/root/.local/share`、
 `/root/.mozilla`、`/root/.ssh`，在新机解包，最后停止旧机；新机显式允许
 `api.deepseek.com`，其他旧 egress 规则不复制。有 running/queued bot 回合时 host 拒绝
 更新；任何一步失败都会把新机停止并改名、把旧机名称恢复，绝不自动 destroy。所有

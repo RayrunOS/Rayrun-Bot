@@ -23,9 +23,8 @@ import { rayrunFailure } from './rayrun-rpc.js'
 const NAME_MAX = 64
 const TIMEOUT_MS = 30 * 60 * 1000
 const PRESERVE = ['workspace', 'root/.config', 'root/.local/share', 'root/.mozilla', 'root/.ssh']
+const BOT_IMAGE = 'deepseek-harness@1'
 const CONTROL = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/
-
-const isObject = (value) => typeof value === 'object' && value !== null && !Array.isArray(value)
 
 function machineName(machine) {
   const name = typeof machine?.name === 'string' ? machine.name.trim() : ''
@@ -37,6 +36,22 @@ function machineName(machine) {
 
 function updateError(message) {
   return rayrunFailure(ERROR_CODES.computerUpdate, message)
+}
+
+function credentialNameOf(item) {
+  if (typeof item === 'string') return item.trim()
+  return typeof item?.name === 'string' ? item.name.trim() : ''
+}
+
+function pickCredential(list, machine) {
+  const names = list.map(credentialNameOf).filter(Boolean)
+  const bound = Array.isArray(machine?.credentials)
+    ? machine.credentials.filter((name) => typeof name === 'string' && names.includes(name))
+    : []
+  if (bound.length > 0) return bound[0]
+  const preferred = names.find((name) => /deepseek|model/i.test(name))
+  if (preferred) return preferred
+  return names.length === 1 ? names[0] : ''
 }
 
 function toolOf(registry, name) {
@@ -111,13 +126,10 @@ export function openComputerUpdater({ rpc, getTools, logger } = {}) {
     throw updateError('The new cloud computer did not reach Running; the old computer was restored.')
   }
 
-  async function update({ machine: machineRef, targetImage, credential, confirmed } = {}) {
+  async function update({ machine: machineRef, confirmed } = {}) {
     if (running) throw updateError('A computer update is already running; wait for it to finish.')
     if (confirmed !== true) throw updateError('Updating the computer requires explicit confirmation.')
-    const image = String(targetImage ?? '').trim()
-    const credentialName = String(credential ?? '').trim()
-    if (!image) throw updateError('Choose an image for the new computer.')
-    if (!credentialName) throw updateError('Choose a DeepSeek credential for the new computer.')
+    const image = BOT_IMAGE
 
     running = true
     const stamp = Date.now().toString(36)
@@ -140,19 +152,19 @@ export function openComputerUpdater({ rpc, getTools, logger } = {}) {
       }
       const agents = Array.isArray(body?.agents) ? body.agents : []
       if (agents.length > 0 && !agents.some((agent) => agent?.ref === image)) {
-        throw updateError(`The selected image ${image} is not available in this Rayrun account.`)
+        throw updateError(`The required image ${image} is not available in this Rayrun account.`)
       }
       const credentials = await rpc.call('credentials.list', {}, { timeoutMs: 30_000 })
       const list = Array.isArray(credentials?.credentials) ? credentials.credentials : []
-      if (!list.some((item) => item?.name === credentialName)) {
-        throw updateError(`The selected credential ${credentialName} is not available in this Rayrun account.`)
+      const credentialName = pickCredential(list, machine)
+      if (!credentialName) {
+        throw updateError('No DeepSeek credential is available in this Rayrun account; add one before updating the computer.')
       }
 
       const tools = getTools()
       const exec = toolOf(tools, 'rayrun_exec')
       const files = toolOf(tools, 'rayrun_files')
       const signal = AbortSignal.timeout(TIMEOUT_MS)
-      const oldSandbox = old.name || old.id
       localDir = mkdtempSync(path.join(tmpdir(), 'rayrun-bots-update-'))
       const localTar = path.join(localDir, 'workspace.tgz')
 
@@ -197,12 +209,22 @@ export function openComputerUpdater({ rpc, getTools, logger } = {}) {
       }, { signal })
       const size = statSync(localTar).size
       if (size <= 0) throw updateError('The workspace archive is empty; the old computer was restored.')
+      shellFailure(await exec.execute({
+        sandbox: runningMachine.id,
+        command: 'mkdir -p /workspace/.dsh',
+        timeout_seconds: 60,
+      }, { signal }), 'Preparing the new computer')
       await files.execute({
         action: 'upload',
         sandbox: runningMachine.name || runningMachine.id,
         path: tarPath,
         local_path: localTar,
       }, { signal })
+      shellFailure(await exec.execute({
+        sandbox: runningMachine.id,
+        command: `test -s /workspace/${tarPath}`,
+        timeout_seconds: 60,
+      }, { signal }), 'Checking the uploaded archive')
 
       shellFailure(await exec.execute({
         sandbox: runningMachine.id,
@@ -280,4 +302,4 @@ export function openComputerUpdater({ rpc, getTools, logger } = {}) {
   return { update }
 }
 
-export { PRESERVE }
+export { BOT_IMAGE, PRESERVE }

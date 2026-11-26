@@ -606,7 +606,7 @@
   检查；host `update.check` 固定读取
   `https://registry.npmjs.org/-/package/dsh-rayrun-bots/dist-tags`，不携带
   Authorization，校验 HTTP、JSON、响应大小和 semver 后返回当前/最新版本与可复制
-  命令。`update-check.mjs` 6/6；`rpc-contract` 33/33（含同源门、无 Authorization、
+  命令。`update-check.mjs` 6/6；`rpc-contract` 34/34（含同源门、无 Authorization、
   command）；全量 28/28；真实 npm 查询 `alpha=0.1.1-alpha.1` 显示已是最新。页面 smoke 用 mock
   响应显示“有新版本 0.1.1-alpha.2”和命令，截图 `/tmp/bot/update-check.png`
   （临时文件）。未下载、未安装、未改 profile；自动安装和云端 host runtime 自动
@@ -640,19 +640,31 @@
   worker session 的 provider 错误并提示添加 DeepSeek 凭据/重建电脑，Setup 明确新
   机器需要凭据；不新增自动唤醒。`rayrun-detached-runtime` 和 `client-contract`
   覆盖新文案。真实凭据补齐仍需用户操作或重建机器。
-- 电脑更新（2026-11-26，fake/UI）：`computer-update.mjs` 6/6 覆盖成功编排、
+- 电脑更新（2026-11-26，fake/UI）：`computer-update.mjs` 7/7 覆盖成功编排、
   缺确认/缺镜像/缺凭据失败关闭、解包失败和创建失败的回滚；`rpc-contract` 34/34 覆盖
-  `computer.update` 必须显式确认。Settings 页面 smoke 显示共用电脑、当前镜像、
-  镜像/凭据选择、计费/保留路径/不 destroy 文案，截图
-  `/tmp/bot/computer-update-ui.png`（临时文件）。真实 Rayrun 基础迁移已通过
-  （2026-11-26）：`bot-update-smoke-20261126`（`deepseek-harness@1`，无 credential，
-  `/workspace/update-smoke.txt` 内容 `UPDATE_SMOKE_OK`）经 host `computer.update`
-  换机，新机仍用原名、镜像 `deepseek-harness@1`、credential `dsh-model-sinnet`，
-  文件与 `/workspace/.dsh` 均存在；旧机改名为
-  `bot-update-smoke-20261126-pre-update-mwxk96k8` 并 Stopped，新机验证后也
-  Stopped，两者都未 destroy。大 workspace、登录配置实际内容（本次旧机没有浏览器
-  登录数据）和其他 egress 规则仍未验收；新机显式放行 `api.deepseek.com`，旧机的
-  其他 egress 规则不复制，更新后需确认其他网络依赖。
+  `computer.update` 必须显式确认。Settings 页面显示共用电脑、当前镜像、固定镜像/
+  自动凭据、计费/保留路径/不 destroy 文案，不提供镜像或凭据选项；一键更新确认区
+  用注入的 fake overview 在 headless Firefox smoke，确认区固定
+  `deepseek-harness@1`、没有 select，截图 `/tmp/bot/oneclick-confirm.png`
+  （临时文件）。本机 Rayrun API 不可达，真实 overview 未复验，也未执行更新。
+  真实 Rayrun 基础迁移已通过
+  （2026-11-26，当时仍由 UI 显式传 credential）：`bot-update-smoke-20261126`
+  （`deepseek-harness@1`，无 credential，`/workspace/update-smoke.txt` 内容
+  `UPDATE_SMOKE_OK`）经 host `computer.update` 换机，新机仍用原名、镜像
+  `deepseek-harness@1`、credential `dsh-model-sinnet`，文件与 `/workspace/.dsh`
+  均存在；旧机改名为 `bot-update-smoke-20261126-pre-update-mwxk96k8` 并 Stopped，
+  新机验证后也 Stopped，两者都未 destroy。自动凭据选择只有 fake 证据；大 workspace、
+  登录配置实际内容（本次旧机没有浏览器登录数据）和其他 egress 规则仍未验收；新机
+  显式放行 `api.deepseek.com`，旧机的其他 egress 规则不复制，更新后需确认其他网络
+  依赖。
+- 电脑更新镜像固定与传输修复（2026-11-26）：用户选择 `dsh-bot@1` 时，新机
+  `/workspace/.dsh` 不存在，上传后的 tar 无法打开，回滚把失败新机停为
+  `rayrun-bot-a3-20261125-failed-update-mwxmiti2`（另有两次同类失败）。修复：
+  Settings 不再提供镜像或凭据选项，host 固定使用 `deepseek-harness@1` 并忽略旧
+  客户端传来的镜像/凭据字段；上传前在新机 `mkdir -p /workspace/.dsh`，上传后用
+  `test -s` 校验；`computer-update` 7/7 覆盖。用户当前
+  `rayrun-bot-a3-20261125` 已是同名 `deepseek-harness@1` 新机（带
+  `dsh-model-hjyu-thinkpad-l14-gen-1`），旧机和失败的新机均 Stopped、未 destroy。
 - CI deploy egress 根因（2026-11-25）：`.github/scripts/deploy-rayrun.mjs` 创建
   沙盒时用了不在 Rayrun 创建 schema 中的 `egress_allow`；该字段被忽略，导致
   pnpm 下载 `ENOTFOUND`。在线沙盒验证 `PUT /v1/sandboxes/{id}/egress` 后同一

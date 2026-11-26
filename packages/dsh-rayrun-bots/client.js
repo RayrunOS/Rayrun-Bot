@@ -361,11 +361,8 @@ window.__ModuleLoader__.load({
     "computerHint": "Updates the computer all bots share. Files and sign-ins are kept; installed apps and packages are removed. All bots update together.",
     "computerCurrent": "Current · {name} · {image}",
     "computerUpdate": "Update",
-    "computerUpdateHint": "Creates a new computer from the selected image, copies the preserved paths, and stops the old computer for rollback. The old computer is never destroyed automatically.",
-    "computerImage": "New image",
-    "computerCredential": "DeepSeek credential",
-    "computerCredentialHint": "The new computer needs a credential to run cloud DSH turns.",
-    "computerNoCredential": "No DeepSeek credential is available. Add one before updating.",
+    "computerUpdateHint": "Creates a new computer, copies the preserved paths, and stops the old computer for rollback. The old computer is never destroyed automatically.",
+    "computerTarget": "New image: {image}. Bots keeps the DeepSeek credential already bound to this computer, or uses the account's model credential.",
     "computerNoMachine": "No cloud computer found.",
     "computerNotConnected": "Connect Rayrun to manage the bot computer.",
     "computerBillable": "This creates a billable computer on your Rayrun account. The old one is stopped, not destroyed.",
@@ -791,11 +788,8 @@ window.__ModuleLoader__.load({
     "computerHint": "更新你的 Bot 共用的电脑。你的文件和登录信息会保留，但已安装的应用和软件包会被移除。所有 Bot 会一起更新。",
     "computerCurrent": "当前 · {name} · {image}",
     "computerUpdate": "更新",
-    "computerUpdateHint": "用所选镜像创建一台新电脑，复制保留的路径，并停止旧电脑以便回滚。旧电脑永远不会被自动销毁。",
-    "computerImage": "新镜像",
-    "computerCredential": "DeepSeek 凭据",
-    "computerCredentialHint": "新电脑需要凭据才能运行云端 DSH 回合。",
-    "computerNoCredential": "没有可用的 DeepSeek 凭据。请先添加一个。",
+    "computerUpdateHint": "创建一台新电脑，复制保留的路径，并停止旧电脑以便回滚。旧电脑永远不会被自动销毁。",
+    "computerTarget": "新镜像：{image}。会自动沿用这台电脑已绑定的 DeepSeek 凭据，或使用账号里的模型凭据。",
     "computerNoMachine": "没有找到云电脑。",
     "computerNotConnected": "连接 Rayrun 后才能管理 Bot 的电脑。",
     "computerBillable": "这会在你的 Rayrun 账号上创建一台计费电脑。旧电脑会被停止，不会被销毁。",
@@ -3840,10 +3834,7 @@ window.__ModuleLoader__.load({
       const [usage, setUsage] = useState(null)
       const [usageLoading, setUsageLoading] = useState(true)
       const [usageError, setUsageError] = useState('')
-      const [credentials, setCredentials] = useState(null)
       const [computerOpen, setComputerOpen] = useState(false)
-      const [computerImage, setComputerImage] = useState('')
-      const [computerCredential, setComputerCredential] = useState('')
       const [computerBusy, setComputerBusy] = useState(false)
       const [computerError, setComputerError] = useState('')
       const [computerResult, setComputerResult] = useState(null)
@@ -3861,20 +3852,6 @@ window.__ModuleLoader__.load({
             if (!cancelled) setUsageError(String(error?.message ?? error))
           } finally {
             if (!cancelled) setUsageLoading(false)
-          }
-        })()
-        return () => {
-          cancelled = true
-        }
-      }, [])
-      useEffect(() => {
-        let cancelled = false
-        void (async () => {
-          try {
-            const body = await rayRpc('credentials.list')
-            if (!cancelled) setCredentials(Array.isArray(body.credentials) ? body.credentials : [])
-          } catch {
-            if (!cancelled) setCredentials([])
           }
         })()
         return () => {
@@ -3923,32 +3900,19 @@ window.__ModuleLoader__.load({
       const currentMachine = (machineName
         ? machines.find((machine) => machine.name === machineName || machine.id === machineName)
         : null) || pickMachine(machines) || null
-      const images = [...new Set([
-        currentMachine?.agent,
-        usage?.defaults?.agent,
-        ...(Array.isArray(usage?.agents) ? usage.agents.map((agent) => agent?.ref) : []),
-      ].filter(Boolean))]
-      const availableCredentials = Array.isArray(credentials) ? credentials : []
-      const preferredCredential = availableCredentials.find((item) => /deepseek|model/i.test(String(item?.name ?? '')))?.name
-        || availableCredentials[0]?.name
-        || ''
       const openComputer = () => {
         setComputerOpen(true)
         setComputerError('')
         setComputerResult(null)
-        setComputerImage(currentMachine?.agent || usage?.defaults?.agent || images[0] || '')
-        setComputerCredential(preferredCredential)
       }
       const submitComputerUpdate = async () => {
-        if (computerBusy || !currentMachine || !computerImage || !computerCredential) return
+        if (computerBusy || !currentMachine) return
         setComputerBusy(true)
         setComputerError('')
         setComputerResult(null)
         try {
           const body = await hostRpc('computer.update', {
             machine: currentMachine.name || currentMachine.id,
-            targetImage: computerImage,
-            credential: computerCredential,
             confirmed: true,
           })
           setComputerResult(body)
@@ -4089,37 +4053,14 @@ window.__ModuleLoader__.load({
                       image: currentMachine.agent || '—',
                     })),
             computerResult ? h('div', { className: 'rb-computer-meta' }, t('settings.computerUpdated', {
-              image: computerResult.machine?.image ?? computerImage,
+              image: computerResult.machine?.image ?? DETACHED_IMAGE,
               name: computerResult.previous?.name ?? '—',
             })) : null,
             computerError ? h('div', { className: 'rb-computer-meta rb-computer-error', role: 'alert' }, t('settings.computerUpdateFailed', { message: computerError })) : null,
             computerOpen && currentMachine ? h(
               'div',
               { className: 'rb-computer-form' },
-              h(
-                'label',
-                { className: 'rb-flabel' },
-                t('settings.computerImage'),
-                h('select', {
-                  value: computerImage,
-                  'aria-label': t('settings.computerImage'),
-                  onChange: (event) => setComputerImage(event.target.value),
-                }, images.map((image) => h('option', { key: image, value: image }, image))),
-              ),
-              h(
-                'label',
-                { className: 'rb-flabel' },
-                t('settings.computerCredential'),
-                h('select', {
-                  value: computerCredential,
-                  'aria-label': t('settings.computerCredential'),
-                  onChange: (event) => setComputerCredential(event.target.value),
-                }, availableCredentials.length
-                  ? availableCredentials.map((item) => h('option', { key: item.name, value: item.name }, item.name))
-                  : h('option', { value: '' }, t('settings.computerNoCredential'))),
-              ),
-              h('div', { className: 'rb-faint' }, t('settings.computerCredentialHint')),
-              availableCredentials.length === 0 ? h('div', { className: 'rb-computer-error', role: 'status' }, t('settings.computerNoCredential')) : null,
+              h('div', { className: 'rb-faint' }, t('settings.computerTarget', { image: DETACHED_IMAGE })),
               h('div', { className: 'rb-faint' }, t('settings.computerBillable')),
               h('div', { className: 'rb-faint' }, t('settings.computerPreserved')),
               h('div', { className: 'rb-faint' }, t('settings.computerUpdateHint')),
@@ -4138,7 +4079,7 @@ window.__ModuleLoader__.load({
                 h('button', {
                   type: 'button',
                   className: 'rb-btn rb-primary',
-                  disabled: computerBusy || !computerImage || !computerCredential,
+                  disabled: computerBusy,
                   onClick: submitComputerUpdate,
                 }, computerBusy ? t('settings.computerUpdating') : t('settings.computerConfirm')),
               ),

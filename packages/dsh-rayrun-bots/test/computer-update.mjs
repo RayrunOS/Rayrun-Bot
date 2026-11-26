@@ -5,23 +5,24 @@
  */
 import assert from 'node:assert/strict'
 import { writeFileSync } from 'node:fs'
-import { openComputerUpdater } from '../lib/computer-update.js'
+import { BOT_IMAGE, openComputerUpdater } from '../lib/computer-update.js'
 import { ERROR_CODES } from '../lib/errors.js'
 
 const checks = []
 const check = (name, fn) => checks.push({ name, fn })
 
-function setup({ failCreate = false, failExtract = false } = {}) {
+function setup({ failCreate = false, failExtract = false, noCredential = false, noImage = false, boundCredential = 'dsh-model-test' } = {}) {
   const machines = [{
     id: 'old-id',
     name: 'bot-box',
     status: 'Running',
-    agent: 'deepseek-harness@1',
+    agent: BOT_IMAGE,
     cpu_cores: 2,
     memory_mb: 2048,
     workspace_mb: 32768,
     remote_desktop: true,
     max_lifetime_seconds: 7200,
+    credentials: boundCredential ? [boundCredential] : [],
   }]
   const actions = []
   const execs = []
@@ -33,11 +34,13 @@ function setup({ failCreate = false, failExtract = false } = {}) {
           ok: true,
           connection: { configured: true },
           machines: machines.filter((machine) => machine.status !== 'Terminated'),
-          agents: [{ ref: 'deepseek-harness@1' }, { ref: 'deepseek-harness@2' }],
+          agents: noImage ? [{ ref: 'other-image@1' }] : [{ ref: BOT_IMAGE }, { ref: 'deepseek-harness@2' }],
           defaults: { agent: 'deepseek-harness@2' },
         }
       }
-      if (action === 'credentials.list') return { ok: true, credentials: [{ name: 'dsh-model-test' }] }
+      if (action === 'credentials.list') {
+        return { ok: true, credentials: noCredential ? [] : [{ name: 'unrelated-token' }, { name: 'dsh-model-test' }] }
+      }
       if (action === 'machine.action') {
         actions.push({ action, payload })
         const machine = machines.find((item) => item.id === payload.id)
@@ -57,6 +60,7 @@ function setup({ failCreate = false, failExtract = false } = {}) {
           memory_mb: payload.memory_mb,
           workspace_mb: payload.workspace_mb,
           remote_desktop: payload.remote_desktop,
+          credentials: payload.credentials,
           egress_allow: payload.egress_allow,
         }
         machines.push(created)
@@ -102,21 +106,24 @@ check('replaces the computer, copies preserved paths and stops the old one', asy
   const updater = openComputerUpdater({ rpc, getTools: () => tools })
   const result = await updater.update({
     machine: 'bot-box',
-    targetImage: 'deepseek-harness@2',
-    credential: 'dsh-model-test',
     confirmed: true,
   })
   assert.equal(result.updated, true)
   assert.equal(result.machine.name, 'bot-box')
-  assert.equal(result.machine.image, 'deepseek-harness@2')
+  assert.equal(result.machine.image, BOT_IMAGE)
+  assert.equal(result.credential, 'dsh-model-test')
   assert.match(result.previous.name, /^bot-box-pre-update-/)
   assert.equal(machines.find((machine) => machine.id === 'old-id').status, 'Stopped')
   assert.equal(machines.find((machine) => machine.id === 'old-id').name, result.previous.name)
   assert.equal(machines.find((machine) => machine.id === 'new-id').name, 'bot-box')
+  assert.equal(machines.find((machine) => machine.id === 'new-id').agent, BOT_IMAGE)
+  assert.deepEqual(machines.find((machine) => machine.id === 'new-id').credentials, ['dsh-model-test'])
   assert.deepEqual(machines.find((machine) => machine.id === 'new-id').egress_allow, ['api.deepseek.com'])
   assert.equal(actions.filter((entry) => entry.payload.verb === 'rename').length, 1)
   assert.equal(actions.filter((entry) => entry.payload.verb === 'stop').length, 1)
   assert.equal(execs.some((entry) => entry.command.includes('tar -czf')), true)
+  assert.equal(execs.some((entry) => entry.command.includes('mkdir -p /workspace/.dsh')), true)
+  assert.equal(execs.some((entry) => entry.command.includes('test -s /workspace/.dsh/rayrun-update-')), true)
   assert.equal(execs.some((entry) => entry.command.includes('tar -xzf')), true)
   assert.equal(files.filter((entry) => entry.action === 'download').length, 1)
   assert.equal(files.filter((entry) => entry.action === 'upload').length, 1)
@@ -129,32 +136,35 @@ check('requires explicit confirmation before any RPC or tool call', async () => 
   const updater = openComputerUpdater({ rpc, getTools: () => tools })
   await assert.rejects(updater.update({
     machine: 'bot-box',
-    targetImage: 'deepseek-harness@2',
-    credential: 'dsh-model-test',
     confirmed: false,
   }), (error) => error.code === ERROR_CODES.computerUpdate)
   assert.deepEqual(actions, [])
 })
 
-check('rejects an image that the account does not offer before touching the computer', async () => {
-  const { rpc, tools, actions } = setup()
+check('uses the account model credential when the current computer has none', async () => {
+  const { rpc, tools, machines, actions } = setup({ boundCredential: '' })
+  const updater = openComputerUpdater({ rpc, getTools: () => tools })
+  const result = await updater.update({ machine: 'bot-box', confirmed: true })
+  assert.equal(result.credential, 'dsh-model-test')
+  assert.deepEqual(machines.find((machine) => machine.id === 'new-id').credentials, ['dsh-model-test'])
+  assert.equal(actions.filter((entry) => entry.payload.verb === 'rename').length, 1)
+})
+
+check('rejects the required image when the account does not offer it before touching the computer', async () => {
+  const { rpc, tools, actions } = setup({ noImage: true })
   const updater = openComputerUpdater({ rpc, getTools: () => tools })
   await assert.rejects(updater.update({
     machine: 'bot-box',
-    targetImage: 'missing-image@1',
-    credential: 'dsh-model-test',
     confirmed: true,
-  }), (error) => error.code === ERROR_CODES.computerUpdate)
+  }), (error) => error.code === ERROR_CODES.computerUpdate && error.message.includes(BOT_IMAGE))
   assert.deepEqual(actions, [])
 })
 
 check('rejects a missing credential before touching the computer', async () => {
-  const { rpc, tools, actions } = setup()
+  const { rpc, tools, actions } = setup({ noCredential: true })
   const updater = openComputerUpdater({ rpc, getTools: () => tools })
   await assert.rejects(updater.update({
     machine: 'bot-box',
-    targetImage: 'deepseek-harness@2',
-    credential: 'missing',
     confirmed: true,
   }), (error) => error.code === ERROR_CODES.computerUpdate)
   assert.deepEqual(actions, [])
@@ -165,8 +175,6 @@ check('restores the old name and stops the replacement when extraction fails', a
   const updater = openComputerUpdater({ rpc, getTools: () => tools })
   await assert.rejects(updater.update({
     machine: 'bot-box',
-    targetImage: 'deepseek-harness@2',
-    credential: 'dsh-model-test',
     confirmed: true,
   }), (error) => error.code === ERROR_CODES.computerUpdate)
   assert.equal(machines.find((machine) => machine.id === 'old-id').name, 'bot-box')
@@ -180,8 +188,6 @@ check('restores the old name when creating the replacement fails', async () => {
   const updater = openComputerUpdater({ rpc, getTools: () => tools })
   await assert.rejects(updater.update({
     machine: 'bot-box',
-    targetImage: 'deepseek-harness@2',
-    credential: 'dsh-model-test',
     confirmed: true,
   }), (error) => error.code === ERROR_CODES.computerUpdate)
   assert.equal(machines.find((machine) => machine.id === 'old-id').name, 'bot-box')

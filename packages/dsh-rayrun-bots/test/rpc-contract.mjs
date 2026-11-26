@@ -283,8 +283,6 @@ check('computer.update fails closed without explicit confirmation', async () => 
     body: JSON.stringify({
       action: 'computer.update',
       machine: 'box',
-      targetImage: 'deepseek-harness@1',
-      credential: 'dsh-model-test',
     }),
   })
   assert.equal(reply.status, 409)
