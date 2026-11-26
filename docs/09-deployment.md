@@ -104,9 +104,11 @@ client（`lib/runtime-rpc.js`），cloudHost 预览用它在机器上注册常�
 默认关闭，启用后 `session.*` 走该 adapter（dev 与生产两 bot 单 host 已通过），未启用
 时仍走 detached/agent。detached 需要镜像的 oneshot 启动 DSH headless；已知
 `dsh-bot@1` / `dsh-bot-devcheck@1` 的 oneshot 是 `/bin/sh -c`，任务会立即结束且不会
-写 `reply.md`。Bots 在 `dsh.start` 前对这两个镜像失败关闭（`E_IMAGE_UNSUPPORTED`），
-收集阶段缺失 `reply.md` 返回 `E_WORKER_NO_REPLY`；Setup 创建机器时不会默认这两个
-镜像，已有这类机器会显示警告。发送一轮会让依赖启动已停止/暂停的机器，
+写 `reply.md`。Bots 在 `dsh.start` 前对这两个镜像失败关闭（`E_IMAGE_UNSUPPORTED`）。
+overview 的 `agent` 为空时再读 `machine.get`；仍然读不到、且 session 里没有这台
+电脑已记录的镜像时，同样失败关闭且不创建 task。读到的镜像写入 `session.json` 的
+`image`。收集阶段缺失 `reply.md` 返回 `E_WORKER_NO_REPLY`；Setup 创建机器时不会
+默认这两个镜像，已有这类机器会显示警告，不会自动更换镜像。发送一轮会让依赖启动已停止/暂停的机器，
 可能产生机时费用。真实一轮（单轮 adapter）、detached 的页面关闭 + 本地 DSH 重启后
 继续，以及机器 stop/start 后的第二轮续接（A8），已在本机页面 + 已有 Rayrun 机器验证
 （2026-11-22）。host half 还提供

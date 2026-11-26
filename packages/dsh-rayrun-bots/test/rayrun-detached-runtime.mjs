@@ -22,16 +22,36 @@ const MACHINE = {
 }
 
 function machineWith(agent) {
-  return { ...MACHINE, machines: [{ ...MACHINE.machines[0], agent }] }
+  const item = { ...MACHINE.machines[0] }
+  if (agent === undefined) delete item.agent
+  else item.agent = agent
+  return { ...MACHINE, machines: [item] }
 }
 
-function fakeFetch({ machine = MACHINE, start, status = { running: true, files: ['reply.md'], activity: null }, result } = {}) {
+function detailWith(agent) {
+  return {
+    ok: true,
+    machine: { id: 'machine-1', name: 'rayrun-bot', status: 'Running', agent },
+  }
+}
+
+function fakeFetch({
+  machine = MACHINE,
+  detail,
+  start,
+  status = { running: true, files: ['reply.md'], activity: null },
+  result,
+} = {}) {
   const calls = []
   const impl = async (url, options) => {
     const body = JSON.parse(options.body)
     calls.push({ url: String(url), body })
     let payload = null
     if (body.action === 'overview') payload = machine
+    else if (body.action === 'machine.get') payload = detail ?? {
+      ok: false,
+      error: { code: 'unsupported_action', message: 'no machine detail', status: 400 },
+    }
     else if (body.action === 'dsh.start') payload = start ?? {
       ok: true,
       task_id: 'task-test',
@@ -82,6 +102,7 @@ check('start posts a bounded dsh.start and returns its task id', async () => {
   })
   assert.equal(started.taskId, 'task-test')
   assert.equal(started.sandbox, 'rayrun-bot')
+  assert.equal(started.image, 'deepseek-harness@1')
   assert.equal(started.timeoutSeconds, 900)
   assert.equal(path.isAbsolute(started.localDir), true)
   assert.equal(started.startedAt, '2026-11-22T10:00:00.000Z')
@@ -148,6 +169,7 @@ check('rejects a known shell-oneshot image before dsh.start', async () => {
       return true
     })
     assert.equal(fetchImpl.calls.some((call) => call.body.action === 'dsh.start'), false)
+    assert.equal(fetchImpl.calls.some((call) => call.body.action === 'machine.get'), false)
   }
 })
 
@@ -167,6 +189,140 @@ check('an unknown image is not blocked by the known-image precheck', async () =>
     stateRoot,
   })
   assert.equal(started.taskId, 'task-test')
+  assert.equal(started.image, 'custom-image@1')
+  assert.equal(fetchImpl.calls.some((call) => call.body.action === 'machine.get'), false)
+})
+
+async function rejectStart(fetchImpl, extra = {}) {
+  const runtime = createRayrunDetachedRuntime({
+    getOrigin: () => 'http://127.0.0.1:1234',
+    fetchImpl,
+  })
+  try {
+    await runtime.start({
+      bot: { id: 'echo', name: 'Echo', label: 'Echoes', instructions: 'Reply briefly.' },
+      text: 'hello',
+      history: [],
+      messageSeq: 1,
+      botId: 'echo',
+      stateRoot: setup(),
+      ...extra,
+    })
+  } catch (error) {
+    return error
+  }
+  assert.fail('start should have failed before creating a task')
+}
+
+check('a blank overview image is read from machine.get before dsh.start', async () => {
+  const fetchImpl = fakeFetch({
+    machine: machineWith(''),
+    detail: detailWith('dsh-bot@1'),
+  })
+  const error = await rejectStart(fetchImpl)
+  assert.equal(error.code, ERROR_CODES.imageUnsupported)
+  assert.equal(error.image, 'dsh-bot@1')
+  assert.equal(error.computer, 'rayrun-bot')
+  assert.match(error.message, /shell oneshot/)
+  assert.equal(fetchImpl.calls.some((call) => call.body.action === 'machine.get'), true)
+  assert.equal(fetchImpl.calls.some((call) => call.body.action === 'dsh.start'), false)
+})
+
+check('an unreadable image fails closed before dsh.start', async () => {
+  for (const agent of ['', '   ', undefined]) {
+    const fetchImpl = fakeFetch({
+      machine: machineWith(agent),
+      detail: detailWith(''),
+    })
+    const error = await rejectStart(fetchImpl)
+    assert.equal(error.code, ERROR_CODES.imageUnsupported)
+    assert.equal(error.image, undefined)
+    assert.match(error.message, /could not be read/)
+    assert.match(error.message, /no detached task was started/)
+    assert.equal(fetchImpl.calls.some((call) => call.body.action === 'dsh.start'), false)
+  }
+})
+
+check('a machine.get failure does not start a task', async () => {
+  const fetchImpl = fakeFetch({ machine: machineWith('') })
+  const error = await rejectStart(fetchImpl)
+  assert.equal(error.code, ERROR_CODES.imageUnsupported)
+  assert.match(error.message, /could not be read/)
+  assert.equal(fetchImpl.calls.some((call) => call.body.action === 'machine.get'), true)
+  assert.equal(fetchImpl.calls.some((call) => call.body.action === 'dsh.start'), false)
+})
+
+check('machine.get can supply a supported image and the start result records it', async () => {
+  const fetchImpl = fakeFetch({
+    machine: machineWith(''),
+    detail: detailWith('deepseek-harness@1'),
+  })
+  const runtime = createRayrunDetachedRuntime({
+    getOrigin: () => 'http://127.0.0.1:1234',
+    fetchImpl,
+  })
+  const started = await runtime.start({
+    bot: { id: 'echo', name: 'Echo', label: 'Echoes', instructions: 'Reply briefly.' },
+    text: 'hello',
+    history: [],
+    messageSeq: 1,
+    botId: 'echo',
+    stateRoot: setup(),
+  })
+  assert.equal(started.image, 'deepseek-harness@1')
+  assert.equal(started.taskId, 'task-test')
+})
+
+check('a remembered oneshot image blocks a later blank read for the same computer', async () => {
+  const fetchImpl = fakeFetch({
+    machine: machineWith(''),
+    detail: detailWith(''),
+  })
+  const error = await rejectStart(fetchImpl, {
+    rememberedImage: 'dsh-bot@1',
+    rememberedComputer: 'rayrun-bot',
+  })
+  assert.equal(error.code, ERROR_CODES.imageUnsupported)
+  assert.equal(error.image, 'dsh-bot@1')
+  assert.match(error.message, /dsh-bot@1/)
+  assert.equal(fetchImpl.calls.some((call) => call.body.action === 'dsh.start'), false)
+})
+
+check('a remembered image for a different computer does not authorize a blank read', async () => {
+  const fetchImpl = fakeFetch({
+    machine: machineWith(''),
+    detail: detailWith(''),
+  })
+  const error = await rejectStart(fetchImpl, {
+    rememberedImage: 'deepseek-harness@1',
+    rememberedComputer: 'other-computer',
+  })
+  assert.equal(error.code, ERROR_CODES.imageUnsupported)
+  assert.match(error.message, /could not be read/)
+  assert.equal(fetchImpl.calls.some((call) => call.body.action === 'dsh.start'), false)
+})
+
+check('a remembered supported image lets the same computer proceed when the live read is blank', async () => {
+  const fetchImpl = fakeFetch({
+    machine: machineWith(''),
+    detail: detailWith(''),
+  })
+  const runtime = createRayrunDetachedRuntime({
+    getOrigin: () => 'http://127.0.0.1:1234',
+    fetchImpl,
+  })
+  const started = await runtime.start({
+    bot: { id: 'echo', name: 'Echo', label: 'Echoes', instructions: 'Reply briefly.' },
+    text: 'hello',
+    history: [],
+    messageSeq: 1,
+    botId: 'echo',
+    stateRoot: setup(),
+    rememberedImage: 'deepseek-harness@1',
+    rememberedComputer: 'rayrun-bot',
+  })
+  assert.equal(started.image, 'deepseek-harness@1')
+  assert.equal(fetchImpl.calls.some((call) => call.body.action === 'dsh.start'), true)
 })
 
 check('a missing reply.md fails closed instead of collecting a stale file', async () => {
@@ -188,6 +344,27 @@ check('a missing reply.md fails closed instead of collecting a stale file', asyn
     assert.equal(error.code, ERROR_CODES.workerNoReply)
     assert.match(error.message, /reply\.md/)
     assert.match(error.message, /deepseek-harness@1/)
+    return true
+  })
+})
+
+check('a missing reply names the image recorded on the task', async () => {
+  const stateRoot = setup()
+  const runtime = createRayrunDetachedRuntime({
+    getOrigin: () => 'http://127.0.0.1:1234',
+    fetchImpl: fakeFetch(),
+  })
+  const started = await runtime.start({
+    bot: { id: 'echo', name: 'Echo', label: 'Echoes', instructions: 'Reply briefly.' },
+    text: 'hello',
+    history: [],
+    messageSeq: 1,
+    botId: 'echo',
+    stateRoot,
+  })
+  await assert.rejects(runtime.collect({ detached: { ...started, image: 'custom-image@1' } }), (error) => {
+    assert.equal(error.code, ERROR_CODES.workerNoReply)
+    assert.match(error.message, /custom-image@1/)
     return true
   })
 })

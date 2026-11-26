@@ -320,7 +320,7 @@ SSO/SAML/SCIM、组织 RBAC、审计导出/SIEM、DPA 与数据驻留、marketpl
 | 缺少 DeepSeek key | `E_KEY_REQUIRED` |
 | 机器停止 | `E_MACHINE_STOPPED` |
 | 机器忙碌 | `E_MACHINE_BUSY` |
-| 镜像不支持 detached（已知 shell oneshot） | `E_IMAGE_UNSUPPORTED` |
+| 镜像不支持 detached（已知 shell oneshot，或读不到当前镜像） | `E_IMAGE_UNSUPPORTED` |
 | worker 结束但没有写 `reply.md` | `E_WORKER_NO_REPLY` |
 | bot runtime 不可用 | `E_HOST_DOWN` |
 
