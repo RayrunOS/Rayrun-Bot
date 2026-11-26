@@ -55,7 +55,7 @@ npm_config_registry=https://registry.npmjs.org \
 1. 连接 Rayrun。token 留在 host 侧的 Harness vault 里，页面拿不到它。
 2. 采用一台已有的云电脑，或新建一台。新建会计入 Rayrun 账单。页面可以停止机器，不会销毁机器。
 3. 如果这台电脑还没有 DeepSeek credential，设置步骤可以把你的 key 存成 Rayrun credential。key 注入 agent 进程，不进入工作区，也不进入聊天。
-4. 创建一个 bot 并发送一条消息。你创建之前列表里的示例 bot 是页内预览，不会在云电脑上运行。
+4. 创建一个 bot 并发送一条消息。默认名册是空的；只有显式 `?preview=1` 的页面会显示示例 bot，它们只是页内演示，不会在云电脑上运行。
 
 `dsh-rayrun-bots@0.1.1-alpha.1` 在 npm 的 `alpha` dist-tag 上。`latest` 仍是
 `0.1.0-alpha.0`。没有稳定版。不带版本的 `npm install dsh-rayrun-bots`，或不带这些

@@ -53,15 +53,15 @@ window.__ModuleLoader__.load({
     "sendFailed": "Could not send. Try again.",
     "runtimeUnavailable": "The cloud runtime is unavailable. Install dsh-rayrun-computer and reload DSH.",
     "connectRayrun": "Connect Rayrun in setup before sending.",
-    "noComputer": "No cloud computer yet. Create one in setup first.",
     "machineBusy": "The cloud computer is busy. Try again shortly.",
     "balanceLow": "The Rayrun balance is low. Add credit before sending.",
     "queueFull": "Too many messages are queued. Wait for a reply.",
     "messageInvalid": "That message can't be sent: it is empty, too long, or invalid.",
     "historyFailed": "Could not load this conversation. Reload the page to retry.",
-    "turnTimeout": "The cloud turn is taking too long. Reopen the page to check again.",
+    "turnTimeout": "The page stopped waiting, but the cloud turn may still be running. Refresh to check the result.",
     "turnInterrupted": "The previous turn was interrupted. Send it again.",
-    "errorTitle": "Turn failed"
+    "errorTitle": "Turn failed",
+    "machineStopped": "Your cloud computer is stopped or unavailable. Open it from Details or the cloud-computer plugin, then send again."
   },
   "list": {
     "search": "Search",
@@ -110,7 +110,18 @@ window.__ModuleLoader__.load({
     "waitingSide": "Waiting to execute",
     "failedSide": "Execution failed",
     "continue": "Continue bot",
-    "continuePrompt": "Continue from the approval result above. Do not repeat the approved action; ask before another controlled action."
+    "continuePrompt": "Continue from the approval result above. Do not repeat the approved action; ask before another controlled action.",
+    "riskStart": "Starts your computer and spends machine time.",
+    "riskResume": "Resumes your computer and spends machine time.",
+    "riskStop": "Stops your computer. Running work stops.",
+    "riskPause": "Pauses your computer. Running work pauses.",
+    "riskUnknown": "Approves a controlled action on your computer.",
+    "parseError": "The bot's approval request could not be parsed. No action was requested.",
+    "expiredRunning": "This background request expired, but your cloud computer may still be running.",
+    "stopComputer": "Stop computer",
+    "stopConfirm": "Stop the cloud computer? Running work will stop.",
+    "stopConfirmAction": "Stop",
+    "cancel": "Cancel"
   },
   "draft": {
     "send": "Send",
@@ -166,7 +177,6 @@ window.__ModuleLoader__.load({
     "reconnecting": "reconnecting…",
     "unreachable": "Couldn't reach the computer.",
     "sleeping": "sleeping",
-    "takeOver": "Take over",
     "open": "Open",
     "view": "View",
     "onComputer": "On the computer · {where}",
@@ -195,7 +205,8 @@ window.__ModuleLoader__.load({
     "copied": "Copied",
     "copyFailed": "Copy failed. Select the password manually.",
     "close": "Close",
-    "hostManaged": "Managed by host"
+    "hostManaged": "Managed by host",
+    "burnLine": "Running now · {rate}/h · {hours} machine-hours to date"
   },
   "notice": {
     "recovering": "The bot host is restarting. This conversation resumes on its own.",
@@ -212,8 +223,8 @@ window.__ModuleLoader__.load({
   },
   "usage": {
     "balanceLine": "Balance {balance} · {hours} machine-hours",
-    "weekLine": "This week {spend} · idle stop {idle}",
-    "liveLine": "Live from your Rayrun account · idle stop {idle}",
+    "weekLine": "This week {spend}",
+    "liveLine": "Live from your Rayrun account",
     "sampleBalance": "¥41.20",
     "sampleHours": "38.4",
     "sampleSpend": "¥6.80"
@@ -301,7 +312,6 @@ window.__ModuleLoader__.load({
     "sub": "Account, usage, and the few settings this plugin owns.",
     "account": "Account",
     "usage": "Usage",
-    "notifications": "Notifications",
     "appearance": "Appearance",
     "rayrunAccount": "Rayrun account",
     "rayrunHint": "Token stays in the DSH vault · host side only",
@@ -324,15 +334,8 @@ window.__ModuleLoader__.load({
     "usageLine": "Balance {balance} · {hours} machine-hours · {machines} machines",
     "usageConnect": "Connect Rayrun to see usage.",
     "usageFailed": "Could not read usage: {message}",
-    "idle": "Idle stop",
-    "idleHint": "Stop the computer when idle. Never destroy it.",
-    "idle15": "15 minutes",
-    "idle30": "30 minutes",
-    "idleOff": "Off",
     "lowBalance": "Low-balance reminder",
     "lowBalanceHint": "Show a notice when the balance drops below this.",
-    "notify": "Notifications",
-    "notifyHint": "Notify when a bot finishes or needs you.",
     "language": "Language",
     "languageHint": "Chinese is primary; English is available.",
     "langEn": "English",
@@ -445,15 +448,15 @@ window.__ModuleLoader__.load({
     "sendFailed": "发送失败，请重试。",
     "runtimeUnavailable": "云端 runtime 不可用。请安装 dsh-rayrun-computer 并重启 DSH。",
     "connectRayrun": "请先在设置里连接 Rayrun。",
-    "noComputer": "还没有云电脑。请先在设置里创建一台。",
     "machineBusy": "云电脑正忙，请稍后再试。",
     "balanceLow": "Rayrun 余额偏低，请先充值。",
     "queueFull": "排队消息太多，请等回复后再发送。",
     "messageInvalid": "这条消息无法发送：为空、过长或格式无效。",
     "historyFailed": "无法加载这段对话。刷新页面后重试。",
-    "turnTimeout": "云端回合时间过长。重新打开页面查看结果。",
+    "turnTimeout": "页面已停止等待，但云端回合可能仍在运行。刷新页面查看结果。",
     "turnInterrupted": "上一回合被中断了。请重新发送。",
-    "errorTitle": "回合失败"
+    "errorTitle": "回合失败",
+    "machineStopped": "云电脑已停止或不可用。请在详情面板或云电脑插件里打开它，再重新发送。"
   },
   "list": {
     "search": "搜索",
@@ -502,7 +505,18 @@ window.__ModuleLoader__.load({
     "waitingSide": "等待执行",
     "failedSide": "执行失败",
     "continue": "让 bot 继续",
-    "continuePrompt": "根据上面的审批结果继续。不要重复已批准的动作；下一个受控动作前先询问。"
+    "continuePrompt": "根据上面的审批结果继续。不要重复已批准的动作；下一个受控动作前先询问。",
+    "riskStart": "启动你的电脑；运行期间消耗机时。",
+    "riskResume": "恢复你的电脑；运行期间消耗机时。",
+    "riskStop": "停止你的电脑；正在运行的工作会停止。",
+    "riskPause": "暂停你的电脑；正在运行的工作会暂停。",
+    "riskUnknown": "批准在你的电脑上执行一个受控动作。",
+    "parseError": "bot 的审批请求无法解析，未执行任何动作。",
+    "expiredRunning": "这个后台请求已过期，但云电脑可能仍在运行。",
+    "stopComputer": "停止电脑",
+    "stopConfirm": "停止云电脑？正在运行的工作会停止。",
+    "stopConfirmAction": "停止",
+    "cancel": "取消"
   },
   "draft": {
     "send": "发送",
@@ -558,7 +572,6 @@ window.__ModuleLoader__.load({
     "reconnecting": "正在重连…",
     "unreachable": "连不上电脑。",
     "sleeping": "休眠",
-    "takeOver": "接管",
     "open": "打开",
     "view": "查看",
     "onComputer": "电脑上 · {where}",
@@ -587,7 +600,8 @@ window.__ModuleLoader__.load({
     "copied": "已复制",
     "copyFailed": "复制失败，请手动选中密码。",
     "close": "关闭",
-    "hostManaged": "由 host 管理"
+    "hostManaged": "由 host 管理",
+    "burnLine": "正在运行 · {rate}/小时 · 累计 {hours} 机时"
   },
   "notice": {
     "recovering": "Bot host 正在重启，这个会话会自动恢复。",
@@ -604,8 +618,8 @@ window.__ModuleLoader__.load({
   },
   "usage": {
     "balanceLine": "余额 {balance} · {hours} 机时",
-    "weekLine": "本周 {spend} · 空闲停机 {idle}",
-    "liveLine": "来自你的 Rayrun 账号 · 空闲停机 {idle}",
+    "weekLine": "本周 {spend}",
+    "liveLine": "来自你的 Rayrun 账号",
     "sampleBalance": "¥41.20",
     "sampleHours": "38.4",
     "sampleSpend": "¥6.80"
@@ -693,7 +707,6 @@ window.__ModuleLoader__.load({
     "sub": "账号、用量，以及这个插件自己的少量设置。",
     "account": "账号",
     "usage": "用量",
-    "notifications": "通知",
     "appearance": "外观",
     "rayrunAccount": "Rayrun 账号",
     "rayrunHint": "token 存在 DSH 凭证库 · 只在 Host 侧",
@@ -716,15 +729,8 @@ window.__ModuleLoader__.load({
     "usageLine": "余额 {balance} · {hours} 机时 · {machines} 台云电脑",
     "usageConnect": "连接 Rayrun 后显示用量。",
     "usageFailed": "读取用量失败：{message}",
-    "idle": "空闲停机",
-    "idleHint": "空闲时停止电脑，绝不销毁。",
-    "idle15": "15 分钟",
-    "idle30": "30 分钟",
-    "idleOff": "关闭",
     "lowBalance": "低余额提醒",
     "lowBalanceHint": "余额低于该值时显示提示。",
-    "notify": "通知",
-    "notifyHint": "Bot 完成或等你处理时通知。",
     "language": "语言",
     "languageHint": "以简体中文为主，可切换 English。",
     "langEn": "English",
@@ -816,7 +822,10 @@ window.__ModuleLoader__.load({
     const DEFAULT_COMPUTER = 'rayrun-bot'
     const SESSION_POLL_MS = 1000
     const SESSION_POLL_LIMIT_MS = 16 * 60 * 1000
+    const APPROVAL_PARSE_ERROR = '[[rayrun-approval-parse-error]]'
     const pickMachine = (machines) => machines.find((item) => item.name === DEFAULT_COMPUTER)
+      || machines.find((item) => item.status === 'Running' && item.remote_desktop && item.desktop_url)
+      || machines.find((item) => item.status === 'Running')
       || machines.find((item) => item.remote_desktop && item.desktop_url)
       || machines[0]
     const machineStatus = (status) => status === 'Running' ? 'live'
@@ -1217,6 +1226,7 @@ window.__ModuleLoader__.load({
         origin: approval.origin,
         target: machine,
         risk: Array.isArray(approval.risk) ? approval.risk : [],
+        kind: typeof kind === 'string' ? kind : null,
         execution,
         ...(expiresMin === undefined ? {} : { expiresMin }),
       }
@@ -1278,7 +1288,7 @@ window.__ModuleLoader__.load({
       E_DEP_MISSING: 'chat.runtimeUnavailable',
       E_RUNTIME_UNAVAILABLE: 'chat.runtimeUnavailable',
       E_TOKEN_REQUIRED: 'chat.connectRayrun',
-      E_MACHINE_STOPPED: 'chat.noComputer',
+      E_MACHINE_STOPPED: 'chat.machineStopped',
       E_MACHINE_BUSY: 'chat.machineBusy',
       E_BALANCE_LOW: 'chat.balanceLow',
       E_QUEUE_FULL: 'chat.queueFull',
@@ -1306,7 +1316,14 @@ window.__ModuleLoader__.load({
       if (message.role === 'user') {
         return { ...entry, kind: 'user', ...(message.origin === 'routine' ? { origin: 'routine' } : {}) }
       }
-      if (message.role === 'bot') return { ...entry, kind: 'bot' }
+      if (message.role === 'bot') {
+        const marker = typeof message.text === 'string' ? message.text.indexOf(APPROVAL_PARSE_ERROR) : -1
+        if (marker !== -1) {
+          const text = message.text.slice(0, marker).trim()
+          return { ...entry, kind: 'bot', text: text ? `${text}\n\n${t('approval.parseError')}` : t('approval.parseError') }
+        }
+        return { ...entry, kind: 'bot' }
+      }
       return {
         ...entry,
         kind: 'error',
@@ -1589,9 +1606,7 @@ window.__ModuleLoader__.load({
         forceList: false,
         forceDetail: false,
         settings: {
-          idle: '15',
           lowBalance: '10',
-          notifications: true,
           lang: null,
         },
         bots: FIRST_RUN_PREVIEW ? [] : DEMO_PREVIEW ? demoBots() : [],
@@ -1843,12 +1858,6 @@ window.__ModuleLoader__.load({
       )
     }
 
-    function idleLabel(t, idle) {
-      if (idle === '30') return t('settings.idle30')
-      if (idle === '0') return t('settings.idleOff')
-      return t('settings.idle15')
-    }
-
     function BotsApp({ ctx }) {
       const [state, setState] = useState(createState)
       const [host, setHost] = useState({ status: 'checking' })
@@ -2027,7 +2036,7 @@ window.__ModuleLoader__.load({
         const tick = async () => {
           if (record.cancelled) return
           if (Date.now() - record.startedAt > SESSION_POLL_LIMIT_MS) {
-            updateBot(botId, (bot) => appendSessionError(bot, t('chat.turnTimeout'), 'E_INTERNAL'))
+            updateBot(botId, (bot) => appendSessionError(bot, t('chat.turnTimeout'), 'E_TURN_POLL_TIMEOUT'))
             setState((current) => ({ ...current, live: t('chat.turnTimeout') }))
             stop()
             return
@@ -2467,6 +2476,8 @@ window.__ModuleLoader__.load({
         onContinue: () => send(t('approval.continuePrompt')),
         onView: () => flash(t('computer.desktopLater')),
         onAttach: () => flash(t('notice.attach')),
+        machine: machineFor(selected),
+        onStop: stopComputer,
         onCreate: createBot,
         onScreen: openScreen,
         onSetupStep: (setupStep) => patch({ setupStep }),
@@ -2539,7 +2550,6 @@ window.__ModuleLoader__.load({
             usageError: state.realError,
             usagePreview: LOW_BALANCE_PREVIEW,
             low,
-            idle: idleLabel(t, state.settings.idle),
             onToggleRoutine: (index) => toggleRoutine(selected, index),
             onCreateRoutine: (draft) => createRoutine(selected, draft),
             onRemoveRoutine: (index) => removeRoutine(selected, index),
@@ -2686,12 +2696,17 @@ window.__ModuleLoader__.load({
       )
     }
 
-    function ApprovalCard({ t, approval, onDecide, onContinue }) {
+    function ApprovalCard({ t, approval, machine, onStop, onDecide, onContinue }) {
       const pending = approval.state === 'pending'
       const expired = approval.state === 'expired'
       const real = approval.real === true
       const executionFailed = approval.state === 'execution-failed'
       const waiting = approval.state === 'approved-waiting'
+      const expiredRunning = expired && approval.origin === 'background' && machine?.status === 'Running'
+      const [confirmStop, setConfirmStop] = useState(false)
+      useEffect(() => {
+        if (!expiredRunning) setConfirmStop(false)
+      }, [expiredRunning])
       const title = approval.title || fieldText(approval, t, 'titleKey')
       const meta = approval.meta || fieldText(approval, t, 'metaKey')
       const origin = approval.origin === 'background'
@@ -2700,6 +2715,17 @@ window.__ModuleLoader__.load({
           ? t('approval.originChat')
           : ''
       const target = approval.targetKey ? t(approval.targetKey) : approval.target || ''
+      const actionRiskKey = !real
+        ? null
+        : approval.kind === 'rayrun.machine.start'
+          ? 'approval.riskStart'
+          : approval.kind === 'rayrun.machine.resume'
+            ? 'approval.riskResume'
+            : approval.kind === 'rayrun.machine.stop'
+              ? 'approval.riskStop'
+              : approval.kind === 'rayrun.machine.pause'
+                ? 'approval.riskPause'
+                : 'approval.riskUnknown'
       const risks = Array.isArray(approval.risk)
         ? approval.risk
           .map((risk) => risk === 'outside'
@@ -2709,7 +2735,7 @@ window.__ModuleLoader__.load({
               : risk === 'cost' ? t('approval.riskCost') : null)
           .filter(Boolean)
         : []
-      const riskLine = risks.length ? risks.join(' · ') : t('approval.warning')
+      const riskLine = actionRiskKey ? t(actionRiskKey) : risks.length ? risks.join(' · ') : t('approval.warning')
       let side = t('approval.waits')
       if (pending && Number.isFinite(approval.expiresMin)) side = t('approval.expires', { n: approval.expiresMin })
       if (approval.state === 'allowed') side = t(real ? 'approval.allowedSide' : 'approval.snippetAllowed')
@@ -2742,13 +2768,35 @@ window.__ModuleLoader__.load({
           target ? h('span', { className: 'rb-chip rb-chip-target' }, target) : null,
         ) : null,
         pending ? h('div', { className: 'rb-warnline' }, riskLine) : expired ? null : h('div', { className: 'rb-result' }, resultText),
+        expiredRunning ? h(
+          'div',
+          { className: 'rb-result' },
+          t('approval.expiredRunning'),
+          onStop ? h(
+            'div',
+            { className: 'rb-line' },
+            confirmStop ? h('span', null, t('approval.stopConfirm')) : null,
+            h('button', {
+              type: 'button',
+              className: confirmStop ? 'rb-btn' : 'rb-btn rb-ghost',
+              onClick: () => {
+                if (!confirmStop) setConfirmStop(true)
+                else {
+                  setConfirmStop(false)
+                  onStop()
+                }
+              },
+            }, confirmStop ? t('approval.stopConfirmAction') : t('approval.stopComputer')),
+            confirmStop ? h('button', { type: 'button', className: 'rb-btn rb-ghost', onClick: () => setConfirmStop(false) }, t('approval.cancel')) : null,
+          ) : null,
+        ) : null,
         h('div', { className: 'rb-meta' }, meta),
         pending ? h(
           'div',
           { className: 'rb-actions' },
           h('button', { type: 'button', className: 'rb-btn rb-ghost', onClick: () => onDecide(approval.id, 'denied') }, t('approval.deny')),
           h('button', { type: 'button', className: 'rb-btn rb-primary', onClick: () => onDecide(approval.id, 'allowed') }, t('approval.allowOnce')),
-        ) : real && !expired ? h(
+        ) : real && (approval.state === 'allowed' || approval.state === 'denied' || approval.state === 'execution-failed') ? h(
           'div',
           { className: 'rb-actions' },
           h('button', { type: 'button', className: 'rb-btn rb-primary', onClick: () => onContinue(approval.id) }, t('approval.continue')),
@@ -2780,7 +2828,7 @@ window.__ModuleLoader__.load({
       )
     }
 
-    function Conversation({ t, state, bot, composerRef, onComposer, onSend, onDecide, onContinue, onView, onAttach, showListButton, showDetailButton, onToggleList, onToggleDetail }) {
+    function Conversation({ t, state, bot, composerRef, onComposer, onSend, onDecide, onContinue, onView, onAttach, machine, onStop, showListButton, showDetailButton, onToggleList, onToggleDetail }) {
       const name = botName(bot, t)
       const job = botJob(bot, t)
       const threadRef = useRef(null)
@@ -2806,8 +2854,8 @@ window.__ModuleLoader__.load({
               return h(
                 'div',
                 { key: entry.id, className: 'rb-error-row', role: 'alert' },
-                h('div', { className: 'rb-error-code' }, entry.code || t('chat.errorTitle')),
                 h('div', { className: 'rb-error-text' }, entry.text),
+                h('div', { className: 'rb-error-code' }, entry.code || t('chat.errorTitle')),
               )
             }
             if (entry.kind === 'day') return h('div', { key: entry.id, className: 'rb-day' }, textOf(entry, t))
@@ -2835,7 +2883,7 @@ window.__ModuleLoader__.load({
             if (entry.kind === 'approval') {
               const approval = bot.approvals[entry.approvalId]
               if (!approval) return null
-              return h(ApprovalCard, { key: entry.id, t, approval, onDecide, onContinue })
+              return h(ApprovalCard, { key: entry.id, t, approval, machine, onStop, onDecide, onContinue })
             }
             return h(
               'div',
@@ -2890,7 +2938,7 @@ window.__ModuleLoader__.load({
       )
     }
 
-    function Details({ t, catalog, bot, tab, onTab, computer, machine, configured, overview, usageError, usagePreview, low, idle, onToggleRoutine, onCreateRoutine, onRemoveRoutine, onComputer, onStop }) {
+    function Details({ t, catalog, bot, tab, onTab, computer, machine, configured, overview, usageError, usagePreview, low, onToggleRoutine, onCreateRoutine, onRemoveRoutine, onComputer, onStop }) {
       const name = botName(bot, t)
       const job = botJob(bot, t)
       const [routineOpen, setRoutineOpen] = useState(false)
@@ -2900,6 +2948,8 @@ window.__ModuleLoader__.load({
       const [routineBusy, setRoutineBusy] = useState(false)
       const [routineError, setRoutineError] = useState('')
       const canEditRoutines = bot.source === 'real'
+      const showLibrary = bot.source !== 'real'
+      const showRecent = bot.source !== 'real'
       const submitRoutine = async () => {
         const title = routineTitle.trim()
         const prompt = routinePrompt.trim()
@@ -2939,16 +2989,16 @@ window.__ModuleLoader__.load({
           h('div', { className: 'rb-name' }, name),
           h('div', { className: 'rb-sub' }, t('details.jobComputer', { job, computer: computerName })),
         ),
-        h(
+        showLibrary ? h(
           'div',
           { className: 'rb-tabs', role: 'tablist' },
           h('button', { type: 'button', className: tab === 'activity' ? 'rb-tab rb-active' : 'rb-tab', role: 'tab', 'aria-selected': tab === 'activity' ? 'true' : 'false', onClick: () => onTab('activity') }, t('details.activity')),
           h('button', { type: 'button', className: tab === 'library' ? 'rb-tab rb-active' : 'rb-tab', role: 'tab', 'aria-selected': tab === 'library' ? 'true' : 'false', onClick: () => onTab('library') }, t('details.library')),
-        ),
-        tab === 'activity' ? h(
+        ) : null,
+        tab !== 'library' || !showLibrary ? h(
           'div',
           { className: 'rb-sections' },
-          h(
+          showRecent ? h(
             'section',
             { className: 'rb-sec' },
             h('h3', null, t('details.recent'), count(bot.receipts.length)),
@@ -2958,7 +3008,7 @@ window.__ModuleLoader__.load({
               h('div', { className: 'rb-t' }, h('span', null, t(receipt.titleKey)), h('span', { className: 'rb-ok' }, t(receipt.stateKey))),
               h('div', { className: 'rb-s' }, t(receipt.metaKey)),
             )) : h(EmptyBlock, { name: 'recent', title: t('details.recentEmpty'), hint: t('details.recentEmptyHint') }),
-          ),
+          ) : null,
           h(
             'section',
             { className: 'rb-sec' },
@@ -3067,8 +3117,8 @@ window.__ModuleLoader__.load({
               ),
             ) : null,
           ),
-          h(ComputerBlock, { t, status: computerStatus, name: computerName, configured, available: Boolean(machine), managed: hostManaged, onComputer, onStop }),
-          h(UsageBlock, { t, catalog, idle, low, overview, configured, error: usageError, preview: usagePreview }),
+          h(ComputerBlock, { t, status: computerStatus, name: computerName, machine, configured, available: Boolean(machine), managed: hostManaged, onComputer, onStop }),
+          h(UsageBlock, { t, catalog, low, overview, configured, error: usageError, preview: usagePreview }),
         ) : h(
           'div',
           { className: 'rb-sections' },
@@ -3091,12 +3141,20 @@ window.__ModuleLoader__.load({
       )
     }
 
-    function ComputerBlock({ t, status, name, configured, available, managed, onComputer, onStop }) {
+    function ComputerBlock({ t, status, name, machine, configured, available, managed, onComputer, onStop }) {
       const [confirming, setConfirming] = useState(false)
       useEffect(() => {
         if (status !== 'live') setConfirming(false)
       }, [status])
       const canStop = status === 'live' && available && Boolean(onStop)
+      const rateCents = Number(machine?.pricing?.vm_cents_per_hour)
+      const rate = Number.isFinite(rateCents)
+        ? `${machine?.pricing?.currency === 'USD' ? '$' : '¥'}${(rateCents / 100).toFixed(2)}`
+        : ''
+      const hours = Number(machine?.usage?.vm_hours)
+      const burnLine = status === 'live' && rate
+        ? t('computer.burnLine', { rate, hours: Number.isFinite(hours) ? hours.toFixed(1) : '—' })
+        : ''
       const label = status === 'live' ? t('computer.live')
         : status === 'sleeping' ? t('computer.sleeping')
         : status === 'unreachable' ? t('computer.unreachable')
@@ -3127,6 +3185,7 @@ window.__ModuleLoader__.load({
                 h('span', { className: `rb-dot ${dot}`.trim(), 'aria-hidden': 'true' }),
                 label,
               ),
+              burnLine ? h('div', { className: 'rb-s' }, burnLine) : null,
             ),
             h('div', { className: 'rb-thumb', 'aria-hidden': 'true' }),
           ),
@@ -3134,7 +3193,6 @@ window.__ModuleLoader__.load({
             'div',
             { className: 'rb-comp-acts' },
             h('button', { type: 'button', className: 'rb-btn', disabled: !available, onClick: onComputer }, t('computer.open')),
-            h('button', { type: 'button', className: 'rb-btn', disabled: !available, onClick: onComputer }, t('computer.takeOver')),
             canStop ? h('button', { type: 'button', className: 'rb-btn', onClick: () => setConfirming(true) }, t('computer.stop')) : null,
           ),
           canStop && confirming ? h(
@@ -3159,7 +3217,7 @@ window.__ModuleLoader__.load({
       )
     }
 
-    function UsageBlock({ t, catalog, idle, low, overview, configured, error, preview }) {
+    function UsageBlock({ t, catalog, low, overview, configured, error, preview }) {
       if (configured) {
         const balance = balanceText(overview?.balance)
         const hours = Number(overview?.usage?.vm_hours)
@@ -3171,7 +3229,7 @@ window.__ModuleLoader__.load({
             'div',
             { className: 'rb-usage', 'data-low': low ? 'true' : 'false' },
             h('span', { className: low ? 'rb-usage-low' : '' }, lineParts(lookup(catalog, 'usage.balanceLine'), { balance, hours: Number.isFinite(hours) ? hours.toFixed(1) : '—' }, new Set(['balance']))),
-            h('span', null, t('usage.liveLine', { idle })),
+            h('span', null, t('usage.liveLine')),
             low ? h('span', { className: 'rb-low' }, t('cost.low')) : null,
           ),
         )
@@ -3188,7 +3246,7 @@ window.__ModuleLoader__.load({
             'div',
             { className: 'rb-usage', 'data-low': low ? 'true' : 'false' },
             h('span', { className: low ? 'rb-usage-low' : '' }, lineParts(lookup(catalog, 'usage.balanceLine'), { balance, hours }, new Set(['balance']))),
-            h('span', null, lineParts(lookup(catalog, 'usage.weekLine'), { spend, idle }, new Set(['spend']))),
+            h('span', null, lineParts(lookup(catalog, 'usage.weekLine'), { spend }, new Set(['spend']))),
             low ? h('span', { className: 'rb-low' }, t('cost.low')) : null,
           ),
         )
@@ -3297,6 +3355,8 @@ window.__ModuleLoader__.load({
         onContinue: ctx.onContinue,
         onView: ctx.onView,
         onAttach: ctx.onAttach,
+        machine: ctx.machine,
+        onStop: ctx.onStop,
         showListButton: width < 900,
         showDetailButton: width < 1120,
         onToggleList: ctx.onToggleList,
@@ -3710,7 +3770,7 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { className: 'rb-snav' },
-            ['account', 'usage', 'notifications', 'appearance'].map((id) => h(
+            ['account', 'usage', 'appearance'].map((id) => h(
               'button',
               {
                 type: 'button',
@@ -3777,22 +3837,6 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { className: 'rb-srow' },
-            h('div', { className: 'rb-l' }, t('settings.idle'), h('small', null, t('settings.idleHint'))),
-            h(
-              'select',
-              {
-                value: state.settings.idle,
-                'aria-label': t('settings.idle'),
-                onChange: (event) => onChange({ idle: event.target.value }),
-              },
-              h('option', { value: '15' }, t('settings.idle15')),
-              h('option', { value: '30' }, t('settings.idle30')),
-              h('option', { value: '0' }, t('settings.idleOff')),
-            ),
-          ),
-          h(
-            'div',
-            { className: 'rb-srow' },
             h('div', { className: 'rb-l' }, t('settings.lowBalance'), h('small', null, t('settings.lowBalanceHint'))),
             h('input', {
               value: state.settings.lowBalance,
@@ -3800,16 +3844,6 @@ window.__ModuleLoader__.load({
               inputMode: 'decimal',
               'aria-label': t('settings.lowBalance'),
               onChange: (event) => onChange({ lowBalance: event.target.value.replace(/[^\d.]/g, '').slice(0, 8) }),
-            }),
-          ),
-          h(
-            'div',
-            { id: 'rb-settings-notifications', className: 'rb-srow' },
-            h('div', { className: 'rb-l' }, t('settings.notify'), h('small', null, t('settings.notifyHint'))),
-            h(Toggle, {
-              on: state.settings.notifications,
-              label: `${t('settings.notify')} ${state.settings.notifications ? t('routine.on') : t('routine.off')}`,
-              onClick: () => onChange({ notifications: !state.settings.notifications }),
             }),
           ),
           h(

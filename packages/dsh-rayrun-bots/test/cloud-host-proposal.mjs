@@ -7,7 +7,7 @@ import assert from 'node:assert/strict'
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { extractProposal, writeProposal } from '../cloud-host/lib/proposal.mjs'
+import { APPROVAL_PARSE_ERROR, extractProposal, writeProposal } from '../cloud-host/lib/proposal.mjs'
 
 const checks = []
 const check = (name, fn) => checks.push({ name, fn })
@@ -74,8 +74,21 @@ check('rejects invalid JSON, unknown kinds, extra fields and bad machines withou
     const parsed = extractProposal(BLOCK(body), { botId: 'cloud-bot', defaultMachine: 'box' })
     assert.equal(parsed.proposal, null)
     assert.ok(parsed.error)
-    assert.match(parsed.text, /rayrun-approval/)
+    assert.doesNotMatch(parsed.text, /```rayrun-approval/)
+    assert.equal(parsed.text.includes(APPROVAL_PARSE_ERROR), true)
+    assert.match(parsed.text, /No action was requested\./)
   }
+})
+
+check('keeps a natural-language reply and marks an invalid approval block', () => {
+  const parsed = extractProposal(
+    'I can stop the computer for you. Here is the request.\n\n```rayrun-approval\n{not json}\n```',
+    { botId: 'cloud-bot', defaultMachine: 'box' },
+  )
+  assert.equal(parsed.proposal, null)
+  assert.match(parsed.error, /not valid JSON/)
+  assert.match(parsed.text, /^I can stop the computer for you\. Here is the request\.\n\n/)
+  assert.equal(parsed.text.includes(APPROVAL_PARSE_ERROR), true)
 })
 
 check('leaves a reply without a block unchanged and does not overwrite a proposal id', () => {

@@ -58,12 +58,12 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
 | --- | --- |
 | 插件加载 | `packages/dsh-rayrun-bots` 作为 DSH bundle 加载；host half 提供同源 health 动作、`bots.*` 和 `session.*` RPC；health 报告 runtime 名称与可用性。 |
 | Bots 表面 | Client half 打开即进入 Bots，渲染 v0.1 壳：聊天列表、对话、详情、新建 bot、设置向导、设置页；中英双语，以中文为主并跟随 DSH 语言。 |
-| 对话与审批 | 客户端对话对真实名册 bot 读取并发送 `session.send/history/status`；示例 bot 仍走页内预览。真实 bot 的审批卡已接 host：显示 typed 动作、目标、风险和执行结果；Deny / Allow once 只写本地决定，批准后由本地 executor 执行；决定后卡片提供 Continue bot，下一轮 prompt 带最近结果。示例 bot 卡片和设置仍是页内预览。 |
+| 对话与审批 | 客户端对话对真实名册 bot 读取并发送 `session.send/history/status`；示例 bot 仍走页内预览。真实 bot 的审批卡已接 host：显示 typed 动作、目标、风险和执行结果；Deny / Allow once 只写本地决定，批准后由本地 executor 执行；决定并执行结束后卡片提供 Continue bot，下一轮 prompt 带最近结果。示例 bot 卡片和设置仍是页内预览。 |
 | 本地名册 | Host half 持久化已校验的 bot 名册到 `$DSH_HOME/state/rayrun-bot/`，原子写入；聊天列表有名册时读取真实名册，新建 bot 会写回 host。 |
 | Session 与 transcript | Host half 持久化每 bot 的 `session.json` + `transcript.jsonl`，提供 `session.send/history/status`；队列单飞、失败脱敏、host 重启后普通 running turn 标为 interrupted。依赖 1.1+ 时使用 detached `dsh.start/status/result`：每 turn 一个 task id、每 bot 一个本地 git checkout、`reply.md` 收取，task id 持久化，host 重启后恢复 poll；页面关闭 + 本地 DSH 重启后继续，以及机器 stop/start 后的第二轮续接（A8），已在本机 DSH + 已有 Rayrun 机器验证（2026-11-22）；1.0.x 回退单轮 `rayrun_agent`。常驻 `cloudHost` host 是预览、默认关闭；2026-11-23 多 bot 单 host 页面 E2E 已通过，生产镜像/部署未交付。单轮真实一轮已在本机 DSH + 已有 Rayrun 机器验证（2026-11-22）；示例 bot 仍是预览。 |
 | Routines | 每 bot 的 `routines.json` 由 host half 原子持久化；`routines.list/create/update/remove/sync` 校验标题、prompt、间隔、开关和上限。非 cloudHost 模式使用本地 `routine-scheduler`：每 30 秒检查到期项，入队普通 prompt；每 tick 每 bot 最多一条，busy 时跳过，runtime 不可用时保留 due，错过多个间隔只补一次；运行前先写 lastRunAt/nextAt claim，入队失败不重放。cloudHost 模式停用本地 scheduler，由云 host 读取镜像定义，在 `host/routines-state.json` claim nextAt 后入队 `origin: routine` task；结果写 `routine-results/`，本地 `routines.sync` 导入并被 `session.history` 合并；失败任务显示为 `E_ROUTINE_FAILED` system error。dev/test 环境的 cloudHost live E2E 已通过（2026-11-24，本地 DSH 关闭后云端执行）；生产 R-G008 已部署，hosted routine E2E 已通过（`CLOUD_ROUTINE_PROD_OK`，2026-11-24）。同一 bot 的定义 sync 串行执行，较慢的旧上传不会覆盖新定义；scheduler 在机器停止时不运行，机器停止期间改定义仍可能在上传前让旧定义先跑一次（MVP 不承诺该场景强一致）。结果文件有保留上限。cron 和事件触发未实现。客户端详情面板对真实 bot 可创建、启停、删除和显示 interval，示例 bot 仍用页内数据。 |
 | setup | Rayrun 步骤经云电脑插件的同源 RPC 接收粘贴的 token；云电脑步骤采用已有机器或经同一 RPC 创建第一台机器。 |
-| 电脑卡片 | Open / Take over 经同一 RPC 启动或恢复机器、等待 `Running`、修复桌面服务并打开 `desktop_url`；Stop 在确认后停止，永不 destroy。 |
+| 电脑卡片 | Open 经同一 RPC 启动或恢复机器、等待 `Running`、修复桌面服务并打开 `desktop_url`；Stop 在确认后停止，永不 destroy；运行中显示当前机时费率和累计机时。 |
 | 用量 | 详情面板的电脑块和用量块，以及 Settings 的用量行，读取真实机器状态、余额与机时。 |
 | 测试 | Host/client 名册接线、session/transcript、`rayrun_agent`/detached adapter、per-bot workspace 与审批协议由普通 Node 契约测试覆盖；客户端 session 失败路径、单轮真实一轮、页面关闭 + host 重启后的 detached 收取，以及机器 stop/start 后的第二轮续接另有本机页面 smoke。包清单、locale、RPC、客户端、名册、session、runtime、workspace、审批和 tarball 内容都有检查；cloud host 8 项、cloud host routines 8 项、DSH agent 5 项、host projection 5 项、runtime.* client 5 项、cloud host runtime adapter 15 项、cloud host proposal 5 项、approval executor 7 项、cloud approval bridge 6 项、routines 16 项、cloud routine bridge 7 项、cloud routine E2E 1 项、routine results 6 项纯 Node 检查，runtime.* client 与 cloud host 另有 dev live 联调，cloudHost adapter 另有页面 E2E（手动、自动 projection 与多 bot 单 host），审批卡另有拒绝/失败关闭与 Continue 按钮的页面 E2E。Routine 页面另做本地 DSH + Firefox smoke：真实表单创建、暂停、删除并写入 routines.json（2026-11-23，无 Rayrun token），截图 `/tmp/bot/routines-ui.png`（临时文件，不入库）；本地 mode 尚未等待一次 scheduler 自动触发；cloudHost mode 的 dev live E2E 已通过（2026-11-24，见 §3.1）。2026-11-25 clean alpha.1 安装另做生产两 bot 单 host 与 headless Firefox golden/审批 Deny/Allow E2E（见 §3.1）。 |
 | 审批执行 | 协议后端（request/decision schema、canonical actionHash、TTL、幂等/重放/错 bot 负向测试、审计、`approvals.list/get/decide/propose/sync`）已实现。ADR-019（2026-11-23）把本地 DSH host 定为本地 typed 动作的审批权威与执行方：`approvals.decide` 批准后由本地 executor 执行 `rayrun.machine.start/stop/pause/resume`，先写 `executing` claim，拒绝/过期/重放/崩溃 claim 失败关闭；客户端真实卡片已接。云端 proposal bridge 已接并 live 验证：云 bot 在回复末尾输出结构化 `rayrun-approval` block，cloud host 解析后写 proposal（`propose.mjs` 保留为可选 shell 路径），本地用 `rayrun_files` 导入并去重，结果写回 `approval-results/`；机器停机时结果先落本地 outbox，下次 Running 补传。start/stop/pause/resume、denial、Continue 均真机通过。下一轮 prompt 会带最近审批结果，bot 无工具直接回答 approved/done/Running 或 denied/not_executed。本地 routine 轮次会把 `origin: routine` 传到 cloud task，云端提案标为 background 并沿用 30 分钟 TTL。其他动作和云端凭据动作仍未完成；平台隔离仍用于云端凭据（ADR-001）。云端 agent 在容器内 `danger-full-access` 是设计（ADR-020），审批不是 containment。`rayrun_agent` adapter 不拦截外部动作，prompt 指引不是安全边界。 |
@@ -337,17 +337,55 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
   `No bots yet` + `Set up Rayrun Bot`，不显示 Nora/Eli/June；`?preview=1` 才显示
   Demo 横幅、`Demo` 徽标和逐条 `Sample` 标签，示例的审批/金额/日程已移除；`notice.cloud`、
   `user.you`、`setup.open` 生效；`setup.botBody`、`settings.pluginHint` 版本和页脚
-  用户名修正。页面 smoke 通过。机器真相已在 Phase 2 修复；审批卡健壮性、死控件
-  清理仍未做（Phase 3–4）。
+  用户名修正。页面 smoke 通过。机器真相已在 Phase 2 修复；审批卡健壮性已在
+  Phase 3 修复；死控件清理已在 Phase 4 修复。
 - UX trust pass Phase 2 机器真相（2026-11-26，本机 DSH + Firefox）：session 持久化
   实际机器名（`computer`），host `bots.list` 返回 `computers[botId]`；客户端按该
   名字在云电脑 overview 中查找机器，并随选中 bot 切换。找不到对应机器时显示
-  host 管理/未连接状态并禁用打开/接管，不再猜测机器列表第一台。`session-runtime`、
+  host 管理/未连接状态并禁用打开，不再猜测机器列表第一台。`session-runtime`、
   `rpc-contract`、`client-contract` 覆盖该契约；两个 bot 分别 seed
   `alpha-box`/`beta-box` 的页面 smoke 显示详情随选择从 `alpha-box` 切到
-  `beta-box`，未连接时打开/接管均为 disabled（截图
+  `beta-box`，未连接时打开按钮为 disabled（截图
   `/tmp/bot/machine-truth.png`，临时文件）。A4 的详情面板错机问题
   （`dsh-ci-deploy-2` vs `rayrun-bot-prod-e2e`）已修复。
+- UX trust pass Phase 3 审批卡（2026-11-26，本机 DSH + Firefox）：真实机器审批卡的
+  风险行按动作给出 stop/pause/start/resume 文案，不再统一“离开你的电脑”；页面
+  seed 的四种 approval 显示对应中文文案。云端 `rayrun-approval` block 解析失败时
+  host 移除 block 并追加 `rayrun-approval-parse-error` 标记，客户端显示本地化
+  “bot 的审批请求无法解析，未执行任何动作”；parser 6/6，页面 smoke 未出现 raw
+  marker 或英文 fallback。真实卡决定并完成本地执行后才显示 Continue bot；页面
+  Deny 后只剩 Continue，状态为 denied。截图 `/tmp/bot/approval-phase3.png`、
+  `/tmp/bot/approval-risk-copy.png`（临时文件）。真实模型自然语言验收：临时 profile
+  启用 cloudHost（pin `rayrun-bot-prod-e2e`、credential `dsh-model-sinnet`），发送
+  “Please stop the cloud computer to save machine time.”；bot 回复“requires your
+  approval”，`approvals.sync` imported=1，pending proposal 为
+  `rayrun.machine.stop` on `rayrun-bot-prod-e2e`。Deny 后 state=denied、
+  execution=not_executed，机器仍 Running；本地 bot 与机器测试目录已删除。
+- UX trust pass Phase 4 死控件与状态（2026-11-26，本机 DSH + Firefox）：真实 bot
+  详情只显示已接通的 Activity 区块，隐藏未接通的 Recent 与 Library 标签；删除
+  `Take over`，Open 是唯一桌面入口。错误行改为先给人话、再以小字显示原始 code；
+  `E_MACHINE_STOPPED` 不再误映射为“还没有云电脑”，客户端轮询超时使用
+  `E_TURN_POLL_TIMEOUT` 并说明云端回合可能仍在运行。设置隐藏未持久化的 idle stop
+  与通知开关，用量行不再声称 idle stop 生效。电脑卡片在 Running 且有 `pricing`
+  时显示当前费率与累计机时；Rayrun API 不提供 running since，因此未显示该字段。
+  后台审批过期且机器仍在 Running 时，卡片提示并给出带确认的 Stop。页面 smoke：
+  真实详情无“接管”/“资料库”/“最近”，错误行文案在 code 前，设置导航只剩
+  账号/用量/外观；截图 `/tmp/bot/phase4-cleanup.png`（临时文件）。第二个隔离
+  profile 用本地 fake Rayrun API 返回 Running machine（`pricing`/`usage`）和过期
+  background approval：详情显示“正在运行 · ¥0.08/小时 · 累计 12.3 机时”，过期卡
+  提示机器可能仍在运行并给出带确认的 Stop；未确认执行。截图
+  `/tmp/bot/phase4-running.png`（临时文件）。
+- UX trust pass Phase 5 golden path（2026-11-26，本机 DSH + Firefox，临时 profile +
+  cloudHost pin `rayrun-bot-prod-e2e`）：干净名册显示空态 → `Set up Rayrun Bot` →
+  dependency 步骤 → Rayrun 步骤（connection 已由 RPC 预配置，页面点 Skip，未在页面
+  粘贴 token）→ 云电脑步骤 → 第一个 bot `Golden Path Bot` → 自然语言
+  “Please stop the cloud computer to save machine time.” → bot 回复等待审批 →
+  pending `rayrun.machine.stop` 卡 → Deny → `denied` + Continue bot；机器保持
+  Running，本地 bot 与机器 `.rayrun/bots/golden-path-bot/` 已删除。截图
+  `/tmp/bot/phase5-golden.png`（临时文件）。同时修 Setup 默认机器选择：`pickMachine`
+  现在优先 Running（有 `desktop_url` 再优先），避免默认选中 Stopped 的 A3 机器；
+  `client-contract` 覆盖。与完整手工 golden path 的差异：token 步骤用 RPC 预配置，
+  未在页面输入；首次回复/审批卡/Deny/Continue 均通过页面验证。
 - 本地 cloud host transport adapter（2026-11-23，`lib/cloud-host-runtime.js`，预览）：
   通过 `runtime.*` 确保机器/runtime，`rayrun_files` 上传 inbox/读取 outbox，映射到
   `session.*`；fake 测试 15/15（机器 start/resume、runtime 复用、projection、并发 bot 共享 setup、无 token/无机器/无文件工具失败

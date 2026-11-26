@@ -25,15 +25,15 @@
     "sendFailed": "Could not send. Try again.",
     "runtimeUnavailable": "The cloud runtime is unavailable. Install dsh-rayrun-computer and reload DSH.",
     "connectRayrun": "Connect Rayrun in setup before sending.",
-    "noComputer": "No cloud computer yet. Create one in setup first.",
     "machineBusy": "The cloud computer is busy. Try again shortly.",
     "balanceLow": "The Rayrun balance is low. Add credit before sending.",
     "queueFull": "Too many messages are queued. Wait for a reply.",
     "messageInvalid": "That message can't be sent: it is empty, too long, or invalid.",
     "historyFailed": "Could not load this conversation. Reload the page to retry.",
-    "turnTimeout": "The cloud turn is taking too long. Reopen the page to check again.",
+    "turnTimeout": "The page stopped waiting, but the cloud turn may still be running. Refresh to check the result.",
     "turnInterrupted": "The previous turn was interrupted. Send it again.",
-    "errorTitle": "Turn failed"
+    "errorTitle": "Turn failed",
+    "machineStopped": "Your cloud computer is stopped or unavailable. Open it from Details or the cloud-computer plugin, then send again."
   },
   "list": {
     "search": "Search",
@@ -82,7 +82,18 @@
     "waitingSide": "Waiting to execute",
     "failedSide": "Execution failed",
     "continue": "Continue bot",
-    "continuePrompt": "Continue from the approval result above. Do not repeat the approved action; ask before another controlled action."
+    "continuePrompt": "Continue from the approval result above. Do not repeat the approved action; ask before another controlled action.",
+    "riskStart": "Starts your computer and spends machine time.",
+    "riskResume": "Resumes your computer and spends machine time.",
+    "riskStop": "Stops your computer. Running work stops.",
+    "riskPause": "Pauses your computer. Running work pauses.",
+    "riskUnknown": "Approves a controlled action on your computer.",
+    "parseError": "The bot's approval request could not be parsed. No action was requested.",
+    "expiredRunning": "This background request expired, but your cloud computer may still be running.",
+    "stopComputer": "Stop computer",
+    "stopConfirm": "Stop the cloud computer? Running work will stop.",
+    "stopConfirmAction": "Stop",
+    "cancel": "Cancel"
   },
   "draft": {
     "send": "Send",
@@ -138,7 +149,6 @@
     "reconnecting": "reconnecting…",
     "unreachable": "Couldn't reach the computer.",
     "sleeping": "sleeping",
-    "takeOver": "Take over",
     "open": "Open",
     "view": "View",
     "onComputer": "On the computer · {where}",
@@ -167,7 +177,8 @@
     "copied": "Copied",
     "copyFailed": "Copy failed. Select the password manually.",
     "close": "Close",
-    "hostManaged": "Managed by host"
+    "hostManaged": "Managed by host",
+    "burnLine": "Running now · {rate}/h · {hours} machine-hours to date"
   },
   "notice": {
     "recovering": "The bot host is restarting. This conversation resumes on its own.",
@@ -184,8 +195,8 @@
   },
   "usage": {
     "balanceLine": "Balance {balance} · {hours} machine-hours",
-    "weekLine": "This week {spend} · idle stop {idle}",
-    "liveLine": "Live from your Rayrun account · idle stop {idle}",
+    "weekLine": "This week {spend}",
+    "liveLine": "Live from your Rayrun account",
     "sampleBalance": "¥41.20",
     "sampleHours": "38.4",
     "sampleSpend": "¥6.80"
@@ -273,7 +284,6 @@
     "sub": "Account, usage, and the few settings this plugin owns.",
     "account": "Account",
     "usage": "Usage",
-    "notifications": "Notifications",
     "appearance": "Appearance",
     "rayrunAccount": "Rayrun account",
     "rayrunHint": "Token stays in the DSH vault · host side only",
@@ -296,15 +306,8 @@
     "usageLine": "Balance {balance} · {hours} machine-hours · {machines} machines",
     "usageConnect": "Connect Rayrun to see usage.",
     "usageFailed": "Could not read usage: {message}",
-    "idle": "Idle stop",
-    "idleHint": "Stop the computer when idle. Never destroy it.",
-    "idle15": "15 minutes",
-    "idle30": "30 minutes",
-    "idleOff": "Off",
     "lowBalance": "Low-balance reminder",
     "lowBalanceHint": "Show a notice when the balance drops below this.",
-    "notify": "Notifications",
-    "notifyHint": "Notify when a bot finishes or needs you.",
     "language": "Language",
     "languageHint": "Chinese is primary; English is available.",
     "langEn": "English",

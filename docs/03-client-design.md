@@ -107,10 +107,14 @@
 
 - 显示结构化字段：动作类型、目标、金额/收件人/URL、风险、来源（chat/background）、
   TTL；来源与目标用 chips，风险用一行短标签，元数据不再重复来源；不渲染机器提供的
-  HTML 或 markdown。
+  HTML 或 markdown。真实机器动作的风险文案按动作给出：stop 说明运行中的工作会停止，
+  pause 说明工作会暂停，start/resume 说明会消耗机时；不再统一写“离开你的电脑”。
 - 两个动作：Deny、Allow once；没有“永远允许”或默认放行。
-- 过期、已答、stale、错 bot 显示明确状态，并刷新列表。真实卡决定后提供 Continue bot，
-  由用户决定是否发送下一轮。
+- 过期、已答、stale、错 bot 显示明确状态，并刷新列表。真实卡在决定并完成本地执行
+  后才提供 Continue bot，由用户决定是否发送下一轮；执行中的卡只显示等待状态。
+- 云端回复里的审批 block 解析失败时，host 会移除该 block 并在回复中留下可见的
+  `rayrun-approval-parse-error` 标记；客户端替换为本地化的“审批请求无法解析，
+  未执行任何动作”，不静默吞掉失败。
 - 列表上的 attention 点标记“等你”；不显示未读 bait。
 - 本地侧对“实际显示的内容”重算 action hash；任何不匹配 = 拒绝。
 
@@ -141,8 +145,9 @@ attention、snippet 与时间。chat 来源没有 TTL，显示 `waits for you`�
 远程桌面）。key 只作为 `modelKey` 交给云电脑插件存成机器凭据，不进入 Bots 的 host 状态，
 成功后清空输入。按钮文案明确说明这是 Rayrun 账号上的计费机器，且 Bots 永不销毁它；
 未连接时按钮不可用，失败显示一句可执行错误。多台机器时 setup 和重复创建检查优先选
-`rayrun-bot`，其次选有 `desktop_url` 的机器，最后才用第一台；Open/Take over 不用这个
-猜测：host 从 bot 的 session 提供实际机器名（`bots.list.computers`），客户端只查
+`rayrun-bot`，其次优先 Running（有 `desktop_url` 再优先），再选有 `desktop_url` 的
+机器，最后才用第一台；Open 不用这个猜测：
+host 从 bot 的 session 提供实际机器名（`bots.list.computers`），客户端只查
 这个名字；找不到时按钮不可用并显示 host 管理/未连接状态。依赖层
 创建成功路径已在本机用真实 token 和 model key 验证（token 未进入沙箱）；Bots 页面内的
 已有机器采用和 Continue 已在本机 DSH 页面验证，创建按钮本身因账号已有机器尚未点击，
@@ -151,20 +156,22 @@ attention、snippet 与时间。chat 来源没有 TTL，显示 `waits for you`�
 每一步显示内联状态和“去修复”的链接；全部就绪时可跳过；依赖缺失或版本不匹配要给一句
 可执行的安装提示，不崩溃。
 
-**打开云电脑**：详情面板的 `Open` / `Take over` 调云电脑插件的 `overview`、
+**打开云电脑**：详情面板的 `Open` 调云电脑插件的 `overview`、
 `machine.action`（start/resume）、`machine.get` 轮询、`machine.desktopRepair` 和
 `machine.password`。连接未配置时
 提示先连接（`computer.connectFirst`）；没有机器、弹窗被拦截、启动超时、没有 desktop
 时各自一句可执行提示。成功时在新标签打开 `desktop_url`，密码只保存在页面状态里，用
-可关闭的提示条显示。两个按钮当前调用同一路径，`Take over` 的共享控制语义尚未实现。
-依赖层和 Bots 页面内的 Open 成功路径都已在本机 DSH web 页面用真实 token 和真实机器
-验证（启动、desktop 新窗口、密码提示条；token 未进入沙箱），见
+可关闭的提示条显示。v0.1 不提供 `Take over` 共享控制入口；它需要单独的共享控制语义，
+实现前不显示死按钮。依赖层和 Bots 页面内的 Open 成功路径都已在本机 DSH web 页面用
+真实 token 和真实机器验证（启动、desktop 新窗口、密码提示条；token 未进入沙箱），见
 [`10-rayrun-verification.md`](10-rayrun-verification.md) §3.1。
 
-机器 Running 时详情块显示 `Stop`。点击后先显示“停止云电脑？正在运行的工作会暂停。”，
-确认后调用 `machine.action`（`verb: "stop"`），轮询 `machine.get` 到 Stopped，显示
-“云电脑已停止。”；超时或失败各一句可执行提示。Bots 永不调用 `destroy`。页面层
-Open → live → Stop → sleeping 已在同一本机 DSH 页面验证。
+机器 Running 时详情块显示 `Stop`，并显示当前机时费率与累计机时（来自机器
+`pricing` / `usage`；Rayrun API 不提供 running since，不伪造该字段）。点击后先显示
+“停止云电脑？正在运行的工作会暂停。”，确认后调用 `machine.action`（`verb:
+"stop"`），轮询 `machine.get` 到 Stopped，显示“云电脑已停止。”；超时或失败各一句
+可执行提示。Bots 永不调用 `destroy`。页面层 Open → live → Stop → sleeping 已在同一
+本机 DSH 页面验证。
 
 **详情面板的真实数据**：Rayrun 连接成功后，电脑块显示云电脑插件 `overview` 里的真实
 机器名与状态（Running → live，Starting/Stopping → reconnecting，Stopped/Paused →
@@ -172,24 +179,33 @@ sleeping），用量块显示真实余额与机时；未连接时显示 `—` / 
 `Connect Rayrun to see usage.`，不再显示样本数字。`?computer=` 预览仍可覆盖状态；
 receipts、library、示例 bot 的 routines 和消息仍是页内样本；真实 bot 的 routines
 已接 host，可创建、启停和删除，轮询时 `routines.sync` 会把云端结果导入并在对话中
-显示，Preview 药丸继续标注页内样本。
+显示。真实 bot 不显示未接通的 Recent/Library，只保留 routines、电脑和用量区块；
+Library 标签仅在页内样本里出现。设置页隐藏尚未持久化的 idle stop 与通知开关，避免
+显示无效控件。
 
 **空 roster**：列表和中心区显示 `No bots yet` + `Create bot`；新建 bot 后进入空对话
-欢迎态并聚焦 composer，details 面板的 Recent / Upcoming / Library 显示空态和一句内容
-出现时机的提示，不放没有行为的按钮。可用 `?first-run=1` 预览（仅页内预览，不会连 host）；
+欢迎态并聚焦 composer，details 面板的 Upcoming 显示空态和一句内容出现时机的提示，
+不放没有行为的按钮；真实 bot 不显示 Recent/Library 空态。可用 `?first-run=1` 预览
+（仅页内预览，不会连 host）；
 `?computer=live|reconnecting|sleeping|unreachable` 预览电脑状态，`?low-balance=1`
 预览低余额提示。
 
-**失败状态**（每个一句提示 + 一个下一步）：
+**失败状态**（每个一句提示 + 一个下一步；错误行先显示人话，原始 code 以小字放在
+下面，不把 code 当作主文案）：
 
 - 依赖缺失/过旧（`E_DEP_MISSING` / `E_DEP_VERSION`）
 - 没有 Rayrun token（`E_TOKEN_REQUIRED`）
 - Rayrun 拒绝 token（401；setup 显示“检查 token 后重试”）
 - 没有 DeepSeek key（`E_KEY_REQUIRED`）
-- 电脑停止/忙碌（`E_MACHINE_STOPPED` / `E_MACHINE_BUSY`）
+- 电脑停止或不可用（`E_MACHINE_STOPPED`）：提示从详情或云电脑插件打开后再发送，
+  不再误写成“还没有云电脑”
+- 电脑忙碌（`E_MACHINE_BUSY`）
 - 云电脑创建失败或超时（显示 Rayrun 返回的原因）
 - bot runtime 恢复中（`E_HOST_DOWN`）
-- 审批过期/重放/未知（`E_APPROVAL_*`）
+- 客户端轮询超时（`E_TURN_POLL_TIMEOUT`）：页面停止等待，但云端回合可能仍在运行；
+  提示刷新查看结果，不写成服务器失败
+- 审批过期/重放/未知（`E_APPROVAL_*`）；后台审批过期且机器仍 Running 时，卡片提示
+  并给出带确认的 Stop
 - 余额低（`E_BALANCE_LOW`）
 - 网络离线
 - 依赖/契约版本不匹配

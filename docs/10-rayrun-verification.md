@@ -546,7 +546,7 @@
   Demo 横幅、`Demo` 徽标和逐条 `Sample` 标签，示例的审批/金额/日程已移除；
   `notice.cloud`、`user.you`、`setup.open` 生效；`setup.botBody`、
   `settings.pluginHint` 版本和页脚用户名修正。页面 smoke 通过；机器真相已在
-  Phase 2 修复；审批卡健壮性、死控件清理仍未做（Phase 3–4）。
+  Phase 2 修复；审批卡健壮性已在 Phase 3 修复；死控件清理已在 Phase 4 修复。
 - UX trust pass Phase 2 机器真相（2026-11-26，本机 DSH + Firefox）：session
   `session.json` 持久化实际机器名 `computer`，host `bots.list` 返回
   `computers[botId]`；客户端按名字在云电脑 overview 中查找机器。页面 smoke 用
@@ -558,6 +558,50 @@
   （`bots.list.computers[botId] === 'box'`）、`client-contract`（`machineFor`、
   `body.computers`、`disabled: !available`）覆盖数据契约；A4 的
   `dsh-ci-deploy-2` 错机显示由此修复。
+- UX trust pass Phase 3 审批卡（2026-11-26，本机 DSH + Firefox）：隔离
+  `DSH_HOME` 启动当前 checkout，seed 一个真实 bot 的 `approvals/req-*.json`（kind
+  `rayrun.machine.stop/start/resume/pause`，machine `smoke-box`）和另一个 bot 的
+  session/transcript（含 `[[rayrun-approval-parse-error]]`）。页面显示四种动作级
+  风险文案：stop“停止你的电脑；正在运行的工作会停止。”、pause“暂停你的电脑；
+  正在运行的工作会暂停。”、start/resume“启动/恢复你的电脑；运行期间消耗机时。”；
+  pending 卡有 Deny/Allow once。点击 Deny 后卡片 `data-state=denied`，只保留
+  “让 bot 继续”，没有其他 CTA。解析失败 bot 的线程显示“I can stop it. bot 的
+  审批请求无法解析，未执行任何动作。”，raw marker 与英文 fallback 均未出现。
+  parser 测试 6/6（含自然语言包裹的无效 block）；截图
+  `/tmp/bot/approval-phase3.png`、`/tmp/bot/approval-risk-copy.png`（临时文件）。
+  真实模型自然语言验收（2026-11-26，临时 profile + cloudHost，pin
+  `rayrun-bot-prod-e2e`，credential `dsh-model-sinnet`，localhost 代理且 token 只在
+  本机 DSH vault）：发送自然语言 “Please stop the cloud computer to save machine
+  time.”，bot 回复 “Stopping the cloud computer requires your approval, so this
+  request is now waiting for approval.”，`approvals.sync` imported=1，pending
+  proposal 为 `rayrun.machine.stop` on `rayrun-bot-prod-e2e`；Deny 后
+  `state=denied`、`execution=not_executed`，机器仍 Running。测试后删除本地 bot 和
+  机器 `.rayrun/bots/nl-approval-bot/`，未 stop/destroy 机器；临时 profile、代理、
+  DSH 和 cookie 已清理。
+- UX trust pass Phase 4 死控件与状态（2026-11-26，本机 DSH + Firefox）：隔离
+  `DSH_HOME` 启动当前 checkout，seed 一个真实 bot 详情和一个带
+  `E_MACHINE_STOPPED` system message 的 session。真实 bot 详情只有 Activity
+  区块，`Take over`、Library 标签、Recent 区块均不出现；错误行先显示“云电脑已停止
+  或不可用…”再以小字显示 `E_MACHINE_STOPPED`；设置导航只剩账号/用量/外观，页面
+  不含未持久化的 idle stop 与通知开关。截图 `/tmp/bot/phase4-cleanup.png`
+  （临时文件）。`client-contract` 覆盖 `showLibrary/showRecent`、错误文案映射、
+  `E_TURN_POLL_TIMEOUT`、费率字段和已删除控件；全量测试 27/27。另一个隔离 profile
+  用本地 fake Rayrun API 返回 Running machine（`pricing.vm_cents_per_hour: 8`、
+  `usage.vm_hours: 12.3`）和过期 background approval；页面显示“正在运行 ·
+  ¥0.08/小时 · 累计 12.3 机时”，过期卡提示机器可能仍在运行并给出“停止电脑”，
+  点击后出现“停止云电脑？正在运行的工作会停止。”及停止/取消，未确认执行；截图
+  `/tmp/bot/phase4-running.png`（临时文件）。fake API 只在本机，token 是占位值。
+  Rayrun API 不提供 running since，未实现该字段。
+- UX trust pass Phase 5 golden path（2026-11-26，本机 DSH + Firefox，临时 profile +
+  cloudHost pin `rayrun-bot-prod-e2e`，localhost 代理且真实 token 只在本机 DSH
+  vault）：干净名册 → `Set up Rayrun Bot` → dependency 步骤 → Rayrun 步骤（connection
+  已由 RPC 预配置，页面点 Skip；未在页面粘贴 token）→ 云电脑步骤（默认选中
+  Running 的 `rayrun-bot-prod-e2e`）→ 创建第一个 bot `Golden Path Bot` → 自然语言
+  请求 → bot 回复等待审批 → pending stop 卡 → 页面 Deny → `denied` + `Continue bot`。
+  机器保持 Running；随后删除本地 bot 和机器 `.rayrun/bots/golden-path-bot/`，临时
+  profile、代理、DSH、cookie 已清理。截图 `/tmp/bot/phase5-golden.png`（临时文件）。
+  与完整手工路径的差异是 token 步骤未在页面输入；另修 `pickMachine` 优先 Running
+  机器（避免默认选 Stopped 的 A3 机器），`client-contract` 覆盖。全量测试 27/27。
 - CI deploy egress 根因（2026-11-25）：`.github/scripts/deploy-rayrun.mjs` 创建
   沙盒时用了不在 Rayrun 创建 schema 中的 `egress_allow`；该字段被忽略，导致
   pnpm 下载 `ENOTFOUND`。在线沙盒验证 `PUT /v1/sandboxes/{id}/egress` 后同一

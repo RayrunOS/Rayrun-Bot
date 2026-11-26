@@ -62,7 +62,7 @@ Then, in Bots:
 1. Connect Rayrun. The token stays in the Harness vault on the host. The page does not receive it.
 2. Adopt a computer you already have, or create one. Creating a computer is billed by Rayrun. The page can stop a machine. It does not destroy one.
 3. If the computer does not already have a DeepSeek credential, the setup step can store your key as a Rayrun credential. The key is injected into the agent process. It does not go into the workspace or the chat.
-4. Create a bot and send a message. The sample bots shown before you create one are an in-memory preview. They do not run on a computer.
+4. Create a bot and send a message. The default roster starts empty; a `?preview=1` page shows sample bots as an in-memory demo. Samples never run on a computer.
 
 `dsh-rayrun-bots@0.1.1-alpha.1` is the npm `alpha` dist-tag. `latest` is still
 `0.1.0-alpha.0`. There is no stable release. An untagged

@@ -17,6 +17,7 @@ import { fileURLToPath } from 'node:url'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const client = readFileSync(path.join(root, 'client.js'), 'utf8')
+const proposal = readFileSync(path.join(root, 'cloud-host/lib/proposal.mjs'), 'utf8')
 const en = JSON.parse(readFileSync(path.join(root, 'locale/en.json'), 'utf8'))
 const zh = JSON.parse(readFileSync(path.join(root, 'locale/zh.json'), 'utf8'))
 
@@ -81,6 +82,17 @@ const required = [
   'approval.originBackground',
   'approval.riskOutside',
   'approval.riskIrreversible',
+  'approval.riskStart',
+  'approval.riskResume',
+  'approval.riskStop',
+  'approval.riskPause',
+  'approval.riskUnknown',
+  'approval.parseError',
+  'approval.expiredRunning',
+  'approval.stopComputer',
+  'approval.stopConfirm',
+  'approval.stopConfirmAction',
+  'approval.cancel',
   'chat.working',
   'chat.simulatedReply',
   'chat.simulatedSnippet',
@@ -91,6 +103,7 @@ const required = [
   'chat.runtimeUnavailable',
   'chat.historyFailed',
   'chat.turnTimeout',
+  'chat.machineStopped',
   'chat.turnInterrupted',
   'empty.threadReal',
   'draft.send',
@@ -123,7 +136,7 @@ const required = [
   'computer.reconnecting',
   'computer.sleeping',
   'computer.unreachable',
-  'computer.takeOver',
+  'computer.burnLine',
   'computer.hostManaged',
   'computer.open',
   'computer.noMachine',
@@ -252,6 +265,8 @@ assert.match(client, /machine\.create/)
 assert.match(client, /machines\.find\(\(item\) => item\.name === name\)/)
 assert.match(client, /const pickMachine =/)
 assert.match(client, /item\.remote_desktop && item\.desktop_url/)
+assert.match(client, /item\.status === 'Running' && item\.remote_desktop && item\.desktop_url/)
+assert.match(client, /machines\.find\(\(item\) => item\.status === 'Running'\)/)
 assert.match(client, /machineStatus\(machine\.status\)/)
 assert.match(client, /realOverview/)
 assert.match(client, /realMachine/)
@@ -259,6 +274,21 @@ assert.match(client, /body\.computers\?\.\[bot\.id\]/)
 assert.match(client, /machineFor\(selected\)/)
 assert.match(client, /disabled: !available/)
 assert.match(client, /computer: session\?\.computer \?\? bot\.computer/)
+assert.equal(client.includes('computer.takeOver'), false)
+assert.match(client, /const showLibrary = bot\.source !== 'real'/)
+assert.match(client, /const showRecent = bot\.source !== 'real'/)
+assert.match(client, /machine\?\.pricing\?\.vm_cents_per_hour/)
+assert.match(client, /computer\.burnLine/)
+assert.match(client, /E_MACHINE_STOPPED: 'chat\.machineStopped'/)
+assert.match(client, /E_TURN_POLL_TIMEOUT/)
+assert.match(client, /approval\.expiredRunning/)
+assert.match(client, /approval\.stopComputer/)
+assert.match(client, /h\('div', \{ className: 'rb-error-text' \}, entry\.text\)[\s\S]{0,200}h\('div', \{ className: 'rb-error-code' \}/)
+assert.match(client, /\['account', 'usage', 'appearance'\]/)
+assert.equal(client.includes('settings.idle'), false)
+assert.equal(client.includes('settings.notify'), false)
+assert.equal(client.includes('state.settings.idle'), false)
+assert.equal(client.includes('state.settings.notifications'), false)
 assert.match(client, /modelKey/)
 assert.match(client, /disabled: machineBusy \|\| !computerName\.trim\(\)/)
 assert.equal(client.includes('setup.keySave'), false)
@@ -310,6 +340,16 @@ assert.match(client, /approval\.originChat/)
 assert.match(client, /approval\.riskOutside/)
 assert.match(client, /targetKey/)
 assert.match(client, /risk: \['outside', 'irreversible'\]/)
+assert.match(client, /const APPROVAL_PARSE_ERROR = '\[\[rayrun-approval-parse-error\]\]'/)
+assert.match(proposal, /export const APPROVAL_PARSE_ERROR = '\[\[rayrun-approval-parse-error\]\]'/)
+assert.match(client, /kind: typeof kind === 'string' \? kind : null/)
+assert.match(client, /approval\.kind === 'rayrun\.machine\.start'/)
+assert.match(client, /approval\.kind === 'rayrun\.machine\.resume'/)
+assert.match(client, /approval\.kind === 'rayrun\.machine\.stop'/)
+assert.match(client, /approval\.kind === 'rayrun\.machine\.pause'/)
+assert.match(client, /approval\.riskUnknown/)
+assert.match(client, /t\('approval\.parseError'\)/)
+assert.match(client, /approval\.state === 'allowed' \|\| approval\.state === 'denied' \|\| approval\.state === 'execution-failed'/)
 assert.match(client, /function EmptyBlock/)
 assert.match(client, /'data-empty': name/)
 assert.match(client, /h\(EmptyBlock, \{ name: 'recent'/)

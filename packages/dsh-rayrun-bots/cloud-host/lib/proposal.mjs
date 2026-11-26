@@ -18,6 +18,8 @@ const MACHINE = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/
 const KINDS = new Set(['rayrun.machine.start', 'rayrun.machine.stop', 'rayrun.machine.pause', 'rayrun.machine.resume'])
 const ORIGINS = new Set(['chat', 'background'])
 const MARKER = /```rayrun-approval\s*\r?\n([\s\S]*?)\r?\n```/
+export const APPROVAL_PARSE_ERROR = '[[rayrun-approval-parse-error]]'
+const PARSE_ERROR_FALLBACK = 'The approval request in this reply could not be parsed. No action was requested.'
 
 function invalid(message) {
   return { text: message, proposal: null, error: message }
@@ -35,25 +37,30 @@ export function extractProposal(text, { botId, defaultMachine = '', origin = 'ch
   if (!ORIGINS.has(origin)) return invalid('proposal origin is invalid.')
   const match = MARKER.exec(reply)
   if (!match) return { text: reply, proposal: null, error: null }
+  const cleaned = `${reply.slice(0, match.index)}${reply.slice(match.index + match[0].length)}`.trim()
+  const reject = (message) => ({
+    text: `${cleaned ? `${cleaned}\n\n` : ''}${APPROVAL_PARSE_ERROR} ${PARSE_ERROR_FALLBACK}`,
+    proposal: null,
+    error: message,
+  })
   let value
   try {
     value = JSON.parse(match[1].trim())
   } catch {
-    return { text: reply, proposal: null, error: 'approval block is not valid JSON.' }
+    return reject('approval block is not valid JSON.')
   }
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return { text: reply, proposal: null, error: 'approval block must be an object.' }
+    return reject('approval block must be an object.')
   }
   for (const key of Object.keys(value)) {
-    if (key !== 'kind' && key !== 'machine') return { text: reply, proposal: null, error: `unsupported approval field: ${key}.` }
+    if (key !== 'kind' && key !== 'machine') return reject(`unsupported approval field: ${key}.`)
   }
-  if (!KINDS.has(value.kind)) return { text: reply, proposal: null, error: 'unsupported approval kind.' }
+  if (!KINDS.has(value.kind)) return reject('unsupported approval kind.')
   const machine = typeof value.machine === 'string' && value.machine.trim() !== ''
     ? value.machine.trim()
     : String(defaultMachine ?? '').trim()
-  if (!MACHINE.test(machine)) return { text: reply, proposal: null, error: 'approval machine is invalid.' }
+  if (!MACHINE.test(machine)) return reject('approval machine is invalid.')
   const id = `prop-${randomUUID()}`
-  const cleaned = `${reply.slice(0, match.index)}${reply.slice(match.index + match[0].length)}`.trim()
   return {
     text: cleaned || 'Waiting for approval.',
     proposal: {

@@ -20,6 +20,14 @@
 > start/stop/pause/resume、denial 与 Continue → 停机 outbox → 重启补传，以及下一轮
 > 结果 context 已 live 通过（2026-11-23）；其他动作类型和云端凭据动作尚未验证；
 > host-only `approvals.propose` 仍作为本地/测试 seam。
+>
+> **2026-11-26：** 审批卡风险文案改为动作级（stop/pause/start/resume），不再统一
+> 写“离开你的电脑”；云端 `rayrun-approval` block 解析失败时移除 block、写可见的
+> `rayrun-approval-parse-error` 标记，页面显示本地化“未执行任何动作”；Continue
+> 只在决定且本地执行结束后出现。确定性 parser 与页面 smoke 已通过；真实模型的
+> 自然语言验收也通过（2026-11-26，pending stop proposal，Deny 后
+> `execution=not_executed`，机器仍 Running），详见
+> [`10-rayrun-verification.md`](10-rayrun-verification.md)。
 
 ## 0. 与现有文档的关系
 

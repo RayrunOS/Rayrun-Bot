@@ -24,8 +24,8 @@ Settings 的语言行把选择写回 DSH。相关：[client-plan.md](../plans/cl
    的行，带最新摘要和时间。关注状态是一个小点，不是徽章墙。
 3. **对话是 markdown。** Bot 回复读起来像同事写的更新——短段落、列表、code span——
    不是卡片 dashboard。日期变化时出现时间戳分隔。
-4. **右面板属于 bot。** Activity（最近的 receipt）、Upcoming（routines）、Computer
-   （状态、预览、open/take over）和 Usage。标签页在 Activity 与 Library 之间切换。
+4. **右面板属于 bot。** Activity（Upcoming routines、Computer、Usage）。Library 是
+   P1；真实 bot 不显示未接通的 Recent/Library，只保留已接通的区块，不放假按钮。
 5. **审批是内联卡。** 外部动作停在对话里，带警告行和 `Deny` / `Allow once`；聊天列表
    给需要关注的 bot 显示一个点。v0.1 没有专用 inbox。
 6. **温暖、低对比的浅色。** 米白画布、白色卡片、细线边框、近黑文字；颜色只用于警告、
@@ -52,7 +52,7 @@ Settings 的语言行把选择写回 DSH。相关：[client-plan.md](../plans/cl
 │   docs finished    │  ┌─────────────────────────────────┐  │  Weekly digest ⏻ │
 │                    │  │ ⚠ Publish “Week 45 digest” …    │  │  COMPUTER        │
 │                    │  │ This shares data outside…       │  │  dsh-workspace   │
-│                    │  │          Deny   Allow once      │  │  [Open][Take over]│
+│                    │  │          Deny   Allow once      │  │  [Open][Stop]     │
 │ HY Haoyi           │  └─────────────────────────────────┘  │  USAGE           │
 │ Rayrun connected   │  ● Computer reconnecting… 5s          │  ¥41.20 · 38.4 h │
 │                    │  ┌─────────────────────────────────┐  │                  │
@@ -118,20 +118,20 @@ Harness”控件。DSH 仍是宿主；setup、Plugins、云电脑和 Workspaces 
 - **Computer** — 靠近底部的紧凑行，像参考一样：左边是名字和状态（`live` /
   `reconnecting…` / `sleeping` / `unreachable`；Rayrun 未配置时 `Not connected`），
   带彩色点（绿 / 琥珀 / 灰 / 红），右边是 44×30 的小屏幕缩略图，下面右对齐
-  `Open` / `Take over` / `Stop`。Stop 只在机器 live 时出现。v0.1 没有大预览；Open 经
-  依赖的同源 RPC 启动或恢复机器，等待 `Running`，修复桌面服务，在新标签页打开
-  `desktop_url`，并在可关闭的 toast 里显示桌面密码。Take over 目前走同一路径。Stop
-  先做内联确认，调用 `machine.action` 带 `stop`，永不 destroy。每种失败给一行：未连接、
-  没有机器、弹窗被拦截、启动超时、没有桌面、停止超时或停止失败。用
-  `?computer=live|reconnecting|sleeping|unreachable` 预览状态。
-- **Usage** — 余额、机时、本周花费、idle-stop 策略。余额低于阈值时变琥珀色，下方出现
-  低余额行；用 `?low-balance=1` 预览。
+  `Open` / `Stop`，Running 时再显示当前费率与累计机时。Stop 只在机器 live 时出现。
+  v0.1 没有大预览，也没有 `Take over` 共享控制入口；Open 经依赖的同源 RPC 启动或
+  恢复机器，等待 `Running`，修复桌面服务，在新标签页打开 `desktop_url`，并在可关闭的
+  toast 里显示桌面密码。Stop 先做内联确认，调用 `machine.action` 带 `stop`，永不
+  destroy。每种失败给一行：未连接、没有机器、弹窗被拦截、启动超时、没有桌面、停止
+  超时或停止失败。用 `?computer=live|reconnecting|sleeping|unreachable` 预览状态。
+- **Usage** — 余额、机时、本周花费。余额低于阈值时变琥珀色，下方出现低余额行；
+  用 `?low-balance=1` 预览。idle stop 与通知尚未持久化，不在 v0.1 设置里显示。
 
 **Library** 把产物分组为 Today / This week / Older；每行是文件、图片或链接，带一行
 灰色副标题。v0.1 为 P1。
 
-有内容的分区在标题旁显示条目数。Recent、Upcoming 或 Library 为空时渲染虚线块，带一行
-状态和一句关于内容何时出现的提示；不放无效按钮。
+有内容的分区在标题旁显示条目数。库内样本的 Recent/Upcoming/Library 为空时渲染虚线块；
+真实 bot 的 Recent/Library 尚未接通时不渲染空态，只显示已接通的区块，不放无效按钮。
 
 ### 2.4 新建 bot
 
@@ -177,11 +177,11 @@ Notifications、Appearance/language。Host 行显示同源健康状态，host �
 | --- | --- | --- |
 | 聊天列表栏：搜索、`+`、当前 bot、带摘要/时间的行 | 参考截图，2026-11-12 | 照搬 |
 | 中间对话是富 markdown，带时间戳分隔 | 参考截图 | 照搬：段落、列表、code span |
-| 右详情面板：资料、Activity/Library 标签页、routines、电脑 | 参考截图；`skills-routines-and-automations.md` | 照搬；增加 usage 分区，省略语音 |
+| 右详情面板：资料、Activity、routines、电脑 | 参考截图；`skills-routines-and-automations.md` | 照搬；增加 usage 分区，Library 推迟到 P1 |
 | 内联审批卡带 Deny / allow | `approvals-security-and-privacy.md:30-57` | `Deny` / `Allow once`；`Always allow` 推迟到 Auto Review（v0.2） |
 | 聊天卡等待，后台卡 30 分钟过期 | `approvals-security-and-privacy.md:72-83` | 通过 `origin` 字段照搬 |
 | 可编辑草稿标记 Needs approval | `chat-and-collaboration.md:89-107` | 照搬 |
-| 电脑预览带 open/take over | `computer-and-apps.md:31-63` | 详情面板底部的小电脑行，像参考一样，外加对话里的活动行 |
+| 电脑预览带 open/stop | `computer-and-apps.md:31-63` | 详情面板底部的小电脑行，像参考一样，外加对话里的活动行；共享控制推迟 |
 | 列表里的关注状态 | `settings-and-notifications.md:205-214` | 点：需要关注 / 未读 / 工作中 |
 | Bot 名字、图片、职责标签；轻人格 | `bots.md:5-6,77-103`；[bot-persona.md](bot-persona.md) | 照搬；v0.1 用字母头像 |
 | 语音聊天、群聊、移动端、共享 bot、市场、Vault、Auto Review | Grok Bot 产品表面 | 超出 v0.1（§8） |
@@ -205,12 +205,12 @@ Notifications、Appearance/language。Host 行显示同源健康状态，host �
 | `DetailsPanel` | 右栏 | C3 | 资料、标签页 |
 | `ReceiptCard` | activity | C3 | 任务、状态、时间、产物、花费 |
 | `RoutineRow` | upcoming | C4 | 标题、日程、开关 |
-| `ComputerRow` | 详情（底部） | C4 | 名字、状态、小缩略图、Open / Take over |
+| `ComputerRow` | 详情（底部） | C4 | 名字、状态、小缩略图、Open / Stop、费率 |
 | `ComputerActivityRow` | 对话 | C3 | 迷你屏幕、bot 在做什么、View |
-| `UsageBlock` | 详情 | C4 | 余额、机时、本周、idle stop |
+| `UsageBlock` | 详情 | C4 | 余额、机时、本周 |
 | `NewBotForm` | newbot | C2 | 名字、职责、指令、字母头像 |
 | `SetupWizard` | setup | C4 | 四个细步骤 |
-| `SettingsPage` | settings | C4 | account/usage/notifications/appearance |
+| `SettingsPage` | settings | C4 | account/usage/appearance |
 
 ## 5. 文案表（`locale/en.json` 的源）
 
@@ -250,7 +250,7 @@ Notifications、Appearance/language。Host 行显示同源健康状态，host �
 | `computer.reconnecting` | reconnecting… | 正在重连… |
 | `computer.sleeping` | sleeping | 休眠 |
 | `computer.unreachable` | Couldn't reach the computer. | 连不上电脑。 |
-| `computer.takeOver` | Take over | 接管 |
+| `computer.burnLine` | Running now · {rate}/h · {hours} machine-hours to date | 正在运行 · {rate}/小时 · 累计 {hours} 机时 |
 | `notice.recovering` | The bot host is restarting. This conversation resumes on its own. | Bot host 正在重启，这个会话会自动恢复。 |
 | `notice.sleeping` | Computer is sleeping. Open it in the cloud-computer plugin to wake it. | 电脑正在休眠。打开云电脑插件即可唤醒。 |
 | `cost.low` | Balance is low — top up in the Rayrun console. Stop is safe; destroy is not. | 余额偏低——去 Rayrun 控制台充值。停机会保留磁盘，销毁不会。 |

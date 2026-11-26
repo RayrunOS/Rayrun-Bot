@@ -127,6 +127,12 @@ execute it (ADR-019). `bin/propose.mjs` remains an optional shell path for
 images where the agent can run commands. The prompt uses the structured block;
 the live E2E did not rely on shell execution. A proposal file is not an authorization.
 
+If a reply contains a malformed or unsupported block, the host strips the block,
+writes no proposal, and appends the visible
+`[[rayrun-approval-parse-error]]` marker. The Bots client replaces that marker
+with a localized "approval request could not be parsed" notice, so a failed
+proposal is never silently swallowed.
+
 ```bash
 DSH_BOT_ROOT=/workspace/.rayrun DSH_BOT_ID=my-bot \
   node bin/propose.mjs --kind rayrun.machine.stop --machine my-computer

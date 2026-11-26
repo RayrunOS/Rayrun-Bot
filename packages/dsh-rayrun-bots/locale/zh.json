@@ -25,15 +25,15 @@
     "sendFailed": "发送失败，请重试。",
     "runtimeUnavailable": "云端 runtime 不可用。请安装 dsh-rayrun-computer 并重启 DSH。",
     "connectRayrun": "请先在设置里连接 Rayrun。",
-    "noComputer": "还没有云电脑。请先在设置里创建一台。",
     "machineBusy": "云电脑正忙，请稍后再试。",
     "balanceLow": "Rayrun 余额偏低，请先充值。",
     "queueFull": "排队消息太多，请等回复后再发送。",
     "messageInvalid": "这条消息无法发送：为空、过长或格式无效。",
     "historyFailed": "无法加载这段对话。刷新页面后重试。",
-    "turnTimeout": "云端回合时间过长。重新打开页面查看结果。",
+    "turnTimeout": "页面已停止等待，但云端回合可能仍在运行。刷新页面查看结果。",
     "turnInterrupted": "上一回合被中断了。请重新发送。",
-    "errorTitle": "回合失败"
+    "errorTitle": "回合失败",
+    "machineStopped": "云电脑已停止或不可用。请在详情面板或云电脑插件里打开它，再重新发送。"
   },
   "list": {
     "search": "搜索",
@@ -82,7 +82,18 @@
     "waitingSide": "等待执行",
     "failedSide": "执行失败",
     "continue": "让 bot 继续",
-    "continuePrompt": "根据上面的审批结果继续。不要重复已批准的动作；下一个受控动作前先询问。"
+    "continuePrompt": "根据上面的审批结果继续。不要重复已批准的动作；下一个受控动作前先询问。",
+    "riskStart": "启动你的电脑；运行期间消耗机时。",
+    "riskResume": "恢复你的电脑；运行期间消耗机时。",
+    "riskStop": "停止你的电脑；正在运行的工作会停止。",
+    "riskPause": "暂停你的电脑；正在运行的工作会暂停。",
+    "riskUnknown": "批准在你的电脑上执行一个受控动作。",
+    "parseError": "bot 的审批请求无法解析，未执行任何动作。",
+    "expiredRunning": "这个后台请求已过期，但云电脑可能仍在运行。",
+    "stopComputer": "停止电脑",
+    "stopConfirm": "停止云电脑？正在运行的工作会停止。",
+    "stopConfirmAction": "停止",
+    "cancel": "取消"
   },
   "draft": {
     "send": "发送",
@@ -138,7 +149,6 @@
     "reconnecting": "正在重连…",
     "unreachable": "连不上电脑。",
     "sleeping": "休眠",
-    "takeOver": "接管",
     "open": "打开",
     "view": "查看",
     "onComputer": "电脑上 · {where}",
@@ -167,7 +177,8 @@
     "copied": "已复制",
     "copyFailed": "复制失败，请手动选中密码。",
     "close": "关闭",
-    "hostManaged": "由 host 管理"
+    "hostManaged": "由 host 管理",
+    "burnLine": "正在运行 · {rate}/小时 · 累计 {hours} 机时"
   },
   "notice": {
     "recovering": "Bot host 正在重启，这个会话会自动恢复。",
@@ -184,8 +195,8 @@
   },
   "usage": {
     "balanceLine": "余额 {balance} · {hours} 机时",
-    "weekLine": "本周 {spend} · 空闲停机 {idle}",
-    "liveLine": "来自你的 Rayrun 账号 · 空闲停机 {idle}",
+    "weekLine": "本周 {spend}",
+    "liveLine": "来自你的 Rayrun 账号",
     "sampleBalance": "¥41.20",
     "sampleHours": "38.4",
     "sampleSpend": "¥6.80"
@@ -273,7 +284,6 @@
     "sub": "账号、用量，以及这个插件自己的少量设置。",
     "account": "账号",
     "usage": "用量",
-    "notifications": "通知",
     "appearance": "外观",
     "rayrunAccount": "Rayrun 账号",
     "rayrunHint": "token 存在 DSH 凭证库 · 只在 Host 侧",
@@ -296,15 +306,8 @@
     "usageLine": "余额 {balance} · {hours} 机时 · {machines} 台云电脑",
     "usageConnect": "连接 Rayrun 后显示用量。",
     "usageFailed": "读取用量失败：{message}",
-    "idle": "空闲停机",
-    "idleHint": "空闲时停止电脑，绝不销毁。",
-    "idle15": "15 分钟",
-    "idle30": "30 分钟",
-    "idleOff": "关闭",
     "lowBalance": "低余额提醒",
     "lowBalanceHint": "余额低于该值时显示提示。",
-    "notify": "通知",
-    "notifyHint": "Bot 完成或等你处理时通知。",
     "language": "语言",
     "languageHint": "以简体中文为主，可切换 English。",
     "langEn": "English",
