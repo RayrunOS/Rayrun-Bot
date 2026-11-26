@@ -278,6 +278,21 @@ check('update.check reads npm dist-tags through the host and is same-origin gate
   }
 })
 
+check('computer.update fails closed without explicit confirmation', async () => {
+  const reply = await request(hostFor().handler, {
+    body: JSON.stringify({
+      action: 'computer.update',
+      machine: 'box',
+      targetImage: 'deepseek-harness@1',
+      credential: 'dsh-model-test',
+    }),
+  })
+  assert.equal(reply.status, 409)
+  assert.equal(reply.json.ok, false)
+  assert.equal(reply.json.error.code, 'E_COMPUTER_UPDATE')
+  assert.match(reply.json.error.message, /explicit confirmation/)
+})
+
 check('the error envelope keeps its shape', async () => {
   const reply = await request(hostFor().handler, { action: 'shell.exec' })
   assert.deepEqual(Object.keys(reply.json).sort(), ['error', 'ok'])

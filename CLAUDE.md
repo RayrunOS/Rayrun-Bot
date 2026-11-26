@@ -144,6 +144,7 @@ node packages/dsh-rayrun-bots/test/rayrun-runtime.mjs
 node packages/dsh-rayrun-bots/test/rayrun-detached-runtime.mjs
 node packages/dsh-rayrun-bots/test/runtime-rpc.mjs
 node packages/dsh-rayrun-bots/test/update-check.mjs
+node packages/dsh-rayrun-bots/test/computer-update.mjs
 node packages/dsh-rayrun-bots/test/cloud-host-runtime.mjs
 node packages/dsh-rayrun-bots/test/host-projection.mjs
 node packages/dsh-rayrun-bots/test/cloud-host.mjs
@@ -198,6 +199,7 @@ node tools/rayrun-deploy/test/contract.mjs
 | `node packages/dsh-rayrun-bots/test/rayrun-detached-runtime.mjs` | `dsh.start/status/result` adapter：workspace、task id、reply.md、错误映射 |
 | `node packages/dsh-rayrun-bots/test/runtime-rpc.mjs` | 依赖 1.2+ `runtime.*` host RPC client：动作、无 token、创建语义、错误映射 |
 | `node packages/dsh-rayrun-bots/test/update-check.mjs` | 只读 npm dist-tags 更新检查：通道、semver、缺失 tag、失败关闭、命令生成 |
+| `node packages/dsh-rayrun-bots/test/computer-update.mjs` | 共用云电脑换镜像：确认、镜像/凭据校验、重命名/创建/迁移/停止、失败回滚 |
 | `node packages/dsh-rayrun-bots/test/cloud-host-runtime.mjs` | 云 host runtime adapter：机器启动、runtime ensure、projection、inbox/outbox、错误关闭 |
 | `node packages/dsh-rayrun-bots/test/host-projection.mjs` | host 资产 SHA-256 manifest、上传/回读校验、缓存、失败关闭 |
 | `node packages/dsh-rayrun-bots/test/cloud-host.mjs` | 云 host：队列、transcript、outbox、恢复、去重、日志脱敏 |

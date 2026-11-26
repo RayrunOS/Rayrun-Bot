@@ -188,6 +188,17 @@ npm_config_registry=https://registry.npmjs.org \
 重建 `bot-host` runtime，或在发布前补上 runtime 版本刷新。该缺口记录在
 [`12-status.md`](12-status.md)。
 
+**更新 Bot 的电脑**：Rayrun 没有 in-place rebuild API，Settings → Bot 的电脑 走
+replace 路径：旧机改名为 `<name>-pre-update-<time>`，用原名称、所选镜像和
+DeepSeek credential 创建新机，复制 `/workspace`、`/root/.config`、
+`/root/.local/share`、`/root/.mozilla`、`/root/.ssh`，然后停止旧机。旧机与新机都
+不会自动 destroy；失败时新机停止并改名，旧机名称恢复。该操作会创建计费机器，页面
+必须确认；账号里没有可用 credential 时不会执行。网络 egress 规则不复制；新机
+显式放行 `api.deepseek.com` 供 bot 模型使用，其他旧 egress 规则不保留，更新后
+需确认其他网络依赖。`computer-update.mjs`
+覆盖 fake 编排与回滚，真实 Rayrun 迁移仍需单独验收（见
+`10-rayrun-verification.md`）。
+
 ---
 
 ## 4. v0.1 目标三分钟路径（安装、RPC 与浏览器已验证；未计时签收）

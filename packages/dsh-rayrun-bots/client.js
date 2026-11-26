@@ -356,7 +356,25 @@ window.__ModuleLoader__.load({
     "copyUpdateCommand": "Copy command",
     "updateCopied": "Command copied",
     "updateCopyFailed": "Copy failed. Select the command manually.",
-    "updateRestart": "This is a notice only; nothing is downloaded or installed automatically."
+    "updateRestart": "This is a notice only; nothing is downloaded or installed automatically.",
+    "computer": "Bot's computer",
+    "computerHint": "Updates the computer all bots share. Files and sign-ins are kept; installed apps and packages are removed. All bots update together.",
+    "computerCurrent": "Current · {name} · {image}",
+    "computerUpdate": "Update",
+    "computerUpdateHint": "Creates a new computer from the selected image, copies the preserved paths, and stops the old computer for rollback. The old computer is never destroyed automatically.",
+    "computerImage": "New image",
+    "computerCredential": "DeepSeek credential",
+    "computerCredentialHint": "The new computer needs a credential to run cloud DSH turns.",
+    "computerNoCredential": "No DeepSeek credential is available. Add one before updating.",
+    "computerNoMachine": "No cloud computer found.",
+    "computerNotConnected": "Connect Rayrun to manage the bot computer.",
+    "computerBillable": "This creates a billable computer on your Rayrun account. The old one is stopped, not destroyed.",
+    "computerPreserved": "Preserved: /workspace, /root/.config, /root/.local/share, /root/.mozilla, /root/.ssh. Installed apps, packages, caches and other network egress rules are not copied; api.deepseek.com is allowed for the bot model.",
+    "computerConfirm": "Update computer (billable)",
+    "computerCancel": "Cancel",
+    "computerUpdating": "Updating… creating the new computer and copying data. Do not close this page.",
+    "computerUpdated": "Computer updated to {image}. The previous computer is {name} and is stopped.",
+    "computerUpdateFailed": "Could not update the computer: {message}"
   },
   "sample": {
     "user": {
@@ -768,7 +786,25 @@ window.__ModuleLoader__.load({
     "copyUpdateCommand": "复制命令",
     "updateCopied": "命令已复制",
     "updateCopyFailed": "复制失败，请手动选中命令。",
-    "updateRestart": "这里只做提示；页面不会自动下载或安装。"
+    "updateRestart": "这里只做提示；页面不会自动下载或安装。",
+    "computer": "Bot 的电脑",
+    "computerHint": "更新你的 Bot 共用的电脑。你的文件和登录信息会保留，但已安装的应用和软件包会被移除。所有 Bot 会一起更新。",
+    "computerCurrent": "当前 · {name} · {image}",
+    "computerUpdate": "更新",
+    "computerUpdateHint": "用所选镜像创建一台新电脑，复制保留的路径，并停止旧电脑以便回滚。旧电脑永远不会被自动销毁。",
+    "computerImage": "新镜像",
+    "computerCredential": "DeepSeek 凭据",
+    "computerCredentialHint": "新电脑需要凭据才能运行云端 DSH 回合。",
+    "computerNoCredential": "没有可用的 DeepSeek 凭据。请先添加一个。",
+    "computerNoMachine": "没有找到云电脑。",
+    "computerNotConnected": "连接 Rayrun 后才能管理 Bot 的电脑。",
+    "computerBillable": "这会在你的 Rayrun 账号上创建一台计费电脑。旧电脑会被停止，不会被销毁。",
+    "computerPreserved": "保留：/workspace、/root/.config、/root/.local/share、/root/.mozilla、/root/.ssh。已安装的应用、软件包、缓存和其他网络 egress 规则不会复制；新电脑会放行 bot 模型需要的 api.deepseek.com。",
+    "computerConfirm": "更新电脑（计费）",
+    "computerCancel": "取消",
+    "computerUpdating": "正在更新… 正在创建新电脑并复制数据。请不要关闭页面。",
+    "computerUpdated": "电脑已更新到 {image}。旧电脑 {name} 已停止。",
+    "computerUpdateFailed": "更新电脑失败：{message}"
   },
   "sample": {
     "user": {
@@ -1083,6 +1119,15 @@ window.__ModuleLoader__.load({
 .rb-srow .rb-l small { color: #8a93a3; font-size: 11px; }
 .rb-srow select, .rb-srow input { background: #fff; border: 1px solid #e4e8f0; border-radius: 8px; color: #0f172a; font-size: 12.5px; padding: 5px 8px; }
 .rb-update-row { align-items: flex-start; }
+.rb-computer-card { display: grid; gap: 8px; margin: 14px 0; padding: 14px 16px; border: 1px solid #e4e8f0; border-radius: 12px; background: #fff; }
+.rb-computer-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.rb-computer-title { color: #0e2050; font-size: 13px; font-weight: 650; }
+.rb-computer-desc { max-width: 560px; margin-top: 3px; color: #5b6472; font-size: 11.5px; line-height: 1.5; }
+.rb-computer-meta { color: #8a93a3; font-size: 11px; }
+.rb-computer-error { color: #b42318; }
+.rb-computer-form { display: grid; gap: 8px; padding-top: 10px; border-top: 1px solid #eef1f6; }
+.rb-computer-form .rb-line { flex-wrap: wrap; }
+.rb-computer-form select { max-width: 100%; padding: 5px 8px; border: 1px solid #e4e8f0; border-radius: 8px; background: #fff; color: #0f172a; font-size: 12.5px; }
 .rb-update-col { display: grid; gap: 6px; justify-items: end; min-width: 0; max-width: 60%; }
 .rb-update-msg { display: grid; gap: 4px; justify-items: end; color: #5b6472; font-size: 11.5px; text-align: right; }
 .rb-update-error { color: #b42318; }
@@ -3393,6 +3438,7 @@ window.__ModuleLoader__.load({
           lang: ctx.lang,
           state,
           host: ctx.host,
+          machineName: ctx.machine?.name ?? null,
           onRetryHost: ctx.onRetryHost,
           onTab: ctx.onSettingsTab,
           onChange: ctx.onSettings,
@@ -3789,11 +3835,18 @@ window.__ModuleLoader__.load({
       )
     }
 
-    function SettingsScreen({ t, lang, state, host, onRetryHost, onTab, onChange, onClose, onSetup }) {
+    function SettingsScreen({ t, lang, state, host, machineName, onRetryHost, onTab, onChange, onClose, onSetup }) {
       const shownLang = state.settings.lang || lang || 'zh'
       const [usage, setUsage] = useState(null)
       const [usageLoading, setUsageLoading] = useState(true)
       const [usageError, setUsageError] = useState('')
+      const [credentials, setCredentials] = useState(null)
+      const [computerOpen, setComputerOpen] = useState(false)
+      const [computerImage, setComputerImage] = useState('')
+      const [computerCredential, setComputerCredential] = useState('')
+      const [computerBusy, setComputerBusy] = useState(false)
+      const [computerError, setComputerError] = useState('')
+      const [computerResult, setComputerResult] = useState(null)
       const [update, setUpdate] = useState(null)
       const [updateBusy, setUpdateBusy] = useState(false)
       const [updateError, setUpdateError] = useState('')
@@ -3808,6 +3861,20 @@ window.__ModuleLoader__.load({
             if (!cancelled) setUsageError(String(error?.message ?? error))
           } finally {
             if (!cancelled) setUsageLoading(false)
+          }
+        })()
+        return () => {
+          cancelled = true
+        }
+      }, [])
+      useEffect(() => {
+        let cancelled = false
+        void (async () => {
+          try {
+            const body = await rayRpc('credentials.list')
+            if (!cancelled) setCredentials(Array.isArray(body.credentials) ? body.credentials : [])
+          } catch {
+            if (!cancelled) setCredentials([])
           }
         })()
         return () => {
@@ -3850,6 +3917,50 @@ window.__ModuleLoader__.load({
           setUpdateCopy('failed')
         }
       }
+      const machines = Array.isArray(usage?.machines)
+        ? usage.machines.filter((machine) => machine?.status !== 'Terminated')
+        : []
+      const currentMachine = (machineName
+        ? machines.find((machine) => machine.name === machineName || machine.id === machineName)
+        : null) || pickMachine(machines) || null
+      const images = [...new Set([
+        currentMachine?.agent,
+        usage?.defaults?.agent,
+        ...(Array.isArray(usage?.agents) ? usage.agents.map((agent) => agent?.ref) : []),
+      ].filter(Boolean))]
+      const availableCredentials = Array.isArray(credentials) ? credentials : []
+      const preferredCredential = availableCredentials.find((item) => /deepseek|model/i.test(String(item?.name ?? '')))?.name
+        || availableCredentials[0]?.name
+        || ''
+      const openComputer = () => {
+        setComputerOpen(true)
+        setComputerError('')
+        setComputerResult(null)
+        setComputerImage(currentMachine?.agent || usage?.defaults?.agent || images[0] || '')
+        setComputerCredential(preferredCredential)
+      }
+      const submitComputerUpdate = async () => {
+        if (computerBusy || !currentMachine || !computerImage || !computerCredential) return
+        setComputerBusy(true)
+        setComputerError('')
+        setComputerResult(null)
+        try {
+          const body = await hostRpc('computer.update', {
+            machine: currentMachine.name || currentMachine.id,
+            targetImage: computerImage,
+            credential: computerCredential,
+            confirmed: true,
+          })
+          setComputerResult(body)
+          setComputerOpen(false)
+          const overview = await rayRpc('overview').catch(() => null)
+          if (overview) setUsage(overview)
+        } catch (error) {
+          setComputerError(String(error?.message ?? error))
+        } finally {
+          setComputerBusy(false)
+        }
+      }
       const scrollTo = (id) => {
         onTab(id)
         const reduce = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -3872,7 +3983,7 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { className: 'rb-snav' },
-            ['account', 'usage', 'updates', 'appearance'].map((id) => h(
+            ['account', 'usage', 'computer', 'updates', 'appearance'].map((id) => h(
               'button',
               {
                 type: 'button',
@@ -3947,6 +4058,92 @@ window.__ModuleLoader__.load({
               'aria-label': t('settings.lowBalance'),
               onChange: (event) => onChange({ lowBalance: event.target.value.replace(/[^\d.]/g, '').slice(0, 8) }),
             }),
+          ),
+          h(
+            'section',
+            { id: 'rb-settings-computer', className: 'rb-computer-card' },
+            h(
+              'div',
+              { className: 'rb-computer-head' },
+              h(
+                'div',
+                null,
+                h('div', { className: 'rb-computer-title' }, t('settings.computer')),
+                h('div', { className: 'rb-computer-desc' }, t('settings.computerHint')),
+              ),
+              h('button', {
+                type: 'button',
+                className: 'rb-btn',
+                disabled: computerBusy || !usageConfigured || !currentMachine,
+                onClick: openComputer,
+              }, t('settings.computerUpdate')),
+            ),
+            usageLoading
+              ? h('div', { className: 'rb-computer-meta' }, t('settings.hostChecking'))
+              : !usageConfigured
+                ? h('div', { className: 'rb-computer-meta' }, t('settings.computerNotConnected'))
+                : !currentMachine
+                  ? h('div', { className: 'rb-computer-meta' }, t('settings.computerNoMachine'))
+                  : h('div', { className: 'rb-computer-meta' }, t('settings.computerCurrent', {
+                      name: currentMachine.name ?? currentMachine.id,
+                      image: currentMachine.agent || '—',
+                    })),
+            computerResult ? h('div', { className: 'rb-computer-meta' }, t('settings.computerUpdated', {
+              image: computerResult.machine?.image ?? computerImage,
+              name: computerResult.previous?.name ?? '—',
+            })) : null,
+            computerError ? h('div', { className: 'rb-computer-meta rb-computer-error', role: 'alert' }, t('settings.computerUpdateFailed', { message: computerError })) : null,
+            computerOpen && currentMachine ? h(
+              'div',
+              { className: 'rb-computer-form' },
+              h(
+                'label',
+                { className: 'rb-flabel' },
+                t('settings.computerImage'),
+                h('select', {
+                  value: computerImage,
+                  'aria-label': t('settings.computerImage'),
+                  onChange: (event) => setComputerImage(event.target.value),
+                }, images.map((image) => h('option', { key: image, value: image }, image))),
+              ),
+              h(
+                'label',
+                { className: 'rb-flabel' },
+                t('settings.computerCredential'),
+                h('select', {
+                  value: computerCredential,
+                  'aria-label': t('settings.computerCredential'),
+                  onChange: (event) => setComputerCredential(event.target.value),
+                }, availableCredentials.length
+                  ? availableCredentials.map((item) => h('option', { key: item.name, value: item.name }, item.name))
+                  : h('option', { value: '' }, t('settings.computerNoCredential'))),
+              ),
+              h('div', { className: 'rb-faint' }, t('settings.computerCredentialHint')),
+              availableCredentials.length === 0 ? h('div', { className: 'rb-computer-error', role: 'status' }, t('settings.computerNoCredential')) : null,
+              h('div', { className: 'rb-faint' }, t('settings.computerBillable')),
+              h('div', { className: 'rb-faint' }, t('settings.computerPreserved')),
+              h('div', { className: 'rb-faint' }, t('settings.computerUpdateHint')),
+              h(
+                'div',
+                { className: 'rb-line' },
+                h('button', {
+                  type: 'button',
+                  className: 'rb-btn rb-ghost',
+                  disabled: computerBusy,
+                  onClick: () => {
+                    setComputerOpen(false)
+                    setComputerError('')
+                  },
+                }, t('settings.computerCancel')),
+                h('button', {
+                  type: 'button',
+                  className: 'rb-btn rb-primary',
+                  disabled: computerBusy || !computerImage || !computerCredential,
+                  onClick: submitComputerUpdate,
+                }, computerBusy ? t('settings.computerUpdating') : t('settings.computerConfirm')),
+              ),
+              computerBusy ? h('div', { className: 'rb-faint' }, t('settings.computerUpdating')) : null,
+            ) : null,
           ),
           h(
             'div',

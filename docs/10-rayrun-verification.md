@@ -640,6 +640,19 @@
   worker session 的 provider 错误并提示添加 DeepSeek 凭据/重建电脑，Setup 明确新
   机器需要凭据；不新增自动唤醒。`rayrun-detached-runtime` 和 `client-contract`
   覆盖新文案。真实凭据补齐仍需用户操作或重建机器。
+- 电脑更新（2026-11-26，fake/UI）：`computer-update.mjs` 6/6 覆盖成功编排、
+  缺确认/缺镜像/缺凭据失败关闭、解包失败和创建失败的回滚；`rpc-contract` 34/34 覆盖
+  `computer.update` 必须显式确认。Settings 页面 smoke 显示共用电脑、当前镜像、
+  镜像/凭据选择、计费/保留路径/不 destroy 文案，截图
+  `/tmp/bot/computer-update-ui.png`（临时文件）。真实 Rayrun 基础迁移已通过
+  （2026-11-26）：`bot-update-smoke-20261126`（`deepseek-harness@1`，无 credential，
+  `/workspace/update-smoke.txt` 内容 `UPDATE_SMOKE_OK`）经 host `computer.update`
+  换机，新机仍用原名、镜像 `deepseek-harness@1`、credential `dsh-model-sinnet`，
+  文件与 `/workspace/.dsh` 均存在；旧机改名为
+  `bot-update-smoke-20261126-pre-update-mwxk96k8` 并 Stopped，新机验证后也
+  Stopped，两者都未 destroy。大 workspace、登录配置实际内容（本次旧机没有浏览器
+  登录数据）和其他 egress 规则仍未验收；新机显式放行 `api.deepseek.com`，旧机的
+  其他 egress 规则不复制，更新后需确认其他网络依赖。
 - CI deploy egress 根因（2026-11-25）：`.github/scripts/deploy-rayrun.mjs` 创建
   沙盒时用了不在 Rayrun 创建 schema 中的 `egress_allow`；该字段被忽略，导致
   pnpm 下载 `ENOTFOUND`。在线沙盒验证 `PUT /v1/sandboxes/{id}/egress` 后同一

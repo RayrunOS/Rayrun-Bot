@@ -195,6 +195,24 @@ const required = [
   'settings.usageLine',
   'settings.usageConnect',
   'settings.usageFailed',
+  'settings.computer',
+  'settings.computerHint',
+  'settings.computerCurrent',
+  'settings.computerUpdate',
+  'settings.computerUpdateHint',
+  'settings.computerImage',
+  'settings.computerCredential',
+  'settings.computerCredentialHint',
+  'settings.computerNoCredential',
+  'settings.computerNoMachine',
+  'settings.computerNotConnected',
+  'settings.computerBillable',
+  'settings.computerPreserved',
+  'settings.computerConfirm',
+  'settings.computerCancel',
+  'settings.computerUpdating',
+  'settings.computerUpdated',
+  'settings.computerUpdateFailed',
   'settings.updates',
   'settings.updatesHint',
   'settings.checkUpdates',
@@ -314,7 +332,12 @@ assert.match(client, /E_TURN_POLL_TIMEOUT/)
 assert.match(client, /approval\.expiredRunning/)
 assert.match(client, /approval\.stopComputer/)
 assert.match(client, /h\('div', \{ className: 'rb-error-text' \}, entry\.text\)[\s\S]{0,200}h\('div', \{ className: 'rb-error-code' \}/)
-assert.match(client, /\['account', 'usage', 'updates', 'appearance'\]/)
+assert.match(client, /\['account', 'usage', 'computer', 'updates', 'appearance'\]/)
+assert.match(client, /rayRpc\('credentials\.list'\)/)
+assert.match(client, /hostRpc\('computer\.update'/)
+assert.match(client, /confirmed: true/)
+assert.match(client, /settings\.computerUpdated/)
+assert.match(client, /settings\.computerConfirm/)
 assert.match(client, /hostRpc\('update\.check'\)/)
 assert.match(client, /navigator\.clipboard\.writeText\(update\.command\)/)
 assert.match(client, /settings\.updateAvailable/)
@@ -423,7 +446,7 @@ assert.match(client, /const composerRef = useRef\(null\)/)
 assert.match(client, /composerRef\.current\?\.focus\(\)/)
 assert.match(client, /function Conversation\(\{ t, state, bot, composerRef,/)
 assert.match(client, /ref: composerRef/)
-assert.match(client, /function SettingsScreen\(\{ t, lang, state, host, onRetryHost, onTab, onChange, onClose, onSetup \}\)/)
+assert.match(client, /function SettingsScreen\(\{ t, lang, state, host, machineName, onRetryHost, onTab, onChange, onClose, onSetup \}\)/)
 assert.match(client, /position: fixed; inset: var\(--dsh-frame-chrome-top, 0px\) 0 0 0; z-index: 10;/)
 assert.equal(client.includes('backToDsh'), false)
 assert.match(client, /child\.layout\.selectPanel\(PANEL_ID\)/)

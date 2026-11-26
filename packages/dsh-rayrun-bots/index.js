@@ -17,6 +17,7 @@
 import { readFileSync } from 'node:fs'
 import { createApprovalActionExecutor, normalizeApprovalAction } from './lib/approval-actions.js'
 import { createCloudApprovalBridge } from './lib/cloud-approval-bridge.js'
+import { openComputerUpdater } from './lib/computer-update.js'
 import { createCloudRoutineBridge } from './lib/cloud-routine-bridge.js'
 import { openApprovalExecutor } from './lib/approval-executor.js'
 import { openApprovalStore } from './lib/approvals.js'
@@ -178,6 +179,7 @@ const STATUS_BY_CODE = new Map([
   [ERROR_CODES.approvalReplay, 409],
   [ERROR_CODES.approvalUnknown, 404],
   [ERROR_CODES.approvalExecution, 502],
+  [ERROR_CODES.computerUpdate, 409],
 ])
 
 function sendActionError(res, error) {
@@ -363,6 +365,18 @@ export function apply(ctx, options = {}) {
     return sessions().runner.computer(botId) ?? null
   }
 
+  let computerUpdateService
+  function computerUpdater() {
+    if (computerUpdateService === undefined) {
+      computerUpdateService = openComputerUpdater({
+        rpc: createRayrunRpc({ getOrigin: () => webServer?.getOrigin?.() }),
+        getTools: () => ctx.get?.('tools'),
+        logger: ctx.logger,
+      })
+    }
+    return computerUpdateService
+  }
+
   let approvalService
   function approvals() {
     if (approvalService === undefined) {
@@ -472,6 +486,25 @@ export function apply(ctx, options = {}) {
                   sendJson(res, 200, { ok: true, ...result, command })
                 } catch (error) {
                   sendError(res, 502, ERROR_CODES.internal, `Could not check npm: ${String(error?.message ?? error).slice(0, 200)}`)
+                }
+                return
+              }
+              if (payload?.action === 'computer.update') {
+                try {
+                  if (hasStateRoot) {
+                    const service = sessions()
+                    const busy = service.bots.list().some((bot) => {
+                      const status = service.runner.status(bot.id)
+                      return status?.state === 'running' || status?.state === 'queued'
+                    })
+                    if (busy) {
+                      sendError(res, 409, ERROR_CODES.computerUpdate, 'Stop running or queued bot turns before updating the computer.')
+                      return
+                    }
+                  }
+                  sendJson(res, 200, { ok: true, ...(await computerUpdater().update(payload)) })
+                } catch (error) {
+                  sendActionError(res, error)
                 }
                 return
               }

@@ -90,7 +90,7 @@
 | sessions | `session.history`、`session.send`、`session.subscribe` |
 | approvals | `approvals.list`、`approvals.get`、`approvals.decide`、`approvals.history` |
 | cost | `cost.summary`、`cost.byBot`（P1） |
-| settings | `settings.get`、`settings.update`、`update.check`（只读 npm dist-tags） |
+| settings | `settings.get`、`settings.update`、`update.check`（只读 npm dist-tags）、`computer.update`（换镜像并迁移） |
 
 规则：
 
@@ -191,6 +191,16 @@ npm registry 的 dist-tags，返回当前/最新版本和可复制命令。它�
 profile，也不发送 Rayrun token 或 DeepSeek key；命令只更新 bots 包，云电脑插件保持
 已安装，由用户在终端执行，随后重启 DSH。云端 host 资产的版本刷新不在这个按钮范围
 内，发布含 `cloud-host/**` 变更时需要额外的 runtime 刷新。
+
+**设置 → Bot 的电脑**：显示所有 bot 共用的电脑、当前镜像和“更新”入口。点更新后
+先展开确认区：选择新镜像和 DeepSeek 凭据，明确提示这会创建计费电脑、旧电脑只
+停止不销毁、文件和登录配置保留、已安装应用/软件包和缓存不复制。确认后 host 执行
+`computer.update`：旧机改名为 `<name>-pre-update-<time>`，用原始名称和所选镜像/凭据
+创建新机，打包并复制 `/workspace`、`/root/.config`、`/root/.local/share`、
+`/root/.mozilla`、`/root/.ssh`，在新机解包，最后停止旧机；新机显式允许
+`api.deepseek.com`，其他旧 egress 规则不复制。有 running/queued bot 回合时 host 拒绝
+更新；任何一步失败都会把新机停止并改名、把旧机名称恢复，绝不自动 destroy。所有
+bot 继续使用原机器名，因此 session/cloudHost 的机器名不变。
 
 **空 roster**：列表和中心区显示 `No bots yet` + `Create bot`；新建 bot 后进入空对话
 欢迎态并聚焦 composer，details 面板的 Upcoming 显示空态和一句内容出现时机的提示，

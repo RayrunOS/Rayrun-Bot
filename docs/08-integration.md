@@ -258,6 +258,18 @@ PATCH /v1/sandboxes/{id}
 
 ---
 
+### 4.4 在已有电脑上刷新镜像（P1）
+
+Grok 式“更新 Bot 的电脑”需要保留 `/workspace` 和登录配置、移除已安装应用/软件包。
+Rayrun 当前没有 in-place rebuild/upgrade API；`POST /v1/builds` 只能构建新镜像，
+创建 sandbox 后会得到新的 workspace。Bots 的 fallback 是 Settings → Bot 的电脑：
+旧机改名、用原名称/目标镜像/credential 创建新机、打包复制保留路径、停止旧机；这会
+创建计费机器，并且大 workspace 的传输成本由用户承担。
+
+期望平台形状（任一）：`POST /sandboxes/{id}/rebuild` 带目标 image 并保留
+workspace/credential；或允许 `PATCH /sandboxes/{id}` 更新 image 并返回 job。没有
+这个能力前，Bots 不自动 destroy 旧机，失败时恢复旧机名称。
+
 ## 5. v0.2 / beta
 
 - **安全入站**：每实例主机名与证书、token/gateway 认证、WebSocket/SSE 透传。今天
@@ -322,6 +334,7 @@ SSO/SAML/SCIM、组织 RBAC、审计导出/SIEM、DPA 与数据驻留、marketpl
 | 机器忙碌 | `E_MACHINE_BUSY` |
 | 镜像不支持 detached（已知 shell oneshot，或读不到当前镜像） | `E_IMAGE_UNSUPPORTED` |
 | worker 结束但没有写 `reply.md` | `E_WORKER_NO_REPLY` |
+| 电脑更新未确认、校验失败或回滚 | `E_COMPUTER_UPDATE` |
 | bot runtime 不可用 | `E_HOST_DOWN` |
 
 完整错误表见 [`plans/mvp-plan.md`](plans/mvp-plan.md) §4.3；响应不得携带 token 或 key。

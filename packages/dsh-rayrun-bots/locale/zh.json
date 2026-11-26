@@ -328,7 +328,25 @@
     "copyUpdateCommand": "复制命令",
     "updateCopied": "命令已复制",
     "updateCopyFailed": "复制失败，请手动选中命令。",
-    "updateRestart": "这里只做提示；页面不会自动下载或安装。"
+    "updateRestart": "这里只做提示；页面不会自动下载或安装。",
+    "computer": "Bot 的电脑",
+    "computerHint": "更新你的 Bot 共用的电脑。你的文件和登录信息会保留，但已安装的应用和软件包会被移除。所有 Bot 会一起更新。",
+    "computerCurrent": "当前 · {name} · {image}",
+    "computerUpdate": "更新",
+    "computerUpdateHint": "用所选镜像创建一台新电脑，复制保留的路径，并停止旧电脑以便回滚。旧电脑永远不会被自动销毁。",
+    "computerImage": "新镜像",
+    "computerCredential": "DeepSeek 凭据",
+    "computerCredentialHint": "新电脑需要凭据才能运行云端 DSH 回合。",
+    "computerNoCredential": "没有可用的 DeepSeek 凭据。请先添加一个。",
+    "computerNoMachine": "没有找到云电脑。",
+    "computerNotConnected": "连接 Rayrun 后才能管理 Bot 的电脑。",
+    "computerBillable": "这会在你的 Rayrun 账号上创建一台计费电脑。旧电脑会被停止，不会被销毁。",
+    "computerPreserved": "保留：/workspace、/root/.config、/root/.local/share、/root/.mozilla、/root/.ssh。已安装的应用、软件包、缓存和其他网络 egress 规则不会复制；新电脑会放行 bot 模型需要的 api.deepseek.com。",
+    "computerConfirm": "更新电脑（计费）",
+    "computerCancel": "取消",
+    "computerUpdating": "正在更新… 正在创建新电脑并复制数据。请不要关闭页面。",
+    "computerUpdated": "电脑已更新到 {image}。旧电脑 {name} 已停止。",
+    "computerUpdateFailed": "更新电脑失败：{message}"
   },
   "sample": {
     "user": {

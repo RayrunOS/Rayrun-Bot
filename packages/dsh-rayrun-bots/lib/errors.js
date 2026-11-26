@@ -32,6 +32,7 @@ export const ERROR_CODES = Object.freeze({
   guestdOutdated: 'E_GUESTD_OUTDATED',
   imageUnsupported: 'E_IMAGE_UNSUPPORTED',
   workerNoReply: 'E_WORKER_NO_REPLY',
+  computerUpdate: 'E_COMPUTER_UPDATE',
   balanceLow: 'E_BALANCE_LOW',
   internal: 'E_INTERNAL',
 })
