@@ -22,16 +22,80 @@ import { RUNTIME_CONTRACT_VERSION } from './runtime.js'
 
 const TASK_TIMEOUT_SECONDS = 900
 const REPLY_MAX_BYTES = 64 * 1024
+const IMAGE_MAX = 128
 const DETACHED_IMAGE = 'deepseek-harness@1'
 const SHELL_ONESHOT_IMAGES = new Set(['dsh-bot@1', 'dsh-bot-devcheck@1'])
+const CONTROL = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/
 
-function assertImageSupported(machine) {
+/** The image name on a computer-plugin machine, or '' when it cannot be read. */
+function imageOf(machine) {
   const image = typeof machine?.agent === 'string' ? machine.agent.trim() : ''
+  if (!image || image.length > IMAGE_MAX || CONTROL.test(image)) return ''
+  return image
+}
+
+function imageFailure(image, message, sandbox) {
+  const error = rayrunFailure(ERROR_CODES.imageUnsupported, message)
+  if (image) error.image = image
+  if (sandbox) error.computer = sandbox
+  return error
+}
+
+/**
+ * Refuse a detached turn that cannot be shown to run a DSH worker.
+ * An empty image is refused too: the previous precheck treated that as
+ * "unknown" and still called `dsh.start`, which is how a shell-oneshot
+ * machine created a task and then failed with no `reply.md`.
+ */
+function assertImageSupported(image, sandbox) {
+  if (!image) {
+    throw imageFailure(
+      '',
+      `The cloud computer image could not be read, so no detached task was started. A shell-oneshot image (for example dsh-bot@1) does not start a DSH worker; use an image such as ${DETACHED_IMAGE}.`,
+      sandbox,
+    )
+  }
   if (!SHELL_ONESHOT_IMAGES.has(image)) return
-  throw rayrunFailure(
-    ERROR_CODES.imageUnsupported,
+  throw imageFailure(
+    image,
     `The cloud computer image "${image}" runs a shell oneshot, not a DSH worker; detached turns cannot run. Recreate the computer with an image such as ${DETACHED_IMAGE}.`,
+    sandbox,
   )
+}
+
+/**
+ * Read the image from overview, then from `machine.get` when overview omits it.
+ * A previously stored image for this same computer is the last resort, so a
+ * later blank overview can still reject a known oneshot without creating a task.
+ */
+async function resolveImage(rpc, machine, remembered) {
+  const sandbox = String(machine?.name || machine?.id || '')
+  let image = imageOf(machine)
+  if (image) {
+    assertImageSupported(image, sandbox)
+    return image
+  }
+  if (typeof machine?.id === 'string' && machine.id.trim() !== '') {
+    try {
+      const detail = await rpc.call('machine.get', { id: machine.id })
+      image = imageOf(detail?.machine)
+    } catch {
+      // Overview already proved the computer plugin is reachable. A failed
+      // detail read still means the image is unknown, so the turn stops below.
+      image = ''
+    }
+    if (image) {
+      assertImageSupported(image, sandbox)
+      return image
+    }
+  }
+  const rememberedImage = typeof remembered?.image === 'string' ? remembered.image : ''
+  const rememberedComputer = typeof remembered?.computer === 'string' ? remembered.computer : ''
+  if (rememberedImage && rememberedComputer && rememberedComputer === sandbox) {
+    image = imageOf({ agent: rememberedImage })
+  }
+  assertImageSupported(image, sandbox)
+  return image
 }
 
 function resultNames(body) {
@@ -53,9 +117,15 @@ export function createRayrunDetachedRuntime({ getOrigin, fetchImpl = globalThis.
     get available() {
       return Boolean(getOrigin?.())
     },
-    async start({ bot, text, history = [], messageSeq, botId, stateRoot } = {}) {
+    async start({
+      bot, text, history = [], messageSeq, botId, stateRoot,
+      rememberedImage, rememberedComputer,
+    } = {}) {
       const machine = await rpc.resolveMachine()
-      assertImageSupported(machine)
+      const image = await resolveImage(rpc, machine, {
+        image: rememberedImage,
+        computer: rememberedComputer,
+      })
       const localDir = ensureBotWorkspace(stateRoot, botId, { name: bot?.name })
       const objective = [
         buildPrompt({ bot, text, history, messageSeq }),
@@ -84,6 +154,7 @@ export function createRayrunDetachedRuntime({ getOrigin, fetchImpl = globalThis.
         localDir,
         timeoutSeconds: TASK_TIMEOUT_SECONDS,
         startedAt: typeof body.started_at === 'string' ? body.started_at : new Date().toISOString(),
+        image,
       }
     },
     async status({ detached } = {}) {
@@ -121,9 +192,11 @@ export function createRayrunDetachedRuntime({ getOrigin, fetchImpl = globalThis.
       try {
         info = statSync(replyPath)
       } catch {
+        const known = imageOf({ agent: detached?.image })
+        const named = known ? ` This computer image is "${known}".` : ''
         throw rayrunFailure(
           ERROR_CODES.workerNoReply,
-          `The cloud worker ended without writing reply.md (files: ${resultNames(body)}). If this computer image runs a shell oneshot (for example dsh-bot@1), it does not start a DSH worker; use an image such as ${DETACHED_IMAGE}.`,
+          `The cloud worker ended without writing reply.md (files: ${resultNames(body)}).${named} If this computer image runs a shell oneshot (for example dsh-bot@1), it does not start a DSH worker; use an image such as ${DETACHED_IMAGE}.`,
         )
       }
       if (!info.isFile() || info.size > REPLY_MAX_BYTES) {

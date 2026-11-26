@@ -34,7 +34,7 @@
     "turnInterrupted": "上一回合被中断了。请重新发送。",
     "errorTitle": "回合失败",
     "machineStopped": "云电脑已停止或不可用。请在详情面板或云电脑插件里打开它，再重新发送。",
-    "imageUnsupported": "这台云电脑的镜像不会启动 DSH worker，detached 回合无法运行。请用 deepseek-harness@1 之类的镜像重建云电脑。",
+    "imageUnsupported": "这台云电脑的镜像读不到，或者不会启动 DSH worker，因此没有创建任务。请使用 deepseek-harness@1 之类的镜像。",
     "workerNoReply": "云端 worker 结束了，但没有写 reply.md。如果这台电脑用的是 shell oneshot 镜像（例如 dsh-bot@1），请换成 deepseek-harness@1 之类的镜像。"
   },
   "list": {
@@ -180,7 +180,9 @@
     "copyFailed": "复制失败，请手动选中密码。",
     "close": "关闭",
     "hostManaged": "由 host 管理",
-    "burnLine": "正在运行 · {rate}/小时 · 累计 {hours} 机时"
+    "burnLine": "正在运行 · {rate}/小时 · 累计 {hours} 机时",
+    "image": "镜像 · {image}",
+    "imageUnread": "读不到这台云电脑的镜像。在能核对镜像之前，detached 回合不会启动。"
   },
   "notice": {
     "recovering": "Bot host 正在重启，这个会话会自动恢复。",

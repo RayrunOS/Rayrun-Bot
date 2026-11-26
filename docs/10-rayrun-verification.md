@@ -622,6 +622,16 @@
   `/v1/sandboxes`、`/v1/agents`、余额和用量查询，没有 `dsh.start` 或 sandbox
   动作。未在用户 Windows 环境复现（同一 `machine.agent`/`reply.md` 路径已覆盖），
   真实机器验证仍需用户环境。
+- Issue #4 复验缺口（2026-11-26，代码/测试）：本机把 bots 链到 `b346e7cd` 后，
+  同一台 `rayrun-bot-a3-20261125` 仍创建了 task，并以 `E_WORKER_NO_REPLY` 失败；
+  `bot.json` 和 task manifest 没有镜像字段，预检看不到空的 `machine.agent`。
+  补上的行为：overview 的 `agent` 为空时调用只读 `machine.get`；仍然为空且
+  session 没有这台电脑的已记录镜像时，`E_IMAGE_UNSUPPORTED` 且不调用
+  `dsh.start`。已知镜像写入 `session.json` 的 `image`。`rayrun-detached-runtime`
+  覆盖 oneshot、空白读取、`machine.get` 补全、记住的 oneshot 拒绝，以及不同
+  电脑的记住镜像不能放行；`session-runtime` 覆盖 image 在回复后保留，以及拒绝
+  后的 image/computer 会交给下一轮 precheck。不 stop、不 destroy、不自动换镜像。
+  未在用户 Windows 环境复验。
 - CI deploy egress 根因（2026-11-25）：`.github/scripts/deploy-rayrun.mjs` 创建
   沙盒时用了不在 Rayrun 创建 schema 中的 `egress_allow`；该字段被忽略，导致
   pnpm 下载 `ENOTFOUND`。在线沙盒验证 `PUT /v1/sandboxes/{id}/egress` 后同一

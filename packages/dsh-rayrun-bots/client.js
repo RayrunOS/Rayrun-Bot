@@ -62,7 +62,7 @@ window.__ModuleLoader__.load({
     "turnInterrupted": "The previous turn was interrupted. Send it again.",
     "errorTitle": "Turn failed",
     "machineStopped": "Your cloud computer is stopped or unavailable. Open it from Details or the cloud-computer plugin, then send again.",
-    "imageUnsupported": "This cloud computer image does not start a DSH worker, so detached turns cannot run. Recreate the computer with an image such as deepseek-harness@1.",
+    "imageUnsupported": "This cloud computer image is missing or does not start a DSH worker, so no task was started. Use an image such as deepseek-harness@1.",
     "workerNoReply": "The cloud worker ended without writing reply.md. If this computer uses a shell-oneshot image (for example dsh-bot@1), switch to an image such as deepseek-harness@1."
   },
   "list": {
@@ -208,7 +208,9 @@ window.__ModuleLoader__.load({
     "copyFailed": "Copy failed. Select the password manually.",
     "close": "Close",
     "hostManaged": "Managed by host",
-    "burnLine": "Running now · {rate}/h · {hours} machine-hours to date"
+    "burnLine": "Running now · {rate}/h · {hours} machine-hours to date",
+    "image": "Image · {image}",
+    "imageUnread": "Image could not be read. Detached turns will not start until it is known."
   },
   "notice": {
     "recovering": "The bot host is restarting. This conversation resumes on its own.",
@@ -472,7 +474,7 @@ window.__ModuleLoader__.load({
     "turnInterrupted": "上一回合被中断了。请重新发送。",
     "errorTitle": "回合失败",
     "machineStopped": "云电脑已停止或不可用。请在详情面板或云电脑插件里打开它，再重新发送。",
-    "imageUnsupported": "这台云电脑的镜像不会启动 DSH worker，detached 回合无法运行。请用 deepseek-harness@1 之类的镜像重建云电脑。",
+    "imageUnsupported": "这台云电脑的镜像读不到，或者不会启动 DSH worker，因此没有创建任务。请使用 deepseek-harness@1 之类的镜像。",
     "workerNoReply": "云端 worker 结束了，但没有写 reply.md。如果这台电脑用的是 shell oneshot 镜像（例如 dsh-bot@1），请换成 deepseek-harness@1 之类的镜像。"
   },
   "list": {
@@ -618,7 +620,9 @@ window.__ModuleLoader__.load({
     "copyFailed": "复制失败，请手动选中密码。",
     "close": "关闭",
     "hostManaged": "由 host 管理",
-    "burnLine": "正在运行 · {rate}/小时 · 累计 {hours} 机时"
+    "burnLine": "正在运行 · {rate}/小时 · 累计 {hours} 机时",
+    "image": "镜像 · {image}",
+    "imageUnread": "读不到这台云电脑的镜像。在能核对镜像之前，detached 回合不会启动。"
   },
   "notice": {
     "recovering": "Bot host 正在重启，这个会话会自动恢复。",
@@ -3157,7 +3161,18 @@ window.__ModuleLoader__.load({
               ),
             ) : null,
           ),
-          h(ComputerBlock, { t, status: computerStatus, name: computerName, machine, configured, available: Boolean(machine), managed: hostManaged, onComputer, onStop }),
+          h(ComputerBlock, {
+            t,
+            status: computerStatus,
+            name: computerName,
+            machine,
+            image: computerImageOf(machine, bot),
+            configured,
+            available: Boolean(machine),
+            managed: hostManaged,
+            onComputer,
+            onStop,
+          }),
           h(UsageBlock, { t, catalog, low, overview, configured, error: usageError, preview: usagePreview }),
         ) : h(
           'div',
@@ -3181,7 +3196,13 @@ window.__ModuleLoader__.load({
       )
     }
 
-    function ComputerBlock({ t, status, name, machine, configured, available, managed, onComputer, onStop }) {
+    function computerImageOf(machine, bot) {
+      const live = typeof machine?.agent === 'string' ? machine.agent.trim() : ''
+      const stored = typeof bot?.session?.image === 'string' ? bot.session.image.trim() : ''
+      return live || stored
+    }
+
+    function ComputerBlock({ t, status, name, machine, image, configured, available, managed, onComputer, onStop }) {
       const [confirming, setConfirming] = useState(false)
       useEffect(() => {
         if (status !== 'live') setConfirming(false)
@@ -3226,6 +3247,11 @@ window.__ModuleLoader__.load({
                 label,
               ),
               burnLine ? h('div', { className: 'rb-s' }, burnLine) : null,
+              image ? h('div', { className: 'rb-s' }, t('computer.image', { image })) : null,
+              !image && machine ? h('div', { className: 'rb-s' }, t('computer.imageUnread')) : null,
+              image && SHELL_ONESHOT_IMAGES.has(image)
+                ? h('p', { className: 'rb-say', role: 'status', style: { color: '#b45309' } }, t('setup.imageUnsupported'))
+                : null,
             ),
             h('div', { className: 'rb-thumb', 'aria-hidden': 'true' }),
           ),
@@ -3481,8 +3507,9 @@ window.__ModuleLoader__.load({
             ? t('setup.dependencyIncompatible', { version: dependency.version ?? '?', required: dependency.required ?? '' })
             : t('setup.dependencyStatus')
       const configured = connection?.connection?.configured === true
-      const machineImageUnsupported = Boolean(machine
-        && SHELL_ONESHOT_IMAGES.has(String(machine.agent ?? '').trim()))
+      const machineImage = String(machine?.agent ?? '').trim()
+      const machineImageUnsupported = Boolean(machine && SHELL_ONESHOT_IMAGES.has(machineImage))
+      const machineImageUnread = Boolean(machine && !machineImage)
       const canContinue = step === 0
         ? dependency?.status === 'ok'
         : step === 1
@@ -3692,6 +3719,7 @@ window.__ModuleLoader__.load({
                 h('p', { className: 'rb-say' }, t('setup.computerExisting', { name: machine.name ?? machine.id ?? '—' })),
                 h('p', { className: 'rb-faint' }, t('setup.computerExistingHint')),
                 machineImageUnsupported ? h('p', { className: 'rb-say', role: 'status', style: { color: '#b45309' } }, t('setup.imageUnsupported')) : null,
+                machineImageUnread ? h('p', { className: 'rb-say', role: 'status', style: { color: '#b45309' } }, t('computer.imageUnread')) : null,
               ) : null,
               !machineLoading && !machine && !configured ? h('p', { className: 'rb-say', role: 'status' }, t('setup.computerNeedsRayrun')) : null,
               !machineLoading && !machine && configured ? h(

@@ -139,6 +139,8 @@ const required = [
   'computer.sleeping',
   'computer.unreachable',
   'computer.burnLine',
+  'computer.image',
+  'computer.imageUnread',
   'computer.hostManaged',
   'computer.open',
   'computer.noMachine',
@@ -302,6 +304,10 @@ assert.match(client, /const SHELL_ONESHOT_IMAGES = new Set\(\['dsh-bot@1', 'dsh-
 assert.match(client, /SHELL_ONESHOT_IMAGES\.has\(configuredAgent\)/)
 assert.match(client, /machineImageUnsupported/)
 assert.match(client, /t\('setup\.imageUnsupported'\)/)
+assert.match(client, /t\('computer\.image', \{ image \}\)/)
+assert.match(client, /t\('computer\.imageUnread'\)/)
+assert.match(client, /bot\?\.session\?\.image/)
+assert.match(client, /machineImageUnread/)
 assert.match(client, /agent,\s*\n\s*cpu_cores:/)
 assert.match(client, /E_TURN_POLL_TIMEOUT/)
 assert.match(client, /approval\.expiredRunning/)

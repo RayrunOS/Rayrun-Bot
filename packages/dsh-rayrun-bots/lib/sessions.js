@@ -37,6 +37,7 @@ export const SESSION_ORIGINS = Object.freeze(['chat', 'routine'])
 const CONTROL = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/
 const DETACHED_TASK = /^[A-Za-z0-9._-]{1,80}$/
 const DETACHED_TIMEOUT_MAX = 3600
+const IMAGE_MAX = 128
 /** Credential shapes that must never enter the transcript through an error line. */
 const SECRET = /(Bearer\s+)[A-Za-z0-9._~+/=-]+|(sk-)[A-Za-z0-9_-]{16,}|((?:RAYRUN_TOKEN|DEEPSEEK_API_KEY|DEEPSEEK_KEY)\s*[=:]\s*)\S+/gi
 
@@ -86,6 +87,12 @@ function textOf(value, field = 'text') {
     fail(`${field} exceeds ${MESSAGE_MAX_BYTES} bytes.`, { field })
   }
   return result
+}
+
+function imageValue(value, field) {
+  const image = textOf(value, field)
+  if ([...image].length > IMAGE_MAX) fail(`${field} is too long.`, { field })
+  return image
 }
 
 function originOf(value, field) {
@@ -139,12 +146,14 @@ function validateDetached(value) {
   if (!Number.isInteger(value.timeoutSeconds) || value.timeoutSeconds < 1 || value.timeoutSeconds > DETACHED_TIMEOUT_MAX) {
     fail(`detached.timeoutSeconds must be an integer from 1 through ${DETACHED_TIMEOUT_MAX}.`, { field: 'detached.timeoutSeconds' })
   }
+  const image = value.image === undefined ? undefined : imageValue(value.image, 'detached.image')
   return {
     taskId: value.taskId,
     sandbox,
     localDir,
     startedAt: isoOf(value.startedAt, 'detached.startedAt'),
     timeoutSeconds: value.timeoutSeconds,
+    ...(image === undefined ? {} : { image }),
   }
 }
 
@@ -174,6 +183,7 @@ function validateSession(value, botId) {
   }
   const detached = value.detached === undefined ? undefined : validateDetached(value.detached)
   const computer = value.computer === undefined ? undefined : textOf(value.computer, 'computer')
+  const image = value.image === undefined ? undefined : imageValue(value.image, 'image')
   return {
     schema: SESSION_SCHEMA_VERSION,
     botId,
@@ -184,6 +194,7 @@ function validateSession(value, botId) {
     createdAt,
     updatedAt,
     ...(computer === undefined ? {} : { computer }),
+    ...(image === undefined ? {} : { image }),
     ...(detached === undefined ? {} : { detached }),
     ...(value.error === undefined ? {} : { error: { code: value.error.code, message: value.error.message } }),
   }
@@ -200,6 +211,7 @@ function publicSession(session) {
     createdAt: session.createdAt,
     updatedAt: session.updatedAt,
     ...(session.computer === undefined ? {} : { computer: session.computer }),
+    ...(session.image === undefined ? {} : { image: session.image }),
     ...(session.detached === undefined ? {} : {
       detached: { taskId: session.detached.taskId, startedAt: session.detached.startedAt },
     }),
@@ -209,6 +221,30 @@ function publicSession(session) {
 
 function computerField(session) {
   return session.computer === undefined ? {} : { computer: session.computer }
+}
+
+function imageField(session) {
+  return session.image === undefined ? {} : { image: session.image }
+}
+
+/** An image annotation on a failure, or undefined when it is absent or unusable. */
+function notedImage(error) {
+  if (typeof error?.image !== 'string') return undefined
+  try {
+    return imageValue(error.image, 'image')
+  } catch {
+    return undefined
+  }
+}
+
+/** A computer name annotation on a failure, or undefined when it is absent or unusable. */
+function notedComputer(error) {
+  if (typeof error?.computer !== 'string') return undefined
+  try {
+    return textOf(error.computer, 'computer')
+  } catch {
+    return undefined
+  }
 }
 
 function readSession(stateRoot, botId) {
@@ -400,6 +436,7 @@ export function openSessionStore(stateRoot) {
       createdAt: session.createdAt,
       updatedAt: at,
       ...computerField(session),
+      ...imageField(session),
       ...(session.detached === undefined ? {} : { detached: session.detached }),
     }
     writeSession(root, next)
@@ -422,6 +459,7 @@ export function openSessionStore(stateRoot) {
       createdAt: session.createdAt,
       updatedAt: at,
       ...computerField(session),
+      ...imageField(session),
     }
     writeSession(root, next)
     return { session: publicSession(next), item }
@@ -444,6 +482,7 @@ export function openSessionStore(stateRoot) {
       createdAt: session.createdAt,
       updatedAt: at,
       ...computerField(session),
+      ...imageField(session),
     }
     writeSession(root, next)
     return { session: publicSession(next), message }
@@ -458,6 +497,8 @@ export function openSessionStore(stateRoot) {
       ? error.code
       : ERROR_CODES.internal
     const detail = redact(error?.message ?? error) || 'The turn failed.'
+    const noted = notedImage(error)
+    const computer = notedComputer(error)
     const message = { seq: session.lastSeq + 1, at, role: 'system', code, text: detail }
     appendMessage(root, botId, message)
     const next = {
@@ -469,7 +510,8 @@ export function openSessionStore(stateRoot) {
       queue: session.queue,
       createdAt: session.createdAt,
       updatedAt: at,
-      ...computerField(session),
+      ...(computer === undefined ? computerField(session) : { computer }),
+      ...(noted === undefined ? imageField(session) : { image: noted }),
       error: { code, message: detail },
     }
     writeSession(root, next)
@@ -496,6 +538,7 @@ export function openSessionStore(stateRoot) {
       createdAt: session.createdAt,
       updatedAt: at,
       computer: record.sandbox,
+      ...(record.image === undefined ? imageField(session) : { image: record.image }),
       detached: record,
     }
     writeSession(root, next)
@@ -511,6 +554,11 @@ export function openSessionStore(stateRoot) {
   /** The last machine this bot ran on, if known. */
   function computer(id) {
     return load(id)?.computer ?? null
+  }
+
+  /** The last known image for this bot's computer, if one was recorded. */
+  function image(id) {
+    return load(id)?.image ?? null
   }
 
   /** Sessions whose cloud task must be resumed by this host process. */
@@ -589,6 +637,7 @@ export function openSessionStore(stateRoot) {
           createdAt: session.createdAt,
           updatedAt: at,
           ...computerField(session),
+          ...imageField(session),
           error: { code: ERROR_CODES.hostDown, message: detail },
         })
       } else if (session.state === 'queued' && session.queue.length === 0) {
@@ -602,6 +651,7 @@ export function openSessionStore(stateRoot) {
           createdAt: session.createdAt,
           updatedAt: new Date().toISOString(),
           ...computerField(session),
+          ...imageField(session),
         })
       }
     }
@@ -609,7 +659,7 @@ export function openSessionStore(stateRoot) {
 
   return {
     status, history, enqueue, shift, complete, failTurn, recover,
-    attach, detached, detachedSessions, finishDetached, failDetached, computer,
+    attach, detached, detachedSessions, finishDetached, failDetached, computer, image,
   }
 }
 
@@ -672,6 +722,8 @@ export function openSessionRunner({ stateRoot, runtime, getBot, logger, detached
             origin: next.item.origin,
             botId,
             stateRoot,
+            rememberedImage: store.image(botId),
+            rememberedComputer: store.computer(botId),
           })
           if (typeof started?.taskId !== 'string' || started.taskId.trim() === ''
             || typeof started?.sandbox !== 'string' || started.sandbox.trim() === ''

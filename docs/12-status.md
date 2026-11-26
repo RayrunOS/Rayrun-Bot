@@ -274,6 +274,15 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
   fake Rayrun API 的 `agent: dsh-bot@1` 机器做 host 级验证：第一次轮询即
   `failed`/`E_IMAGE_UNSUPPORTED`，没有发出 `dsh.start` 或 sandbox 动作。未在用户
   Windows 环境复现，按同一 `machine.agent`/`reply.md` 路径修复。
+- Issue #4 复验（2026-11-26）：上一版只在 `machine.agent` 命中已知 oneshot 时
+  拦截，空的 `agent` 仍会 `dsh.start`，本机 `session.json` 也不记镜像，所以
+  `rayrun-bot-a3-20261125` 上的复验仍创建了 task 并以 `E_WORKER_NO_REPLY` 失败。
+  现在 overview 没有镜像时再读 `machine.get`；两边都读不到、且 session 没有这台
+  电脑已记录的镜像时，返回 `E_IMAGE_UNSUPPORTED` 且不创建 task。已知镜像（包括
+  预检拒绝的 oneshot）写入 session 的 `image` 和 `computer`，下一轮空白读取会
+  用它拒绝同一台电脑上的 oneshot。未知但读得到的镜像仍然放行。不自动更换已有
+  机器的镜像。详情和 Setup 会显示镜像名，读不到时显示警告。未在用户 Windows
+  环境复验。
 - 干净 npm 安装 golden path（2026-11-25，本机 DSH `0.2.2-rc.5`，官方 registry）：
   临时 `DSH_HOME` 加 web-app 后一条 `dsh plugin add dsh-rayrun-computer@1.2.1
   dsh-rayrun-bots@0.1.1-alpha.1` 完成安装，两个 bundle 都被选中；health 报

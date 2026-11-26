@@ -210,7 +210,10 @@ profile，也不发送 Rayrun token 或 DeepSeek key；命令只更新 bots 包�
   不再误写成“还没有云电脑”
 - 镜像不支持 detached（`E_IMAGE_UNSUPPORTED`）：已知 shell oneshot 镜像
   （`dsh-bot@1`、`dsh-bot-devcheck@1`）在 `dsh.start` 前失败，提示换成
-  `deepseek-harness@1` 之类的镜像；Setup 也会对已有这类机器显示警告
+  `deepseek-harness@1` 之类的镜像。overview 没有 `agent` 时再读一次
+  `machine.get`；仍然读不到、且本机 session 也没有这台电脑的镜像名时，同样在
+  创建 task 前失败。已知镜像会写进 `session.json` 的 `image`，详情和 Setup
+  能看到它；Setup 对已有 oneshot 镜像显示警告，不会自动更换镜像
 - worker 结束但没有写 `reply.md`（`E_WORKER_NO_REPLY`）：失败关闭，不收集旧回复；
   提示检查镜像 oneshot 是否启动 DSH
 - 电脑忙碌（`E_MACHINE_BUSY`）

@@ -514,6 +514,93 @@ check('corrupt session or transcript state fails closed', async () => {
   expectCode(() => third.runner.history(third.bot.id), ERROR_CODES.sessionInvalid)
 })
 
+check('a detached start records the computer image and keeps it after the reply', async () => {
+  const root = mkdtempSync(path.join(tmpdir(), 'rayrun-bots-session-'))
+  roots.push(root)
+  const bots = openBotStore(root)
+  const bot = bots.create({ name: 'Echo Bot', label: 'Echoes messages' })
+  const localDir = path.join(root, 'bots', bot.id, 'workspace')
+  let seen = null
+  const runner = openSessionRunner({
+    stateRoot: root,
+    runtime: {
+      contract: 1,
+      name: 'fake-detached',
+      available: true,
+      detached: true,
+      async start(input) {
+        seen = input
+        return {
+          taskId: 'task-1',
+          sandbox: 'rayrun-bot',
+          localDir,
+          timeoutSeconds: 900,
+          image: 'deepseek-harness@1',
+        }
+      },
+      async status() { return { running: false } },
+      async collect() { return { text: 'pong' } },
+    },
+    getBot: bots.get,
+    detachedPollMs: 10,
+  })
+  runner.send(bot.id, 'hello')
+  await until(() => runner.status(bot.id)?.state === 'idle', 'image was not kept on the idle session')
+  const status = runner.status(bot.id)
+  assert.equal(status.image, 'deepseek-harness@1')
+  assert.equal(status.computer, 'rayrun-bot')
+  assert.equal(status.detached, undefined)
+  const reloaded = openSessionStore(root)
+  assert.equal(reloaded.image(bot.id), 'deepseek-harness@1')
+  assert.equal(reloaded.computer(bot.id), 'rayrun-bot')
+  assert.equal(seen.rememberedImage, null)
+  assert.equal(seen.rememberedComputer, null)
+  runner.close()
+})
+
+check('a refused image is stored and offered to the next precheck for the same computer', async () => {
+  const root = mkdtempSync(path.join(tmpdir(), 'rayrun-bots-session-'))
+  roots.push(root)
+  const bots = openBotStore(root)
+  const bot = bots.create({ name: 'Echo Bot', label: 'Echoes messages' })
+  const seen = []
+  const runner = openSessionRunner({
+    stateRoot: root,
+    runtime: {
+      contract: 1,
+      name: 'fake-detached',
+      available: true,
+      detached: true,
+      async start(input) {
+        seen.push(input)
+        const error = new Error('The cloud computer image "dsh-bot@1" runs a shell oneshot.')
+        error.code = ERROR_CODES.imageUnsupported
+        error.image = 'dsh-bot@1'
+        error.computer = 'rayrun-bot-a3-20261125'
+        throw error
+      },
+      async status() { return { running: false } },
+      async collect() { return { text: 'unused' } },
+    },
+    getBot: bots.get,
+    detachedPollMs: 10,
+  })
+  runner.send(bot.id, 'hello')
+  await until(() => runner.status(bot.id)?.state === 'failed', 'the refused image was not stored')
+  await runner.settled(bot.id)
+  const failed = runner.status(bot.id)
+  assert.equal(failed.image, 'dsh-bot@1')
+  assert.equal(failed.computer, 'rayrun-bot-a3-20261125')
+  assert.equal(failed.error.code, ERROR_CODES.imageUnsupported)
+  runner.send(bot.id, 'again')
+  await until(() => seen.length === 2, 'the next turn did not reach precheck')
+  await runner.settled(bot.id)
+  assert.equal(seen[1].rememberedImage, 'dsh-bot@1')
+  assert.equal(seen[1].rememberedComputer, 'rayrun-bot-a3-20261125')
+  assert.equal(runner.status(bot.id).image, 'dsh-bot@1')
+  runner.close()
+})
+
 check('deleting a bot removes its session and transcript', async () => {
   const { root, bots, bot, runner } = setup(async () => ({ text: 'pong' }))
   runner.send(bot.id, 'ping')

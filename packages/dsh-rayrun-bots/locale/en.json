@@ -34,7 +34,7 @@
     "turnInterrupted": "The previous turn was interrupted. Send it again.",
     "errorTitle": "Turn failed",
     "machineStopped": "Your cloud computer is stopped or unavailable. Open it from Details or the cloud-computer plugin, then send again.",
-    "imageUnsupported": "This cloud computer image does not start a DSH worker, so detached turns cannot run. Recreate the computer with an image such as deepseek-harness@1.",
+    "imageUnsupported": "This cloud computer image is missing or does not start a DSH worker, so no task was started. Use an image such as deepseek-harness@1.",
     "workerNoReply": "The cloud worker ended without writing reply.md. If this computer uses a shell-oneshot image (for example dsh-bot@1), switch to an image such as deepseek-harness@1."
   },
   "list": {
@@ -180,7 +180,9 @@
     "copyFailed": "Copy failed. Select the password manually.",
     "close": "Close",
     "hostManaged": "Managed by host",
-    "burnLine": "Running now · {rate}/h · {hours} machine-hours to date"
+    "burnLine": "Running now · {rate}/h · {hours} machine-hours to date",
+    "image": "Image · {image}",
+    "imageUnread": "Image could not be read. Detached turns will not start until it is known."
   },
   "notice": {
     "recovering": "The bot host is restarting. This conversation resumes on its own.",

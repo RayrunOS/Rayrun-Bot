@@ -111,7 +111,7 @@ $DSH_HOME/state/rayrun-bot/
 ├── schema.json              # { schema: 1, pluginVersion, createdAt }
 ├── bots/<botId>/
 │   ├── bot.json             # v0.1 本地意图源；runtime 落地后同步到机器
-│   ├── session.json         # 本地 session 状态与队列
+│   ├── session.json         # 本地 session 状态与队列；已知时含云电脑镜像名 `image`
 │   ├── transcript.jsonl     # 用户/bot/system 消息，只追加
 │   ├── routines.json        # routine 定义、间隔、开关和下一次运行；用户意图 + 本地调度状态
 │   ├── routine-results/     # 从云端导入的 routine 展示历史，一 task 一文件；不改 session.json
