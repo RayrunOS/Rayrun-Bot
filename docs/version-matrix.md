@@ -80,7 +80,7 @@ Setup/电脑更新目标镜像随 runtime 变为 `dsh-bot@1`；上表 cloudHost 
 本地 DSH 被杀期间云端写出 `REAL_CLOUDHOST_OK` / `DEFAULT_CREDENTIAL_OK` 文件，
 重开后 history 收到 `CLOUDHOST_DEFAULT_OK`；机器已按用户明确指令于
 2026-11-27T14:54:17Z destroy（`api_delete`），runtime 删除、dev token 撤销。限制：
-dev only；dependency 修复未提交/未发版，dev 镜像是手工修补；生产干净账号仍未
+dev only；dependency 修复已在本地提交 `cc8533f`、未 push/未发版，dev 镜像是手工修补；生产干净账号仍未
 复验。
 
 “未安装”表示该 CI 矩阵只验证 Bots 包本身能安装和合成，不验证依赖或云端行为。

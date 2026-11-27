@@ -561,7 +561,7 @@ proposal 的卡片 **2.291s**、执行 **0.779s**、Continue→working **21ms**�
     `CLOUDHOST_DEFAULT_OK`。
   机器已按用户明确指令于 2026-11-27T14:54:17Z destroy（`api_delete`），runtime
   删除、dev token 撤销、临时 DSH/proxy/凭证文件删除。限制：dev 环境；dependency
-  修复未提交/未发版；dev 镜像是手工修补的，不是生产构建。生产干净账号合盖仍未
+  修复已在本地提交 `cc8533f`、未 push/未发版；dev 镜像是手工修补的，不是生产构建。生产干净账号合盖仍未
   签收。
 - 发送接受语义（2026-11-27，dev live）：bot 空闲且 runtime 为 detached/cloudHost 时，
   `session.send` 等到 `runtime.start` 返回、task id 写入 `session.json` 后才返回；
@@ -595,7 +595,7 @@ proposal 的卡片 **2.291s**、执行 **0.779s**、Continue→working **21ms**�
   单一连续、干净账号的三分钟运行；安装耗时波动是主要变量。
 - 默认 cloudHost 的生产合盖签收：2026-11-27 已在 dev 通过“发送 → 本地 DSH 被杀 →
   云端写出文件 → 重开收取回复”（见 §3.1），但仍是 dev：镜像由 Rayrun 手工修补，
-  dependency `shapeSandbox` 的 credentials 修复未提交/未发版，生产 token 未复验。
+  dependency `shapeSandbox` 的 credentials 修复已在本地提交 `cc8533f`、未 push/未发版，生产 token 未复验。
   旧生产 `deepseek-harness@1` 机器仍需要先经电脑更新换到 `dsh-bot@1`；生产干净账号
   的同一场景仍是发布前缺口。
 - 发送响应前的合盖窗口：`session.send` 只在 bot 空闲的 detached/cloudHost 回合等到

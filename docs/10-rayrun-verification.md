@@ -786,7 +786,7 @@
     `CLOUDHOST_DEFAULT_OK`。
   机器已按用户明确指令于 2026-11-27T14:54:17Z destroy（`api_delete`），runtime
   删除、dev token 撤销、临时 DSH_HOME/proxy/凭证文件删除。限制：dev 环境；
-  dependency 修复未提交/未发版；dev 镜像是手工修补的，生产干净账号的同一场景仍未
+  dependency 修复已在本地提交 `cc8533f`、未 push/未发版；dev 镜像是手工修补的，生产干净账号的同一场景仍未
   签收。
 - UI/诊断修正（2026-11-27，契约测试，无真实失效凭据复验）：(1) client 保留 health
   的 `runtime`；cloudHost 模式下详情和 Setup 不再把 `dsh-bot@1` / `dsh-bot-devcheck@1` 标成 shell oneshot，
