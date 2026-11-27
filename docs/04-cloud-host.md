@@ -44,7 +44,7 @@ workspace 跨 stop/start 保留。bot 侧 supervisor/session 实现仍是本仓�
 （ADR-007）；契约见 [`08-integration.md`](08-integration.md) §3.1。2026-11-22 dev
 spike：镜像 DSH 0.2.0-rc.2 的 headless `--session-id` 可跨进程续接
 （`RUN1_OK` → `ALPHA`）；`packages/dsh-rayrun-bots/cloud-host` 的 DSH agent 已实现两轮
-`HOST1_OK` → `BETA`，host 资产已随包交付；依赖 1.2+ 时它是默认执行路径，`cloudHost:false`
+`HOST1_OK` → `BETA`，host 资产已随包交付；依赖 1.2.2+ 时它是默认执行路径，`cloudHost:false`
 保留 detached 回退。
 
 ### 1.1 在栈里的位置

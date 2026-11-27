@@ -67,7 +67,7 @@
                             agent 进程）
 ```
 
-`*` = 未实现。常驻 bot runtime、session 续接和 bot 映射已随包交付，并在依赖 1.2+ 上
+`*` = 未实现。常驻 bot runtime、session 续接和 bot 映射已随包交付，并在依赖 1.2.2+ 上
 成为默认执行路径；生产聊天和 routine E2E 已通过，但默认路径的“发送后合盖、重开收
 结果”验收仍待补。平台答复（2026-11-22）：R-G008 runtimes API 已实现、2026-11-24
 部署生产，session 由 bot host 自己写 `/workspace`。见 §3、§9 与 ADR-007。
@@ -86,7 +86,7 @@
    billing 的单一 HTTPS API；token 只存在于本地 Harness vault，且只用在这里。
 4. **云电脑。** 一人一台，bots 共享：vCPU/内存、持久 `/workspace`、X11 `:99`、
    browser profile。常驻 **bot runtime**（ADR-015）监督 DSH host，每 bot 一个 session
-   与 profile 目录；依赖 1.2+ 时它是默认执行路径。平台 R-G008 runtimes API 已实现、
+   与 profile 目录；依赖 1.2.2+ 时它是默认执行路径。平台 R-G008 runtimes API 已实现、
    2026-11-24 部署生产，提供受监督常驻进程、`autostart`、`keep_alive` 和 boot 时
    credential injection；session 不是平台对象，由 bot host 自己写 `/workspace`。
 5. **Bot↔session 映射。** bot 是持久对象：名字、指令、skills、memory 目录和 session
@@ -407,7 +407,7 @@ tombstone，action hash 的 canonicalization 未定义；见 ADR-011/012。
   本地 typed 动作已按 ADR-019 在本地执行；云端凭据动作仍等待平台；
 - R-G008 常驻 runtime：平台 runtimes API 已实现并本机 dev 全量验收通过（`rayrun-bot-gaps`，
   `4709ac0`），2026-11-24 已部署生产（`5c2ff48`/build 493）；bot 侧 host/session
-  已随包交付，并在依赖 1.2+ 上成为默认执行路径（2026-11-27）；多 bot live E2E
+  已随包交付，并在依赖 1.2.2+ 上成为默认执行路径（2026-11-27）；多 bot live E2E
   已通过（2026-11-23）；hosted 生产 cloudHost 聊天 E2E 已通过（`PROD_OK`，2026-11-24），
   生产 routine E2E 已通过（`CLOUD_ROUTINE_PROD_OK`，2026-11-24）；
 - 余额宽限与 spend 护栏：余额耗尽今天会 force-destroy 机器和磁盘；

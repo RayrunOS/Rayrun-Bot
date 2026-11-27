@@ -19,9 +19,10 @@ DSH `0.2.2-rc.5` 会读取并强制执行 `engines.dsh`：超出范围的插件�
 旧运行时忽略该字段。`dsh-rayrun-computer` 的版本由 host 在启动时读取，缺失或不在
 1.x 时分别返回 `E_DEP_MISSING` / `E_DEP_VERSION`。依赖 `1.0.x` 使用单轮
 `rayrun_agent`；`1.1+` 使用 detached `dsh.start/status/result`；`1.2+` 另有
-host-callable `runtime.*`。npm `1.2.1` 已于 2026-11-24 发布，dist-tag `latest`，
-tarball `gitHead=3604e33`，包含 prompt-root 与测试 mock 修复；`1.2.0` 的 npm tarball
-来自较旧的 `fe965c1`，不要再用它作为最新依赖。
+host-callable `runtime.*`。npm `latest` 现为 `1.3.1`（`49b69d9`）：`1.2.2`
+首次返回 machine credential 绑定名，`1.3.0` 增加 `credentials.save`，`1.3.1` 修正
+显式保存时保留默认凭据。`1.2.1`（`3604e33`）没有 machine.credentials，默认
+cloudHost 会回退 detached；`1.2.0` 的 npm tarball 来自较旧的 `fe965c1`。
 
 ## 2. 已验证组合
 
@@ -71,7 +72,7 @@ computer update、A6、首次运行计时）；仅保留 `rayrun-bot-prod-e2e`�
 未 destroy）。表中“机器 stop、未 destroy”是当次测试收尾；之后的清理不改变当次
 验证证据。2026-11-27 起 `computer.update` 在迁移成功后 destroy 旧机
 （`computer-update.mjs` 9/9）；表中 2026-11-26 的旧机 Stopped、未 destroy 是当次
-行为，真实 Rayrun 的 destroy 路径未复验。同日依赖 1.2+ 默认切到 cloudHost，
+行为，真实 Rayrun 的 destroy 路径未复验。同日依赖 1.2.2+ 默认切到 cloudHost，
 Setup/电脑更新目标镜像随 runtime 变为 `dsh-bot@1`；上表 cloudHost 行仍是显式启用
 时的历史组合。2026-11-27 稍后已在 dev 验证默认 cloudHost 合盖：health
 `runtime=rayrun-cloud-host`；Rayrun 修复 dev 镜像（`deepseek-harness@1` guestd
@@ -80,7 +81,7 @@ Setup/电脑更新目标镜像随 runtime 变为 `dsh-bot@1`；上表 cloudHost 
 本地 DSH 被杀期间云端写出 `REAL_CLOUDHOST_OK` / `DEFAULT_CREDENTIAL_OK` 文件，
 重开后 history 收到 `CLOUDHOST_DEFAULT_OK`；机器已按用户明确指令于
 2026-11-27T14:54:17Z destroy（`api_delete`），runtime 删除、dev token 撤销。限制：
-dev only；dependency 修复已在本地提交 `cc8533f`、未 push/未发版，dev 镜像是手工修补；生产干净账号仍未
+dev only；dependency 修复已在 `1.2.2`（`75e285d`）发布，当前 latest `1.3.1`，dev 镜像是手工修补；生产干净账号仍未
 复验。
 
 “未安装”表示该 CI 矩阵只验证 Bots 包本身能安装和合成，不验证依赖或云端行为。
@@ -116,17 +117,17 @@ S6（2026-11-24，本地 tarball）：`dsh plugin add` 一条命令安装两个�
 ## 3. 安装与打包检查
 
 `dsh-rayrun-bots@0.1.1-alpha.1` 已通过 `publish.yml` 发布到 npm（2026-11-25，`alpha` tag）；依赖
-`dsh-rayrun-computer@1.2.1` 也已发布（latest，`gitHead=3604e33`，含
-prompt-root/mock 修复）。`1.2.0` 的 npm tarball 来自较旧的 `fe965c1`，不要再用。
-本机默认 registry 是 npmmirror，可能滞后；安装验证用
-`--registry=https://registry.npmjs.org` 或等待镜像。
+`dsh-rayrun-computer@1.3.1` 也已发布（latest，`49b69d9`；`1.2.2` 起有
+machine.credentials，`1.3.0` 起有 credentials.save）。`1.2.1` 及更早没有
+machine.credentials，默认 cloudHost 会回退 detached。本机默认 registry 是 npmmirror，
+可能滞后；安装验证用 `--registry=https://registry.npmjs.org` 或等待镜像。
 
 一条命令安装两个包（已用官方 registry 验证两个插件都加载、health `ok`）：
 
 ```bash
 npm_config_registry=https://registry.npmjs.org \
   dsh plugin --profile web add \
-  dsh-rayrun-computer@1.2.1 dsh-rayrun-bots@0.1.1-alpha.1
+  dsh-rayrun-computer@1.3.1 dsh-rayrun-bots@0.1.1-alpha.1
 ```
 
 从 checkout/tarball 安装（开发/离线）：

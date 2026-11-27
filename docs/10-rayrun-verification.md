@@ -753,9 +753,14 @@
   `dsh-bot@1` 标成 shell oneshot / 不会启动 DSH worker；这是 detached runtime 的
   警告，在 cloudHost 下是误报。该误报已在同日 UI 修正中按 runtime 区分：
   cloudHost 隐藏警告，detached 保留；未重跑 A6 页面复验。
+- 依赖版本基线（2026-11-27，代码/测试）：默认 cloudHost 只在依赖 1.2.2+ 启用；
+  1.2.0/1.2.1 自动回退 detached（显式 `cloudHost` 仍可启用，但需提供 credentials）。
+  `1.2.2` 发布 `machine.credentials`，`1.3.0` 增加 `credentials.save`，`1.3.1`
+  为当前 latest。`dependency` 14/14、`rpc-contract` 38/38；未用 npm 1.3.1 做
+  clean install / live 复验。
 - 发送接受语义（2026-11-27，dev live）：bot 空闲且 runtime 为 detached/cloudHost 时，
   `session.send` 在 `runtime.start` 返回、task id 写入 `session.json` 后才返回；start
-  失败拒绝发送。`session-runtime` 23/23、`rpc-contract` 37/37（HTTP send 等 attach）。
+  失败拒绝发送。`session-runtime` 23/23、`rpc-contract` 38/38（HTTP send 等 attach）。
   live：Rayrun dev daemon + 机器 `rayrun-bot-cloudhost-accept-20261127`；`session.send`
   11.8 秒后返回 `state=running`、`taskId=task-158133aa-83ca-4703-93b5-5b1356e83095`；
   客户端解析响应后 **1ms** kill 本地 DSH；云端 14:44:36Z 写出 `IMMEDIATE_CLOSE_OK`
@@ -768,7 +773,7 @@
   配置时选择常驻 `cloudHost`；`cloudHost:false` 保留 detached，1.1 仍走 detached。
   Setup 在 cloudHost 模式创建 `dsh-bot@1`；电脑更新目标随 runtime 切换。云 host spec
   未配置 credential 时沿用机器第一个已绑定凭据。旧镜像 `E_GUESTD_OUTDATED` 显示
-  “更新电脑后重试”。`rpc-contract` 37/37、`cloud-host-runtime` 17/17、
+  “更新电脑后重试”。`rpc-contract` 38/38、`cloud-host-runtime` 17/17、
   `computer-update` 9/9、`client-contract` 通过。live 选择：本机 DSH
   `0.2.2-rc.5` + dependency checkout `1.2.0` + 临时 `DSH_HOME` + Rayrun dev
   daemon；真实 health 返回 `runtime.name=rayrun-cloud-host`、`available=true`。
@@ -786,7 +791,7 @@
     `CLOUDHOST_DEFAULT_OK`。
   机器已按用户明确指令于 2026-11-27T14:54:17Z destroy（`api_delete`），runtime
   删除、dev token 撤销、临时 DSH_HOME/proxy/凭证文件删除。限制：dev 环境；
-  dependency 修复已在本地提交 `cc8533f`、未 push/未发版；dev 镜像是手工修补的，生产干净账号的同一场景仍未
+  dependency 修复已在 `1.2.2`（`75e285d`）发布，当前 latest `1.3.1`；dev 镜像是手工修补的，生产干净账号的同一场景仍未
   签收。
 - UI/诊断修正（2026-11-27，契约测试，无真实失效凭据复验）：(1) client 保留 health
   的 `runtime`；cloudHost 模式下详情和 Setup 不再把 `dsh-bot@1` / `dsh-bot-devcheck@1` 标成 shell oneshot，

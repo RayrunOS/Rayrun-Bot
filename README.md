@@ -52,7 +52,7 @@ versions pinned:
 ```bash
 npm_config_registry=https://registry.npmjs.org \
   dsh plugin --profile web add \
-  dsh-rayrun-computer@1.2.1 dsh-rayrun-bots@0.1.1-alpha.1
+  dsh-rayrun-computer@1.3.1 dsh-rayrun-bots@0.1.1-alpha.1
 ```
 
 Restart DSH after that. The Bots page loads when the page starts.
@@ -69,17 +69,19 @@ Then, in Bots:
 `npm install dsh-rayrun-bots`, or `dsh plugin add` without these versions, does
 not select `0.1.1-alpha.1`. Installing the bots package alone does not turn on
 the computer plugin: both packages have to be in the same `dsh plugin add`.
-Pin `dsh-rayrun-computer` at `1.2.1`. The `1.2.0` package on npm is an older
-build. A mirror can lag behind the official registry, which is why the command
-sets the registry.
+Pin `dsh-rayrun-computer` at `1.3.1`. Version `1.2.2` first returned machine
+credential binding names; `1.2.1` and older do not. `1.3.0` adds
+`credentials.save`, and `1.3.1` is the current `latest`. A mirror can lag
+behind the official registry, which is why the command sets the registry.
 
-On 2026-11-25 that command was checked against the official registry: both
+On 2026-11-25 the install path was checked with the earlier `1.2.1` pin: both
 plugins loaded, and one turn sent to an existing stopped hosted machine came
-back. That check used the on-machine host and a maintainer machine. The machine
-from that check is not a setup requirement, and the check is not a promise for
-every account or image.
+back. That check used the on-machine host and a maintainer machine. The current
+`1.3.1` pin and the `1.2.2+` default path have not yet been re-run end to end.
+The machine from that check is not a setup requirement, and the check is not a
+promise for every account or image.
 
-The on-machine host is the default execution path on `dsh-rayrun-computer` 1.2+.
+The on-machine host is the default execution path on `dsh-rayrun-computer` 1.2.2+.
 It needs an image new enough for Rayrun runtimes (`dsh-bot@1`); the Update
 computer button moves an older machine. Operator notes are in
 [docs/09-deployment.md](docs/09-deployment.md).

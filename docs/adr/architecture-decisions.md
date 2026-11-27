@@ -34,7 +34,7 @@
 | [ADR-018](#adr-018) | 文档事实源与语言 | Accepted（2026-11-22） | README 只做营销；`docs/12-status.md` 是实现状态唯一事实源；`docs/` 全中文 | docs |
 | [ADR-019](#adr-019) | 审批执行权威 | Accepted（2026-11-23，本地 DSH host） | 云端只提案；本地审批与执行；typed allowlist；平台隔离仍用于云端凭据动作 | E1–E7/A6/A7（本地动作解阻；云提案 bridge、start/stop、denial/Continue 与 context 已 live） |
 | [ADR-020](#adr-020) | 云电脑是 agent 的安全容器 | Accepted（2026-11-26） | 容器内 `danger-full-access` 是设计；审批只覆盖离开容器的 typed 动作 | 安全文案/文档 |
-| [ADR-021](#adr-021) | 默认执行路径 | Accepted（2026-11-27） | 依赖 1.2+ 默认常驻 cloudHost；`cloudHost:false` 保留 detached；镜像与电脑更新随 runtime | A5, 发布 |
+| [ADR-021](#adr-021) | 默认执行路径 | Accepted（2026-11-27） | 依赖 1.2.2+ 默认常驻 cloudHost；`cloudHost:false` 保留 detached；镜像与电脑更新随 runtime | A5, 发布 |
 
 ## P0 — bot runtime 与审批动工前必须定
 
@@ -859,7 +859,7 @@ workspace 内任意运行，也能写/改提案；本 ADR 只保护“需要本�
 §4/§5；`CLAUDE.md` §6.11。
 
 <a id="adr-021"></a>
-### ADR-021 — 常驻 cloudHost 是依赖 1.2+ 的默认执行路径
+### ADR-021 — 常驻 cloudHost 是依赖 1.2.2+ 的默认执行路径
 
 **状态：** Accepted（2026-11-27，用户决定）.
 
@@ -870,7 +870,8 @@ cloudHost 在用户的 Rayrun 机器上拥有 turn，任务一旦上传，本地
 
 **决策。**
 
-- 依赖 1.2+ 且未显式配置时，默认使用常驻 `cloudHost`；`cloudHost: false` 保留
+- 依赖 1.2.2+ 且未显式配置时，默认使用常驻 `cloudHost`；1.2.2 起有
+  `machine.credentials`，1.2.0/1.2.1 自动回退 detached；`cloudHost: false` 保留
   detached，依赖 1.1 仍走 detached，1.0 走 `rayrun_agent`。
 - 新机器镜像随 runtime：cloudHost 用 `dsh-bot@1`，detached 用
   `deepseek-harness@1`；电脑更新也按当前 runtime 选择镜像。

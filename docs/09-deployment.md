@@ -24,7 +24,7 @@
 | 需要 | 为什么 | 状态 |
 | --- | --- | --- |
 | [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) | 运行时；桌面 App 或 `dsh web` | `0.2.0-rc.2` / `0.2.2-rc.5` 已验证；组合见[版本矩阵](version-matrix.md) |
-| [`dsh-rayrun-computer`](https://github.com/RayrunOS/dsh-rayrun-computer) | 云电脑层；独立项目，必需依赖 | npm `1.2.1`（`latest`）；与 bots 包一条命令同装。开发或离线仍可从 checkout 安装 |
+| [`dsh-rayrun-computer`](https://github.com/RayrunOS/dsh-rayrun-computer) | 云电脑层；独立项目，必需依赖 | npm `1.3.1`（`latest`）；与 bots 包一条命令同装。开发或离线仍可从 checkout 安装 |
 | [Rayrun](https://rayrunos.com/) 账号 | 提供云电脑；按秒计费 | 必需；用户直接付 Rayrun |
 | DeepSeek API key | 机器内 agent 的模型调用 | 必需；key 与模型账单属于用户 |
 | Node / 构建工具 | 不需要：纯 ESM、无构建 | 无 |
@@ -39,14 +39,15 @@ Rayrun Bot 不 vendor 云电脑层；它是独立项目、必需依赖。今天�
 profile。S6 已验证（2026-11-24，本地 tarball）：**一条命令安装两个包**会同时选中
 两个 bundle；只安装 `dsh-rayrun-bots` 即使它声明依赖，也只会安装依赖包、
 不会自动启用依赖的 bundle。两个包都已发布到 npm：`dsh-rayrun-bots@0.1.1-alpha.1`
-（`alpha` tag；`latest` 仍是旧的 `0.1.0-alpha.0`）和 `dsh-rayrun-computer@1.2.1`
-（latest，含 prompt-root/mock 修复；`1.2.0` 的 tarball 来自较旧的 `fe965c1`，
-不要再用）。本机 npmmirror 可能滞后，安装时可用官方 registry：
+（`alpha` tag；`latest` 仍是旧的 `0.1.0-alpha.0`）和 `dsh-rayrun-computer@1.3.1`
+（latest；`1.2.2` 起返回 machine.credentials，`1.3.0` 起有 `credentials.save`；
+`1.2.1` 及更早没有 machine.credentials，不要用于默认 cloudHost）。本机 npmmirror
+可能滞后，安装时可用官方 registry：
 
 ```bash
 npm_config_registry=https://registry.npmjs.org \
   dsh plugin --profile web add \
-  dsh-rayrun-computer@1.2.1 dsh-rayrun-bots@0.1.1-alpha.1
+  dsh-rayrun-computer@1.3.1 dsh-rayrun-bots@0.1.1-alpha.1
 # 重启 DSH：client half 只在页面启动时加载
 ```
 
@@ -97,7 +98,7 @@ dsh plugin --profile web add "<packages/dsh-rayrun-bots 的绝对路径>"
 设置。对话 UI 对真实名册 bot 读取并发送 `session.*`；示例 bot 仍走页内预览。真实
 bot 的审批卡已接 host；示例 bot 卡片和设置仍是页内预览。本地 roster 和每 bot 的
 `session.json` / `transcript.jsonl` 已持久化，host half 提供 `session.send/history/status`；
-依赖 1.2+ 时，host-side `runtime.*` client（`lib/runtime-rpc.js`）默认在机器上注册并
+依赖 1.2.2+ 时，host-side `runtime.*` client（`lib/runtime-rpc.js`）默认在机器上注册并
 复用常驻 `bot-host`，`session.*` 走 cloudHost；配置 `cloudHost: false` 可保留
 detached。依赖 1.1 使用 detached `dsh.start/status/result` 把一轮 turn 发给已有的
 云电脑（没有机器时拒绝自动创建）；1.0.x 回退单轮 `rayrun_agent`；都不可用时
@@ -177,7 +178,7 @@ dsh plugin --profile web add <dsh-rayrun-computer 路径或 tarball> <dsh-rayrun
 写成“单包安装”；真正的单包安装需要 DSH 支持传递 bundle 激活，或新增 meta-package。
 
 `dsh-rayrun-bots@0.1.1-alpha.1` 已通过 `publish.yml` 发到 npm 的 `alpha` tag；
-`latest` 仍是 `0.1.0-alpha.0`，没有稳定版。依赖 `dsh-rayrun-computer@1.2.1` 在
+`latest` 仍是 `0.1.0-alpha.0`，没有稳定版。依赖 `dsh-rayrun-computer@1.3.1` 在
 npm `latest`。不带版本的安装不会选中 `0.1.1-alpha.1`。用户安装命令见上文和根
 README；发布事实以 [`12-status.md`](12-status.md) 为准。
 
@@ -221,7 +222,7 @@ credential 创建新机，复制
 ## 4. v0.1 目标三分钟路径（安装、RPC 与浏览器已验证；未计时签收）
 
 1. 用一条命令安装两个包（S6 已验证；`dsh-rayrun-bots@0.1.1-alpha.1` 在 `alpha`
-   tag，依赖 `1.2.1` 在 `latest`）。
+   tag，依赖 `1.3.1` 在 `latest`）。
 2. 登录 Rayrun 一次；向导创建云电脑。
 3. 创建 bot：名字、职责、指令、skills；它在电脑上有自己的 session。
 4. 和它对话，或创建一个 routine 让 bot 按间隔运行（本地 DSH host 需保持运行）。
@@ -252,9 +253,9 @@ start/stop/pause/resume 执行已接，示例 bot 与设置仍是页内预览。
 | `credentials` | `[]` | 注入 agent 进程的模型 credential |
 | `baseUrl` | `https://api.rayrunos.com/v1` | Rayrun API 端点 |
 
-### 5.1 Bots cloud host（依赖 1.2+ 默认）
+### 5.1 Bots cloud host（依赖 1.2.2+ 默认）
 
-常驻 bot host 的 runtime adapter 在依赖 1.2+ 上**默认启用**，不需要 profile 配置。
+常驻 bot host 的 runtime adapter 在依赖 1.2.2+ 上**默认启用**，不需要 profile 配置。
 要关闭并回退到 per-turn detached，在同一个 profile 的 `cordis.patch.yml` 里覆盖
 **rayrun-bots** 行（不是云电脑行）：
 
@@ -278,13 +279,13 @@ start/stop/pause/resume 执行已接，示例 bot 与设置仍是页内预览。
 
 | 键 | 默认 | 含义 |
 | --- | --- | --- |
-| `enabled` | 1.2+ 启用 | `false` 回退 per-turn detached/agent |
+| `enabled` | 1.2.2+ 启用 | `false` 回退 per-turn detached/agent |
 | `hostScript` | 无（自动 projection） | 覆盖投影后的 host 入口；正常不需要设置 |
 | `credentials` | `[]` | 传给 runtime spec 的沙箱凭证**名**，不是值；空时沿用机器已绑定的第一个凭据 |
 | `profile` | `bot` | host 内 DSH 使用的 profile，由 host 从 headless 模板创建 |
 | `machine` | 自动选择 | 固定机器名/id；仍要求机器已存在 |
 
-默认路径要求依赖 1.2+（`runtime.*`）和 `rayrun_files` 工具；镜像应为
+默认路径要求依赖 1.2.2+（`runtime.*` 和 machine.credentials）和 `rayrun_files` 工具；镜像应为
 `dsh-bot@1`（Setup 和电脑更新在 cloudHost 下会选它）。旧镜像会以
 `E_GUESTD_OUTDATED` 失败，需要先更新电脑。host 资产随本包发布在
 `cloud-host/`；adapter 启动前用 `lib/host-projection.js` 上传到
