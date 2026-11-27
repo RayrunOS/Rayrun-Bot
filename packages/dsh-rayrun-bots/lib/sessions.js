@@ -680,6 +680,7 @@ export function openSessionRunner({ stateRoot, runtime, getBot, logger, detached
   store.recover()
   const active = new Map()
   const detachedPolls = new Map()
+  const acceptances = new Map()
   const pollDelay = Number.isInteger(detachedPollMs) && detachedPollMs > 0 ? detachedPollMs : DEFAULT_DETACHED_POLL_MS
 
   function detachedCapable() {
@@ -688,6 +689,25 @@ export function openSessionRunner({ stateRoot, runtime, getBot, logger, detached
       && typeof runtime.start === 'function'
       && typeof runtime.status === 'function'
       && typeof runtime.collect === 'function'
+  }
+
+  /** Resolve the sender's acceptance promise after the runtime attaches or fails. */
+  function settleAcceptance(botId, seq, error) {
+    const key = `${botId}:${seq}`
+    const pending = acceptances.get(key)
+    if (pending) {
+      acceptances.delete(key)
+      if (error) pending.reject(error)
+      else pending.resolve(store.status(botId))
+    }
+    if (!error) return
+    // A failed turn leaves the rest queued, not accepted. Do not leave callers
+    // waiting for a later kick that may never come.
+    for (const [pendingKey, waiter] of acceptances) {
+      if (!pendingKey.startsWith(`${botId}:`)) continue
+      acceptances.delete(pendingKey)
+      waiter.reject(error)
+    }
   }
 
   function kick(botId) {
@@ -735,6 +755,7 @@ export function openSessionRunner({ stateRoot, runtime, getBot, logger, detached
           }
           store.attach(botId, started)
           startDetachedPoll(botId, started.taskId)
+          settleAcceptance(botId, next.item.seq, null)
           return
         }
         const reply = await runtime.run({
@@ -752,7 +773,11 @@ export function openSessionRunner({ stateRoot, runtime, getBot, logger, detached
         }
         store.complete(botId, reply.text)
       } catch (error) {
-        store.failTurn(botId, error)
+        try {
+          store.failTurn(botId, error)
+        } finally {
+          settleAcceptance(botId, next.item.seq, error)
+        }
         return
       }
     }
@@ -850,15 +875,50 @@ export function openSessionRunner({ stateRoot, runtime, getBot, logger, detached
     for (const item of pending) startDetachedPoll(item.botId, item.detached.taskId)
   }
 
-  function send(botId, text, options = {}) {
+  function enqueueTurn(botId, text, options, waitForAcceptance) {
     if (runtime.available !== true) {
       const error = new Error('The cloud bot runtime is not wired in this build; no turn was sent.')
       error.code = ERROR_CODES.runtimeUnavailable
       throw error
     }
+    const before = store.status(botId)
+    const idle = !active.has(botId)
+      && !detachedPolls.has(botId)
+      && (before === null || (
+        before.pending === 0
+        && (before.state === 'idle' || before.state === 'failed' || before.state === 'interrupted')
+      ))
     const result = store.enqueue(botId, text, options)
-    kick(botId)
-    return result
+    let accepted
+    if (waitForAcceptance && detachedCapable() && idle) {
+      accepted = new Promise((resolve, reject) => {
+        acceptances.set(`${botId}:${result.message.seq}`, { resolve, reject })
+      })
+    }
+    try {
+      kick(botId)
+    } catch (error) {
+      settleAcceptance(botId, result.message.seq, error)
+      throw error
+    }
+    return { result, accepted }
+  }
+
+  /** Queue one turn without waiting; used by routines and the scheduler. */
+  function send(botId, text, options = {}) {
+    return enqueueTurn(botId, text, options, false).result
+  }
+
+  /**
+   * Queue one turn and, when the bot is idle, resolve only after a detached
+   * runtime has attached the cloud task. Callers can treat that as the point
+   * after which closing the page/laptop no longer loses the turn.
+   */
+  async function sendAccepted(botId, text, options = {}) {
+    const { result, accepted } = enqueueTurn(botId, text, options, true)
+    if (accepted === undefined) return result
+    const session = await accepted
+    return { session, message: result.message }
   }
 
   async function settled(botId) {
@@ -890,6 +950,7 @@ export function openSessionRunner({ stateRoot, runtime, getBot, logger, detached
 
   return {
     send,
+    sendAccepted,
     status: (botId) => store.status(botId),
     history: (botId, options) => store.history(botId, options),
     computer: (botId) => store.computer(botId),

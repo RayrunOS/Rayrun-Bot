@@ -191,7 +191,7 @@ function sendActionError(res, error) {
 }
 
 /** Run one session action against the bot's durable local session. */
-function sessionAction(action, payload, getService) {
+async function sessionAction(action, payload, getService) {
   if (action !== 'session.send' && action !== 'session.history' && action !== 'session.status') {
     const error = new Error(`Unknown action: ${action}`)
     error.status = 404
@@ -201,7 +201,7 @@ function sessionAction(action, payload, getService) {
   const bot = service.bots.get(payload.botId)
   switch (action) {
     case 'session.send':
-      return { ok: true, ...service.runner.send(bot.id, payload.text) }
+      return { ok: true, ...(await service.runner.sendAccepted(bot.id, payload.text)) }
     case 'session.history':
       return {
         ok: true,
@@ -528,7 +528,7 @@ export function apply(ctx, options = {}) {
               }
               if (typeof payload?.action === 'string' && payload.action.startsWith('session.')) {
                 try {
-                  sendJson(res, 200, sessionAction(payload.action, payload, sessions))
+                  sendJson(res, 200, await sessionAction(payload.action, payload, sessions))
                 } catch (error) {
                   sendActionError(res, error)
                 }

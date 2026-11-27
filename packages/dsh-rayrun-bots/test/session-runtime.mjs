@@ -227,6 +227,80 @@ check('a detached turn survives a runner restart and is collected later', async 
   second.close()
 })
 
+check('sendAccepted waits for a detached task to attach', async () => {
+  const root = mkdtempSync(path.join(tmpdir(), 'rayrun-bots-session-'))
+  roots.push(root)
+  const bots = openBotStore(root)
+  const bot = bots.create({ name: 'Echo Bot', label: 'Echoes messages' })
+  const localDir = path.join(root, 'bots', bot.id, 'workspace')
+  let release
+  const gate = new Promise((resolve) => { release = resolve })
+  const runner = openSessionRunner({
+    stateRoot: root,
+    runtime: {
+      contract: 1,
+      name: 'fake-detached',
+      available: true,
+      detached: true,
+      async start() {
+        await gate
+        return { taskId: 'task-accepted', sandbox: 'box', localDir, timeoutSeconds: 900 }
+      },
+      async status() { return { running: true } },
+      async collect() { return { running: true } },
+    },
+    getBot: bots.get,
+    detachedPollMs: 10,
+  })
+  let settled = false
+  const pending = runner.sendAccepted(bot.id, 'ping').then((value) => {
+    settled = true
+    return value
+  }, (error) => {
+    settled = true
+    throw error
+  })
+  await new Promise((resolve) => setTimeout(resolve, 20))
+  assert.equal(settled, false, 'sendAccepted settled before the cloud task attached')
+  assert.equal(runner.status(bot.id).detached, undefined)
+  release()
+  const sent = await pending
+  assert.equal(sent.session.detached.taskId, 'task-accepted')
+  assert.equal(sent.message.text, 'ping')
+  runner.close()
+})
+
+check('sendAccepted rejects when the detached start fails', async () => {
+  const root = mkdtempSync(path.join(tmpdir(), 'rayrun-bots-session-'))
+  roots.push(root)
+  const bots = openBotStore(root)
+  const failedBot = bots.create({ name: 'Failed Bot', label: 'Fails' })
+  const failed = openSessionRunner({
+    stateRoot: root,
+    runtime: {
+      contract: 1,
+      name: 'fake-detached',
+      available: true,
+      detached: true,
+      async start() {
+        const error = new Error('The cloud computer is stopped.')
+        error.code = ERROR_CODES.machineStopped
+        throw error
+      },
+      async status() { return { running: false } },
+      async collect() { return { text: 'unused' } },
+    },
+    getBot: bots.get,
+    detachedPollMs: 10,
+  })
+  await assert.rejects(failed.sendAccepted(failedBot.id, 'ping'), (error) => {
+    assert.equal(error.code, ERROR_CODES.machineStopped)
+    return true
+  })
+  assert.equal(failed.status(failedBot.id).state, 'failed')
+  failed.close()
+})
+
 check('a detached turn drains a queued turn in order', async () => {
   const root = mkdtempSync(path.join(tmpdir(), 'rayrun-bots-session-'))
   roots.push(root)

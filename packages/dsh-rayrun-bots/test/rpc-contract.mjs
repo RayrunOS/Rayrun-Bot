@@ -562,6 +562,45 @@ check('session.send fails closed without a wired runtime and writes no session',
   assert.equal(existsSync(path.join(home, 'state', 'rayrun-bot', 'bots', botId, 'session.json')), false)
 }))
 
+check('session.send returns only after a detached task is attached', () => withState(async (home) => {
+  let release
+  const gate = new Promise((resolve) => { release = resolve })
+  const runtime = {
+    contract: 1,
+    name: 'fake-detached',
+    available: true,
+    detached: true,
+    async start() {
+      await gate
+      return {
+        taskId: 'task-http',
+        sandbox: 'box',
+        localDir: path.join(home, 'bots', 'http-acceptance', 'workspace'),
+        timeoutSeconds: 900,
+      }
+    },
+    async status() { return { running: false } },
+    async collect() { return { text: 'accepted' } },
+  }
+  const { handler } = hostFor({ runtime })
+  const created = await request(handler, post('bots.create', {
+    name: 'HTTP Acceptance', label: 'Acceptance', instructions: 'Reply.',
+  }))
+  const botId = created.json.bot.id
+  let settled = false
+  const pending = request(handler, post('session.send', { botId, text: 'hello' })).then((value) => {
+    settled = true
+    return value
+  })
+  await new Promise((resolve) => setTimeout(resolve, 30))
+  assert.equal(settled, false, 'session.send responded before the cloud task attached')
+  release()
+  const sent = await pending
+  assert.equal(sent.status, 200)
+  assert.equal(sent.json.session.detached.taskId, 'task-http')
+  assert.equal(sent.json.message.text, 'hello')
+}))
+
 check('session.send queues a turn and history returns the fake reply', () => withState(async () => {
   const { handler } = hostFor({ runtime: FAKE_RUNTIME })
   const created = await request(handler, post('bots.create', {
