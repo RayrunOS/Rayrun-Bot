@@ -129,3 +129,6 @@ UI 把它显示为对话的最后一块，以及名册上的未读标记；没�
 | v1.0 | 只有出现账号模型时才做共享 bot/团队；否则保持单用户 |
 
 MVP 计划的 out-of-scope 清单保持不变：v0.1 不做团队协调。
+
+逐项功能矩阵与 Rayrun Bot 满足度见
+[`grok-bot-feature-matrix.md`](grok-bot-feature-matrix.md)。

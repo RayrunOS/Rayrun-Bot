@@ -37,7 +37,7 @@
 | 平台集成 | [集成与平台需求](08-integration.md)、[dsh-rayrun-computer 问题登记](11-dsh-rayrun-computer-issues.md) | 依赖契约、平台能力与优先级；依赖自身问题的证据、workaround 与上游修复方向 |
 | 状态与验证 | [实现状态](12-status.md)、[Rayrun 验证与缺口](10-rayrun-verification.md) | 实现状态事实源；测试资源政策、Rayrun 验证路径、缺口登记 |
 | 部署与操作 | [部署与运行](09-deployment.md)、[版本矩阵](version-matrix.md) | 安装、配置、检查、故障处理；DSH × 依赖 × 包的已验证组合 |
-| 调研 | [灵感](research/inspiration.md) | Grok Bot 等参考；不是真相源 |
+| 调研 | [灵感](research/inspiration.md)、[Grok Bot 功能矩阵](research/grok-bot-feature-matrix.md) | Grok Bot 对照与满足度；不是真相源 |
 | 决策 | [架构决策](adr/architecture-decisions.md) | [ADR-001–ADR-020](#3-adr-登记册)；下一个可用 ADR-021；只有 Accepted / Decided 才算最终 |
 
 `00`–`12` 是编号顶层文档；`plans/`、`adr/`、`design/`、`research/` 放细节，
