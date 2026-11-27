@@ -753,11 +753,22 @@
   `dsh-bot@1` 标成 shell oneshot / 不会启动 DSH worker；这是 detached runtime 的
   警告，在 cloudHost 下是误报。该误报已在同日 UI 修正中按 runtime 区分：
   cloudHost 隐藏警告，detached 保留；未重跑 A6 页面复验。
+- 发送接受语义（2026-11-27，dev live）：bot 空闲且 runtime 为 detached/cloudHost 时，
+  `session.send` 在 `runtime.start` 返回、task id 写入 `session.json` 后才返回；start
+  失败拒绝发送。`session-runtime` 23/23、`rpc-contract` 37/37（HTTP send 等 attach）。
+  live：Rayrun dev daemon + 机器 `rayrun-bot-cloudhost-accept-20261127`；`session.send`
+  11.8 秒后返回 `state=running`、`taskId=task-158133aa-83ca-4703-93b5-5b1356e83095`；
+  客户端解析响应后 **1ms** kill 本地 DSH；云端 14:44:36Z 写出 `IMMEDIATE_CLOSE_OK`
+  文件，14:44:38.090Z task done；重启同一 `DSH_HOME` 后 history 收到
+  `CLOUDHOST_DEFAULT_OK`（本地 14:45:49.084Z）。机器已按用户明确指令于
+  2026-11-27T14:54:17Z destroy（`api_delete`），runtime 删除、dev token 撤销、
+  临时文件删除。边界：响应前、请求未到本地 host、或消息排在运行回合后面时不保证；
+  产品保证从收到响应开始。
 - cloudHost 默认（2026-11-27，代码/契约 + dev live 合盖通过）：依赖 1.2+ 且未显式
   配置时选择常驻 `cloudHost`；`cloudHost:false` 保留 detached，1.1 仍走 detached。
   Setup 在 cloudHost 模式创建 `dsh-bot@1`；电脑更新目标随 runtime 切换。云 host spec
   未配置 credential 时沿用机器第一个已绑定凭据。旧镜像 `E_GUESTD_OUTDATED` 显示
-  “更新电脑后重试”。`rpc-contract` 36/36、`cloud-host-runtime` 17/17、
+  “更新电脑后重试”。`rpc-contract` 37/37、`cloud-host-runtime` 17/17、
   `computer-update` 9/9、`client-contract` 通过。live 选择：本机 DSH
   `0.2.2-rc.5` + dependency checkout `1.2.0` + 临时 `DSH_HOME` + Rayrun dev
   daemon；真实 health 返回 `runtime.name=rayrun-cloud-host`、`available=true`。
@@ -773,9 +784,10 @@
     `DEFAULT_CREDENTIAL_OK` 文件，04:21:22.054Z task done，host log
     `hasCredential:true`；重启后 04:21:51.720Z history 收到
     `CLOUDHOST_DEFAULT_OK`。
-  机器 Stopped、runtime 删除、dev token 撤销、临时 DSH_HOME/proxy/凭证文件删除。
-  限制：dev 环境；dependency 修复未提交/未发版；dev 镜像是手工修补的，生产干净
-  账号的同一场景仍未签收。
+  机器已按用户明确指令于 2026-11-27T14:54:17Z destroy（`api_delete`），runtime
+  删除、dev token 撤销、临时 DSH_HOME/proxy/凭证文件删除。限制：dev 环境；
+  dependency 修复未提交/未发版；dev 镜像是手工修补的，生产干净账号的同一场景仍未
+  签收。
 - UI/诊断修正（2026-11-27，契约测试，无真实失效凭据复验）：(1) client 保留 health
   的 `runtime`；cloudHost 模式下详情和 Setup 不再把 `dsh-bot@1` / `dsh-bot-devcheck@1` 标成 shell oneshot，
   Setup 创建使用 `dsh-bot@1`；detached 模式仍警告并回退

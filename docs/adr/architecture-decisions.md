@@ -877,6 +877,9 @@ cloudHost 在用户的 Rayrun 机器上拥有 turn，任务一旦上传，本地
 - 云 host spec 未显式配置 credential 时，沿用机器已绑定的第一个凭据。
 - 旧镜像以 `E_GUESTD_OUTDATED` 失败关闭，并在聊天里提示更新电脑；不静默 fallback
   到 detached，避免同一任务重复执行、审批/ routine 双调度和两套 session 语义。
+- bot 空闲且使用 detached/cloudHost 时，`session.send` 等到云端 task attach 后才
+  返回；start 失败拒绝发送。运行中 bot 的后续消息仍只在本机排队；保证边界是
+  “收到发送成功响应之后”。
 - 客户端不为这次切换增加交接提示或后台状态徽标；用户只看现有的 Working 和结果。
 
 **后果。**

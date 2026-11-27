@@ -101,9 +101,11 @@ bot 的审批卡已接 host；示例 bot 卡片和设置仍是页内预览。本
 复用常驻 `bot-host`，`session.*` 走 cloudHost；配置 `cloudHost: false` 可保留
 detached。依赖 1.1 使用 detached `dsh.start/status/result` 把一轮 turn 发给已有的
 云电脑（没有机器时拒绝自动创建）；1.0.x 回退单轮 `rayrun_agent`；都不可用时
-`session.send` 返回 `E_RUNTIME_UNAVAILABLE`。cloudHost 用共享 `bot-host`，新 turn
-上传到 `/workspace/.rayrun/bots/<botId>/inbox/`；runtime spec 未显式配置 credential
-时沿用机器已绑定的第一个凭据。旧镜像会以 `E_GUESTD_OUTDATED` 拒绝 runtime，聊天里
+`session.send` 返回 `E_RUNTIME_UNAVAILABLE`。bot 空闲且使用 detached/cloudHost 时，
+`session.send` 等到 task 已 attach 才返回；start 失败则拒绝发送。运行中的 bot 后续
+消息仍只在本机排队，不等待。cloudHost 用共享 `bot-host`，新 turn 上传到
+`/workspace/.rayrun/bots/<botId>/inbox/`；runtime spec 未显式配置 credential 时沿用
+机器已绑定的第一个凭据。旧镜像会以 `E_GUESTD_OUTDATED` 拒绝 runtime，聊天里
 提示在设置 → Bot 更新电脑；更新目标在 cloudHost 下是 `dsh-bot@1`。detached 需要
 镜像的 oneshot 启动 DSH headless；已知 `dsh-bot@1` / `dsh-bot-devcheck@1` 的
 oneshot 是 `/bin/sh -c`，任务会立即结束且不会写 `reply.md`。Bots 在 `dsh.start`

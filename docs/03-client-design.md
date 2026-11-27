@@ -122,7 +122,8 @@ ADR-019（2026-11-23）：本地 DSH host 对 typed 本地动作做审批与执�
 读取本地 approval store，批准后可执行 `rayrun.machine.start/stop/pause/resume`。云端凭据动作仍等待
 平台隔离（ADR-001）；云端 proposal/决定/claim 不是授权边界。
 
-真实 bot：对话和审批卡走 host。示例 bot 仍是页内预览：发送消息后先显示 working row，
+真实 bot：对话和审批卡走 host。发送时页面先显示 working row；`session.send` 要等
+云端 task 已 attach 才返回，页面不额外显示交接提示。示例 bot 仍是页内预览：发送消息后先显示 working row，
 约 1.2 秒后出现模拟回复和 pending 审批卡，不调用 host，也不发送任何东西。对话在发送、
 回复和切换 bot 时滚动到最新一条。
 
