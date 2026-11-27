@@ -725,6 +725,15 @@
   **2026-11-27 按用户清理授权 destroy**；credential 保留。截图
   `/tmp/bot/clean-firstrun-*.png`、`/tmp/bot/clean-firstrun-reply.png`、
   `/tmp/bot/firstrun-reply.png`（临时文件，不入库）。
+- 首次运行 dev 计时（2026-11-27，Rayrun dev daemon + 本机 DSH `0.2.2-rc.5` +
+  Firefox/geckodriver，npm alpha.1 + 依赖 `1.2.1`，全新 `DSH_HOME`，既有 dev
+  credential `dsh-model-acceptance-20261127`，账号已有 `budget-int-test` 被电脑步骤
+  的 overview 过滤隐藏）：安装 **17.4s**、`dsh web` ready **5.8s**、浏览器导航→首轮
+  回复 **35.8s**（页面加载 4.4s、连接 2.0s、建机 8.1s、首轮回复 19.4s）；组件合计
+  **~59s**，回复 `FIRST_RUN_DEV_OK`。这是 dev 本地 API、既有 credential 和非空账号
+  workaround，不是生产干净账号或单一连续秒表签收；三分钟门仍未关闭。dev 机器
+  `rayrun-bot` 已按用户确认 destroy；dev API token 已撤销；截图
+  `/tmp/bot/dev-firstrun-reply.png`（临时文件，不入库）。
 - A6 批准延迟（2026-11-27，本机 DSH `0.2.2-rc.5` + Firefox/geckodriver，Bots 本地
   checkout `0.1.1-alpha.1` + 依赖 `1.2.1` npm，cloudHost 启用，机器
   `rayrun-bot-a6`（`dsh-bot@1`，credential `dsh-model-hjyu-thinkpad-l14-gen-1`））：

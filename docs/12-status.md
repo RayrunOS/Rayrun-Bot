@@ -508,6 +508,13 @@ proposal 的卡片 **2.291s**、执行 **0.779s**、Continue→working **21ms**�
   `rayrun-bot-invalid-credential-20261127` 均 Stopped、未 destroy。偏差：localhost
   代理、既有 credential、非空账号下过滤 overview 以触发 Create、WebDriver 驱动；
   详见 [`10-rayrun-verification.md`](10-rayrun-verification.md) §3.1。
+- 首次运行 dev 计时（2026-11-27，Rayrun dev daemon + 本机 DSH `0.2.2-rc.5`，
+  npm alpha.1 + 依赖 `1.2.1`，全新 `DSH_HOME`，既有 dev credential）：安装 **17.4s**、
+  `dsh web` ready **5.8s**、浏览器导航→首轮回复 **35.8s**（首轮回复 19.4s），
+  组件合计约 **59s**，回复 `FIRST_RUN_DEV_OK`。这是 dev 本地 API、既有 credential
+  和非空账号（`budget-int-test` 被过滤）workaround，不是生产干净账号或单一连续
+  秒表签收；三分钟门仍未关闭。dev 机器 `rayrun-bot` 已按用户确认 destroy；dev API
+  token 已撤销；截图 `/tmp/bot/dev-firstrun-reply.png`（临时文件，不入库）。
 - A6 批准延迟（2026-11-27，本机 DSH `0.2.2-rc.5` + Firefox/geckodriver，Bots 本地
   checkout + 依赖 `1.2.1` npm，cloudHost 启用，`rayrun-bot-a6` / `dsh-bot@1`）：
   真实 DeepSeek 回合 5.81s 后写出 `rayrun.machine.pause` proposal；回合 idle→审批卡
