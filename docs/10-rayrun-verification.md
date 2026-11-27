@@ -1,6 +1,6 @@
 # 10 — 验证、测试与 Rayrun 缺口
 
-> 状态：2026-11-27。本文是**验证/测试资源政策**和 **Rayrun 缺口登记册**。
+> 状态：2026-11-28。本文是**验证/测试资源政策**和 **Rayrun 缺口登记册**。
 > 所有需要计算资源的验证与测试都走 Rayrun（真实 token 页面例外见 §2.6）；Rayrun 不满足
 > 的项记在这里，不静默改用本地或其他云，也不把未验证写成已实现。平台能力需求本身仍以
 > [`08-integration.md`](08-integration.md) 为准。
@@ -815,6 +815,34 @@
   `guestd_outdated`，因此本轮无法在 dev 复验 cloudHost；生产 cloudHost routine 仍是
   2026-11-24 的 `CLOUD_ROUTINE_PROD_OK` 证据。dev 机器测试后按用户确认 destroy；
   dev API token 已撤销。
+- 生产 v0.1 签收（2026-11-28，Rayrun 在线 `api.rayrunos.com`，账号 `sys520084`，
+  本机 DSH `0.2.2-rc.5`，Node 24.15.0）：bots 用 main `d353eca` 的 tarball
+  `0.1.1-alpha.1`（`npm pack ./packages/dsh-rayrun-bots`，非 npm 发布产物），
+  依赖 npm `dsh-rayrun-computer@1.3.1`；全新 `DSH_HOME` + 全新 pnpm store。
+  - 安装 **3.12s**；`dsh web` ready **3.84s**；页面导航到首轮回复 **10.9s**；
+    从安装开始到首轮回复 **29.1s**（T0 `1795821542871` → T11
+    `1795821572018`）。
+  - setup 连接显示 `Connected · balance ¥17.07 · 1 machines`；health 依赖
+    `1.3.1` ok、runtime `rayrun-cloud-host` available；首轮
+    `SIGNOFF_FIRST_RUN_OK` 约 5 秒；详情显示
+    `rayrun-bot-signoff-20261128` / `dsh-bot@1` / Running。
+  - 合盖：`session.send` **980ms** 后返回 `state=running`、
+    `taskId=task-853619fc-7fd5-4d08-92e5-6978c37ca4e4`；同一毫秒 SIGKILL 本地
+    DSH。云端停机期间写出
+    `/workspace/cloudhost-signoff-20261128.txt`（`SIGNOFF_CLOUDHOST_OK`），
+    outbox `task-853619fc-….json` 为同一回复。重启同一 `DSH_HOME` 后
+    transcript 收到 bot 回复（23:16:36.210Z），页面显示完整历史。
+  - 偏差与限制：账号非零机器（历史 Terminated；`rayrun-bot-prod-e2e` 为
+    Running `deepseek-harness@1`，未动），setup 用页面级 fetch 过滤只保留本次
+    机器；机器用 host RPC 预建（`rayrun-bot-signoff-20261128`，`01a21f4a…`），
+    页面 `Create cloud computer` 点击后没有创建机器（回到采用已有机器，未显示错误，
+    原因未定位）；本机到生产 API 走 localhost
+    反向代理（`curl --interface wlp4s0`；token 只在 host vault/请求头，不进日志）；
+    页面由 WebDriver 驱动。npm `alpha.1` 是 2026-11-25 产物，不含 2026-11-26/27
+    的 UX 修复与默认 cloudHost，所以本次不是 npm 产物签收。测试机记录后
+    destroy（HTTP 204）；`rayrun-bot-prod-e2e` 保持原状。截图
+    `/tmp/bot/signoff-first-reply.png`、`signoff-cloudhost-reopen.png`、
+    `signoff-timed-first-run.png`、`signoff-computer-create2.png`（临时文件）。
 
 > Rayrun 连接、Open、云电脑创建三条依赖层路径是通过本机 Node 直接 import
 > `dsh-rayrun-computer@1.0.0` 的 `lib/rayrun.js` 验证的，调用的是插件页面使用的同一组
@@ -847,7 +875,9 @@
   host 已有 dev 预览（多 bot 单 host E2E 通过）；本地 typed 审批执行已通过拒绝/
   失败关闭的页面 E2E、真实 cloud proposal + start/stop/pause/resume、denial/Continue
   和下一轮结果 context 已 live；云端凭据动作仍未验证，仍等待平台隔离（ADR-001，
-  [`08-integration.md`](08-integration.md) §3.3）。
+  [`08-integration.md`](08-integration.md) §3.3）。生产默认 cloudHost 首轮与合盖
+  已于 2026-11-28 用 main tarball + 依赖 `1.3.1` 验证（§3.1）；npm 发布产物、
+  干净账号和页面建机路径仍未覆盖。
   本地 session store、`session.*` RPC、`rayrun_agent`/detached adapter 已有 fake
   测试；页面层真实一轮、detached 的页面关闭 + host 重启收取、同一 host 连续两轮、
   无 token 失败恢复、runtime 重建，以及三条消息排队 + 本地 DSH 崩溃恢复已在

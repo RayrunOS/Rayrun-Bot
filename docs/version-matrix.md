@@ -1,6 +1,6 @@
 # 版本矩阵
 
-> 状态：2026-11-27。本文记录 DSH、云电脑依赖 `dsh-rayrun-computer` 与 Rayrun Bot
+> 状态：2026-11-28。本文记录 DSH、云电脑依赖 `dsh-rayrun-computer` 与 Rayrun Bot
 > 包的兼容范围，以及**实际验证过**的组合。它不承诺未测试的组合；实现状态仍以
 > [`12-status.md`](12-status.md) 为准。
 > 依赖边界见 [`08-integration.md`](08-integration.md)；验证环境缺口见
@@ -66,6 +66,7 @@ cloudHost 会回退 detached；`1.2.0` 的 npm tarball 来自较旧的 `fe965c1`
 | `0.2.2-rc.5`（本机） | `1.2.1`（npm） | checkout（`0.1.1-alpha.1`） | 24.15 + `dsh-bot@1` | A6 cloudHost 真实 `rayrun.machine.pause` proposal：回合 idle→卡片 2.291s、proposal→卡片 0.464s、Allow→execution done 0.779s、机器 Paused 1.030s、Continue→working 21ms；机器 Stopped、runtime 删除、未 destroy | [`10-rayrun-verification.md`](10-rayrun-verification.md) §3.1（2026-11-27） |
 | `0.2.2-rc.5`（本机） | `1.2.1`（npm） | checkout（`0.1.1-alpha.1`） | 24.15 + Rayrun dev | A5 detached 真实任务：本地 DSH 停止期间写出 `acceptance-dev-20261127.txt`（`REAL_TASK_OK` + UTC 时间），重开后 history 收到 `REAL_TASK_OK`；dev 机器 `rayrun-bot` / `deepseek-harness@1`；机器测试后按用户确认 destroy；cloudHost 预览路径未在 dev 复验（`dsh-bot@1` 无 credential slot、`deepseek-harness@1` guestd 409） | [`10-rayrun-verification.md`](10-rayrun-verification.md) §3.1（2026-11-27） |
 | `0.2.2-rc.5`（本机） | `1.2.1`（npm） | `0.1.1-alpha.1`（npm） | 24.15 + Rayrun dev | 首次运行 dev 计时：安装 17.4s、web ready 5.8s、页面→首轮回复 35.8s、首轮回复 19.4s，合计约 59s；dev 本地 API、既有 credential、非空账号过滤；机器 destroy、token 撤销；非生产干净账号签收，三分钟门未关闭 | [`10-rayrun-verification.md`](10-rayrun-verification.md) §3.1（2026-11-27） |
+| `0.2.2-rc.5`（本机） | `1.3.1`（npm） | main `d353eca` tarball（`0.1.1-alpha.1`，非 npm） | 24.15.0 + Rayrun hosted prod `sys520084` | 默认 cloudHost 生产签收：全新 `DSH_HOME` + 冷 pnpm store，安装 3.12s、web ready 3.84s、页面到首轮回复 10.9s（安装→首轮 29.1s）；`dsh-bot@1` 首轮 `SIGNOFF_FIRST_RUN_OK`；`session.send` 980ms 返回 attach 后 SIGKILL 本地 DSH，云端停机期间写出 `SIGNOFF_CLOUDHOST_OK`，重开同一 `DSH_HOME` 收取；机器记录后 destroy | [`10-rayrun-verification.md`](10-rayrun-verification.md) §3.1（2026-11-28） |
 
 2026-11-27 按用户明确清理授权 destroy 13 台旧测试机（CI deploy、A1/A3、
 computer update、A6、首次运行计时）；仅保留 `rayrun-bot-prod-e2e`（Stopped、
@@ -82,7 +83,10 @@ Setup/电脑更新目标镜像随 runtime 变为 `dsh-bot@1`；上表 cloudHost 
 重开后 history 收到 `CLOUDHOST_DEFAULT_OK`；机器已按用户明确指令于
 2026-11-27T14:54:17Z destroy（`api_delete`），runtime 删除、dev token 撤销。限制：
 dev only；dependency 修复已在 `1.2.2`（`75e285d`）发布，当前 latest `1.3.1`，dev 镜像是手工修补；生产干净账号仍未
-复验。
+复验。2026-11-28 生产签收使用 main `d353eca` 的 tarball，而不是 npm `alpha.1`：
+npm `0.1.1-alpha.1` 发布于 2026-11-25，不含 2026-11-26/27 的 UX trust pass、
+默认 cloudHost、send acceptance 和 Issue #4/#6 修复；main 的 `package.json` 版本号
+仍是 `0.1.1-alpha.1`。发布 v0.1 前需要 bump 版本并重新发布，再从 npm 复验。
 
 “未安装”表示该 CI 矩阵只验证 Bots 包本身能安装和合成，不验证依赖或云端行为。
 表中 `0.1.0-alpha.0` 与“未发布 npm”是当次验证时的状态；当前包版本是
@@ -157,6 +161,8 @@ npm 归属与 OIDC trusted publishing 已配置；发布只走 `.github/workflow
 - 依赖 1.2.0 `runtime.*` 发布到 npm 后安装（今天从 main `fe965c1` checkout 验证）；
 - DSH `0.2.2-rc.5` 的 subprocess/terminal 完整安装路径（R-G005）；
 - 镜像 DSH `0.2.0-rc.2` 与本机/桌面 `0.2.2-rc.5` 的功能一致性（R-G007）；
+- 含 2026-11-26/27 main 改动（默认 cloudHost、UX 修复、send acceptance）的新
+  prerelease 的 npm 干净安装签收；
 - 稳定版发布：`0.1.1-alpha.1` 已通过 `publish.yml` 从 `v0.1.1-alpha.1` Release 发布
   （npm `alpha` tag）；`latest` 仍是旧的 `0.1.0-alpha.0`，稳定版尚未发布。
 
