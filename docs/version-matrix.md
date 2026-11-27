@@ -13,7 +13,7 @@
 | DeepSeek Harness | `>=0.2.0-rc.2 <0.3.0` | `packages/dsh-rayrun-bots/package.json` 的 `engines.dsh` |
 | `dsh-rayrun-computer` | `>=1.0.0 <2.0.0` | `packages/dsh-rayrun-bots/lib/dependency.js` |
 | Node | `>=24` | `engines.node` |
-| Rayrun Bot | `0.1.1-alpha.1` | `package.json` |
+| Rayrun Bot | `0.1.1-alpha.2`（本地未发布；npm `alpha` 仍是 `0.1.1-alpha.1`） | `package.json` |
 
 DSH `0.2.2-rc.5` 会读取并强制执行 `engines.dsh`：超出范围的插件行在合成时被禁用；
 旧运行时忽略该字段。`dsh-rayrun-computer` 的版本由 host 在启动时读取，缺失或不在
