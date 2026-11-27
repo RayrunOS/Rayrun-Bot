@@ -8,7 +8,8 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import {
-  DEPENDENCY_NAME, DEPENDENCY_RANGE, checkDependency, supportsDetached, supportsRuntimeRpc,
+  DEPENDENCY_NAME, DEPENDENCY_RANGE, checkDependency, supportsDetached,
+  supportsMachineCredentials, supportsRuntimeRpc,
 } from '../lib/dependency.js'
 
 const root = mkdtempSync(path.join(tmpdir(), 'rayrun-bots-dependency-'))
@@ -82,6 +83,25 @@ check('supportsRuntimeRpc requires the 1.2 line, not 1.1 or 2.x', () => {
     ['not-a-version', false],
   ]) {
     assert.equal(supportsRuntimeRpc(version), expectedValue, `supportsRuntimeRpc(${version})`)
+  }
+})
+
+check('machine credentials require 1.2.2, not 1.2.1', () => {
+  for (const [version, expectedValue] of [
+    ['1.0.0', false],
+    ['1.1.0', false],
+    ['1.2.0', false],
+    ['1.2.1', false],
+    ['1.2.2', true],
+    ['1.2.2-rc.1', true],
+    ['1.3.0', true],
+    ['1.3.1', true],
+    ['1.4.2', true],
+    ['2.0.0', false],
+    [null, false],
+    ['not-a-version', false],
+  ]) {
+    assert.equal(supportsMachineCredentials(version), expectedValue, `supportsMachineCredentials(${version})`)
   }
 })
 

@@ -23,7 +23,9 @@ import { openApprovalExecutor } from './lib/approval-executor.js'
 import { openApprovalStore } from './lib/approvals.js'
 import { openBotStore } from './lib/bots.js'
 import { createCloudHostRuntime } from './lib/cloud-host-runtime.js'
-import { checkDependency, supportsDetached, supportsRuntimeRpc } from './lib/dependency.js'
+import {
+  checkDependency, supportsDetached, supportsMachineCredentials, supportsRuntimeRpc,
+} from './lib/dependency.js'
 import { ERROR_CODES } from './lib/errors.js'
 import { resolveStateRoot } from './lib/local-store.js'
 import { createRayrunDetachedRuntime } from './lib/rayrun-detached-runtime.js'
@@ -324,7 +326,11 @@ export function apply(ctx, options = {}) {
   // fallback; an explicit object still pins or configures the host.
   const cloudHostExplicit = options.cloudHost !== undefined && options.cloudHost !== null && options.cloudHost !== false
   const cloudHostEnabled = options.cloudHost !== false && options.cloudHost !== null
-    && (cloudHostExplicit || (injectedRuntime === undefined && supportsRuntimeRpc(installed.version)))
+    && (cloudHostExplicit || (
+      injectedRuntime === undefined
+      && supportsRuntimeRpc(installed.version)
+      && supportsMachineCredentials(installed.version)
+    ))
   let cloudHostRuntime
   if (cloudHostEnabled) {
     const config = options.cloudHost === undefined || options.cloudHost === true ? {} : options.cloudHost

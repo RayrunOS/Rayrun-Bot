@@ -150,16 +150,30 @@ check('health selects the detached runtime for dependency 1.1.0', async () => {
   }
 })
 
-check('health selects the cloud host by default for dependency 1.2.0', async () => {
+check('health selects the cloud host by default for dependency 1.2.2', async () => {
   const profileDir = mkdtempSync(path.join(tmpdir(), 'rayrun-bots-cloud-profile-'))
   const packageDir = path.join(profileDir, 'node_modules', 'dsh-rayrun-computer')
   mkdirSync(packageDir, { recursive: true })
-  writeFileSync(path.join(packageDir, 'package.json'), JSON.stringify({ name: 'dsh-rayrun-computer', version: '1.2.0' }))
+  writeFileSync(path.join(packageDir, 'package.json'), JSON.stringify({ name: 'dsh-rayrun-computer', version: '1.2.2' }))
   try {
     const tools = { get: (name) => (name === 'rayrun_files' ? { execute() {} } : undefined) }
     const reply = await request(hostFor({ profileDir, tools }).handler, { method: 'GET', action: 'health' })
     assert.equal(reply.status, 200)
     assert.deepEqual(reply.json.runtime, { name: 'rayrun-cloud-host', available: true })
+  } finally {
+    rmSync(profileDir, { recursive: true, force: true })
+  }
+})
+
+check('health falls back to detached for dependency 1.2.1', async () => {
+  const profileDir = mkdtempSync(path.join(tmpdir(), 'rayrun-bots-cloud-profile-'))
+  const packageDir = path.join(profileDir, 'node_modules', 'dsh-rayrun-computer')
+  mkdirSync(packageDir, { recursive: true })
+  writeFileSync(path.join(packageDir, 'package.json'), JSON.stringify({ name: 'dsh-rayrun-computer', version: '1.2.1' }))
+  try {
+    const reply = await request(hostFor({ profileDir }).handler, { method: 'GET', action: 'health' })
+    assert.equal(reply.status, 200)
+    assert.deepEqual(reply.json.runtime, { name: 'rayrun-detached', available: true })
   } finally {
     rmSync(profileDir, { recursive: true, force: true })
   }

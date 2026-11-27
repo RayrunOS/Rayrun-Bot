@@ -19,6 +19,9 @@ export const DETACHED_MIN_VERSION = '1.1.0'
 /** `runtime.*` arrived in the 1.2 line. */
 export const RUNTIME_RPC_MIN_VERSION = '1.2.0'
 
+/** Machine-bound credential names arrived in 1.2.2. */
+export const MACHINE_CREDENTIALS_MIN_VERSION = '1.2.2'
+
 /**
  * Whether an installed 1.x dependency exposes the host-callable detached RPC.
  * 1.0.x uses the single-turn `rayrun_agent` tool instead.
@@ -46,6 +49,22 @@ export function supportsRuntimeRpc(version) {
   const minor = Number(match[1])
   const patch = Number(match[2])
   return minor > 2 || (minor === 2 && patch >= 0)
+}
+
+/**
+ * Whether the installed dependency returns machine-bound credential names in
+ * `overview.machines[]` / `machine.get`. Default cloudHost relies on this to
+ * carry the machine credential into the runtime spec; 1.2.0 and 1.2.1 do not.
+ * @param {string | null | undefined} version
+ * @returns {boolean}
+ */
+export function supportsMachineCredentials(version) {
+  if (typeof version !== 'string') return false
+  const match = /^1\.(\d+)\.(\d+)(?:[-+][0-9A-Za-z.-]+)?$/.exec(version)
+  if (!match) return false
+  const minor = Number(match[1])
+  const patch = Number(match[2])
+  return minor > 2 || (minor === 2 && patch >= 2)
 }
 
 /** Read the installed package manifest, distinguishing a missing package from a broken one. */
