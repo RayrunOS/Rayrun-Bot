@@ -107,16 +107,20 @@ client（`lib/runtime-rpc.js`），cloudHost 预览用它在机器上注册常�
 写 `reply.md`。Bots 在 `dsh.start` 前对这两个镜像失败关闭（`E_IMAGE_UNSUPPORTED`）。
 overview 的 `agent` 为空时再读 `machine.get`；仍然读不到、且 session 里没有这台
 电脑已记录的镜像时，同样失败关闭且不创建 task。读到的镜像写入 `session.json` 的
-`image`。收集阶段缺失 `reply.md` 返回 `E_WORKER_NO_REPLY`；Setup 创建机器时不会
-默认这两个镜像，已有这类机器会显示警告，不会自动更换镜像。detached 的云端 DSH
+`image`。收集阶段缺失 `reply.md` 返回 `E_WORKER_NO_REPLY`；detached 模式下 Setup
+创建机器时不会默认这两个镜像，已有这类机器会显示警告，不会自动更换镜像。cloudHost
+模式不显示该警告，因为 `dsh-bot@1` 正是常驻 `bot-host` 使用的镜像。detached 的云端 DSH
 worker 还需要 DeepSeek credential 注入；测试机 `rayrun-bot-a3-20261125` 的
 `credentials` 为空时，worker session 记录的是 `MISSING_CREDENTIAL`，任务结束但没有
 `reply.md`，这不是沙盒休眠。`dsh.start` 本身会调用 `ray.wake` 启动/恢复已停止或暂停
 的机器；Running 机器不需要额外唤醒。新机器应在 Setup 填 DeepSeek key，或确认
 Rayrun 默认 credential 已覆盖。绑定的 credential 失效时同理：worker 以 provider
-的 Authentication Fails 退出，任务没有 `reply.md`，页面显示 worker-no-reply 而不是
-认证错误（2026-11-27 用失效的 `dsh-model-sinnet` 复现）。遇到时在 Setup 重新填一个
-有效的 DeepSeek key，或换一个有效的 Rayrun credential。发送一轮会让依赖启动已停止/暂停的机器，
+的 Authentication Fails 退出，任务没有 `reply.md`。detached 模式会读取 worker
+session 的 provider 错误，脱敏后附在 `E_WORKER_NO_REPLY` 后；cloudHost 的失败回合
+写脱敏 error outbox，同样转为 worker-no-reply；页面在错误行显示该详情
+（2026-11-27 用失效的 `dsh-model-sinnet` 复现原始现象；详情展示为契约测试覆盖，
+未再次用失效 credential 做页面复验）。遇到时在 Setup 重新填一个有效的 DeepSeek
+key，或换一个有效的 Rayrun credential。发送一轮会让依赖启动已停止/暂停的机器，
 可能产生机时费用。真实一轮（单轮 adapter）、detached 的页面关闭 + 本地 DSH 重启后
 继续，以及机器 stop/start 后的第二轮续接（A8），已在本机页面 + 已有 Rayrun 机器验证
 （2026-11-22）。host half 还提供

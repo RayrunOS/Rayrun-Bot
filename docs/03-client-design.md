@@ -144,10 +144,11 @@ attention、snippet 与时间。chat 来源没有 TTL，显示 `waits for you`�
 `machine.create`，规格取插件的 `defaults`（默认 `deepseek-harness@1`、2 vCPU、至少 2 GB、
 远程桌面）。key 只作为 `modelKey` 交给云电脑插件存成机器凭据，不进入 Bots 的 host 状态，
 成功后清空输入。按钮文案明确说明这是 Rayrun 账号上的计费机器；Setup 创建不销毁它，
-电脑更新的销毁规则见下文；未连接时按钮不可用，失败显示一句可执行错误。创建时如果插件的默认镜像是已知的
-shell oneshot（`dsh-bot@1`、`dsh-bot-devcheck@1`），Setup 改用
-`deepseek-harness@1`；选中已有这类镜像时显示警告，因为 detached 回合不会启动 DSH
-worker。多台机器时 setup 和重复创建检查优先选
+电脑更新的销毁规则见下文；未连接时按钮不可用，失败显示一句可执行错误。detached
+模式下，创建时如果插件的默认镜像是已知的 shell oneshot（`dsh-bot@1`、
+`dsh-bot-devcheck@1`），Setup 改用 `deepseek-harness@1`；选中已有这类镜像时显示
+警告，因为 detached 回合不会启动 DSH worker。cloudHost 模式保留默认镜像
+（`dsh-bot@1` 正是常驻 host 所用），不显示该警告。多台机器时 setup 和重复创建检查优先选
 `rayrun-bot`，其次优先 Running（有 `desktop_url` 再优先），再选有 `desktop_url` 的
 机器，最后才用第一台；Open 不用这个猜测：
 host 从 bot 的 session 提供实际机器名（`bots.list.computers`），客户端只查
@@ -229,10 +230,13 @@ bot 继续使用原机器名，因此 session/cloudHost 的机器名不变。
   `deepseek-harness@1` 之类的镜像。overview 没有 `agent` 时再读一次
   `machine.get`；仍然读不到、且本机 session 也没有这台电脑的镜像名时，同样在
   创建 task 前失败。已知镜像会写进 `session.json` 的 `image`，详情和 Setup
-  能看到它；Setup 对已有 oneshot 镜像显示警告，不会自动更换镜像
-- worker 结束但没有写 `reply.md`（`E_WORKER_NO_REPLY`）：失败关闭，不收集旧回复；
-  提示检查 worker session 的 provider 错误。缺少 DeepSeek 凭据时 worker 会以
-  `MISSING_CREDENTIAL` 退出；添加模型凭据或用带凭据的电脑重建
+  能看到它；detached 模式下 Setup 对已有 oneshot 镜像显示警告，不会自动更换镜像
+  （cloudHost 不显示该警告，`dsh-bot@1` 是其正常镜像）
+- worker 结束但没有写 `reply.md`（`E_WORKER_NO_REPLY`）：失败关闭，不收集旧回复。
+  detached 模式读取 worker session 的 provider 错误，脱敏后作为错误详情显示；
+  cloudHost 的失败回合由 host 写脱敏 error outbox，adapter 转为同一错误码。缺少
+  DeepSeek 凭据时 worker 会以 `MISSING_CREDENTIAL` 退出；添加模型凭据或用带凭据的
+  电脑重建
 - 电脑忙碌（`E_MACHINE_BUSY`）
 - 云电脑创建失败或超时（显示 Rayrun 返回的原因）
 - bot runtime 恢复中（`E_HOST_DOWN`）

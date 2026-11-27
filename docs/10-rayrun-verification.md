@@ -751,7 +751,17 @@
   GiB），因此改用已有 `dsh-bot@1` 测试机；同日按用户明确清理授权 destroy 13 台旧
   测试机，仅保留 `rayrun-bot-prod-e2e`（Stopped、未 destroy）。详情面板同时把
   `dsh-bot@1` 标成 shell oneshot / 不会启动 DSH worker；这是 detached runtime 的
-  警告，在 cloudHost 下是误报，已登记为 UI 缺口。
+  警告，在 cloudHost 下是误报。该误报已在同日 UI 修正中按 runtime 区分：
+  cloudHost 隐藏警告，detached 保留；未重跑 A6 页面复验。
+- UI/诊断修正（2026-11-27，契约测试，无真实失效凭据复验）：(1) client 保留 health
+  的 `runtime`；cloudHost 模式下详情和 Setup 不再把 `dsh-bot@1` / `dsh-bot-devcheck@1` 标成 shell oneshot，
+  Setup 创建也不因此改默认镜像；detached 模式仍警告并回退
+  `deepseek-harness@1`。(2) detached 缺失 `reply.md` 时用 `rayrun_exec` 读取
+  worker session 的 provider 错误，脱敏后附在 `E_WORKER_NO_REPLY` 后；cloudHost
+  失败回合写脱敏 error outbox，adapter 转为 worker-no-reply，客户端错误行显示
+  `rb-error-detail`。`rayrun-detached-runtime` 17/17、`cloud-host` 8/8、
+  `cloud-host-runtime` 16/16、`client-contract` 通过；未重新制造失效 credential
+  做页面复验。
 - 合上笔记本真实任务（2026-11-27，Rayrun dev daemon + 本机 DSH `0.2.2-rc.5` +
   Firefox/geckodriver，Bots 本地 checkout + 依赖 `1.2.1` npm）：dev daemon
   `127.0.0.1:8080`；机器 `rayrun-bot`（`deepseek-harness@1`，credential
