@@ -42,7 +42,9 @@ transport adapter 已进包（预览）并通过页面 E2E（`HOST_E2E_OK`）；
 2026-11-27 首次运行分段计时约 **1m55s–3m03s**（插件安装 61–128s 是主要变量）；
 单一连续的三分钟签收尚未完成，见 §3.1。同日 A6 批准延迟已计时：真实 cloudHost
 proposal 的卡片 **2.291s**、执行 **0.779s**、Continue→working **21ms**；A6 的
-10 秒计时缺口已补齐，见 §3.1。
+10 秒计时缺口已补齐，见 §3.1。同日 A5 的“合上笔记本”真实任务在 Rayrun dev 通过：
+本地 DSH 停止期间 detached worker 写出真实文件，重开后 history 收到
+`REAL_TASK_OK`；见 §3.1。
 
 ## 2. 依赖项目今天可用
 
@@ -514,6 +516,18 @@ proposal 的卡片 **2.291s**、执行 **0.779s**、Continue→working **21ms**�
   `Continue bot` 点击→working **21ms**（UI 需要用户点 Continue，不自动续跑）。测试机
   Stopped、`bot-host` runtime 删除、未 destroy；截图 `/tmp/bot/a6-pending.png`、
   `/tmp/bot/a6-allowed.png`、`/tmp/bot/a6-continue.png`（临时文件，不入库）。
+- 合上笔记本真实任务（2026-11-27，Rayrun dev daemon + 本机 DSH `0.2.2-rc.5`，
+  Bots 本地 checkout + 依赖 `1.2.1` npm，非 cloudHost/detached）：dev 机器
+  `rayrun-bot`（`deepseek-harness@1`，credential `dsh-model-acceptance-20261127`）。
+  用户消息 00:12:52.452Z；detached task 00:12:56.463Z 开始；随后停止本地 DSH。
+  云端 worker 在本地 DSH 停止期间写出真实文件 `/workspace/acceptance-dev-20261127.txt`
+  （`REAL_TASK_OK 2026-11-27T00:13:04Z`）；重启同一 `DSH_HOME` 后 history 收到 bot
+  回复 `REAL_TASK_OK`（00:13:18.185Z），页面显示结果，截图
+  `/tmp/bot/dev-acceptance-reopen.png`（临时文件，不入库）。dev `dsh-bot@1` 无
+  credential slot，`deepseek-harness@1` 的 `runtime.put` 返回 409
+  `guestd_outdated`，故本轮是 detached runtime，不是 cloudHost 预览；生产 cloudHost
+  routine 仍按 2026-11-24 证据。dev 机器测试后按用户确认 destroy；dev API token
+  已撤销。
 - 具体组合、环境和缺口以 [`10-rayrun-verification.md`](10-rayrun-verification.md)
   和 [`version-matrix.md`](version-matrix.md) 为准；未测试的组合不作承诺。
 
