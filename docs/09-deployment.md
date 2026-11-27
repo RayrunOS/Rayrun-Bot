@@ -97,19 +97,23 @@ dsh plugin --profile web add "<packages/dsh-rayrun-bots 的绝对路径>"
 设置。对话 UI 对真实名册 bot 读取并发送 `session.*`；示例 bot 仍走页内预览。真实
 bot 的审批卡已接 host；示例 bot 卡片和设置仍是页内预览。本地 roster 和每 bot 的
 `session.json` / `transcript.jsonl` 已持久化，host half 提供 `session.send/history/status`；
-依赖 1.1+ 时，adapter 用 detached `dsh.start/status/result` 把一轮 turn 发给已有的
-云电脑（没有机器时拒绝自动创建）；1.0.x 回退单轮 `rayrun_agent`；两者都不可用时
-`session.send` 返回 `E_RUNTIME_UNAVAILABLE`。依赖 1.2+ 另有 host-side `runtime.*`
-client（`lib/runtime-rpc.js`），cloudHost 预览用它在机器上注册常驻 `bot-host`；
-默认关闭，启用后 `session.*` 走该 adapter（dev 与生产两 bot 单 host 已通过），未启用
-时仍走 detached/agent。detached 需要镜像的 oneshot 启动 DSH headless；已知
-`dsh-bot@1` / `dsh-bot-devcheck@1` 的 oneshot 是 `/bin/sh -c`，任务会立即结束且不会
-写 `reply.md`。Bots 在 `dsh.start` 前对这两个镜像失败关闭（`E_IMAGE_UNSUPPORTED`）。
+依赖 1.2+ 时，host-side `runtime.*` client（`lib/runtime-rpc.js`）默认在机器上注册并
+复用常驻 `bot-host`，`session.*` 走 cloudHost；配置 `cloudHost: false` 可保留
+detached。依赖 1.1 使用 detached `dsh.start/status/result` 把一轮 turn 发给已有的
+云电脑（没有机器时拒绝自动创建）；1.0.x 回退单轮 `rayrun_agent`；都不可用时
+`session.send` 返回 `E_RUNTIME_UNAVAILABLE`。cloudHost 用共享 `bot-host`，新 turn
+上传到 `/workspace/.rayrun/bots/<botId>/inbox/`；runtime spec 未显式配置 credential
+时沿用机器已绑定的第一个凭据。旧镜像会以 `E_GUESTD_OUTDATED` 拒绝 runtime，聊天里
+提示在设置 → Bot 更新电脑；更新目标在 cloudHost 下是 `dsh-bot@1`。detached 需要
+镜像的 oneshot 启动 DSH headless；已知 `dsh-bot@1` / `dsh-bot-devcheck@1` 的
+oneshot 是 `/bin/sh -c`，任务会立即结束且不会写 `reply.md`。Bots 在 `dsh.start`
+前对这两个镜像失败关闭（`E_IMAGE_UNSUPPORTED`）。
 overview 的 `agent` 为空时再读 `machine.get`；仍然读不到、且 session 里没有这台
 电脑已记录的镜像时，同样失败关闭且不创建 task。读到的镜像写入 `session.json` 的
-`image`。收集阶段缺失 `reply.md` 返回 `E_WORKER_NO_REPLY`；detached 模式下 Setup
-创建机器时不会默认这两个镜像，已有这类机器会显示警告，不会自动更换镜像。cloudHost
-模式不显示该警告，因为 `dsh-bot@1` 正是常驻 `bot-host` 使用的镜像。detached 的云端 DSH
+`image`。收集阶段缺失 `reply.md` 返回 `E_WORKER_NO_REPLY`；cloudHost 模式下
+Setup 创建 `dsh-bot@1`，不显示 shell-oneshot 警告，因为 `dsh-bot@1` 正是常驻
+`bot-host` 使用的镜像。detached 模式创建时避开这两个镜像，已有这类机器会显示警告，
+不会自动更换镜像。detached 的云端 DSH
 worker 还需要 DeepSeek credential 注入；测试机 `rayrun-bot-a3-20261125` 的
 `credentials` 为空时，worker session 记录的是 `MISSING_CREDENTIAL`，任务结束但没有
 `reply.md`，这不是沙盒休眠。`dsh.start` 本身会调用 `ray.wake` 启动/恢复已停止或暂停
@@ -196,8 +200,9 @@ npm_config_registry=https://registry.npmjs.org \
 [`12-status.md`](12-status.md)。
 
 **更新 Bot 的电脑**：Rayrun 没有 in-place rebuild API，Settings → Bot 的电脑 走
-replace 路径：旧机改名为 `<name>-pre-update-<time>`，用原名称、固定镜像
-`deepseek-harness@1` 和自动选中的 DeepSeek credential 创建新机，复制
+replace 路径：旧机改名为 `<name>-pre-update-<time>`，用原名称、当前 runtime 的镜像
+（cloudHost 用 `dsh-bot@1`，detached 用 `deepseek-harness@1`）和自动选中的 DeepSeek
+credential 创建新机，复制
 `/workspace`、`/root/.config`、`/root/.local/share`、`/root/.mozilla`、
 `/root/.ssh`，验证新机后销毁旧机。UI 不提供镜像或凭据选项；credential 优先沿用当前电脑
 已绑定的名称，否则选择账号里名称匹配 DeepSeek/model 的凭据，找不到就失败关闭。
@@ -206,7 +211,7 @@ replace 路径：旧机改名为 `<name>-pre-update-<time>`，用原名称、固
 该操作会创建计费机器，页面必须确认；用户确认更新即是对销毁旧机的明确请求。
 网络 egress 规则不复制；新机显式放行 `api.deepseek.com` 供 bot 模型使用，
 其他旧 egress 规则不保留，更新后需确认其他网络依赖。`computer-update.mjs`
-覆盖固定镜像与自动凭据、fake 编排、销毁与回滚；真实 Rayrun 的销毁路径尚未单独
+覆盖镜像选择与自动凭据、fake 编排、销毁与回滚；真实 Rayrun 的销毁路径尚未单独
 复验（见 `10-rayrun-verification.md`）。
 
 ---
@@ -245,30 +250,41 @@ start/stop/pause/resume 执行已接，示例 bot 与设置仍是页内预览。
 | `credentials` | `[]` | 注入 agent 进程的模型 credential |
 | `baseUrl` | `https://api.rayrunos.com/v1` | Rayrun API 端点 |
 
-### 5.1 Bots cloud host（预览）
+### 5.1 Bots cloud host（依赖 1.2+ 默认）
 
-常驻 bot host 的 runtime adapter 是**预览**，默认关闭。启用时在同一个 profile 的
-`cordis.patch.yml` 里覆盖 **rayrun-bots** 行（不是云电脑行）：
+常驻 bot host 的 runtime adapter 在依赖 1.2+ 上**默认启用**，不需要 profile 配置。
+要关闭并回退到 per-turn detached，在同一个 profile 的 `cordis.patch.yml` 里覆盖
+**rayrun-bots** 行（不是云电脑行）：
+
+```yaml
+- id: rayrun-bots
+  name: 'dsh-rayrun-bots'
+  config:
+    cloudHost: false
+```
+
+需要显式固定机器、凭据或 profile 时，仍可传对象；未写 `enabled` 时对象即启用：
 
 ```yaml
 - id: rayrun-bots
   name: 'dsh-rayrun-bots'
   config:
     cloudHost:
-      enabled: true
       credentials: ['deepseek-flash']
       profile: bot
 ```
 
 | 键 | 默认 | 含义 |
 | --- | --- | --- |
-| `enabled` | 未启用 | 启用后使用常驻 host adapter；`false` 回退 per-turn detached/agent |
+| `enabled` | 1.2+ 启用 | `false` 回退 per-turn detached/agent |
 | `hostScript` | 无（自动 projection） | 覆盖投影后的 host 入口；正常不需要设置 |
-| `credentials` | `[]` | 传给 runtime spec 的沙箱凭证**名**，不是值 |
+| `credentials` | `[]` | 传给 runtime spec 的沙箱凭证**名**，不是值；空时沿用机器已绑定的第一个凭据 |
 | `profile` | `bot` | host 内 DSH 使用的 profile，由 host 从 headless 模板创建 |
 | `machine` | 自动选择 | 固定机器名/id；仍要求机器已存在 |
 
-要求依赖 1.2+（`runtime.*`）和 `rayrun_files` 工具。host 资产随本包发布在
+默认路径要求依赖 1.2+（`runtime.*`）和 `rayrun_files` 工具；镜像应为
+`dsh-bot@1`（Setup 和电脑更新在 cloudHost 下会选它）。旧镜像会以
+`E_GUESTD_OUTDATED` 失败，需要先更新电脑。host 资产随本包发布在
 `cloud-host/`；adapter 启动前用 `lib/host-projection.js` 上传到
 `/workspace/.rayrun/host/<package version>/`，校验 SHA-256 manifest，再注册 runtime。
 adapter 先解析已有机器，机器不存在时拒绝；由于 `rayrun_files` 会按依赖的

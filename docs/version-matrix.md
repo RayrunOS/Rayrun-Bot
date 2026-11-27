@@ -70,8 +70,17 @@ tarball `gitHead=3604e33`，包含 prompt-root 与测试 mock 修复；`1.2.0` �
 computer update、A6、首次运行计时）；仅保留 `rayrun-bot-prod-e2e`（Stopped、
 未 destroy）。表中“机器 stop、未 destroy”是当次测试收尾；之后的清理不改变当次
 验证证据。2026-11-27 起 `computer.update` 在迁移成功后 destroy 旧机
-（`computer-update.mjs` 8/8）；表中 2026-11-26 的旧机 Stopped、未 destroy 是当次
-行为，真实 Rayrun 的 destroy 路径未复验。
+（`computer-update.mjs` 9/9）；表中 2026-11-26 的旧机 Stopped、未 destroy 是当次
+行为，真实 Rayrun 的 destroy 路径未复验。同日依赖 1.2+ 默认切到 cloudHost，
+Setup/电脑更新目标镜像随 runtime 变为 `dsh-bot@1`；上表 cloudHost 行仍是显式启用
+时的历史组合。2026-11-27 稍后已在 dev 验证默认 cloudHost 合盖：health
+`runtime=rayrun-cloud-host`；Rayrun 修复 dev 镜像（`deepseek-harness@1` guestd
+0.6.0、`dsh-bot@1` 补 credential slot），dependency 本地补
+`shapeSandbox.credentials`。机器 `rayrun-bot-cloudhost-accept-20261127` 上，
+本地 DSH 被杀期间云端写出 `REAL_CLOUDHOST_OK` / `DEFAULT_CREDENTIAL_OK` 文件，
+重开后 history 收到 `CLOUDHOST_DEFAULT_OK`；机器 Stopped、runtime 删除、dev token
+撤销。限制：dev only；dependency 修复未提交/未发版，dev 镜像是手工修补；生产
+干净账号仍未复验。
 
 “未安装”表示该 CI 矩阵只验证 Bots 包本身能安装和合成，不验证依赖或云端行为。
 表中 `0.1.0-alpha.0` 与“未发布 npm”是当次验证时的状态；当前包版本是

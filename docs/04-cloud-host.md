@@ -44,7 +44,8 @@ workspace 跨 stop/start 保留。bot 侧 supervisor/session 实现仍是本仓�
 （ADR-007）；契约见 [`08-integration.md`](08-integration.md) §3.1。2026-11-22 dev
 spike：镜像 DSH 0.2.0-rc.2 的 headless `--session-id` 可跨进程续接
 （`RUN1_OK` → `ALPHA`）；`packages/dsh-rayrun-bots/cloud-host` 的 DSH agent 已实现两轮
-`HOST1_OK` → `BETA`。核心 host 尚未进入包。
+`HOST1_OK` → `BETA`，host 资产已随包交付；依赖 1.2+ 时它是默认执行路径，`cloudHost:false`
+保留 detached 回退。
 
 ### 1.1 在栈里的位置
 
@@ -135,7 +136,7 @@ host 决定/执行（ADR-019），云端凭据动作仍等待平台隔离（ADR-
 }
 ```
 
-当前预览 host 的任务文件是 `{ schema, id, text, at, origin?, routineId? }`；
+当前 cloud host 的任务文件是 `{ schema, id, text, at, origin?, routineId? }`；
 `origin: "routine"` 由本地 scheduler 或云端 routine scheduler 设置，host 保留它，
 并把该轮产生的审批提案标为 `background`（30 分钟过期）。完整字段、状态机与恢复
 规则见 ADR-012；在执行日志/幂等定稿前不要实现副作用重试（ADR-005）。

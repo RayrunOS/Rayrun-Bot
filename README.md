@@ -75,12 +75,14 @@ sets the registry.
 
 On 2026-11-25 that command was checked against the official registry: both
 plugins loaded, and one turn sent to an existing stopped hosted machine came
-back. That check used the preview on-machine host (off unless you enable it)
-and a maintainer machine. The machine from that check is not a setup
-requirement, and the check is not a promise for every account or image.
+back. That check used the on-machine host and a maintainer machine. The machine
+from that check is not a setup requirement, and the check is not a promise for
+every account or image.
 
-The on-machine host stays off until you enable `cloudHost`. The switch, and the
-longer operator notes, are in [docs/09-deployment.md](docs/09-deployment.md).
+The on-machine host is the default execution path on `dsh-rayrun-computer` 1.2+.
+It needs an image new enough for Rayrun runtimes (`dsh-bot@1`); the Update
+computer button moves an older machine. Operator notes are in
+[docs/09-deployment.md](docs/09-deployment.md).
 
 ## What you can do today
 
@@ -93,7 +95,7 @@ Still pre-alpha. This is the short version; evidence is in
 - Open the computer's desktop, and stop the machine. Stop does not destroy it; only a confirmed computer update removes the old computer, after the replacement is ready.
 - Approve or deny start, stop, pause, and resume. Allow once runs that action from your local host. Deny, expiry, or an unknown result does not run it.
 - Create, pause, and remove an interval routine. A routine is an ordinary turn. Turning one on can wake a machine and spend money on later runs. Cron and event triggers are not built.
-- Optionally run a preview host on the computer, one process shared by your bots. With it on, a routine can run while local DSH is stopped. It is off by default. The hosted check used a machine image new enough for Rayrun runtimes (`dsh-bot@1`). Older official images can reject the runtime with `guestd_outdated`.
+- Run one persistent host on the computer, shared by your bots. It is the default on dependency 1.2+, so a routine can run while local DSH is stopped. The hosted check used a machine image new enough for Rayrun runtimes (`dsh-bot@1`); older official images can reject the runtime with `guestd_outdated` until the computer is updated.
 
 ## What it does not do
 
@@ -129,7 +131,7 @@ a timeout is a no.
 | | |
 | --- | --- |
 | [Status](docs/12-status.md) | What works, what is missing, and the checked combinations. This page defers to it. |
-| [Install and run](docs/09-deployment.md) | Operator notes, including how to turn on the preview host. |
+| [Install and run](docs/09-deployment.md) | Operator notes, including the on-machine host. |
 | [Version matrix](docs/version-matrix.md) | DSH, computer plugin, and bot package combinations that were actually checked. |
 | [Security](docs/07-security.md) | What is protected, and what is not. |
 | [FAQ](docs/faq.md) | Pricing, credentials, models, and limits. |

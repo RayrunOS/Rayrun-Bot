@@ -20,7 +20,7 @@
 | [ADR-004](#adr-004) | 与 `dsh-rayrun-computer` 的契约 | Proposed | 在依赖仓库写能力/版本契约；不复制 token | A2, C1–C5, D1, G1 |
 | [ADR-005](#adr-005) | 副作用执行语义 | Proposed | `actionId`、执行日志、幂等与重试规则 | C8, E1–E7, A7 |
 | [ADR-006](#adr-006) | “合上笔记本”意味着什么 | Proposed | 写清允许的工作、审批过期与计费后果 | A5, A6, G3 |
-| [ADR-007](#adr-007) | 常驻 bot runtime 的凭据与 DSH profile 模型 | Proposed | M2 前做 spike；回退到逐次 headless + transcript replay | C1–C4, D1–D5, A5, A8 |
+| [ADR-007](#adr-007) | 常驻 bot runtime 的凭据与 DSH profile 模型 | Accepted（2026-11-27；默认 cloudHost 见 ADR-021） | M2 前做 spike；回退到逐次 headless + transcript replay | C1–C4, D1–D5, A5, A8 |
 | [ADR-008](#adr-008) | Desktop 访问路径 | Proposed | 核实依赖的路径；没有安全路径就不要承诺 takeover | F5, security |
 | [ADR-009](#adr-009) | Routines / scheduler 范围 | Accepted（2026-11-23；cloudHost dev live 2026-11-24） | 本地 host 定时入队普通 turn；cloudHost 模式由云 host 调度；云端队列串行执行 | M1, M4 |
 | [ADR-010](#adr-010) | RPC 路由与信封 | Proposed | 选定一个契约，代码、测试、文档一起对齐 | F2, F4 |
@@ -33,6 +33,8 @@
 | [ADR-017](#adr-017) | Bots 作为默认产品表面 | Accepted（2026-11-21） | Rayrun Bot 品牌；加载即激活 Bots；DSH 是宿主，Bots 内不返回 DSH | v0.1, v1.0 |
 | [ADR-018](#adr-018) | 文档事实源与语言 | Accepted（2026-11-22） | README 只做营销；`docs/12-status.md` 是实现状态唯一事实源；`docs/` 全中文 | docs |
 | [ADR-019](#adr-019) | 审批执行权威 | Accepted（2026-11-23，本地 DSH host） | 云端只提案；本地审批与执行；typed allowlist；平台隔离仍用于云端凭据动作 | E1–E7/A6/A7（本地动作解阻；云提案 bridge、start/stop、denial/Continue 与 context 已 live） |
+| [ADR-020](#adr-020) | 云电脑是 agent 的安全容器 | Accepted（2026-11-26） | 容器内 `danger-full-access` 是设计；审批只覆盖离开容器的 typed 动作 | 安全文案/文档 |
+| [ADR-021](#adr-021) | 默认执行路径 | Accepted（2026-11-27） | 依赖 1.2+ 默认常驻 cloudHost；`cloudHost:false` 保留 detached；镜像与电脑更新随 runtime | A5, 发布 |
 
 ## P0 — bot runtime 与审批动工前必须定
 
@@ -282,7 +284,7 @@ C6、G3。
 <a id="adr-007"></a>
 ### ADR-007 — 常驻 bot runtime 的凭据与 DSH profile 模型
 
-**状态：** Proposed.
+**状态：** Accepted（2026-11-27；默认执行路径见 ADR-021）.
 
 **问题。** 受监督的 bot runtime 能否拿到模型凭据，并按 bot 运行 session/profile？
 
@@ -855,6 +857,41 @@ workspace 内任意运行，也能写/改提案；本 ADR 只保护“需要本�
 **证据。** 用户 2026-11-26 决定；[`07-security.md`](../07-security.md) §4、
 [`08-integration.md`](../08-integration.md) §3.3、[`12-status.md`](../12-status.md)
 §4/§5；`CLAUDE.md` §6.11。
+
+<a id="adr-021"></a>
+### ADR-021 — 常驻 cloudHost 是依赖 1.2+ 的默认执行路径
+
+**状态：** Accepted（2026-11-27，用户决定）.
+
+**问题。** 产品要求“合上笔记本后 Bot 继续做完”，且用户不应管理本地/云端交接。
+detached 每轮由本地 host 提交；发送后立即合盖存在尚未提交到云端的窗口。常驻
+cloudHost 在用户的 Rayrun 机器上拥有 turn，任务一旦上传，本地页面或进程停止不影响
+执行。
+
+**决策。**
+
+- 依赖 1.2+ 且未显式配置时，默认使用常驻 `cloudHost`；`cloudHost: false` 保留
+  detached，依赖 1.1 仍走 detached，1.0 走 `rayrun_agent`。
+- 新机器镜像随 runtime：cloudHost 用 `dsh-bot@1`，detached 用
+  `deepseek-harness@1`；电脑更新也按当前 runtime 选择镜像。
+- 云 host spec 未显式配置 credential 时，沿用机器已绑定的第一个凭据。
+- 旧镜像以 `E_GUESTD_OUTDATED` 失败关闭，并在聊天里提示更新电脑；不静默 fallback
+  到 detached，避免同一任务重复执行、审批/ routine 双调度和两套 session 语义。
+- 客户端不为这次切换增加交接提示或后台状态徽标；用户只看现有的 Working 和结果。
+
+**后果。**
+
+- 旧 `deepseek-harness@1` 机器需要先经电脑更新换到 `dsh-bot@1`；更新前聊天会以
+  `E_GUESTD_OUTDATED` 失败并给出可执行提示。
+- 默认 cloudHost 的“发送 → 立即合盖 → 重开收结果”仍需生产干净账号验收；现有
+  A5 dev 证据是 detached 路径。发送尚未到达本地 host 前的物理窗口仍在；真正的
+  零丢失需要云端入口，另行决策。
+- `cloudHost: false` 是显式回退；1.2+ 的 detached 仍可用于迁移或诊断。
+
+**证据。** 用户 2026-11-27 决定；[`01-system-architecture.md`](../01-system-architecture.md)
+§1/§2；[`04-cloud-host.md`](../04-cloud-host.md) §1；[`09-deployment.md`](../09-deployment.md)；
+[`12-status.md`](../12-status.md) §3.1；`test/rpc-contract.mjs`、
+`test/cloud-host-runtime.mjs`、`test/computer-update.mjs`。
 
 ## 建议顺序
 

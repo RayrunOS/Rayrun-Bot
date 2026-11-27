@@ -62,14 +62,15 @@
         你的 Rayrun 云电脑（一人一台，bots 共享）
           ├─ 常驻 DSH host（web profile）                      [平台 runtimes API
           ├─ 每 bot 一个 session + 一个 profile 目录            已实现并在 2026-11-24 部署生产；
-          ├─ /workspace · X11 desktop :99 · browser profile     bot host 已预览]
+          ├─ /workspace · X11 desktop :99 · browser profile     bot host 已随包交付]
           └─ 模型调用 ──▶ DeepSeek API（你的 key，只注入
                             agent 进程）
 ```
 
-`*` = 未实现。常驻 bot runtime、session 续接和 bot 映射是 v0.1 的未验证项。平台答复
-（2026-11-22）：R-G008 runtimes API 已实现并本机 dev 全量验收通过（待部署），session 由 bot host
-自己写 `/workspace`；bot 侧 host/session 尚未实现。见 §3、§9 与 ADR-007。
+`*` = 未实现。常驻 bot runtime、session 续接和 bot 映射已随包交付，并在依赖 1.2+ 上
+成为默认执行路径；生产聊天和 routine E2E 已通过，但默认路径的“发送后合盖、重开收
+结果”验收仍待补。平台答复（2026-11-22）：R-G008 runtimes API 已实现、2026-11-24
+部署生产，session 由 bot host 自己写 `/workspace`。见 §3、§9 与 ADR-007。
 
 ### 1.3 分层
 
@@ -84,18 +85,17 @@
 3. **Rayrun API。** 机器生命周期、命令、文件、agent prompt（SSE）、credential 和
    billing 的单一 HTTPS API；token 只存在于本地 Harness vault，且只用在这里。
 4. **云电脑。** 一人一台，bots 共享：vCPU/内存、持久 `/workspace`、X11 `:99`、
-   browser profile。设计要求一个常驻 **bot runtime**（ADR-015）监督 DSH host，每 bot
-   一个 session 与 profile 目录。平台答复（2026-11-22）：R-G008 runtimes API 已实现并有
-   本机验收（待部署），提供受监督常驻进程、`autostart`、`keep_alive` 和 boot 时
-   credential injection；session 不是平台对象，由 bot host 自己写 `/workspace`。bot
-   侧 supervisor/session 仍是本仓库的工作。
+   browser profile。常驻 **bot runtime**（ADR-015）监督 DSH host，每 bot 一个 session
+   与 profile 目录；依赖 1.2+ 时它是默认执行路径。平台 R-G008 runtimes API 已实现、
+   2026-11-24 部署生产，提供受监督常驻进程、`autostart`、`keep_alive` 和 boot 时
+   credential injection；session 不是平台对象，由 bot host 自己写 `/workspace`。
 5. **Bot↔session 映射。** bot 是持久对象：名字、指令、skills、memory 目录和 session
    id 在机器上。映射必须存在 supervisor 内存之外；平台不提供 session 对象，session
    的 create/continue 由 bot host 在 `/workspace` 内实现。2026-11-22 dev 验证了镜像
    DSH 0.2.0-rc.2 的 headless `--session-id` 可跨进程续接，host 资产已跑通两轮并
    随包发布（`cloud-host/`）；生产 runtimes API 于 2026-11-24 部署到 `5c2ff48`，
    hosted 生产 cloudHost 聊天 E2E 已通过（`PROD_OK`，2026-11-24）；生产 routine
-   E2E 尚未执行。
+   E2E 已通过（`CLOUD_ROUTINE_PROD_OK`，2026-11-24）。
 6. **审批通道。** 受控动作由云端 bot 提案 → 本地控制面卡片 → 本地决定与执行；
    云端不写 decision。ADR-019 决定本地 DSH host 为本地动作的审批权威；ADR-001 的
    平台隔离仍用于云端凭据动作。失败即拒绝；浏览器先做，IM 是 v0.2。当前边界见 §4.3。
@@ -141,11 +141,11 @@ host half 属于本地控制面。**ADR-015/016 目前是 Proposed**；在它们
 | 决策 | 理由 | 代价 |
 | --- | --- | --- |
 | 薄客户端 on DSH | 不重写聊天/审批/插件；分发是插件安装，不是签名应用 | 受 DSH client API 约束；多租户和推送要自己做 |
-| Local-first for ownership | 用户的 checkout 权威，云端工作可审查；session 在机器上，可拉回 | 两个写者要经 review/merge；常驻 bot runtime 落地前，合上笔记本不能继续 |
+| Local-first for ownership | 用户的 checkout 权威，云端工作可审查；session 在机器上，可拉回 | 两个写者要经 review/merge；默认 cloudHost 后合盖可继续，但发送到达本地 host 前的窗口和审批等待仍在 |
 | BYO accounts | 没有项目方控制面、密钥池或计量 | 没有项目方的保护层：余额、花费和 provider 条款由用户承担 |
 | 一人一台电脑 | 更便宜，更像人的桌面 | **bot 不是安全边界**；两个 bot 不能互相当沙箱 |
 | 云电脑插件独立 | 复用成熟云层，不 fork/合并仓库 | 两个包、版本契约、安装摩擦；特性请求跨仓库 |
-| Bot = 持久对象 | 不只是 session：指令、skills、memory、schedule | durable-object 契约（session 续接、每 bot 目录）未验证 |
+| Bot = 持久对象 | 不只是 session：指令、skills、memory、schedule | durable-object 契约（session 续接、每 bot 目录）已随包验证，默认 cloudHost 的生产合盖验收仍待补 |
 | 审批失败即拒绝 | 外部副作用需要人类同意 | UX 成本；本地 typed 动作与云提案 bridge、start/stop/pause/resume、denial/Continue、下一轮 context 已 live；云端凭据动作未落地 |
 | 成本护栏 | 常开机器有真实账单 | 平台没有 idle auto-stop 或 spend cap；插件只能 stop，不能强制执行预算 |
 | v0.1 只接 Rayrun | 一个集成做透 | 以后换后端是重写；provider 抽象是未决项 |
@@ -407,8 +407,9 @@ tombstone，action hash 的 canonicalization 未定义；见 ADR-011/012。
   本地 typed 动作已按 ADR-019 在本地执行；云端凭据动作仍等待平台；
 - R-G008 常驻 runtime：平台 runtimes API 已实现并本机 dev 全量验收通过（`rayrun-bot-gaps`，
   `4709ac0`），2026-11-24 已部署生产（`5c2ff48`/build 493）；bot 侧 host/session
-  已在 dev 预览实现并通过多 bot live E2E（2026-11-23）；hosted 生产 cloudHost
-  聊天 E2E 已通过（`PROD_OK`，2026-11-24），生产 routine E2E 已通过（`CLOUD_ROUTINE_PROD_OK`，2026-11-24）；
+  已随包交付，并在依赖 1.2+ 上成为默认执行路径（2026-11-27）；多 bot live E2E
+  已通过（2026-11-23）；hosted 生产 cloudHost 聊天 E2E 已通过（`PROD_OK`，2026-11-24），
+  生产 routine E2E 已通过（`CLOUD_ROUTINE_PROD_OK`，2026-11-24）；
 - 余额宽限与 spend 护栏：余额耗尽今天会 force-destroy 机器和磁盘；
 - 安全的入站网络：token ingress 不可用，只有 `public`；
 - idle auto-stop 或 wake-on-request；

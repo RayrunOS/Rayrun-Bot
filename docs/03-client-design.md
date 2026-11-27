@@ -141,14 +141,14 @@ attention、snippet 与时间。chat 来源没有 TTL，显示 `waits for you`�
 
 **云电脑步骤**：先用 `overview` 查找已有机器；有则直接采用并显示名称，Bots 不修改它的
 设置或模型凭据。没有机器时，用户填写名称和可选的 DeepSeek key，点“创建云电脑”调用
-`machine.create`，规格取插件的 `defaults`（默认 `deepseek-harness@1`、2 vCPU、至少 2 GB、
-远程桌面）。key 只作为 `modelKey` 交给云电脑插件存成机器凭据，不进入 Bots 的 host 状态，
-成功后清空输入。按钮文案明确说明这是 Rayrun 账号上的计费机器；Setup 创建不销毁它，
-电脑更新的销毁规则见下文；未连接时按钮不可用，失败显示一句可执行错误。detached
-模式下，创建时如果插件的默认镜像是已知的 shell oneshot（`dsh-bot@1`、
-`dsh-bot-devcheck@1`），Setup 改用 `deepseek-harness@1`；选中已有这类镜像时显示
-警告，因为 detached 回合不会启动 DSH worker。cloudHost 模式保留默认镜像
-（`dsh-bot@1` 正是常驻 host 所用），不显示该警告。多台机器时 setup 和重复创建检查优先选
+`machine.create`，规格取插件的 `defaults`（2 vCPU、至少 2 GB、远程桌面）。cloudHost
+模式使用 `dsh-bot@1`；detached 模式使用 `deepseek-harness@1`，并避开已知 shell
+oneshot（`dsh-bot@1`、`dsh-bot-devcheck@1`）。key 只作为 `modelKey` 交给云电脑插件
+存成机器凭据，不进入 Bots 的 host 状态，成功后清空输入。按钮文案明确说明这是
+Rayrun 账号上的计费机器；Setup 创建不销毁它，电脑更新的销毁规则见下文；未连接时
+按钮不可用，失败显示一句可执行错误。cloudHost 模式下选中 `dsh-bot@1` 不显示
+shell-oneshot 警告，因为常驻 host 正是用它；detached 模式选中这类镜像时显示警告，
+因为 detached 回合不会启动 DSH worker。多台机器时 setup 和重复创建检查优先选
 `rayrun-bot`，其次优先 Running（有 `desktop_url` 再优先），再选有 `desktop_url` 的
 机器，最后才用第一台；Open 不用这个猜测：
 host 从 bot 的 session 提供实际机器名（`bots.list.computers`），客户端只查
@@ -196,12 +196,13 @@ profile，也不发送 Rayrun token 或 DeepSeek key；命令只更新 bots 包�
 内，发布含 `cloud-host/**` 变更时需要额外的 runtime 刷新。
 
 **设置 → Bot 的电脑**：显示所有 bot 共用的电脑、当前镜像和“更新”入口。更新不再
-提供镜像或凭据选项：host 固定使用 `deepseek-harness@1`，并自动沿用当前电脑已绑定的
-DeepSeek credential；当前电脑没有绑定凭据时，自动选择账号里名称匹配 DeepSeek/model
-的凭据，找不到可用凭据就失败关闭。点更新后展开确认区，明确提示这会创建计费电脑、
-更新成功后旧电脑及其 workspace 会被销毁（不可恢复）、文件和登录配置保留、已安装
-应用/软件包和缓存不复制。确认后 host 执行
-`computer.update`：旧机改名为 `<name>-pre-update-<time>`，用原始名称和固定镜像创建
+提供镜像或凭据选项：host 在 cloudHost 模式使用 `dsh-bot@1`，detached 模式使用
+`deepseek-harness@1`，并自动沿用当前电脑已绑定的 DeepSeek credential；当前电脑没有
+绑定凭据时，自动选择账号里名称匹配 DeepSeek/model 的凭据，找不到可用凭据就失败
+关闭。点更新后展开确认区，明确提示这会创建计费电脑、更新成功后旧电脑及其 workspace
+会被销毁（不可恢复）、文件和登录配置保留、已安装应用/软件包和缓存不复制。确认后
+host 执行 `computer.update`：旧机改名为 `<name>-pre-update-<time>`，用原始名称和
+上述镜像创建
 新机，打包并复制 `/workspace`、`/root/.config`、`/root/.local/share`、
 `/root/.mozilla`、`/root/.ssh`，在新机解包并验证，然后销毁旧机；新机显式允许
 `api.deepseek.com`，其他旧 egress 规则不复制。有 running/queued bot 回合时 host 拒绝
@@ -225,6 +226,8 @@ bot 继续使用原机器名，因此 session/cloudHost 的机器名不变。
 - 没有 DeepSeek key（`E_KEY_REQUIRED`）
 - 电脑停止或不可用（`E_MACHINE_STOPPED`）：提示从详情或云电脑插件打开后再发送，
   不再误写成“还没有云电脑”
+- 镜像太旧（`E_GUESTD_OUTDATED`）：cloud host 的 runtime API 不可用；提示在
+  设置 → Bot 更新电脑后重试。更新目标在 cloudHost 下是 `dsh-bot@1`
 - 镜像不支持 detached（`E_IMAGE_UNSUPPORTED`）：已知 shell oneshot 镜像
   （`dsh-bot@1`、`dsh-bot-devcheck@1`）在 `dsh.start` 前失败，提示换成
   `deepseek-harness@1` 之类的镜像。overview 没有 `agent` 时再读一次

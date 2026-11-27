@@ -65,11 +65,12 @@ npm_config_registry=https://registry.npmjs.org \
 官方 registry，所以这条命令指定了 registry。
 
 2026-11-25 用官方 registry 核对过这条命令：两个插件都加载，并向一台已经处于
-Stopped 的 hosted 机器发了一轮，收到了回复。那次核对打开了预览用的机内 host
-（不启用就关着），用的是维护者的机器。那台机器不是安装要求，这次核对也不保证
-每个账号或每张镜像都能同样跑通。
+Stopped 的 hosted 机器发了一轮，收到了回复。那次核对使用了机内 host，用的是
+维护者的机器。那台机器不是安装要求，这次核对也不保证每个账号或每张镜像都能同样
+跑通。
 
-机内 host 在你启用 `cloudHost` 之前保持关闭。开关和更长的运行说明在
+机内 host 是 `dsh-rayrun-computer` 1.2+ 的默认执行路径。它需要一张新到足以跑
+Rayrun runtime 的镜像（`dsh-bot@1`）；旧机器可以用电脑更新按钮迁移。运行说明在
 [docs/09-deployment.md](docs/09-deployment.md)。
 
 ## 今天能做什么
@@ -82,7 +83,7 @@ Stopped 的 hosted 机器发了一轮，收到了回复。那次核对打开了�
 - 打开云电脑桌面，以及停止机器。停止不会销毁机器；只有明确的电脑更新确认、且新电脑就绪后，才会销毁旧电脑。
 - 批准或拒绝 start、stop、pause、resume。Allow once 从本地 host 执行该动作。拒绝、过期或未知结果都不会执行。
 - 创建、暂停和删除按间隔重复的 routine。routine 就是普通的一轮。打开它之后，后续运行可能唤醒机器并花钱。cron 和事件触发还没有。
-- 可选：在云电脑上跑一个预览 host，你的 bot 共用一个进程。打开之后，本地 DSH 停着时 routine 仍可以跑。默认关闭。hosted 核对用的是新到足以跑 Rayrun runtime 的镜像（`dsh-bot@1`）。更旧的官方镜像可能以 `guestd_outdated` 拒绝 runtime。
+- 在云电脑上跑一个常驻 host，你的 bot 共用一个进程。依赖 1.2+ 时它是默认路径，因此本地 DSH 停着时 routine 仍可以跑。hosted 核对用的是新到足以跑 Rayrun runtime 的镜像（`dsh-bot@1`）。更旧的官方镜像可能以 `guestd_outdated` 拒绝 runtime，需要先更新电脑。
 
 ## 今天不能做什么
 
@@ -115,7 +116,7 @@ Bot 可以在这台电脑里工作；已经做出来的机器动作会停下来�
 | | |
 | --- | --- |
 | [状态](docs/12-status.md) | 今天能做什么、还缺什么，以及验证过的组合。本页以它为准。 |
-| [安装与运行](docs/09-deployment.md) | 运行说明，包括如何打开预览 host。 |
+| [安装与运行](docs/09-deployment.md) | 运行说明，包括机内 host。 |
 | [版本矩阵](docs/version-matrix.md) | 实际核对过的 DSH、云电脑插件和 bot 包组合。 |
 | [安全](docs/07-security.md) | 什么受保护，什么不受保护。 |
 | [FAQ](docs/faq.md) | 定价、凭据、模型和限制。 |

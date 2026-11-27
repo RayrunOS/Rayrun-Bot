@@ -100,7 +100,7 @@
 | R-G005 | 2026-11-21 | 完整安装 DSH 0.2.2-rc.5 的 subprocess/terminal 路径 | `npm install -g` 跳过 `dsh-subprocess-local`、`node-pty`、`koffi`、`protobufjs` 的 install scripts | **未验证**：Web UI 和 plugin manager 可用；terminal/子进程未测 | 需要在镜像里显式跑 allow-scripts 或换安装方式 |
 | R-G006 | 2026-11-21 | 把预装好的 web profile 烘进自定义镜像 | `POST /v1/images` 保存的是 rootfs overlay；`/workspace/.rayrun/dsh` 在 workspace 盘，不在镜像里 | **有 workaround**：镜像带 tarball + bootstrap，首启写入 workspace | 不能直接做“打开即带 profile”的镜像；需要 bootstrap 或平台支持 workspace 快照 |
 | R-G007 | 2026-11-21 | 与本地验证/桌面一致的 DSH 版本 | 官方镜像 pin `0.2.0-rc.2`；本机页面验证使用 `0.2.2-rc.5`；桌面 bundle `0.2.2-rc.5`（官方桌面未验证，见 R-G001） | **有 workaround**：镜像内可升级并验证；升级后 profile 保留；组合记录在 [`version-matrix.md`](version-matrix.md) | 镜像 pin 与本地/桌面仍不一致；镜像升级需要平台/构建支持 |
-| R-G008 | 2026-11-22 | 长驻 bot runtime、session 续接、启动钩子、prompt 队列 | 平台答复（2026-11-22）：runtimes API 已实现并本机 dev 全量验收通过（`rayrun` 仓库 `rayrun-bot-gaps`，`4709ac0`），**生产已部署（2026-11-24，`5c2ff48`/build 493）**；契约含 `PUT/GET/POST/DELETE /v1/sandboxes/{id}/runtimes`、guestd 0.6.0、`autostart`/`restart=always`/`keep_alive`、boot 时 credential injection；session 不是平台对象，bot host 自己写 `/workspace`，workspace 跨 stop/start 保留；旧镜像 409 `guestd_outdated`。2026-11-22 本机 dev 全量验收通过，旧镜像 `ci@1` 负测通过（见 §3.1）。2026-11-24 生产 daemon 已部署到 `5c2ff48`（build 493，tag `prod-20261124-2`），包含 `rayrun-bot-gaps` 的 14 个提交（R-G008–R-G012、scopes/凭证所有权）；未认证 `GET /v1/sandboxes/{id}/runtimes` 返回 401（已注册），`/v1/health` 200；CI 代码已上生产但 `RAYRUN_GITHUB_CI_ENABLED` 未开。2026-11-24 hosted production 尝试：`rayrun-bot-test` start 成功，但 `runtime.put` 返回 409 `guestd_outdated`，session 以 `E_GUESTD_OUTDATED` 失败关闭；机器已 stop、无 runtime。只换新 sandbox 不够：生产镜像 `ubuntu@1`/`builder@1` 仍是 guestd 0.5.0，rootfs 2026-10-26，builder 构建也注入 0.5.0；必须先刷新生产镜像（含 builder@1）到 guestd 0.6.0。2026-11-24 已完成：builder@1 换 guestd 0.6.0（有备份），发布 `dsh-bot@1`（build `01a20dec…`，rootfs sha256 `937ebd7a…`，guestd 0.6.0，Node v24.22.0，DSH 0.2.0-rc.2，manifest `credential_slots=["DEEPSEEK_API_KEY"]`）；测试 sandbox `01a20df8…` 的 `runtime.put bot-host` 返回 200 applied/restarted，state running pid 651，heartbeat 更新；测试后 stop、未 destroy。`rayrun-bot-test` 仍是旧镜像、Stopped。2026-11-24 hosted 用户租户 cloudHost E2E 通过：新 sandbox `rayrun-bot-prod-e2e`（`01a20dfd…`，`dsh-bot@1`）从 Stopped 启动，bot-host runtime running pid 636，bot 回复 `PROD_OK`，约 12 秒；随后 runtime 删除、机器 Stopped、未 destroy。另做 routine E2E：本地 DSH 停机期间云 host 于 14:48:16Z 产出 `CLOUD_ROUTINE_PROD_OK`；重启后 `routines.sync` imported=1，history 合并 routine user/bot，测试后 runtime 删除、机器 Stopped | **平台实现本机 dev 全量验收通过；生产已部署（`5c2ff48`/build 493）；旧镜像 409 已验证；`dsh-bot@1` 已发布并完成 hosted cloudHost 聊天 E2E**；bot 侧本地 adapter 已进包预览并页面 E2E 通过（`HOST_E2E_OK`，2026-11-23）；host 资产已进包，projection 页面 E2E 已通过（2026-11-23）。审批隔离不在初步支持内（§3.3） | hosted 生产 routine E2E 已通过（2026-11-24）；detached 真实任务的关闭/重开已在 2026-11-27 dev 验证；cloudHost 预览的长期/定时路径仍需生产复验 |
+| R-G008 | 2026-11-22 | 长驻 bot runtime、session 续接、启动钩子、prompt 队列 | 平台答复（2026-11-22）：runtimes API 已实现并本机 dev 全量验收通过（`rayrun` 仓库 `rayrun-bot-gaps`，`4709ac0`），**生产已部署（2026-11-24，`5c2ff48`/build 493）**；契约含 `PUT/GET/POST/DELETE /v1/sandboxes/{id}/runtimes`、guestd 0.6.0、`autostart`/`restart=always`/`keep_alive`、boot 时 credential injection；session 不是平台对象，bot host 自己写 `/workspace`，workspace 跨 stop/start 保留；旧镜像 409 `guestd_outdated`。2026-11-22 本机 dev 全量验收通过，旧镜像 `ci@1` 负测通过（见 §3.1）。2026-11-24 生产 daemon 已部署到 `5c2ff48`（build 493，tag `prod-20261124-2`），包含 `rayrun-bot-gaps` 的 14 个提交（R-G008–R-G012、scopes/凭证所有权）；未认证 `GET /v1/sandboxes/{id}/runtimes` 返回 401（已注册），`/v1/health` 200；CI 代码已上生产但 `RAYRUN_GITHUB_CI_ENABLED` 未开。2026-11-24 hosted production 尝试：`rayrun-bot-test` start 成功，但 `runtime.put` 返回 409 `guestd_outdated`，session 以 `E_GUESTD_OUTDATED` 失败关闭；机器已 stop、无 runtime。只换新 sandbox 不够：生产镜像 `ubuntu@1`/`builder@1` 仍是 guestd 0.5.0，rootfs 2026-10-26，builder 构建也注入 0.5.0；必须先刷新生产镜像（含 builder@1）到 guestd 0.6.0。2026-11-24 已完成：builder@1 换 guestd 0.6.0（有备份），发布 `dsh-bot@1`（build `01a20dec…`，rootfs sha256 `937ebd7a…`，guestd 0.6.0，Node v24.22.0，DSH 0.2.0-rc.2，manifest `credential_slots=["DEEPSEEK_API_KEY"]`）；测试 sandbox `01a20df8…` 的 `runtime.put bot-host` 返回 200 applied/restarted，state running pid 651，heartbeat 更新；测试后 stop、未 destroy。`rayrun-bot-test` 仍是旧镜像、Stopped。2026-11-24 hosted 用户租户 cloudHost E2E 通过：新 sandbox `rayrun-bot-prod-e2e`（`01a20dfd…`，`dsh-bot@1`）从 Stopped 启动，bot-host runtime running pid 636，bot 回复 `PROD_OK`，约 12 秒；随后 runtime 删除、机器 Stopped、未 destroy。另做 routine E2E：本地 DSH 停机期间云 host 于 14:48:16Z 产出 `CLOUD_ROUTINE_PROD_OK`；重启后 `routines.sync` imported=1，history 合并 routine user/bot，测试后 runtime 删除、机器 Stopped | **平台实现本机 dev 全量验收通过；生产已部署（`5c2ff48`/build 493）；旧镜像 409 已验证；`dsh-bot@1` 已发布并完成 hosted cloudHost 聊天 E2E**；bot 侧本地 adapter 已进包，依赖 1.2+ 默认，并页面 E2E 通过（`HOST_E2E_OK`，2026-11-23）；host 资产已进包，projection 页面 E2E 已通过（2026-11-23）。审批隔离不在初步支持内（§3.3） | hosted 生产 routine E2E 已通过（2026-11-24）；detached 真实任务的关闭/重开已在 2026-11-27 dev 验证；默认 cloudHost 的合盖验收待补，长期/定时路径仍需生产复验 |
 | R-G009 | 2026-11-11 | 零余额不丢盘、spend cap | 平台答复：线上仍可能 force-destroy；代码里的两步停/宽限未部署；无硬上限 | **风险接受**（见 [`08-integration.md`](08-integration.md) §3.2） | 不通过烧余额来验证；只做只读余额/告警检查 |
 | R-G010 | 2026-11-11 | 带鉴权的入站访问 | ingress `token` 档恒 403；`public` 档无鉴权；无 per-instance 证书 | **有 workaround**：public ingress + 应用层 DSH launch token/cookie；不暴露产品面板 | 手机审批/远程 UI 的 Rayrun 路径受限 |
 | R-G011 | 2026-11-21 | 只读、可撤销的测试 token | 生产 token 是账号身份，无 scope；当前测试 token 无过期时间 | **有 workaround**：专用账号/测试后撤销 | 测试 token 权限过大；不要放进沙箱 |
@@ -753,14 +753,37 @@
   `dsh-bot@1` 标成 shell oneshot / 不会启动 DSH worker；这是 detached runtime 的
   警告，在 cloudHost 下是误报。该误报已在同日 UI 修正中按 runtime 区分：
   cloudHost 隐藏警告，detached 保留；未重跑 A6 页面复验。
+- cloudHost 默认（2026-11-27，代码/契约 + dev live 合盖通过）：依赖 1.2+ 且未显式
+  配置时选择常驻 `cloudHost`；`cloudHost:false` 保留 detached，1.1 仍走 detached。
+  Setup 在 cloudHost 模式创建 `dsh-bot@1`；电脑更新目标随 runtime 切换。云 host spec
+  未配置 credential 时沿用机器第一个已绑定凭据。旧镜像 `E_GUESTD_OUTDATED` 显示
+  “更新电脑后重试”。`rpc-contract` 36/36、`cloud-host-runtime` 17/17、
+  `computer-update` 9/9、`client-contract` 通过。live 选择：本机 DSH
+  `0.2.2-rc.5` + dependency checkout `1.2.0` + 临时 `DSH_HOME` + Rayrun dev
+  daemon；真实 health 返回 `runtime.name=rayrun-cloud-host`、`available=true`。
+  首次发送因 dev 镜像失败：`deepseek-harness@1` guestd 0.5.0、
+  `dsh-bot@1` 无 credential slot；Rayrun 修复 dev 镜像（guestd 0.6.0、补 slot），
+  dependency 的 `shapeSandbox` 本地补上 `machine.credentials`。
+  - 显式 credential：消息 04:19:11.443Z，task start 04:19:18.932Z，04:19:20Z
+    kill 本地 DSH；云端 04:19:21Z 写出 `REAL_CLOUDHOST_OK` 文件，
+    04:19:22.066Z task done；重启后 04:19:52.149Z history 收到
+    `CLOUDHOST_DEFAULT_OK`。
+  - 默认无配置（dependency 修复后）：消息 04:21:11.067Z，task start
+    04:21:18.382Z，04:21:20Z kill 本地 DSH；云端 04:21:21Z 写出
+    `DEFAULT_CREDENTIAL_OK` 文件，04:21:22.054Z task done，host log
+    `hasCredential:true`；重启后 04:21:51.720Z history 收到
+    `CLOUDHOST_DEFAULT_OK`。
+  机器 Stopped、runtime 删除、dev token 撤销、临时 DSH_HOME/proxy/凭证文件删除。
+  限制：dev 环境；dependency 修复未提交/未发版；dev 镜像是手工修补的，生产干净
+  账号的同一场景仍未签收。
 - UI/诊断修正（2026-11-27，契约测试，无真实失效凭据复验）：(1) client 保留 health
   的 `runtime`；cloudHost 模式下详情和 Setup 不再把 `dsh-bot@1` / `dsh-bot-devcheck@1` 标成 shell oneshot，
-  Setup 创建也不因此改默认镜像；detached 模式仍警告并回退
+  Setup 创建使用 `dsh-bot@1`；detached 模式仍警告并回退
   `deepseek-harness@1`。(2) detached 缺失 `reply.md` 时用 `rayrun_exec` 读取
   worker session 的 provider 错误，脱敏后附在 `E_WORKER_NO_REPLY` 后；cloudHost
   失败回合写脱敏 error outbox，adapter 转为 worker-no-reply，客户端错误行显示
   `rb-error-detail`。`rayrun-detached-runtime` 17/17、`cloud-host` 8/8、
-  `cloud-host-runtime` 16/16、`client-contract` 通过；未重新制造失效 credential
+  `cloud-host-runtime` 17/17、`client-contract` 通过；未重新制造失效 credential
   做页面复验。
 - 合上笔记本真实任务（2026-11-27，Rayrun dev daemon + 本机 DSH `0.2.2-rc.5` +
   Firefox/geckodriver，Bots 本地 checkout + 依赖 `1.2.1` npm）：dev daemon
