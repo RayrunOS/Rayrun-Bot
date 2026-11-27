@@ -38,17 +38,20 @@ cron/事件触发仍未打通；发布路径已通过 `publish.yml` 发布 alpha
 transport adapter 已进包并通过页面 E2E（`HOST_E2E_OK`）；host 资产已随包发布
 （`cloud-host/`），projection 页面 E2E 已通过，多 bot 单 host 页面 E2E 已通过
 （dev 2026-11-23；生产 2026-11-25）；生产镜像 `dsh-bot@1` 与 R-G008 部署已完成。
-2026-11-27 起依赖 1.2.2+ 默认走 cloudHost；默认路径已在 dev 通过合盖验收。2026-11-28 在生产
-`sys520084` 账号用当前 main 的 tarball（commit `d353eca`）+ npm 依赖 `1.3.1` 完成默认
-cloudHost 首轮与合盖：`session.send` 980ms 返回 attach 后 SIGKILL 本地 DSH，云端在
-停机期间写出 `SIGNOFF_CLOUDHOST_OK`，重开同一 `DSH_HOME` 后 history 收取回复；同一轮段的
-单一连续首次运行计时为 **29.1s**（安装 3.12s、web ready 3.84s、页面到首轮约 10.9s）。
-该次验证使用非空账号（过滤已有机器）、预建 `dsh-bot@1` 机器、localhost 代理和 WebDriver，
-干净账号 + 页面建机的完整签收仍未完成（§4）；npm `alpha.1` 也不含这些 main 改动。
+2026-11-27 起依赖 1.2.2+ 默认走 cloudHost；默认路径已在 dev 通过合盖验收。2026-11-28 在
+生产 `sys520084` 完成两次签收：先以 main `d353eca` tarball + npm 依赖 `1.3.1` 验证默认
+cloudHost 首轮与合盖（`session.send` 980ms 返回 attach 后 SIGKILL 本地 DSH，云端停机期间
+写出 `SIGNOFF_CLOUDHOST_OK`，重开收取；单一连续计时 **29.1s**，但机器预建、账号非空）。
+随后按用户明确授权 destroy `rayrun-bot-prod-e2e`，账号变为零机器，用本地
+`0.1.1-alpha.2` tarball + 依赖 `1.3.1` 复跑：页面 `Create cloud computer` 真实建机
+`rayrun-bot`（`dsh-bot@1`，4.55s），首轮 `SIGNOFF_ZERO_OK`，从安装到首轮回复 **30.8s**；
+同一机器再验证合盖（send 921ms 返回 attach 后 kill，云端 outbox 23:47:06Z，重启后
+23:49:20Z 收取 `SIGNOFF_ZERO_CLOUDHOST_OK`）。零机器 + 页面建机的时间门已满足；剩余
+偏差是 localhost 代理、WebDriver 和未发布的 alpha.2（npm `alpha` 仍是 `0.1.1-alpha.1`）。
 
 2026-11-27 首次运行分段计时约 **1m55s–3m03s**（插件安装 61–128s 是主要变量）；
-2026-11-28 已有单一连续生产计时 **29.1s**（见上），但干净账号 + 页面建机的三分钟门
-尚未完成，见 §3.1。同日 A6 批准延迟已计时：真实 cloudHost
+2026-11-28 零机器账号 + 页面建机的单一连续计时为 **30.8s**，三分钟门的时间部分已满足，
+剩余 npm 产物复验（alpha.2 尚未发布），见 §3.1。同日 A6 批准延迟已计时：真实 cloudHost
 proposal 的卡片 **2.291s**、执行 **0.779s**、Continue→working **21ms**；A6 的
 10 秒计时缺口已补齐，见 §3.1。同日 A5 的“合上笔记本”真实任务在 Rayrun dev 通过：
 本地 DSH 停止期间 detached worker 写出真实文件，重开后 history 收到
@@ -623,35 +626,56 @@ proposal 的卡片 **2.291s**、执行 **0.779s**、Continue→working **21ms**�
     页面由 WebDriver 驱动；npm `alpha.1` 是 2026-11-25 产物，不含 2026-11-26/27
     的 UX 修复与默认 cloudHost。测试机记录后于 2026-11-28 destroy（HTTP 204）；
     截图 `/tmp/bot/signoff-*.png`（临时文件，不入库）。
+- 生产零机器页面建机签收（2026-11-28，同一 `sys520084` 账号）：按用户明确授权
+  destroy `rayrun-bot-prod-e2e`（`01a21a48…`，HTTP 204）后账号 live machines=0；
+  用本地 `0.1.1-alpha.2` tarball（本任务 bump，未发布）+ npm 依赖 `1.3.1`，全新
+  `DSH_HOME` + 冷 pnpm store。
+  - 安装 3.46s；`dsh web` ready 3.58s；页面导航到首轮回复 **30.8s**
+    （T0 `1795823172595` → T13 `1795823203362`）。
+  - Computer 步骤无既有机器，点击 `Create cloud computer` 真实调用
+    `machine.create`：4.55s 后页面显示 `Created · rayrun-bot`，机器 `rayrun-bot`
+    （`dsh-bot@1`，Running，credential `dsh-model-firstrun-20261127`）。
+  - first bot `Signoff Zero`，首轮 `SIGNOFF_ZERO_OK` 约 9.6s。
+  - 合盖：`session.send` 921ms 返回 attach（`task-6776b27e-…`）后 SIGKILL 本地
+    DSH；云端 outbox 于 23:47:06.564Z 写入 `SIGNOFF_ZERO_CLOUDHOST_OK`（本地停机
+    期间），重启同一 `DSH_HOME` 后 transcript 于 23:49:20.200Z 收取，session
+    idle。bot instructions 为 “Do not use tools”，本轮没有写文件副作用；证据是
+    云端 outbox 与本地收取。
+  - 偏差：localhost 反向代理、WebDriver、alpha.2 为本地 tarball（未发布 npm）。
+    测试机 `rayrun-bot`（`01a21f67…`）记录后 destroy（HTTP 204）；账号回到
+    live machines=0。截图 `/tmp/bot/signoff-zero-created.png`、
+    `signoff-zero-first-run.png`、`signoff-zero-cloudhost-reopen.png`。
 - 具体组合、环境和缺口以 [`10-rayrun-verification.md`](10-rayrun-verification.md)
   和 [`version-matrix.md`](version-matrix.md) 为准；未测试的组合不作承诺。
 
 ## 4. 尚未构建或验证
 
-- 三分钟首次运行签收：2026-11-28 在生产 `sys520084` 完成一次单一连续计时
-  **29.1s**（全新 `DSH_HOME`、冷 pnpm store、安装 3.12s，见 §3.1），远低于
-  三分钟；但该次是预建机器、非空账号（过滤已有机器）、localhost 代理和
-  WebDriver，**干净账号 + 页面建机**的完整签收仍未完成，三分钟门不关闭。
-  2026-11-27 的分段计时（`1m55s–3m03s`）仍是另一组证据。
-- 默认 cloudHost 的生产合盖签收：2026-11-28 已在生产 `sys520084` 用 main tarball
-  + npm 依赖 `1.3.1` 通过“`session.send` 返回 attach → SIGKILL 本地 DSH → 云端
-  停机期间写出文件 → 重开同一 `DSH_HOME` 收取回复”（见 §3.1）；机器为
-  `dsh-bot@1`、credential `dsh-model-firstrun-20261127`。未覆盖：npm 发布产物
-  （main 尚未发布）、干净账号、点击页面 `Create cloud computer` 的建机路径。
+- 三分钟首次运行签收：2026-11-28 在零机器生产账号（按用户授权 destroy
+  `rayrun-bot-prod-e2e` 后）完成页面真实建机的单一连续计时 **30.8s**（安装
+  3.46s、web ready 3.58s；见 §3.1），远低于三分钟；时间门已满足。剩余偏差是
+  localhost 代理、WebDriver 和未发布的 alpha.2 tarball；alpha.2 发布后从 npm
+  干净安装复验即可签收。
+- 默认 cloudHost 的生产合盖签收：2026-11-28 已在生产 `sys520084` 通过两次
+  “`session.send` 返回 attach → SIGKILL 本地 DSH → 云端停机期间处理任务 →
+  重开同一 `DSH_HOME` 收取回复”（见 §3.1）：第一次在预建 main tarball 机器上
+  （980ms attach，云端写 `SIGNOFF_CLOUDHOST_OK` 文件），第二次在零机器账号经
+  页面创建 `rayrun-bot`（`dsh-bot@1`）上（921ms attach，云端 outbox
+  `SIGNOFF_ZERO_CLOUDHOST_OK`）。未覆盖：npm 发布产物（alpha.2 未发布）。
 - setup 页面的建机路径：`createComputer` 在点击时会重新读取 `overview`；只要
   列表里有机器（`pickMachine`）就直接复用并返回，不调用 `machine.create`。
-  2026-11-28 在非空账号点击 `Create cloud computer` 因此复用了已有机器；
-  host RPC `machine.create` 用同一参数成功。页面级 fetch patch 无法绕过
-  （插件持有原 `fetch`）。**零机器账号的页面建机路径仍未验证**，干净账号
-  签收前需要复验。
+  页面级 fetch patch 无法绕过（插件持有原 `fetch`）。2026-11-28 在零机器账号
+  （destroy `rayrun-bot-prod-e2e` 后 live machines=0）点击 `Create cloud
+  computer`，页面真实调用 `machine.create`，4.55s 后显示
+  `Created · rayrun-bot`（`dsh-bot@1`）；该路径已通过。非空账号仍会复用已有
+  机器，这是既有行为。
 - 发送响应前的合盖窗口：`session.send` 只在 bot 空闲的 detached/cloudHost 回合等到
   task attach；请求尚未到达本地 host、HTTP 响应尚未返回，或消息排在运行回合后面时，
   合盖仍可能丢这一轮。产品保证边界是“收到发送成功响应之后”。
 - Rayrun 账号存储配额：2026-11-27 查询已用 504/512 GiB，创建新沙箱返回 409
   `resource_exhausted`；A6 改用已有的 `dsh-bot@1` 测试机。同日按用户明确清理授权
-  destroy 13 台旧测试机；仅保留 `rayrun-bot-prod-e2e`（Stopped）。清理后的配额
-  读数未重新查询；2026-11-28 在 `sys520084` 创建 `dsh-bot@1` 测试机成功（未再
-  报 409），但配额读数仍未查询。
+  destroy 13 台旧测试机。2026-11-28 又按用户授权 destroy `rayrun-bot-prod-e2e`；
+  账号 live machines=0，期间两次创建 `dsh-bot@1` 测试机均成功（未再报 409），
+  但配额读数仍未重新查询。
 - 本地 routine scheduler 的真实自动触发：fake 集成测试覆盖了到期入队，但尚未等待
   一次真实本地 scheduler 自动触发；页面创建/启停/删除已 smoke。
 - 能拦住 worker 的远程审批执行：ADR-019 已让本地 host 对 typed 机器
@@ -670,9 +694,9 @@ proposal 的卡片 **2.291s**、执行 **0.779s**、Continue→working **21ms**�
 - IM 通道。
 - npm 发布产物落后于 main：npm `alpha` 仍是 2026-11-25 的 `0.1.1-alpha.1`，
   不含 2026-11-26/27 的 UX trust pass、默认 cloudHost、send acceptance 和
-  Issue #4/#6 修复；main 的 `package.json` 版本号仍是 `0.1.1-alpha.1`。
-  2026-11-28 的生产签收使用 main tarball。v0.1 发布前需要 bump 版本、发布
-  新 prerelease，并从 npm 干净安装复验。
+  Issue #4/#6 修复。2026-11-28 已把 `packages/dsh-rayrun-bots/package.json`
+  bump 到 `0.1.1-alpha.2`（本地未发布）；生产签收使用本地 tarball。v0.1 发布
+  前需要 tag + GitHub Release 发布 alpha.2，并从 npm 干净安装复验。
 - 稳定版发布：当前只有 `0.1.1-alpha.1`（npm `alpha` tag）；`latest` 仍是旧的
   `0.1.0-alpha.0`，需要单独的稳定版发布决策。
 - CI deploy job **暂时停用**（`if: false`）：2026-11-25 两次真实运行
@@ -687,11 +711,10 @@ proposal 的卡片 **2.291s**、执行 **0.779s**、Continue→working **21ms**�
   未 destroy。停用后的 checks
   run `45629800138` 全绿，deploy job 显示 skipped；npm 发布、普通测试和 checks
   不受影响。
-- `rayrun-bot-prod-e2e` 上仍保留 prior test bot 目录（`browser-*`、`prod-*`）和
-  `prod-routine`；`prod-routine` 在 host 启动时抢先约 3.4 秒。2026-11-27 曾为
-  **Stopped、未 destroy**；2026-11-28 观察到 **Running**（镜像已是
-  `deepseek-harness@1`，旧机 `rayrun-bot-prod-e2e-pre-update-mwy7mj8s` 为
-  Terminated），本次生产签收未动它。清理/销毁需用户确认保留哪些 bot。
+- `rayrun-bot-prod-e2e` 已于 2026-11-28 按用户明确授权 destroy（HTTP 204）；
+  销毁前已无 runtime、`agent_state=exited`，镜像为 `deepseek-harness@1`。
+  该账号当前 live machines=0。机器上的 prior test bot 目录和 `prod-routine`
+  随机器一起删除。
 
 ## 5. 平台缺口
 

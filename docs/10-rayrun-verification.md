@@ -845,6 +845,26 @@
     `/tmp/bot/signoff-first-reply.png`、`signoff-cloudhost-reopen.png`、
     `signoff-timed-first-run.png`、`signoff-computer-create2.png`（临时文件）。
 
+- 生产零机器页面建机签收（2026-11-28，同一 `sys520084` 账号）：按用户明确授权
+  destroy `rayrun-bot-prod-e2e`（`01a21a48…`，HTTP 204）后账号 live machines=0；
+  用本地 `0.1.1-alpha.2` tarball（本任务 bump，未发布）+ npm 依赖 `1.3.1`，全新
+  `DSH_HOME` + 冷 pnpm store。
+  - 安装 **3.46s**；`dsh web` ready **3.58s**；页面导航到首轮回复 **30.8s**
+    （T0 `1795823172595` → T13 `1795823203362`）。
+  - Computer 步骤无既有机器，点击 `Create cloud computer` 真实调用
+    `machine.create`：4.55s 后页面显示 `Created · rayrun-bot`，机器 `rayrun-bot`
+    （`dsh-bot@1`，Running，credential `dsh-model-firstrun-20261127`）。
+  - first bot `Signoff Zero`，首轮 `SIGNOFF_ZERO_OK` 约 9.6s。
+  - 合盖：`session.send` **921ms** 返回 attach（`task-6776b27e-…`）后 SIGKILL
+    本地 DSH；云端 outbox 于 23:47:06.564Z 写入 `SIGNOFF_ZERO_CLOUDHOST_OK`
+    （本地停机期间），重启同一 `DSH_HOME` 后 transcript 于 23:49:20.200Z 收取，
+    session idle。bot instructions 为 “Do not use tools”，本轮没有写文件副作用；
+    证据是云端 outbox 与本地收取。
+  - 偏差：localhost 反向代理、WebDriver、alpha.2 为本地 tarball（未发布 npm）。
+    测试机 `rayrun-bot`（`01a21f67…`）记录后 destroy（HTTP 204）；账号回到
+    live machines=0。截图 `/tmp/bot/signoff-zero-created.png`、
+    `signoff-zero-first-run.png`、`signoff-zero-cloudhost-reopen.png`。
+
 > Rayrun 连接、Open、云电脑创建三条依赖层路径是通过本机 Node 直接 import
 > `dsh-rayrun-computer@1.0.0` 的 `lib/rayrun.js` 验证的，调用的是插件页面使用的同一组
 > 函数；Bots 页面层 setup/Open 与 roster 是在本机 DSH web 页面里用
@@ -877,8 +897,9 @@
   失败关闭的页面 E2E、真实 cloud proposal + start/stop/pause/resume、denial/Continue
   和下一轮结果 context 已 live；云端凭据动作仍未验证，仍等待平台隔离（ADR-001，
   [`08-integration.md`](08-integration.md) §3.3）。生产默认 cloudHost 首轮与合盖
-  已于 2026-11-28 用 main tarball + 依赖 `1.3.1` 验证（§3.1）；npm 发布产物、
-  干净账号和页面建机路径仍未覆盖。
+  已于 2026-11-28 用 main tarball + 依赖 `1.3.1` 验证（§3.1）；随后在零机器
+  账号用本地 alpha.2 tarball 完成页面真实建机与合盖（§3.1）。仍未覆盖：npm
+  发布产物（alpha.2 未发布）。
   本地 session store、`session.*` RPC、`rayrun_agent`/detached adapter 已有 fake
   测试；页面层真实一轮、detached 的页面关闭 + host 重启收取、同一 host 连续两轮、
   无 token 失败恢复、runtime 重建，以及三条消息排队 + 本地 DSH 崩溃恢复已在
