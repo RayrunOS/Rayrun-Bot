@@ -7,10 +7,13 @@
  *   2. create a new computer with the original name and selected image/credential;
  *   3. tar the preserved paths from the old computer, copy them through the
  *      dependency's `rayrun_files` tool, and extract them on the new computer;
- *   4. stop (never destroy) the old computer.
+ *   4. destroy the old computer only after the new one is ready and verified.
  *
- * Any failure restores the old name and leaves the old computer running; the
- * new computer is stopped and renamed so it cannot take the original name. This
+ * The user's Update confirmation is the explicit request for that destruction.
+ * Any failure before that point restores the old name and leaves the old
+ * computer available; the new computer is stopped and renamed so it cannot take
+ * the original name. If only the final destroy fails, the new computer stays in
+ * place and the old one is stopped; the result reports that cleanup failed. This
  * module only uses the published dependency tools/RPC; the Rayrun token never
  * enters this module or its results.
  */
@@ -242,14 +245,24 @@ export function openComputerUpdater({ rpc, getTools, logger } = {}) {
         timeout_seconds: 60,
       }, { signal }).catch(() => {})
 
-      const afterMigration = await rpc.call('machine.get', { id: old.id }, { timeoutMs: 30_000, signal })
-        .then((body) => body?.machine)
-        .catch(() => null)
-      if (afterMigration?.status === 'Running') await stop(old.id)
+      let destroyed = false
+      try {
+        await rpc.call('machine.action', { id: old.id, verb: 'destroy' }, { timeoutMs: 120_000, signal })
+        destroyed = true
+      } catch (error) {
+        // The new computer is already verified. Do not roll back a successful
+        // migration because cleanup failed; stop the old computer and report it.
+        try { await stop(old.id) } catch { /* best effort */ }
+        try {
+          logger?.warn?.(`dsh-rayrun-bots: computer update could not destroy the old computer: ${String(error?.message ?? error).slice(0, 200)}`)
+        } catch {
+          // Logging must not change the update result.
+        }
+      }
       return {
         updated: true,
         machine: { id: runningMachine.id, name: runningMachine.name || original, image },
-        previous: { id: old.id, name: backup, status: afterMigration?.status === 'Running' ? 'Stopped' : (afterMigration?.status ?? old.status) },
+        previous: { id: old.id, name: backup, status: destroyed ? 'Destroyed' : 'Stopped', destroyed },
         credential: credentialName,
       }
     } catch (error) {

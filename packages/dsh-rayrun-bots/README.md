@@ -55,7 +55,7 @@ Restart DSH after that. The Bots page loads when the page starts.
 Then, in Bots:
 
 1. Connect Rayrun. The token stays in the Harness vault on the host. The page does not receive it.
-2. Adopt a computer you already have, or create one. Creating a computer is billed by Rayrun. The page can stop a machine. It does not destroy one.
+2. Adopt a computer you already have, or create one. Creating a computer is billed by Rayrun. The page can stop a machine. Only a confirmed computer update destroys the old computer, after the replacement is ready.
 3. If the computer does not already have a DeepSeek credential, the setup step can store your key as a Rayrun credential. The key is injected into the agent process. It does not go into the workspace or the chat.
 4. Create a bot and send a message. The sample bots shown before you create one are an in-memory preview. They do not run on a computer.
 
@@ -86,7 +86,7 @@ Still pre-alpha. This is the short version; evidence is in
 - Load both plugins and open a Bots page: roster, conversation, details, new bot, setup, and settings, in Chinese and English.
 - Keep bots you create: name, instructions, session, and transcript survive a page reload.
 - Send a turn to a Rayrun computer you already have. A stopped or paused machine may be started for that turn, which spends machine time. Closing the page does not have to drop the turn.
-- Open the computer's desktop, and stop the machine. Stop does not destroy it.
+- Open the computer's desktop, and stop the machine. Stop does not destroy it; only a confirmed computer update removes the old computer, after the replacement is ready.
 - Approve or deny start, stop, pause, and resume. Allow once runs that action from your local host. Deny, expiry, or an unknown result does not run it.
 - Create, pause, and remove an interval routine. A routine is an ordinary turn. Turning one on can wake a machine and spend money on later runs. Cron and event triggers are not built.
 - Optionally run a preview host on the computer, one process shared by your bots. With it on, a routine can run while local DSH is stopped. It is off by default. The hosted check used a machine image new enough for Rayrun runtimes (`dsh-bot@1`). Older official images can reject the runtime with `guestd_outdated`.

@@ -11,7 +11,7 @@ import { ERROR_CODES } from '../lib/errors.js'
 const checks = []
 const check = (name, fn) => checks.push({ name, fn })
 
-function setup({ failCreate = false, failExtract = false, noCredential = false, noImage = false, boundCredential = 'dsh-model-test' } = {}) {
+function setup({ failCreate = false, failExtract = false, failDestroy = false, noCredential = false, noImage = false, boundCredential = 'dsh-model-test' } = {}) {
   const machines = [{
     id: 'old-id',
     name: 'bot-box',
@@ -47,6 +47,11 @@ function setup({ failCreate = false, failExtract = false, noCredential = false, 
         if (!machine) throw new Error('machine not found')
         if (payload.verb === 'rename') machine.name = payload.name
         if (payload.verb === 'stop') machine.status = 'Stopped'
+        if (payload.verb === 'destroy') {
+          if (failDestroy) throw new Error('destroy failed')
+          machine.status = 'Terminated'
+          return { ok: true }
+        }
         return { ok: true, machine }
       }
       if (action === 'machine.create') {
@@ -101,7 +106,7 @@ function setup({ failCreate = false, failExtract = false, noCredential = false, 
   return { rpc, tools, machines, actions, execs, files }
 }
 
-check('replaces the computer, copies preserved paths and stops the old one', async () => {
+check('replaces the computer, copies preserved paths and destroys the old one', async () => {
   const { rpc, tools, machines, actions, execs, files } = setup()
   const updater = openComputerUpdater({ rpc, getTools: () => tools })
   const result = await updater.update({
@@ -113,14 +118,17 @@ check('replaces the computer, copies preserved paths and stops the old one', asy
   assert.equal(result.machine.image, BOT_IMAGE)
   assert.equal(result.credential, 'dsh-model-test')
   assert.match(result.previous.name, /^bot-box-pre-update-/)
-  assert.equal(machines.find((machine) => machine.id === 'old-id').status, 'Stopped')
+  assert.equal(result.previous.destroyed, true)
+  assert.equal(result.previous.status, 'Destroyed')
+  assert.equal(machines.find((machine) => machine.id === 'old-id').status, 'Terminated')
   assert.equal(machines.find((machine) => machine.id === 'old-id').name, result.previous.name)
   assert.equal(machines.find((machine) => machine.id === 'new-id').name, 'bot-box')
   assert.equal(machines.find((machine) => machine.id === 'new-id').agent, BOT_IMAGE)
   assert.deepEqual(machines.find((machine) => machine.id === 'new-id').credentials, ['dsh-model-test'])
   assert.deepEqual(machines.find((machine) => machine.id === 'new-id').egress_allow, ['api.deepseek.com'])
   assert.equal(actions.filter((entry) => entry.payload.verb === 'rename').length, 1)
-  assert.equal(actions.filter((entry) => entry.payload.verb === 'stop').length, 1)
+  assert.equal(actions.filter((entry) => entry.payload.verb === 'stop').length, 0)
+  assert.equal(actions.filter((entry) => entry.payload.verb === 'destroy').length, 1)
   assert.equal(execs.some((entry) => entry.command.includes('tar -czf')), true)
   assert.equal(execs.some((entry) => entry.command.includes('mkdir -p /workspace/.dsh')), true)
   assert.equal(execs.some((entry) => entry.command.includes('test -s /workspace/.dsh/rayrun-update-')), true)
@@ -129,6 +137,21 @@ check('replaces the computer, copies preserved paths and stops the old one', asy
   assert.equal(files.filter((entry) => entry.action === 'upload').length, 1)
   assert.match(execs.find((entry) => entry.command.includes('tar -czf')).command, /root\/\.config/)
   assert.equal(JSON.stringify(result).includes('fake-tar'), false)
+})
+
+check('keeps the new computer and reports a failed old-computer destroy', async () => {
+  const { rpc, tools, machines, actions } = setup({ failDestroy: true })
+  const updater = openComputerUpdater({ rpc, getTools: () => tools })
+  const result = await updater.update({ machine: 'bot-box', confirmed: true })
+  assert.equal(result.updated, true)
+  assert.equal(result.machine.name, 'bot-box')
+  assert.equal(result.previous.destroyed, false)
+  assert.equal(result.previous.status, 'Stopped')
+  assert.equal(machines.find((machine) => machine.id === 'new-id').name, 'bot-box')
+  assert.equal(machines.find((machine) => machine.id === 'old-id').name, result.previous.name)
+  assert.equal(machines.find((machine) => machine.id === 'old-id').status, 'Stopped')
+  assert.equal(actions.filter((entry) => entry.payload.verb === 'destroy').length, 1)
+  assert.equal(actions.filter((entry) => entry.payload.verb === 'stop').length, 1)
 })
 
 check('requires explicit confirmation before any RPC or tool call', async () => {
@@ -181,6 +204,7 @@ check('restores the old name and stops the replacement when extraction fails', a
   assert.equal(machines.find((machine) => machine.id === 'new-id').name.startsWith('bot-box-failed-update-'), true)
   assert.equal(machines.find((machine) => machine.id === 'new-id').status, 'Stopped')
   assert.equal(actions.some((entry) => entry.payload.id === 'old-id' && entry.payload.verb === 'stop'), false)
+  assert.equal(actions.some((entry) => entry.payload.verb === 'destroy'), false)
 })
 
 check('restores the old name when creating the replacement fails', async () => {

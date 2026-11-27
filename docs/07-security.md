@@ -158,7 +158,8 @@ ADR-019（2026-11-23）把**本地 DSH host** 定为凭据/执行器在本地动
 - 不要把 Rayrun token、API key 或密码放进仓库文件、fixture、issue、PR 或聊天。
 - token 放 Harness vault；优先用可吊销的专用 Rayrun 账号/ token。
 - `egress_allow` 尽量窄；新机器默认无网。
-- 优先 stop，不要 destroy，除非机器本来就该消失。
+- 优先 stop，不要 destroy，除非机器本来就该消失。电脑更新是明确的例外：用户确认
+  更新且新机迁移验证成功后，旧机被 destroy；迁移失败时不 destroy。
 - 关注余额：耗尽可能 force-destroy 机器与磁盘。
 - 仓库层面：无运行时依赖、无构建步骤；新增依赖或 installer 要像代码一样审查。
 

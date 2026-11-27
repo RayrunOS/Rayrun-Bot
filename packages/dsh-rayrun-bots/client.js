@@ -359,19 +359,20 @@ window.__ModuleLoader__.load({
     "updateCopyFailed": "Copy failed. Select the command manually.",
     "updateRestart": "This is a notice only; nothing is downloaded or installed automatically.",
     "computer": "Bot's computer",
-    "computerHint": "Updates the computer all bots share. Files and sign-ins are kept; installed apps and packages are removed. All bots update together.",
+    "computerHint": "Updates the computer all bots share. Files and sign-ins are kept; installed apps and packages are removed. After a successful update, the old computer and its workspace are destroyed. All bots update together.",
     "computerCurrent": "Current · {name} · {image}",
     "computerUpdate": "Update",
-    "computerUpdateHint": "Creates a new computer, copies the preserved paths, and stops the old computer for rollback. The old computer is never destroyed automatically.",
+    "computerUpdateHint": "Creates a new computer and copies the preserved paths. After a successful update, the old computer and its workspace are destroyed (irreversible).",
     "computerTarget": "New image: {image}. Bots keeps the DeepSeek credential already bound to this computer, or uses the account's model credential.",
     "computerNoMachine": "No cloud computer found.",
     "computerNotConnected": "Connect Rayrun to manage the bot computer.",
-    "computerBillable": "This creates a billable computer on your Rayrun account. The old one is stopped, not destroyed.",
+    "computerBillable": "This creates a billable computer on your Rayrun account. On success the old computer is destroyed and cannot be recovered.",
     "computerConfirm": "Update computer (billable)",
     "computerCancel": "Cancel",
     "computerUpdating": "Updating… creating the new computer and copying data. Do not close this page.",
-    "computerUpdated": "Computer updated to {image}. The previous computer is {name} and is stopped.",
-    "computerUpdateFailed": "Could not update the computer: {message}"
+    "computerUpdated": "Computer updated to {image}. The previous computer {name} was destroyed.",
+    "computerUpdateFailed": "Could not update the computer: {message}",
+    "computerUpdatedKept": "Computer updated to {image}. The previous computer {name} could not be destroyed and is stopped; clean it up manually."
   },
   "sample": {
     "user": {
@@ -786,19 +787,20 @@ window.__ModuleLoader__.load({
     "updateCopyFailed": "复制失败，请手动选中命令。",
     "updateRestart": "这里只做提示；页面不会自动下载或安装。",
     "computer": "Bot 的电脑",
-    "computerHint": "更新你的 Bot 共用的电脑。你的文件和登录信息会保留，但已安装的应用和软件包会被移除。所有 Bot 会一起更新。",
+    "computerHint": "更新你的 Bot 共用的电脑。你的文件和登录信息会保留，但已安装的应用和软件包会被移除；更新成功后，旧电脑及其 workspace 会被销毁。所有 Bot 会一起更新。",
     "computerCurrent": "当前 · {name} · {image}",
     "computerUpdate": "更新",
-    "computerUpdateHint": "创建一台新电脑，复制保留的路径，并停止旧电脑以便回滚。旧电脑永远不会被自动销毁。",
+    "computerUpdateHint": "创建一台新电脑并复制保留的路径。更新成功后，旧电脑及其 workspace 会被销毁（不可恢复）。",
     "computerTarget": "新镜像：{image}。会自动沿用这台电脑已绑定的 DeepSeek 凭据，或使用账号里的模型凭据。",
     "computerNoMachine": "没有找到云电脑。",
     "computerNotConnected": "连接 Rayrun 后才能管理 Bot 的电脑。",
-    "computerBillable": "这会在你的 Rayrun 账号上创建一台计费电脑。旧电脑会被停止，不会被销毁。",
+    "computerBillable": "这会在你的 Rayrun 账号上创建一台计费电脑。更新成功后旧电脑会被销毁，无法恢复。",
     "computerConfirm": "更新电脑（计费）",
     "computerCancel": "取消",
     "computerUpdating": "正在更新… 正在创建新电脑并复制数据。请不要关闭页面。",
-    "computerUpdated": "电脑已更新到 {image}。旧电脑 {name} 已停止。",
-    "computerUpdateFailed": "更新电脑失败：{message}"
+    "computerUpdated": "电脑已更新到 {image}。旧电脑 {name} 已销毁。",
+    "computerUpdateFailed": "更新电脑失败：{message}",
+    "computerUpdatedKept": "电脑已更新到 {image}。旧电脑 {name} 未能销毁，已停止；请手动清理。"
   },
   "sample": {
     "user": {
@@ -4074,10 +4076,13 @@ window.__ModuleLoader__.load({
                       name: currentMachine.name ?? currentMachine.id,
                       image: currentMachine.agent || '—',
                     })),
-            computerResult ? h('div', { className: 'rb-computer-meta' }, t('settings.computerUpdated', {
-              image: computerResult.machine?.image ?? DETACHED_IMAGE,
-              name: computerResult.previous?.name ?? '—',
-            })) : null,
+            computerResult ? h('div', { className: 'rb-computer-meta' }, t(
+              computerResult.previous?.destroyed ? 'settings.computerUpdated' : 'settings.computerUpdatedKept',
+              {
+                image: computerResult.machine?.image ?? DETACHED_IMAGE,
+                name: computerResult.previous?.name ?? '—',
+              },
+            )) : null,
             computerError ? h('div', { className: 'rb-computer-meta rb-computer-error', role: 'alert' }, t('settings.computerUpdateFailed', { message: computerError })) : null,
             computerOpen && currentMachine ? h(
               'div',

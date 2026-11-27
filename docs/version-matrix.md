@@ -67,7 +67,9 @@ tarball `gitHead=3604e33`，包含 prompt-root 与测试 mock 修复；`1.2.0` �
 2026-11-27 按用户明确清理授权 destroy 13 台旧测试机（CI deploy、A1/A3、
 computer update、A6、首次运行计时）；仅保留 `rayrun-bot-prod-e2e`（Stopped、
 未 destroy）。表中“机器 stop、未 destroy”是当次测试收尾；之后的清理不改变当次
-验证证据。
+验证证据。2026-11-27 起 `computer.update` 在迁移成功后 destroy 旧机
+（`computer-update.mjs` 8/8）；表中 2026-11-26 的旧机 Stopped、未 destroy 是当次
+行为，真实 Rayrun 的 destroy 路径未复验。
 
 “未安装”表示该 CI 矩阵只验证 Bots 包本身能安装和合成，不验证依赖或云端行为。
 表中 `0.1.0-alpha.0` 与“未发布 npm”是当次验证时的状态；当前包版本是

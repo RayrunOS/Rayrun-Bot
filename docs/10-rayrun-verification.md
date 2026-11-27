@@ -644,7 +644,7 @@
 - 电脑更新（2026-11-26，fake/UI）：`computer-update.mjs` 7/7 覆盖成功编排、
   缺确认/缺镜像/缺凭据失败关闭、解包失败和创建失败的回滚；`rpc-contract` 34/34 覆盖
   `computer.update` 必须显式确认。Settings 页面显示共用电脑、当前镜像、固定镜像/
-  自动凭据、计费/保留路径/不 destroy 文案，不提供镜像或凭据选项；一键更新确认区
+  自动凭据、当时的计费/保留路径/不 destroy 文案，不提供镜像或凭据选项；一键更新确认区
   用注入的 fake overview 在 headless Firefox smoke，确认区固定
   `deepseek-harness@1`、没有 select，截图 `/tmp/bot/oneclick-confirm.png`
   （临时文件）。本机 Rayrun API 不可达，真实 overview 未复验，也未执行更新。
@@ -658,6 +658,12 @@
   登录配置实际内容（本次旧机没有浏览器登录数据）和其他 egress 规则仍未验收；新机
   显式放行 `api.deepseek.com`，旧机的其他 egress 规则不复制，更新后需确认其他网络
   依赖。
+- 电脑更新销毁旧机（2026-11-27，代码/fake）：`computer-update.mjs` 8/8；成功迁移
+  后调用 `machine.action` 的 `destroy` 销毁旧机，返回 `previous.destroyed=true`；
+  解包/创建失败仍回滚且不 destroy；最后 destroy 失败时保留新机、停止旧机并返回
+  `destroyed=false`，UI 用 `computerUpdatedKept` 报告。Settings 文案改为更新成功后
+  旧电脑及其 workspace 销毁。未在真实 Rayrun 上执行 destroy（避免破坏迁移证据机）；
+  真实迁移证据仍是 2026-11-26 的停止旧机版本。
 - 电脑更新镜像固定与传输修复（2026-11-26）：用户选择 `dsh-bot@1` 时，新机
   `/workspace/.dsh` 不存在，上传后的 tar 无法打开，回滚把失败新机停为
   `rayrun-bot-a3-20261125-failed-update-mwxmiti2`（另有两次同类失败）。修复：
@@ -665,7 +671,8 @@
   客户端传来的镜像/凭据字段；上传前在新机 `mkdir -p /workspace/.dsh`，上传后用
   `test -s` 校验；`computer-update` 7/7 覆盖。用户当前
   `rayrun-bot-a3-20261125` 已是同名 `deepseek-harness@1` 新机（带
-  `dsh-model-hjyu-thinkpad-l14-gen-1`），旧机和失败的新机均 Stopped、未 destroy。
+  `dsh-model-hjyu-thinkpad-l14-gen-1`），旧机和失败的新机当次 Stopped、未 destroy；
+  这些机器已于 2026-11-27 按用户清理授权 destroy。
 - CI deploy egress 根因（2026-11-25）：`.github/scripts/deploy-rayrun.mjs` 创建
   沙盒时用了不在 Rayrun 创建 schema 中的 `egress_allow`；该字段被忽略，导致
   pnpm 下载 `ENOTFOUND`。在线沙盒验证 `PUT /v1/sandboxes/{id}/egress` 后同一

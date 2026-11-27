@@ -331,19 +331,20 @@
     "updateCopyFailed": "Copy failed. Select the command manually.",
     "updateRestart": "This is a notice only; nothing is downloaded or installed automatically.",
     "computer": "Bot's computer",
-    "computerHint": "Updates the computer all bots share. Files and sign-ins are kept; installed apps and packages are removed. All bots update together.",
+    "computerHint": "Updates the computer all bots share. Files and sign-ins are kept; installed apps and packages are removed. After a successful update, the old computer and its workspace are destroyed. All bots update together.",
     "computerCurrent": "Current · {name} · {image}",
     "computerUpdate": "Update",
-    "computerUpdateHint": "Creates a new computer, copies the preserved paths, and stops the old computer for rollback. The old computer is never destroyed automatically.",
+    "computerUpdateHint": "Creates a new computer and copies the preserved paths. After a successful update, the old computer and its workspace are destroyed (irreversible).",
     "computerTarget": "New image: {image}. Bots keeps the DeepSeek credential already bound to this computer, or uses the account's model credential.",
     "computerNoMachine": "No cloud computer found.",
     "computerNotConnected": "Connect Rayrun to manage the bot computer.",
-    "computerBillable": "This creates a billable computer on your Rayrun account. The old one is stopped, not destroyed.",
+    "computerBillable": "This creates a billable computer on your Rayrun account. On success the old computer is destroyed and cannot be recovered.",
     "computerConfirm": "Update computer (billable)",
     "computerCancel": "Cancel",
     "computerUpdating": "Updating… creating the new computer and copying data. Do not close this page.",
-    "computerUpdated": "Computer updated to {image}. The previous computer is {name} and is stopped.",
-    "computerUpdateFailed": "Could not update the computer: {message}"
+    "computerUpdated": "Computer updated to {image}. The previous computer {name} was destroyed.",
+    "computerUpdateFailed": "Could not update the computer: {message}",
+    "computerUpdatedKept": "Computer updated to {image}. The previous computer {name} could not be destroyed and is stopped; clean it up manually."
   },
   "sample": {
     "user": {

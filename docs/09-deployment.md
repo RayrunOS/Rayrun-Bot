@@ -195,14 +195,15 @@ npm_config_registry=https://registry.npmjs.org \
 replace 路径：旧机改名为 `<name>-pre-update-<time>`，用原名称、固定镜像
 `deepseek-harness@1` 和自动选中的 DeepSeek credential 创建新机，复制
 `/workspace`、`/root/.config`、`/root/.local/share`、`/root/.mozilla`、
-`/root/.ssh`，然后停止旧机。UI 不提供镜像或凭据选项；credential 优先沿用当前电脑
+`/root/.ssh`，验证新机后销毁旧机。UI 不提供镜像或凭据选项；credential 优先沿用当前电脑
 已绑定的名称，否则选择账号里名称匹配 DeepSeek/model 的凭据，找不到就失败关闭。
-上传前先在 new machine 建好 `/workspace/.dsh` 并校验 tar 非空。旧机与新机都不会
-自动 destroy；失败时新机停止并改名，旧机名称恢复。该操作会创建计费机器，页面必须
-确认。网络 egress 规则不复制；新机显式放行 `api.deepseek.com` 供 bot 模型使用，
+上传前先在 new machine 建好 `/workspace/.dsh` 并校验 tar 非空。迁移失败时新机停止
+并改名、旧机名称恢复；只有最后销毁旧机失败时保留新机、停止旧机并在结果里报告。
+该操作会创建计费机器，页面必须确认；用户确认更新即是对销毁旧机的明确请求。
+网络 egress 规则不复制；新机显式放行 `api.deepseek.com` 供 bot 模型使用，
 其他旧 egress 规则不保留，更新后需确认其他网络依赖。`computer-update.mjs`
-覆盖固定镜像与自动凭据、fake 编排与回滚，真实 Rayrun 迁移仍需单独验收（见
-`10-rayrun-verification.md`）。
+覆盖固定镜像与自动凭据、fake 编排、销毁与回滚；真实 Rayrun 的销毁路径尚未单独
+复验（见 `10-rayrun-verification.md`）。
 
 ---
 

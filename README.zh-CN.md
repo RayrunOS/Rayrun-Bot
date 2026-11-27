@@ -53,7 +53,7 @@ npm_config_registry=https://registry.npmjs.org \
 然后在 Bots 里：
 
 1. 连接 Rayrun。token 留在 host 侧的 Harness vault 里，页面拿不到它。
-2. 采用一台已有的云电脑，或新建一台。新建会计入 Rayrun 账单。页面可以停止机器，不会销毁机器。
+2. 采用一台已有的云电脑，或新建一台。新建会计入 Rayrun 账单。页面可以停止机器；只有明确的电脑更新确认、且新电脑就绪后，才会销毁旧电脑。
 3. 如果这台电脑还没有 DeepSeek credential，设置步骤可以把你的 key 存成 Rayrun credential。key 注入 agent 进程，不进入工作区，也不进入聊天。
 4. 创建一个 bot 并发送一条消息。默认名册是空的；只有显式 `?preview=1` 的页面会显示示例 bot，它们只是页内演示，不会在云电脑上运行。
 
@@ -79,7 +79,7 @@ Stopped 的 hosted 机器发了一轮，收到了回复。那次核对打开了�
 - 装上两个插件并打开 Bots 页：名册、对话、详情、新建 bot、设置向导和设置，中英双语。
 - 留下你创建的 bot：名字、指令、session 和 transcript 在刷新页面后还在。
 - 向一台已有的 Rayrun 云电脑发一轮。停止或暂停的机器可能会为这一轮被启动，并产生机时费用。关掉页面不一定丢掉这一轮。
-- 打开云电脑桌面，以及停止机器。停止不会销毁机器。
+- 打开云电脑桌面，以及停止机器。停止不会销毁机器；只有明确的电脑更新确认、且新电脑就绪后，才会销毁旧电脑。
 - 批准或拒绝 start、stop、pause、resume。Allow once 从本地 host 执行该动作。拒绝、过期或未知结果都不会执行。
 - 创建、暂停和删除按间隔重复的 routine。routine 就是普通的一轮。打开它之后，后续运行可能唤醒机器并花钱。cron 和事件触发还没有。
 - 可选：在云电脑上跑一个预览 host，你的 bot 共用一个进程。打开之后，本地 DSH 停着时 routine 仍可以跑。默认关闭。hosted 核对用的是新到足以跑 Rayrun runtime 的镜像（`dsh-bot@1`）。更旧的官方镜像可能以 `guestd_outdated` 拒绝 runtime。

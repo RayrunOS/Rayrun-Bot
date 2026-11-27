@@ -143,8 +143,8 @@ attention、snippet 与时间。chat 来源没有 TTL，显示 `waits for you`�
 设置或模型凭据。没有机器时，用户填写名称和可选的 DeepSeek key，点“创建云电脑”调用
 `machine.create`，规格取插件的 `defaults`（默认 `deepseek-harness@1`、2 vCPU、至少 2 GB、
 远程桌面）。key 只作为 `modelKey` 交给云电脑插件存成机器凭据，不进入 Bots 的 host 状态，
-成功后清空输入。按钮文案明确说明这是 Rayrun 账号上的计费机器，且 Bots 永不销毁它；
-未连接时按钮不可用，失败显示一句可执行错误。创建时如果插件的默认镜像是已知的
+成功后清空输入。按钮文案明确说明这是 Rayrun 账号上的计费机器；Setup 创建不销毁它，
+电脑更新的销毁规则见下文；未连接时按钮不可用，失败显示一句可执行错误。创建时如果插件的默认镜像是已知的
 shell oneshot（`dsh-bot@1`、`dsh-bot-devcheck@1`），Setup 改用
 `deepseek-harness@1`；选中已有这类镜像时显示警告，因为 detached 回合不会启动 DSH
 worker。多台机器时 setup 和重复创建检查优先选
@@ -174,7 +174,8 @@ host 从 bot 的 session 提供实际机器名（`bots.list.computers`），客�
 `pricing` / `usage`；Rayrun API 不提供 running since，不伪造该字段）。点击后先显示
 “停止云电脑？正在运行的工作会暂停。”，确认后调用 `machine.action`（`verb:
 "stop"`），轮询 `machine.get` 到 Stopped，显示“云电脑已停止。”；超时或失败各一句
-可执行提示。Bots 永不调用 `destroy`。页面层 Open → live → Stop → sleeping 已在同一
+可执行提示。电脑卡片的 Open/Stop 不调用 `destroy`；只有 Settings → Bot 的电脑 的
+更新流程会在用户确认且迁移成功后销毁旧机。页面层 Open → live → Stop → sleeping 已在同一
 本机 DSH 页面验证。
 
 **详情面板的真实数据**：Rayrun 连接成功后，电脑块显示云电脑插件 `overview` 里的真实
@@ -196,13 +197,15 @@ profile，也不发送 Rayrun token 或 DeepSeek key；命令只更新 bots 包�
 **设置 → Bot 的电脑**：显示所有 bot 共用的电脑、当前镜像和“更新”入口。更新不再
 提供镜像或凭据选项：host 固定使用 `deepseek-harness@1`，并自动沿用当前电脑已绑定的
 DeepSeek credential；当前电脑没有绑定凭据时，自动选择账号里名称匹配 DeepSeek/model
-的凭据，找不到可用凭据就失败关闭。点更新后展开确认区，明确提示这会创建计费电脑、旧电脑只停止不销毁、文件
-和登录配置保留、已安装应用/软件包和缓存不复制。确认后 host 执行
+的凭据，找不到可用凭据就失败关闭。点更新后展开确认区，明确提示这会创建计费电脑、
+更新成功后旧电脑及其 workspace 会被销毁（不可恢复）、文件和登录配置保留、已安装
+应用/软件包和缓存不复制。确认后 host 执行
 `computer.update`：旧机改名为 `<name>-pre-update-<time>`，用原始名称和固定镜像创建
 新机，打包并复制 `/workspace`、`/root/.config`、`/root/.local/share`、
-`/root/.mozilla`、`/root/.ssh`，在新机解包，最后停止旧机；新机显式允许
+`/root/.mozilla`、`/root/.ssh`，在新机解包并验证，然后销毁旧机；新机显式允许
 `api.deepseek.com`，其他旧 egress 规则不复制。有 running/queued bot 回合时 host 拒绝
-更新；任何一步失败都会把新机停止并改名、把旧机名称恢复，绝不自动 destroy。所有
+更新；迁移前的任何一步失败都会把新机停止并改名、把旧机名称恢复；只有最后销毁旧机
+失败时保留新机、停止旧机并在结果里报告。所有
 bot 继续使用原机器名，因此 session/cloudHost 的机器名不变。
 
 **空 roster**：列表和中心区显示 `No bots yet` + `Create bot`；新建 bot 后进入空对话

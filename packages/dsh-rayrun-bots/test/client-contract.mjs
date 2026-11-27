@@ -209,6 +209,7 @@ const required = [
   'settings.computerCancel',
   'settings.computerUpdating',
   'settings.computerUpdated',
+  'settings.computerUpdatedKept',
   'settings.computerUpdateFailed',
   'settings.updates',
   'settings.updatesHint',
