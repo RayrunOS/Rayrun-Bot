@@ -833,11 +833,11 @@
     outbox `task-853619fc-….json` 为同一回复。重启同一 `DSH_HOME` 后
     transcript 收到 bot 回复（23:16:36.210Z），页面显示完整历史。
   - 偏差与限制：账号非零机器（历史 Terminated；`rayrun-bot-prod-e2e` 为
-    Running `deepseek-harness@1`，未动），setup 用页面级 fetch 过滤只保留本次
-    机器；机器用 host RPC 预建（`rayrun-bot-signoff-20261128`，`01a21f4a…`），
-    页面 `Create cloud computer` 的 `createComputer` 在点击时重新读取 `overview` 并
-    `pickMachine` 复用任何已有机器，不调用 `machine.create`（本次因此命中已有
-    机器）；本机到生产 API 走 localhost
+    Running `deepseek-harness@1`，未动）；机器用 host RPC 预建
+    （`rayrun-bot-signoff-20261128`，`01a21f4a…`），setup 采用已有机器，没有走
+    页面建机。页面级 fetch patch 无效（插件初始化时持有原
+    `fetch`）；`createComputer` 在点击时重新读取 `overview` 并 `pickMachine`
+    复用任何已有机器，不调用 `machine.create`；本机到生产 API 走 localhost
     反向代理（`curl --interface wlp4s0`；token 只在 host vault/请求头，不进日志）；
     页面由 WebDriver 驱动。npm `alpha.1` 是 2026-11-25 产物，不含 2026-11-26/27
     的 UX 修复与默认 cloudHost，所以本次不是 npm 产物签收。测试机记录后

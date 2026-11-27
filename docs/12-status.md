@@ -614,11 +614,11 @@ proposal 的卡片 **2.291s**、执行 **0.779s**、Continue→working **21ms**�
     outbox 为同一回复；重启同一 `DSH_HOME` 后 transcript 收到 bot 回复
     （23:16:36.210Z），页面显示完整历史。
   - 偏差：账号非零机器（历史 Terminated；`rayrun-bot-prod-e2e` 为 Running
-    `deepseek-harness@1`，未动），setup 通过页面级 fetch 过滤只保留本次机器；
-    机器用 host RPC 预建；页面 `Create cloud computer` 在点击时会重新读取
-    `overview`，只要列表里有机器（`pickMachine`）就复用并返回，不调用
-    `machine.create`（本次因此命中已有机器）；这是非空账号下的既有行为，
-    零机器账号的页面建机仍未覆盖；本机到
+    `deepseek-harness@1`，未动）；机器用 host RPC 预建；setup 采用已有机器，
+    没有走页面建机。页面级 fetch patch 不能改变这一点：插件在初始化时持有原
+    `fetch` 引用，覆盖 `window.fetch` 不影响其 `overview` 调用；`createComputer`
+    在点击时重新读取 `overview`，只要列表里有机器（`pickMachine`）就复用并
+    返回，不调用 `machine.create`。零机器账号的页面建机仍未覆盖；本机到
     生产 API 走 localhost 反向代理（`curl --interface wlp4s0`，token 不进日志）；
     页面由 WebDriver 驱动；npm `alpha.1` 是 2026-11-25 产物，不含 2026-11-26/27
     的 UX 修复与默认 cloudHost。测试机记录后于 2026-11-28 destroy（HTTP 204）；
@@ -641,8 +641,9 @@ proposal 的卡片 **2.291s**、执行 **0.779s**、Continue→working **21ms**�
 - setup 页面的建机路径：`createComputer` 在点击时会重新读取 `overview`；只要
   列表里有机器（`pickMachine`）就直接复用并返回，不调用 `machine.create`。
   2026-11-28 在非空账号点击 `Create cloud computer` 因此复用了已有机器；
-  host RPC `machine.create` 用同一参数成功。非空账号下这是既有行为，但
-  **零机器账号的页面建机路径仍未验证**，干净账号签收前需要复验。
+  host RPC `machine.create` 用同一参数成功。页面级 fetch patch 无法绕过
+  （插件持有原 `fetch`）。**零机器账号的页面建机路径仍未验证**，干净账号
+  签收前需要复验。
 - 发送响应前的合盖窗口：`session.send` 只在 bot 空闲的 detached/cloudHost 回合等到
   task attach；请求尚未到达本地 host、HTTP 响应尚未返回，或消息排在运行回合后面时，
   合盖仍可能丢这一轮。产品保证边界是“收到发送成功响应之后”。
