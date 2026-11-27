@@ -105,6 +105,7 @@ const required = [
   'chat.turnTimeout',
   'chat.machineStopped',
   'chat.imageUnsupported',
+  'chat.imageOutdated',
   'chat.workerNoReply',
   'chat.turnInterrupted',
   'empty.threadReal',
@@ -314,6 +315,9 @@ assert.match(client, /machine\?\.pricing\?\.vm_cents_per_hour/)
 assert.match(client, /computer\.burnLine/)
 assert.match(client, /E_MACHINE_STOPPED: 'chat\.machineStopped'/)
 assert.match(client, /E_IMAGE_UNSUPPORTED: 'chat\.imageUnsupported'/)
+assert.match(client, /E_GUESTD_OUTDATED: 'chat\.imageOutdated'/)
+assert.match(client, /const CLOUD_HOST_IMAGE = 'dsh-bot@1'/)
+assert.match(client, /cloudHost\s*\n\s*\? CLOUD_HOST_IMAGE/)
 assert.match(client, /E_WORKER_NO_REPLY: 'chat\.workerNoReply'/)
 assert.match(client, /message\.code === 'E_WORKER_NO_REPLY'/)
 assert.match(client, /rb-error-detail/)
@@ -336,7 +340,8 @@ assert.match(client, /approval\.expiredRunning/)
 assert.match(client, /approval\.stopComputer/)
 assert.match(client, /h\('div', \{ className: 'rb-error-text' \}, entry\.text\)[\s\S]{0,200}h\('div', \{ className: 'rb-error-code' \}/)
 assert.match(client, /\['account', 'usage', 'computer', 'updates', 'appearance'\]/)
-assert.match(client, /t\('settings\.computerTarget', \{ image: DETACHED_IMAGE \}\)/)
+assert.match(client, /const targetImage = cloudHost \? CLOUD_HOST_IMAGE : DETACHED_IMAGE/)
+assert.match(client, /t\('settings\.computerTarget', \{ image: targetImage \}\)/)
 assert.match(client, /hostRpc\('computer\.update', \{\s*machine: currentMachine\.name \|\| currentMachine\.id,\s*confirmed: true,?\s*\}\)/s)
 assert.equal(client.includes('settings.computerImage'), false)
 assert.equal(client.includes('settings.computerCredential'), false)

@@ -63,6 +63,7 @@ window.__ModuleLoader__.load({
     "errorTitle": "Turn failed",
     "machineStopped": "Your cloud computer is stopped or unavailable. Open it from Details or the cloud-computer plugin, then send again.",
     "imageUnsupported": "This cloud computer image is missing or does not start a DSH worker, so no task was started. Use an image such as deepseek-harness@1.",
+    "imageOutdated": "This cloud computer's image is too old for the cloud bot host. Update the computer in Settings → Bot, then send again.",
     "workerNoReply": "The cloud worker ended without writing reply.md. Check its session for the provider error; a missing DeepSeek credential (MISSING_CREDENTIAL) prevents a reply. Add a model credential or recreate the computer with one."
   },
   "list": {
@@ -491,6 +492,7 @@ window.__ModuleLoader__.load({
     "errorTitle": "回合失败",
     "machineStopped": "云电脑已停止或不可用。请在详情面板或云电脑插件里打开它，再重新发送。",
     "imageUnsupported": "这台云电脑的镜像读不到，或者不会启动 DSH worker，因此没有创建任务。请使用 deepseek-harness@1 之类的镜像。",
+    "imageOutdated": "这台云电脑的镜像太旧，无法运行云端 bot host。请在设置 → Bot 更新电脑后重试。",
     "workerNoReply": "云端 worker 结束了，但没有写 reply.md。请检查 worker session 的 provider 错误；缺少 DeepSeek 凭据（MISSING_CREDENTIAL）会导致无法回复。请添加模型凭据，或用带凭据的电脑重建。"
   },
   "list": {
@@ -887,6 +889,7 @@ window.__ModuleLoader__.load({
     const SAMPLE_COMPUTER = 'dsh-workspace'
     const DEFAULT_COMPUTER = 'rayrun-bot'
     const DETACHED_IMAGE = 'deepseek-harness@1'
+    const CLOUD_HOST_IMAGE = 'dsh-bot@1'
     const SHELL_ONESHOT_IMAGES = new Set(['dsh-bot@1', 'dsh-bot-devcheck@1'])
     const SESSION_POLL_MS = 1000
     const SESSION_POLL_LIMIT_MS = 16 * 60 * 1000
@@ -1374,6 +1377,7 @@ window.__ModuleLoader__.load({
       E_TOKEN_REQUIRED: 'chat.connectRayrun',
       E_MACHINE_STOPPED: 'chat.machineStopped',
       E_IMAGE_UNSUPPORTED: 'chat.imageUnsupported',
+      E_GUESTD_OUTDATED: 'chat.imageOutdated',
       E_WORKER_NO_REPLY: 'chat.workerNoReply',
       E_MACHINE_BUSY: 'chat.machineBusy',
       E_BALANCE_LOW: 'chat.balanceLow',
@@ -3666,9 +3670,11 @@ window.__ModuleLoader__.load({
           }
           const defaults = overview.defaults ?? {}
           const configuredAgent = String(defaults.agent ?? '').trim()
-          const agent = !cloudHost && SHELL_ONESHOT_IMAGES.has(configuredAgent)
-            ? DETACHED_IMAGE
-            : (configuredAgent || DETACHED_IMAGE)
+          const agent = cloudHost
+            ? CLOUD_HOST_IMAGE
+            : SHELL_ONESHOT_IMAGES.has(configuredAgent) || !configuredAgent
+              ? DETACHED_IMAGE
+              : configuredAgent
           const result = await rayRpc('machine.create', {
             name,
             agent,
@@ -3871,6 +3877,8 @@ window.__ModuleLoader__.load({
 
     function SettingsScreen({ t, lang, state, host, machineName, onRetryHost, onTab, onChange, onClose, onSetup }) {
       const shownLang = state.settings.lang || lang || 'zh'
+      const cloudHost = host.runtime?.name === 'rayrun-cloud-host'
+      const targetImage = cloudHost ? CLOUD_HOST_IMAGE : DETACHED_IMAGE
       const [usage, setUsage] = useState(null)
       const [usageLoading, setUsageLoading] = useState(true)
       const [usageError, setUsageError] = useState('')
@@ -4095,7 +4103,7 @@ window.__ModuleLoader__.load({
             computerResult ? h('div', { className: 'rb-computer-meta' }, t(
               computerResult.previous?.destroyed ? 'settings.computerUpdated' : 'settings.computerUpdatedKept',
               {
-                image: computerResult.machine?.image ?? DETACHED_IMAGE,
+                image: computerResult.machine?.image ?? targetImage,
                 name: computerResult.previous?.name ?? '—',
               },
             )) : null,
@@ -4103,7 +4111,7 @@ window.__ModuleLoader__.load({
             computerOpen && currentMachine ? h(
               'div',
               { className: 'rb-computer-form' },
-              h('div', { className: 'rb-faint' }, t('settings.computerTarget', { image: DETACHED_IMAGE })),
+              h('div', { className: 'rb-faint' }, t('settings.computerTarget', { image: targetImage })),
               h('div', { className: 'rb-faint' }, t('settings.computerBillable')),
               h('div', { className: 'rb-faint' }, t('settings.computerUpdateHint')),
               h(

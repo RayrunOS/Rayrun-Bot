@@ -35,6 +35,7 @@
     "errorTitle": "回合失败",
     "machineStopped": "云电脑已停止或不可用。请在详情面板或云电脑插件里打开它，再重新发送。",
     "imageUnsupported": "这台云电脑的镜像读不到，或者不会启动 DSH worker，因此没有创建任务。请使用 deepseek-harness@1 之类的镜像。",
+    "imageOutdated": "这台云电脑的镜像太旧，无法运行云端 bot host。请在设置 → Bot 更新电脑后重试。",
     "workerNoReply": "云端 worker 结束了，但没有写 reply.md。请检查 worker session 的 provider 错误；缺少 DeepSeek 凭据（MISSING_CREDENTIAL）会导致无法回复。请添加模型凭据，或用带凭据的电脑重建。"
   },
   "list": {

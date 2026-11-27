@@ -215,6 +215,13 @@ export function createCloudHostRuntime({
     return /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(name) ? name : String(machine.id)
   }
 
+  function machineCredentialNames(machine) {
+    if (!Array.isArray(machine?.credentials)) return []
+    return machine.credentials
+      .map((name) => (typeof name === 'string' ? name.trim() : ''))
+      .filter((name) => name !== '')
+  }
+
   function spec(script, machine) {
     return {
       argv: ['node', script],
@@ -230,7 +237,7 @@ export function createCloudHostRuntime({
         DSH_BOT_PROPOSE: `${path.posix.dirname(String(script))}/bin/propose.mjs`,
         DSH_BOT_MACHINE: machineRef(machine),
       },
-      credentials: [...credentials],
+      credentials: [...(credentials.length > 0 ? credentials : machineCredentialNames(machine).slice(0, 1))],
       restart: 'always',
       autostart: true,
       keep_alive: true,

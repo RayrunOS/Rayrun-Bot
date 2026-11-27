@@ -26,7 +26,7 @@ const DEPENDENCY_UNKNOWN = { name: 'dsh-rayrun-computer', required: '>=1.0.0 <2.
 const RUNTIME_UNAVAILABLE = { name: 'rayrun-agent', available: false }
 
 /** Mount the host half on a fake context and return the registered route. */
-function hostFor({ origin = 'http://127.0.0.1:59999', profileDir, runtime, tools } = {}) {
+function hostFor({ origin = 'http://127.0.0.1:59999', profileDir, runtime, tools, options = {} } = {}) {
   const routes = []
   const child = {
     effect(fn) {
@@ -53,7 +53,7 @@ function hostFor({ origin = 'http://127.0.0.1:59999', profileDir, runtime, tools
       return () => {}
     },
   }
-  apply(ctx, { runtime })
+  apply(ctx, { runtime, ...options })
   assert.equal(routes.length, 1, 'the host route is registered once')
   return { handler: routes[0].handler, route: routes[0] }
 }
@@ -143,6 +143,38 @@ check('health selects the detached runtime for dependency 1.1.0', async () => {
   writeFileSync(path.join(packageDir, 'package.json'), JSON.stringify({ name: 'dsh-rayrun-computer', version: '1.1.0' }))
   try {
     const reply = await request(hostFor({ profileDir }).handler, { method: 'GET', action: 'health' })
+    assert.equal(reply.status, 200)
+    assert.deepEqual(reply.json.runtime, { name: 'rayrun-detached', available: true })
+  } finally {
+    rmSync(profileDir, { recursive: true, force: true })
+  }
+})
+
+check('health selects the cloud host by default for dependency 1.2.0', async () => {
+  const profileDir = mkdtempSync(path.join(tmpdir(), 'rayrun-bots-cloud-profile-'))
+  const packageDir = path.join(profileDir, 'node_modules', 'dsh-rayrun-computer')
+  mkdirSync(packageDir, { recursive: true })
+  writeFileSync(path.join(packageDir, 'package.json'), JSON.stringify({ name: 'dsh-rayrun-computer', version: '1.2.0' }))
+  try {
+    const tools = { get: (name) => (name === 'rayrun_files' ? { execute() {} } : undefined) }
+    const reply = await request(hostFor({ profileDir, tools }).handler, { method: 'GET', action: 'health' })
+    assert.equal(reply.status, 200)
+    assert.deepEqual(reply.json.runtime, { name: 'rayrun-cloud-host', available: true })
+  } finally {
+    rmSync(profileDir, { recursive: true, force: true })
+  }
+})
+
+check('cloudHost: false keeps the detached runtime on dependency 1.2.0', async () => {
+  const profileDir = mkdtempSync(path.join(tmpdir(), 'rayrun-bots-detached-profile-'))
+  const packageDir = path.join(profileDir, 'node_modules', 'dsh-rayrun-computer')
+  mkdirSync(packageDir, { recursive: true })
+  writeFileSync(path.join(packageDir, 'package.json'), JSON.stringify({ name: 'dsh-rayrun-computer', version: '1.2.0' }))
+  try {
+    const reply = await request(
+      hostFor({ profileDir, options: { cloudHost: false } }).handler,
+      { method: 'GET', action: 'health' },
+    )
     assert.equal(reply.status, 200)
     assert.deepEqual(reply.json.runtime, { name: 'rayrun-detached', available: true })
   } finally {

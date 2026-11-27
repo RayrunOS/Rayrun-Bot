@@ -27,6 +27,7 @@ const NAME_MAX = 64
 const TIMEOUT_MS = 30 * 60 * 1000
 const PRESERVE = ['workspace', 'root/.config', 'root/.local/share', 'root/.mozilla', 'root/.ssh']
 const BOT_IMAGE = 'deepseek-harness@1'
+const CLOUD_HOST_IMAGE = 'dsh-bot@1'
 const CONTROL = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/
 
 function machineName(machine) {
@@ -100,9 +101,13 @@ function shellFailure(result, action) {
  *   logger?: object,
  * }} options
  */
-export function openComputerUpdater({ rpc, getTools, logger } = {}) {
+export function openComputerUpdater({ rpc, getTools, logger, image: requestedImage = BOT_IMAGE } = {}) {
   if (typeof rpc?.call !== 'function') throw new TypeError('computer updater needs a Rayrun RPC client.')
   if (typeof getTools !== 'function') throw new TypeError('computer updater needs a tool registry.')
+  if (typeof requestedImage !== 'string' || requestedImage.trim() === '' || CONTROL.test(requestedImage)) {
+    throw new TypeError('computer updater needs a valid image name.')
+  }
+  const image = requestedImage.trim()
   let running = false
 
   async function overview(signal) {
@@ -132,7 +137,6 @@ export function openComputerUpdater({ rpc, getTools, logger } = {}) {
   async function update({ machine: machineRef, confirmed } = {}) {
     if (running) throw updateError('A computer update is already running; wait for it to finish.')
     if (confirmed !== true) throw updateError('Updating the computer requires explicit confirmation.')
-    const image = BOT_IMAGE
 
     running = true
     const stamp = Date.now().toString(36)
@@ -315,4 +319,4 @@ export function openComputerUpdater({ rpc, getTools, logger } = {}) {
   return { update }
 }
 
-export { BOT_IMAGE, PRESERVE }
+export { BOT_IMAGE, CLOUD_HOST_IMAGE, PRESERVE }

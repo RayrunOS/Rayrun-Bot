@@ -16,7 +16,11 @@ const checks = []
 const check = (name, fn) => checks.push({ name, fn })
 const roots = []
 
-function setup({ machineStatus = 'Running', runtime: existing = null, withTool = true, project = false, configured = true, tokenMissing = false, hostReadyAfter = 0 } = {}) {
+function setup({
+  machineStatus = 'Running', runtime: existing = null, withTool = true, project = false,
+  configured = true, tokenMissing = false, hostReadyAfter = 0, credentials = ['deepseek-flash'],
+  machineCredentials = null,
+} = {}) {
   const root = mkdtempSync(path.join(tmpdir(), 'rayrun-cloud-host-runtime-'))
   roots.push(root)
   const calls = []
@@ -24,7 +28,10 @@ function setup({ machineStatus = 'Running', runtime: existing = null, withTool =
   const files = new Map()
   files.set('.rayrun/host/state.json', JSON.stringify({ state: 'running' }))
   const state = {
-    machine: { id: 'box-id', name: 'box', status: machineStatus, remote_desktop: false },
+    machine: {
+      id: 'box-id', name: 'box', status: machineStatus, remote_desktop: false,
+      ...(machineCredentials === null ? {} : { credentials: machineCredentials }),
+    },
     runtimes: new Map(existing === null ? [] : [[existing.name, existing]]),
     puts: [],
   }
@@ -85,7 +92,7 @@ function setup({ machineStatus = 'Running', runtime: existing = null, withTool =
     fetchImpl,
     getTools: () => (withTool ? { get: (name) => (name === 'rayrun_files' ? tool : undefined) } : { get: () => undefined }),
     machine: 'box',
-    credentials: ['deepseek-flash'],
+    credentials,
     ...(project ? {} : { hostScript: '/workspace/.rayrun/bin/host.mjs' }),
   })
   return { root, runtime, state, calls, uploads, files, machineStatus }
@@ -132,6 +139,12 @@ check('start uploads one task and returns a detached record', async () => {
   assert.equal(spec.env.DSH_BOT_PROPOSE, '/workspace/.rayrun/bin/bin/propose.mjs')
   assert.equal(Object.hasOwn(spec.env, 'BOT_ID'), false)
   assert.equal(hostRuntimeName(), 'bot-host')
+})
+
+check('uses the machine credential when none is configured', async () => {
+  const { root, runtime, state } = setup({ credentials: [], machineCredentials: ['machine-credential'] })
+  await runtime.start({ bot, text: 'hello', messageSeq: 1, botId: bot.id, stateRoot: root })
+  assert.deepEqual(state.puts[0].spec.credentials, ['machine-credential'])
 })
 
 check('carries routine origin into the cloud task', async () => {

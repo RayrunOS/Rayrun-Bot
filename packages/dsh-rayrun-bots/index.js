@@ -17,7 +17,7 @@
 import { readFileSync } from 'node:fs'
 import { createApprovalActionExecutor, normalizeApprovalAction } from './lib/approval-actions.js'
 import { createCloudApprovalBridge } from './lib/cloud-approval-bridge.js'
-import { openComputerUpdater } from './lib/computer-update.js'
+import { CLOUD_HOST_IMAGE, openComputerUpdater } from './lib/computer-update.js'
 import { createCloudRoutineBridge } from './lib/cloud-routine-bridge.js'
 import { openApprovalExecutor } from './lib/approval-executor.js'
 import { openApprovalStore } from './lib/approvals.js'
@@ -319,9 +319,15 @@ export function apply(ctx, options = {}) {
   let webServer
   const injectedRuntime = options.runtime === undefined ? undefined : validateRuntime(options.runtime)
   const installed = checkDependency(profileDirectory(ctx))
+  // The persistent cloud host is the default execution path on a dependency
+  // with the runtime RPC. `cloudHost: false` keeps the detached/one-shot
+  // fallback; an explicit object still pins or configures the host.
+  const cloudHostExplicit = options.cloudHost !== undefined && options.cloudHost !== null && options.cloudHost !== false
+  const cloudHostEnabled = options.cloudHost !== false && options.cloudHost !== null
+    && (cloudHostExplicit || (injectedRuntime === undefined && supportsRuntimeRpc(installed.version)))
   let cloudHostRuntime
-  if (options.cloudHost !== undefined && options.cloudHost !== null && options.cloudHost !== false) {
-    const config = options.cloudHost === true ? {} : options.cloudHost
+  if (cloudHostEnabled) {
+    const config = options.cloudHost === undefined || options.cloudHost === true ? {} : options.cloudHost
     if (typeof config !== 'object' || Array.isArray(config)) {
       throw new TypeError('cloudHost config must be an object.')
     }
@@ -375,6 +381,7 @@ export function apply(ctx, options = {}) {
         rpc: createRayrunRpc({ getOrigin: () => webServer?.getOrigin?.() }),
         getTools: () => ctx.get?.('tools'),
         logger: ctx.logger,
+        ...(cloudHostRuntime === undefined ? {} : { image: CLOUD_HOST_IMAGE }),
       })
     }
     return computerUpdateService

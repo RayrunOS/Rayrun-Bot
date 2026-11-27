@@ -5,13 +5,13 @@
  */
 import assert from 'node:assert/strict'
 import { writeFileSync } from 'node:fs'
-import { BOT_IMAGE, openComputerUpdater } from '../lib/computer-update.js'
+import { BOT_IMAGE, CLOUD_HOST_IMAGE, openComputerUpdater } from '../lib/computer-update.js'
 import { ERROR_CODES } from '../lib/errors.js'
 
 const checks = []
 const check = (name, fn) => checks.push({ name, fn })
 
-function setup({ failCreate = false, failExtract = false, failDestroy = false, noCredential = false, noImage = false, boundCredential = 'dsh-model-test' } = {}) {
+function setup({ failCreate = false, failExtract = false, failDestroy = false, noCredential = false, noImage = false, boundCredential = 'dsh-model-test', image = BOT_IMAGE } = {}) {
   const machines = [{
     id: 'old-id',
     name: 'bot-box',
@@ -34,7 +34,7 @@ function setup({ failCreate = false, failExtract = false, failDestroy = false, n
           ok: true,
           connection: { configured: true },
           machines: machines.filter((machine) => machine.status !== 'Terminated'),
-          agents: noImage ? [{ ref: 'other-image@1' }] : [{ ref: BOT_IMAGE }, { ref: 'deepseek-harness@2' }],
+          agents: noImage ? [{ ref: 'other-image@1' }] : [{ ref: image }, { ref: 'deepseek-harness@2' }],
           defaults: { agent: 'deepseek-harness@2' },
         }
       }
@@ -137,6 +137,15 @@ check('replaces the computer, copies preserved paths and destroys the old one', 
   assert.equal(files.filter((entry) => entry.action === 'upload').length, 1)
   assert.match(execs.find((entry) => entry.command.includes('tar -czf')).command, /root\/\.config/)
   assert.equal(JSON.stringify(result).includes('fake-tar'), false)
+})
+
+check('can replace the computer with an explicit cloud-host image', async () => {
+  const { rpc, tools, machines } = setup({ image: CLOUD_HOST_IMAGE })
+  const updater = openComputerUpdater({ rpc, getTools: () => tools, image: CLOUD_HOST_IMAGE })
+  const result = await updater.update({ machine: 'bot-box', confirmed: true })
+  assert.equal(result.updated, true)
+  assert.equal(result.machine.image, CLOUD_HOST_IMAGE)
+  assert.equal(machines.find((machine) => machine.id === 'new-id').agent, CLOUD_HOST_IMAGE)
 })
 
 check('keeps the new computer and reports a failed old-computer destroy', async () => {
