@@ -350,6 +350,72 @@ check('a missing reply.md fails closed instead of collecting a stale file', asyn
   })
 })
 
+check('a missing reply includes the worker provider error when available', async () => {
+  const stateRoot = setup()
+  const fetchImpl = fakeFetch()
+  const execCalls = []
+  const runtime = createRayrunDetachedRuntime({
+    getOrigin: () => 'http://127.0.0.1:1234',
+    fetchImpl,
+    getTools: () => ({
+      get(name) {
+        if (name !== 'rayrun_exec') return undefined
+        return {
+          async execute(args) {
+            execCalls.push(args)
+            return { stdout: 'Authentication Fails, Your api key: ****77e3 is invalid', stderr: '' }
+          },
+        }
+      },
+    }),
+  })
+  const started = await runtime.start({
+    bot: { id: 'echo', name: 'Echo', label: 'Echoes', instructions: 'Reply briefly.' },
+    text: 'hello',
+    history: [],
+    messageSeq: 1,
+    botId: 'echo',
+    stateRoot,
+  })
+  await assert.rejects(runtime.collect({ detached: started }), (error) => {
+    assert.equal(error.code, ERROR_CODES.workerNoReply)
+    assert.match(error.message, /Authentication Fails/)
+    assert.match(error.message, /Provider error/)
+    assert.equal(execCalls.length, 1)
+    assert.match(execCalls[0].command, /\.rayrun\/dsh\/sessions/)
+    return true
+  })
+})
+
+check('a missing reply redacts credential-shaped provider output', async () => {
+  const stateRoot = setup()
+  const runtime = createRayrunDetachedRuntime({
+    getOrigin: () => 'http://127.0.0.1:1234',
+    fetchImpl: fakeFetch(),
+    getTools: () => ({
+      get: () => ({
+        async execute() {
+          return { stdout: ['provider rejected Bearer abcdefghijklmnop', 'sk-' + 'abcdefghijklmnopqrstuvwxyz'].join(' '), stderr: '' }
+        },
+      }),
+    }),
+  })
+  const started = await runtime.start({
+    bot: { id: 'echo', name: 'Echo', label: 'Echoes', instructions: 'Reply briefly.' },
+    text: 'hello',
+    history: [],
+    messageSeq: 1,
+    botId: 'echo',
+    stateRoot,
+  })
+  await assert.rejects(runtime.collect({ detached: started }), (error) => {
+    assert.match(error.message, /Bearer \[redacted\]/)
+    assert.match(error.message, /sk-\[redacted\]/)
+    assert.doesNotMatch(error.message, /sk-[a-z]{26}/)
+    return true
+  })
+})
+
 check('a missing reply names the image recorded on the task', async () => {
   const stateRoot = setup()
   const runtime = createRayrunDetachedRuntime({

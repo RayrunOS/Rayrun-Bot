@@ -102,12 +102,48 @@ function resultNames(body) {
   return Array.isArray(body?.files) && body.files.length ? body.files.join(', ') : 'none'
 }
 
+function redactProviderError(value) {
+  return String(value ?? '')
+    .replace(/(Bearer\s+)[A-Za-z0-9._~+/=-]+|(sk-)[A-Za-z0-9_-]{16,}/gi, (match, bearer, sk) => (
+      bearer ? `${bearer}[redacted]` : `${sk}[redacted]`
+    ))
+    .slice(0, 500)
+}
+
+/**
+ * Best-effort read of the worker's DSH session log after a missing reply.md.
+ * The provider error is written by the worker session, not by this host; the
+ * dependency's exec tool reads it on the machine. Any failure is silent: the
+ * original worker-no-reply error remains actionable on its own.
+ */
+async function providerErrorHint(getTools, detached) {
+  let tool
+  try {
+    tool = getTools?.()?.get?.('rayrun_exec')
+  } catch {
+    return ''
+  }
+  if (typeof tool?.execute !== 'function') return ''
+  try {
+    const result = await tool.execute({
+      sandbox: detached.sandbox,
+      command: "grep -R -h -E 'Authentication Fails|MISSING_CREDENTIAL|invalid.*api key|401' /workspace/.rayrun/dsh/sessions 2>/dev/null | tail -n 3",
+      timeout_seconds: 30,
+    })
+    const text = [result?.stdout, result?.stderr].filter(Boolean).join('\n').trim()
+    return text ? ` Provider error: ${redactProviderError(text)}` : ''
+  } catch {
+    return ''
+  }
+}
+
 /**
  * Create the detached adapter. `getOrigin` is lazy because it is only available
- * after the DSH web server is injected.
- * @param {{ getOrigin?: () => string | undefined, fetchImpl?: Function }} options
+ * after the DSH web server is injected. `getTools` is optional and used only to
+ * read the worker's provider error after a missing reply.md.
+ * @param {{ getOrigin?: () => string | undefined, getTools?: () => object, fetchImpl?: Function }} options
  */
-export function createRayrunDetachedRuntime({ getOrigin, fetchImpl = globalThis.fetch } = {}) {
+export function createRayrunDetachedRuntime({ getOrigin, getTools, fetchImpl = globalThis.fetch } = {}) {
   const rpc = createRayrunRpc({ getOrigin, fetchImpl })
 
   return {
@@ -194,9 +230,10 @@ export function createRayrunDetachedRuntime({ getOrigin, fetchImpl = globalThis.
       } catch {
         const known = imageOf({ agent: detached?.image })
         const named = known ? ` This computer image is "${known}".` : ''
+        const provider = await providerErrorHint(getTools, detached)
         throw rayrunFailure(
           ERROR_CODES.workerNoReply,
-          `The cloud worker ended without writing reply.md (files: ${resultNames(body)}).${named} Check the worker session under .rayrun/dsh/sessions/ for the provider error. A missing DeepSeek credential (MISSING_CREDENTIAL) prevents the worker from replying; add a model credential or recreate the computer with one.`,
+          `The cloud worker ended without writing reply.md (files: ${resultNames(body)}).${named} Check the worker session under .rayrun/dsh/sessions/ for the provider error. A missing or invalid DeepSeek credential (MISSING_CREDENTIAL or provider Authentication Fails) prevents the worker from replying; add a valid model credential or recreate the computer with one.${provider}`,
         )
       }
       if (!info.isFile() || info.size > REPLY_MAX_BYTES) {

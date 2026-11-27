@@ -226,6 +226,18 @@ check('status stays running until the outbox exists, then collect returns the re
   assert.deepEqual(await runtime.collect({ detached: started }), { text: 'host reply' })
 })
 
+check('an error outbox becomes a worker-no-reply error', async () => {
+  const { root, runtime, files } = setup()
+  const started = await runtime.start({ bot, text: 'hello', messageSeq: 1, botId: bot.id, stateRoot: root })
+  const outbox = `.rayrun/bots/${bot.id}/outbox/${started.taskId}.json`
+  files.set(outbox, JSON.stringify({ taskId: started.taskId, error: 'Authentication Fails: invalid key' }))
+  await assert.rejects(runtime.collect({ detached: started }), (error) => {
+    assert.equal(error.code, ERROR_CODES.workerNoReply)
+    assert.match(error.message, /Authentication Fails/)
+    return true
+  })
+})
+
 check('can resolve a stopped machine without starting it for approval sync', async () => {
   const { runtime, calls } = setup({ machineStatus: 'Stopped' })
   const machine = await runtime.ensureMachine({ start: false })

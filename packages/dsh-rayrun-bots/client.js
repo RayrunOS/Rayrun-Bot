@@ -1141,6 +1141,7 @@ window.__ModuleLoader__.load({
 .rb-thread-welcome .rb-thread-empty { padding: 0; }
 .rb-working-row { display: flex; align-items: center; gap: 8px; color: #5b6472; font-size: 13px; }
 .rb-error-row { max-width: 760px; width: 100%; align-self: center; display: grid; gap: 3px; margin: 2px 0; padding: 9px 12px; border: 1px solid #f3d1d1; border-radius: 10px; background: #fff5f5; color: #9b1c1c; font-size: 12.5px; }
+.rb-error-detail { font-size: 11px; opacity: .85; overflow-wrap: anywhere; }
 .rb-error-code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 10.5px; opacity: .75; }
 .rb-error-text { line-height: 1.5; }
 .rb-mini { display: flex; gap: 8px; padding: 8px 12px; border-bottom: 1px solid #eef1f6; }
@@ -1409,12 +1410,16 @@ window.__ModuleLoader__.load({
         }
         return { ...entry, kind: 'bot' }
       }
-      return {
+      const error = {
         ...entry,
         kind: 'error',
         code: message.code || 'E_INTERNAL',
         text: sessionErrorText(t, message.code, message.text),
       }
+      if (message.code === 'E_WORKER_NO_REPLY' && typeof message.text === 'string' && message.text.trim()) {
+        error.detail = message.text
+      }
+      return error
     }
 
     function snippetOf(text) {
@@ -2023,7 +2028,13 @@ window.__ModuleLoader__.load({
             if (!response.ok) throw new Error(`health ${response.status}`)
             const body = await response.json()
             if (!body || body.ok !== true || body.plugin !== 'rayrun-bots') throw new Error('bad health envelope')
-            setHost({ status: 'loaded', version: String(body.version ?? ''), ready: body.ready === true, dependency: body.dependency ?? null })
+            setHost({
+              status: 'loaded',
+              version: String(body.version ?? ''),
+              ready: body.ready === true,
+              dependency: body.dependency ?? null,
+              runtime: body.runtime ?? null,
+            })
           } catch (error) {
             if (error?.name === 'AbortError') return
             setHost({ status: 'down' })
@@ -2082,6 +2093,7 @@ window.__ModuleLoader__.load({
         }
       }, [state.screen])
 
+      const cloudHost = host.runtime?.name === 'rayrun-cloud-host'
       const realConfigured = state.realOverview?.connection?.configured === true
       const realBalanceCents = Number(state.realOverview?.balance?.balance_cents)
       const realBalance = Number.isFinite(realBalanceCents) ? realBalanceCents / 100 : NaN
@@ -2644,6 +2656,7 @@ window.__ModuleLoader__.load({
             tab: state.tab,
             onTab: (tab) => patch({ tab }),
             computer: state.computer,
+            cloudHost,
             machine: machineFor(selected),
             configured: realConfigured,
             overview: state.realOverview,
@@ -2962,6 +2975,7 @@ window.__ModuleLoader__.load({
                 'div',
                 { key: entry.id, className: 'rb-error-row', role: 'alert' },
                 h('div', { className: 'rb-error-text' }, entry.text),
+                entry.detail ? h('div', { className: 'rb-error-detail' }, entry.detail) : null,
                 h('div', { className: 'rb-error-code' }, entry.code || t('chat.errorTitle')),
               )
             }
@@ -3045,7 +3059,7 @@ window.__ModuleLoader__.load({
       )
     }
 
-    function Details({ t, catalog, bot, tab, onTab, computer, machine, configured, overview, usageError, usagePreview, low, onToggleRoutine, onCreateRoutine, onRemoveRoutine, onComputer, onStop }) {
+    function Details({ t, catalog, bot, tab, onTab, computer, cloudHost, machine, configured, overview, usageError, usagePreview, low, onToggleRoutine, onCreateRoutine, onRemoveRoutine, onComputer, onStop }) {
       const name = botName(bot, t)
       const job = botJob(bot, t)
       const [routineOpen, setRoutineOpen] = useState(false)
@@ -3233,6 +3247,7 @@ window.__ModuleLoader__.load({
             configured,
             available: Boolean(machine),
             managed: hostManaged,
+            cloudHost,
             onComputer,
             onStop,
           }),
@@ -3265,7 +3280,7 @@ window.__ModuleLoader__.load({
       return live || stored
     }
 
-    function ComputerBlock({ t, status, name, machine, image, configured, available, managed, onComputer, onStop }) {
+    function ComputerBlock({ t, status, name, machine, image, configured, available, managed, cloudHost, onComputer, onStop }) {
       const [confirming, setConfirming] = useState(false)
       useEffect(() => {
         if (status !== 'live') setConfirming(false)
@@ -3312,7 +3327,7 @@ window.__ModuleLoader__.load({
               burnLine ? h('div', { className: 'rb-s' }, burnLine) : null,
               image ? h('div', { className: 'rb-s' }, t('computer.image', { image })) : null,
               !image && machine ? h('div', { className: 'rb-s' }, t('computer.imageUnread')) : null,
-              image && SHELL_ONESHOT_IMAGES.has(image)
+              image && !cloudHost && SHELL_ONESHOT_IMAGES.has(image)
                 ? h('p', { className: 'rb-say', role: 'status', style: { color: '#b45309' } }, t('setup.imageUnsupported'))
                 : null,
             ),
@@ -3562,6 +3577,7 @@ window.__ModuleLoader__.load({
         ['key', 'setup.steps.key'],
         ['bot', 'setup.steps.bot'],
       ]
+      const cloudHost = host.runtime?.name === 'rayrun-cloud-host'
       const dependency = host.status === 'loaded' ? host.dependency : null
       const dependencyLine = dependency?.status === 'ok'
         ? t('setup.dependencyOk', { version: dependency.version ?? '?' })
@@ -3572,7 +3588,7 @@ window.__ModuleLoader__.load({
             : t('setup.dependencyStatus')
       const configured = connection?.connection?.configured === true
       const machineImage = String(machine?.agent ?? '').trim()
-      const machineImageUnsupported = Boolean(machine && SHELL_ONESHOT_IMAGES.has(machineImage))
+      const machineImageUnsupported = Boolean(machine && !cloudHost && SHELL_ONESHOT_IMAGES.has(machineImage))
       const machineImageUnread = Boolean(machine && !machineImage)
       const canContinue = step === 0
         ? dependency?.status === 'ok'
@@ -3650,7 +3666,7 @@ window.__ModuleLoader__.load({
           }
           const defaults = overview.defaults ?? {}
           const configuredAgent = String(defaults.agent ?? '').trim()
-          const agent = SHELL_ONESHOT_IMAGES.has(configuredAgent)
+          const agent = !cloudHost && SHELL_ONESHOT_IMAGES.has(configuredAgent)
             ? DETACHED_IMAGE
             : (configuredAgent || DETACHED_IMAGE)
           const result = await rayRpc('machine.create', {

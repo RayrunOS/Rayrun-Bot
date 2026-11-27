@@ -428,6 +428,19 @@ export function createCloudHost(options = {}) {
           log('routine-result-failed', { botId, taskId: task.id, message: redact(writeError.message) })
         }
       }
+      if (task.origin !== 'routine') {
+        try {
+          atomicJson(path.join(paths.outbox, `${task.id}.json`), {
+            schema: 1,
+            botId,
+            taskId: task.id,
+            error: redact(error.message) || 'The cloud bot host failed the turn.',
+            at: now(),
+          })
+        } catch (writeError) {
+          log('outbox-failed', { botId, taskId: task.id, message: redact(writeError.message) })
+        }
+      }
       renameSync(file, path.join(paths.failed, `${task.id || name}.json`))
       log('task-failed', { botId, taskId: task.id, message: redact(error.message) })
       return { botId, taskId: task.id, error: redact(error.message) }

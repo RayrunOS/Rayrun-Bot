@@ -338,7 +338,10 @@ export function apply(ctx, options = {}) {
   }
   const runtime = injectedRuntime ?? validateRuntime(
     cloudHostRuntime ?? (supportsDetached(installed.version)
-      ? createRayrunDetachedRuntime({ getOrigin: () => webServer?.getOrigin?.() })
+      ? createRayrunDetachedRuntime({
+        getOrigin: () => webServer?.getOrigin?.(),
+        getTools: () => ctx.get?.('tools'),
+      })
       : createRayrunAgentRuntime({
         getTools: () => ctx.get?.('tools'),
         getOrigin: () => webServer?.getOrigin?.(),

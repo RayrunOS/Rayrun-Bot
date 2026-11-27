@@ -380,6 +380,9 @@ export function createCloudHostRuntime({
       } catch {
         throw rayrunFailure(ERROR_CODES.internal, 'The cloud bot host wrote an invalid outbox file.')
       }
+      if (typeof value?.error === 'string' && value.error.trim() !== '') {
+        throw rayrunFailure(ERROR_CODES.workerNoReply, `The cloud bot host failed the turn: ${value.error.slice(0, 500)}`)
+      }
       if (typeof value?.reply !== 'string' || value.reply.trim() === '') {
         throw rayrunFailure(ERROR_CODES.internal, 'The cloud bot host returned no reply.')
       }
