@@ -13,7 +13,7 @@
 | DeepSeek Harness | `>=0.2.0-rc.2 <0.3.0` | `packages/dsh-rayrun-bots/package.json` 的 `engines.dsh` |
 | `dsh-rayrun-computer` | `>=1.0.0 <2.0.0` | `packages/dsh-rayrun-bots/lib/dependency.js` |
 | Node | `>=24` | `engines.node` |
-| Rayrun Bot | `0.1.1-alpha.4`（本地未发布；npm `alpha` 是 `0.1.1-alpha.3`） | `package.json` |
+| Rayrun Bot | `0.1.1-alpha.4`（npm `alpha`） | `package.json` |
 
 DSH `0.2.2-rc.5` 会读取并强制执行 `engines.dsh`：超出范围的插件行在合成时被禁用；
 旧运行时忽略该字段。`dsh-rayrun-computer` 的版本由 host 在启动时读取，缺失或不在
@@ -75,6 +75,7 @@ host-callable `runtime.*`。npm `latest` 现为 `1.3.2`（`69c2dec`）：`1.2.2`
 | `0.2.2-rc.5`（本机，临时 DSH web） | `1.3.1`（本地 checkout） | `0.1.1-alpha.3`（发布前本地 checkout） | 24.15.0 + Rayrun hosted `sys520084` | Cloud host 自动刷新：stale runtime spec（无 `DSH_BOT_HOST_DIGEST`，pid 665）在下一回合等待空闲后 `runtime.put`，新 host pid 672 带 digest 并处理任务（`REFRESH_TWO`）；send 3853ms，任务未落在 stale pid；测试机 `rayrun-bot-refresh-20261128` destroy，live machines=0 | [`12-status.md`](12-status.md) §3.1（2026-11-28） |
 | `0.2.2-rc.5`（本机，clean `HOME`） | `1.3.1`（npm） | `0.1.1-alpha.3`（npm `alpha`） | 24.15.0 + Rayrun hosted `sys520084` | npm 产物干净安装：官方 registry 安装两个包，profile 合成两个 bundle，health 报 `0.1.1-alpha.3` / 依赖 `1.3.1` ok；primary→file-writer 委派写入 `/workspace/npm-alpha3.txt`（`NPM_ALPHA3_OK`），send 6192ms，delegation done；测试机 `rayrun-bot-alpha3-20261128` destroy，live machines=0 | [`12-status.md`](12-status.md) §3.1（2026-11-28） |
 | `0.2.2-rc.5`（本机，clean `HOME`） | `1.3.2`（npm） | `0.1.1-alpha.3`（npm `alpha`） | 24.15.0 + Rayrun hosted `sys520084` | 依赖 1.3.2 干净安装：官方 registry 安装两包，profile 合成两个 bundle，health 报 `0.1.1-alpha.3` / 依赖 `1.3.2` ok；安装包包含 `MACHINE_STATUS_TTL_MS` / `pinOverview`。本地 alpha.4 + 1.3.2 live 计时：热轮 `start-total` 891ms（machine-list 433ms、ensure-host 114ms、host-ready 171ms、inbox 173ms）；冷轮 projection 4051ms（上传/网络受限）；测试机 destroy | [`12-status.md`](12-status.md) §3.1（2026-11-28） |
+| `0.2.2-rc.5`（本机，clean `HOME`） | `1.3.2`（npm） | `0.1.1-alpha.4`（npm `alpha`） | 24.15.0 + Rayrun hosted `sys520084` | npm alpha.4 产物：官方 registry 安装两包、profile 合成两个 bundle，health 报 `0.1.1-alpha.4` / 依赖 `1.3.2` ok；pinned live 冷轮 projection 1892ms、ensure-host 761ms、`start-total` 3942ms；热轮 `start-total` 1825ms（machine-list 866ms、ensure-host 286ms、host-ready 461ms、inbox 211ms）；测试机 `rayrun-bot-alpha4-20261128` destroy | [`12-status.md`](12-status.md) §3.1（2026-11-28） |
 
 2026-11-27 按用户明确清理授权 destroy 13 台旧测试机（CI deploy、A1/A3、
 computer update、A6、首次运行计时）；仅保留 `rayrun-bot-prod-e2e`（Stopped、
@@ -106,8 +107,8 @@ registry；页面 smoke 与契约测试见 [`12-status.md`](12-status.md) §3.1�
 并从 npm 干净安装 + primary→worker 委派 live 复验（§3.1）。
 
 “未安装”表示该 CI 矩阵只验证 Bots 包本身能安装和合成，不验证依赖或云端行为。
-表中“未发布 npm”是当次验证时的状态。当前包版本是 `0.1.1-alpha.4`（本地性能改动，
-未发布）；npm `alpha` tag 是已发布的 `0.1.1-alpha.3`。`latest` 仍是旧的
+表中“未发布 npm”是当次验证时的状态。当前包版本是 `0.1.1-alpha.4`，已通过
+`publish.yml` 发布到 npm `alpha` tag（run `46136892767`）；`latest` 仍是旧的
 `0.1.0-alpha.0`，稳定版尚未发布。
 表中“机器 stop”是当次测试收尾动作；devcheck 的 `rayrun-bot`、`rayrun-bot-idle`、
 `rayrun-bot-scoped`、`rayrun-bot-coldstart` 与 botclean 的 `rayrun-bot-clean` 已于
@@ -137,7 +138,7 @@ S6（2026-11-24，本地 tarball）：`dsh plugin add` 一条命令安装两个�
 
 ## 3. 安装与打包检查
 
-`dsh-rayrun-bots@0.1.1-alpha.3` 已通过 `publish.yml` 发布到 npm（2026-11-28，`alpha` tag）；依赖
+`dsh-rayrun-bots@0.1.1-alpha.4` 已通过 `publish.yml` 发布到 npm（2026-11-28，`alpha` tag，run `46136892767`）；依赖
 `dsh-rayrun-computer@1.3.2` 也已发布（latest，`69c2dec`；`1.2.2` 起有
 machine.credentials，`1.3.0` 起有 credentials.save，`1.3.2` 起缓存文件/runtime
 调用的机器状态）。`1.2.1` 及更早没有
@@ -149,7 +150,7 @@ machine.credentials，默认 cloudHost 会回退 detached。本机默认 registr
 ```bash
 npm_config_registry=https://registry.npmjs.org \
   dsh plugin --profile web add \
-  dsh-rayrun-computer@1.3.2 dsh-rayrun-bots@0.1.1-alpha.3
+  dsh-rayrun-computer@1.3.2 dsh-rayrun-bots@0.1.1-alpha.4
 ```
 
 从 checkout/tarball 安装（开发/离线）：
@@ -160,7 +161,7 @@ dsh plugin --profile web add /absolute/path/to/packages/dsh-rayrun-bots
 
 # tarball（发布产物的内容）
 npm pack ./packages/dsh-rayrun-bots --pack-destination /tmp
-dsh plugin --profile web add /tmp/dsh-rayrun-bots-0.1.1-alpha.3.tgz
+dsh plugin --profile web add /tmp/dsh-rayrun-bots-0.1.1-alpha.4.tgz
 ```
 
 `node packages/dsh-rayrun-bots/test/package-contents.mjs` 用
@@ -179,7 +180,7 @@ npm 归属与 OIDC trusted publishing 已配置；发布只走 `.github/workflow
 - 依赖 1.2.0 `runtime.*` 发布到 npm 后安装（今天从 main `fe965c1` checkout 验证）；
 - DSH `0.2.2-rc.5` 的 subprocess/terminal 完整安装路径（R-G005）；
 - 镜像 DSH `0.2.0-rc.2` 与本机/桌面 `0.2.2-rc.5` 的功能一致性（R-G007）；
-- 稳定版发布：`0.1.1-alpha.3` 已通过 `publish.yml` 从 `v0.1.1-alpha.3` Release
+- 稳定版发布：`0.1.1-alpha.4` 已通过 `publish.yml` 从 `v0.1.1-alpha.4` Release
   发布（npm `alpha` tag），并从 npm 干净安装签收；`latest` 仍是旧的
   `0.1.0-alpha.0`，稳定版尚未发布。
 
