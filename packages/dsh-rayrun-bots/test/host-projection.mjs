@@ -106,6 +106,23 @@ check('a failed upload fails closed with a stable runtime code', async () => {
   )
 })
 
+check('a failed file upload never writes the manifest', async () => {
+  const remote = memory()
+  remote.write = async (path, text) => {
+    if (path.endsWith('lib/host.mjs')) {
+      const error = new Error('upload refused')
+      error.code = 'permission_denied'
+      throw error
+    }
+    remote.files.set(path, text)
+  }
+  await assert.rejects(
+    projectHost({ ...remote, version: '1.2.3' }),
+    (error) => error.code === ERROR_CODES.runtimeUnavailable,
+  )
+  assert.equal(remote.files.has('.rayrun/host/1.2.3/manifest.json'), false)
+})
+
 check('an unsafe version is refused before any read or write', async () => {
   let touched = false
   await assert.rejects(

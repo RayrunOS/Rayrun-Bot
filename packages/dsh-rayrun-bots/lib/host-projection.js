@@ -103,19 +103,17 @@ export async function projectHost({ read, write, version = HOST_ASSET_VERSION } 
 
     let needsUpload = !sameManifest(remote, manifest)
     if (!needsUpload) {
-      for (const file of files) {
-        const text = await read(`${root}/${file.path}`)
-        if (text === null || sha256(text) !== file.sha256) {
-          needsUpload = true
-          break
-        }
-      }
+      const texts = await Promise.all(files.map((file) => read(`${root}/${file.path}`)))
+      needsUpload = files.some((file, index) => {
+        const text = texts[index]
+        return text === null || sha256(text) !== file.sha256
+      })
     }
 
     if (needsUpload) {
-      for (const file of files) {
-        await write(`${root}/${file.path}`, file.content)
-      }
+      // File operations are independent; run them concurrently. The manifest
+      // is written last so a partial upload can never look complete.
+      await Promise.all(files.map((file) => write(`${root}/${file.path}`, file.content)))
       await write(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`)
 
       const checkText = await read(manifestPath)
@@ -124,10 +122,11 @@ export async function projectHost({ read, write, version = HOST_ASSET_VERSION } 
       if (!sameManifest(check, manifest)) {
         throw rayrunFailure(ERROR_CODES.runtimeUnavailable, 'The cloud host projection manifest did not survive upload.')
       }
-      for (const file of files) {
-        const text = await read(`${root}/${file.path}`)
-        if (text === null || sha256(text) !== file.sha256) {
-          throw rayrunFailure(ERROR_CODES.runtimeUnavailable, `The cloud host projection of ${file.path} is corrupt.`)
+      const texts = await Promise.all(files.map((file) => read(`${root}/${file.path}`)))
+      for (let index = 0; index < files.length; index += 1) {
+        const text = texts[index]
+        if (text === null || sha256(text) !== files[index].sha256) {
+          throw rayrunFailure(ERROR_CODES.runtimeUnavailable, `The cloud host projection of ${files[index].path} is corrupt.`)
         }
       }
     }

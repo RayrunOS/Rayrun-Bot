@@ -13,7 +13,7 @@
 | DeepSeek Harness | `>=0.2.0-rc.2 <0.3.0` | `packages/dsh-rayrun-bots/package.json` 的 `engines.dsh` |
 | `dsh-rayrun-computer` | `>=1.0.0 <2.0.0` | `packages/dsh-rayrun-bots/lib/dependency.js` |
 | Node | `>=24` | `engines.node` |
-| Rayrun Bot | `0.1.1-alpha.3`（npm `alpha`） | `package.json` |
+| Rayrun Bot | `0.1.1-alpha.4`（本地未发布；npm `alpha` 是 `0.1.1-alpha.3`） | `package.json` |
 
 DSH `0.2.2-rc.5` 会读取并强制执行 `engines.dsh`：超出范围的插件行在合成时被禁用；
 旧运行时忽略该字段。`dsh-rayrun-computer` 的版本由 host 在启动时读取，缺失或不在
@@ -104,9 +104,9 @@ registry；页面 smoke 与契约测试见 [`12-status.md`](12-status.md) §3.1�
 并从 npm 干净安装 + primary→worker 委派 live 复验（§3.1）。
 
 “未安装”表示该 CI 矩阵只验证 Bots 包本身能安装和合成，不验证依赖或云端行为。
-表中“未发布 npm”是当次验证时的状态；当前包版本是 `0.1.1-alpha.3`，已通过
-`publish.yml` 发布到 npm 的 `alpha` tag。`latest` 仍是旧的 `0.1.0-alpha.0`，
-稳定版尚未发布。
+表中“未发布 npm”是当次验证时的状态。当前包版本是 `0.1.1-alpha.4`（本地性能改动，
+未发布）；npm `alpha` tag 是已发布的 `0.1.1-alpha.3`。`latest` 仍是旧的
+`0.1.0-alpha.0`，稳定版尚未发布。
 表中“机器 stop”是当次测试收尾动作；devcheck 的 `rayrun-bot`、`rayrun-bot-idle`、
 `rayrun-bot-scoped`、`rayrun-bot-coldstart` 与 botclean 的 `rayrun-bot-clean` 已于
 2026-11-24 按用户明确授权 destroy；dev 侧现无 bot 测试机。botclean 租户保留。

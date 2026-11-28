@@ -14,7 +14,7 @@
  * refused. GET is read-only. The route never touches credentials: the Rayrun
  * token stays in the Harness vault on this side and never reaches the page.
  */
-import { readFileSync } from 'node:fs'
+import { appendFileSync, readFileSync } from 'node:fs'
 import { createApprovalActionExecutor, normalizeApprovalAction } from './lib/approval-actions.js'
 import { createCloudApprovalBridge } from './lib/cloud-approval-bridge.js'
 import { CLOUD_HOST_IMAGE, openComputerUpdater } from './lib/computer-update.js'
@@ -397,6 +397,25 @@ export function apply(ctx, options = {}) {
       && supportsRuntimeRpc(installed.version)
       && supportsMachineCredentials(installed.version)
     ))
+  /** Cloud-host timings go to DSH's logger unless a diagnostic file is set. */
+  function timingLogger() {
+    const file = typeof process.env.DSH_BOTS_TIMING_FILE === 'string'
+      ? process.env.DSH_BOTS_TIMING_FILE.trim()
+      : ''
+    if (file === '') return ctx.logger
+    const write = (line) => {
+      try {
+        appendFileSync(file, `${new Date().toISOString()} ${line}\n`)
+      } catch {
+        // Timing diagnostics must not affect a turn.
+      }
+    }
+    return {
+      info: (message) => write(String(message)),
+      warn: (message) => write(`WARN ${String(message)}`),
+    }
+  }
+
   let cloudHostRuntime
   if (cloudHostEnabled) {
     const config = options.cloudHost === undefined || options.cloudHost === true ? {} : options.cloudHost
@@ -412,6 +431,7 @@ export function apply(ctx, options = {}) {
         ...hostOptions,
         getRoster: teammateRoster,
         getPrimaryBotId: primaryBotId,
+        logger: timingLogger(),
         supported: supportsRuntimeRpc(installed.version),
       })
     }

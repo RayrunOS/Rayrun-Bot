@@ -418,6 +418,21 @@ check('a changed host digest waits for idle and refreshes the runtime', async ()
   assert.ok(Date.now() - startedAt >= 1000, `refresh waited ${Date.now() - startedAt}ms`)
 })
 
+check('logs phase timings for projection, attach and inbox upload', async () => {
+  const logs = []
+  const { root, runtime } = setup({
+    project: true,
+    runtimeOptions: { logger: { info: (message) => logs.push(message) } },
+  })
+  await runtime.start({ bot, text: 'hello', messageSeq: 1, botId: bot.id, stateRoot: root })
+  for (const phase of [
+    'machine-list', 'projection', 'projection-write', 'ensure-host',
+    'host-ready', 'prepare-host', 'inbox-upload', 'start-total',
+  ]) {
+    assert.ok(logs.some((line) => line.includes(`cloud-host timing ${phase} `)), `missing ${phase}`)
+  }
+})
+
 check('a host that stays busy fails closed without restarting it', async () => {
   const { root, runtime, state, files } = setup({ project: true, runtimeOptions: { hostUpdateWaitMs: 100 } })
   await runtime.start({ bot, text: 'hello', messageSeq: 1, botId: bot.id, stateRoot: root })

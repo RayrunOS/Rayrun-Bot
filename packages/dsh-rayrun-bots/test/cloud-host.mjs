@@ -72,6 +72,17 @@ check('processes one task and writes per-bot transcript, outbox and global state
   assert.equal(state.bots[0].botId, 'bot-a')
 })
 
+check('logs turn and task durations', async () => {
+  const { host } = makeHost()
+  inbox(host, 'bot-a', '0001.json', { id: 't1', text: 'hello' })
+  await host.processNext()
+  const lines = readFileSync(host.paths.log, 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line))
+  const turn = lines.find((line) => line.event === 'turn-done')
+  const done = lines.find((line) => line.event === 'task-done')
+  assert.ok(Number.isInteger(turn?.ms) && turn.ms >= 0)
+  assert.ok(Number.isInteger(done?.ms) && done.ms >= 0)
+})
+
 check('keeps a routine origin on the transcript and passes it to the agent', async () => {
   let seen = null
   const { host } = makeHost({

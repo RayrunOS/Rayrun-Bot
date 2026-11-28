@@ -324,6 +324,11 @@ adapter 先解析已有机器，机器不存在时拒绝；由于 `rayrun_files`
 - **后台工作要花钱且不会自愈**：Rayrun 按秒计费，没有平台 idle auto-stop；
   `max_lifetime_seconds` 只停不重启。余额耗尽可能 force-destroy 组织内机器与磁盘。
   关注余额；需要时设 `idle_stop_minutes`（只停，不 destroy）。
+- **对话/attach 慢**：需要定位时，用
+  `DSH_BOTS_TIMING_FILE=/path/to/timing.log` 启动本地 DSH；插件会把
+  `machine-list`、projection 每个 read/write、`ensure-host`、`host-ready`、
+  `inbox-upload`、`start-total` 的计时写入该文件。cloud host 日志的
+  `turn-done` / `task-done` 记录 agent 回合耗时。计时只用于诊断，不影响行为。
 - **第二个任务 `409 sandbox_busy`**：一台电脑一次只跑一个 agent 任务，不排队；
   等待或换机器。
 - **`dsh-rayrun-computer` 未安装**：今天需要两个插件，并且要用一条 `dsh plugin add`

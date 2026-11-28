@@ -173,6 +173,7 @@ function delegationFor({ getRoster, getPrimaryBotId, botId }) {
  *   credentials?: string[],
  *   machine?: string,
  *   hostUpdateWaitMs?: number,
+ *   logger?: { info?: Function, warn?: Function },
  * }} options
  */
 export function createCloudHostRuntime({
@@ -187,6 +188,7 @@ export function createCloudHostRuntime({
   credentials = [],
   machine: pinnedMachine,
   hostUpdateWaitMs = HOST_UPDATE_WAIT_MS,
+  logger = null,
 } = {}) {
   const rpc = createRayrunRpc({ getOrigin, fetchImpl })
   const runtimeRpc = createRuntimeRpc({ getOrigin, fetchImpl })
@@ -205,16 +207,45 @@ export function createCloudHostRuntime({
     }
   }
 
+  /** One local timing line per phase; logging must not affect the turn. */
+  function timing(phase, startedAt, details = {}) {
+    try {
+      logger?.info?.(`dsh-rayrun-bots: cloud-host timing ${phase} ${Math.max(0, Date.now() - startedAt)}ms ${JSON.stringify(details)}`)
+    } catch {
+      // Timings are diagnostic only.
+    }
+  }
+
   function scriptFor(machine) {
-    if (hostScript !== null) return Promise.resolve({ script: hostScript, digest: null })
+    if (hostScript !== null) return Promise.resolve({ script: hostScript, digest: null, cached: true })
     const sandbox = machine.name || machine.id
     let pending = hostScripts.get(sandbox)
     if (pending === undefined) {
+      const timedRead = async (relative) => {
+        const startedAt = Date.now()
+        try {
+          return await readFile(sandbox, relative)
+        } finally {
+          timing('projection-read', startedAt, { path: relative })
+        }
+      }
+      const timedWrite = async (relative, value) => {
+        const startedAt = Date.now()
+        try {
+          return await writeFile(sandbox, relative, value)
+        } finally {
+          timing('projection-write', startedAt, { path: relative })
+        }
+      }
       pending = projectHost({
-        read: (relative) => readFile(sandbox, relative),
-        write: (relative, value) => writeFile(sandbox, relative, value),
+        read: timedRead,
+        write: timedWrite,
         version: HOST_ASSET_VERSION,
-      }).then((projected) => ({ script: projected.script, digest: projected.digest })).catch((error) => {
+      }).then((projected) => ({
+        script: projected.script,
+        digest: projected.digest,
+        cached: projected.cached,
+      })).catch((error) => {
         hostScripts.delete(sandbox)
         throw error
       })
@@ -229,14 +260,22 @@ export function createCloudHostRuntime({
    * task in an inbox with no process to consume it.
    */
   async function prepareHost() {
+    const machineStartedAt = Date.now()
     const machine = await ensureMachine()
+    timing('machine', machineStartedAt, { name: machine.name || machine.id })
+    const projectionStartedAt = Date.now()
     const projected = await scriptFor(machine)
+    timing('projection', projectionStartedAt, { cached: projected.cached })
     const ref = machine.name || machine.id
     let pending = hostChecks.get(ref)
     if (pending === undefined) {
       pending = (async () => {
+        const hostStartedAt = Date.now()
         const host = await ensureHost(machine, projected.script, projected.digest)
+        timing('ensure-host', hostStartedAt, { updated: host.updated === true })
+        const readyStartedAt = Date.now()
         await waitHostReady(host.ref)
+        timing('host-ready', readyStartedAt)
         return { machine, host }
       })().finally(() => {
         hostChecks.delete(ref)
@@ -247,7 +286,9 @@ export function createCloudHostRuntime({
   }
 
   async function ensureMachine({ start = true } = {}) {
+    const listStartedAt = Date.now()
     const overview = await rpc.call('overview')
+    timing('machine-list', listStartedAt)
     if (overview.connection?.configured !== true) {
       throw rayrunFailure(ERROR_CODES.tokenRequired, 'Connect Rayrun in Bots setup before sending a message.')
     }
@@ -361,6 +402,7 @@ export function createCloudHostRuntime({
     const ref = machine.name || machine.id
     const name = HOST_RUNTIME
     const desired = spec(script, machine, digest)
+    let updated = false
     let current = (await runtimeRpc.get(ref, name)).runtime
     if (current && !sameRuntimeSpec(current.spec, desired)) {
       let afterStartedAt
@@ -369,11 +411,13 @@ export function createCloudHostRuntime({
         if (typeof idle?.startedAt === 'string') afterStartedAt = idle.startedAt
       }
       await runtimeRpc.put(ref, name, desired)
+      updated = true
       current = (await runtimeRpc.get(ref, name)).runtime
       if (afterStartedAt !== undefined) await waitHostReady(ref, { afterStartedAt })
     }
     if (!current) {
       await runtimeRpc.put(ref, name, desired)
+      updated = true
       current = (await runtimeRpc.get(ref, name)).runtime
     }
     if (current?.state !== 'running') {
@@ -390,7 +434,7 @@ export function createCloudHostRuntime({
         `The cloud bot host did not start${current?.last_error ? `: ${String(current.last_error).slice(0, 200)}` : '.'}`,
       )
     }
-    return { name, ref }
+    return { name, ref, updated }
   }
 
   function filePaths(botId, taskId) {
@@ -466,9 +510,12 @@ export function createCloudHostRuntime({
     },
     async start({ bot, text, history = [], messageSeq, origin, botId, stateRoot } = {}) {
       if (typeof botId !== 'string' || botId === '') throw rayrunFailure(ERROR_CODES.runtimeUnavailable, 'botId is required.')
+      const totalStartedAt = Date.now()
       // Bound and fail closed before touching the machine or the host.
       const delegation = delegationFor({ getRoster, getPrimaryBotId, botId })
+      const prepareStartedAt = Date.now()
       const { machine, host } = await prepareHost()
+      timing('prepare-host', prepareStartedAt, { botId })
       const taskId = `task-${randomUUID()}`
       const paths = filePaths(botId, taskId)
       const prompt = buildPrompt({
@@ -482,6 +529,7 @@ export function createCloudHostRuntime({
         ...(delegation === null ? {} : { primary: true, roster: delegation.roster }),
       })
       const startedAt = new Date().toISOString()
+      const uploadStartedAt = Date.now()
       await writeFile(host.ref, paths.inbox, JSON.stringify({
         schema: 1,
         id: taskId,
@@ -490,6 +538,8 @@ export function createCloudHostRuntime({
         ...(origin === 'routine' ? { origin: 'routine' } : {}),
         ...(delegation === null ? {} : { delegation }),
       }))
+      timing('inbox-upload', uploadStartedAt)
+      timing('start-total', totalStartedAt, { botId, taskId })
       return {
         taskId,
         sandbox: machine.name || machine.id,

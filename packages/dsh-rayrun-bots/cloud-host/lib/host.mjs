@@ -408,19 +408,34 @@ export function createCloudHost(options = {}) {
   async function runTurn(botId, task, {
     prompt, sessionId = readSessionId(botId), visible = true, approvalBotId, suppressApproval = false,
   } = {}) {
-    const result = await agent({
-      botId,
-      taskId: task.id,
-      text: prompt,
-      origin: task.origin,
-      sessionId,
-      ...(approvalBotId === undefined ? {} : { approvalBotId }),
-      ...(suppressApproval ? { approvalDisabled: true } : {}),
-    })
+    const agentStartedAt = Date.now()
+    let result
+    try {
+      result = await agent({
+        botId,
+        taskId: task.id,
+        text: prompt,
+        origin: task.origin,
+        sessionId,
+        ...(approvalBotId === undefined ? {} : { approvalBotId }),
+        ...(suppressApproval ? { approvalDisabled: true } : {}),
+      })
+    } catch (error) {
+      log('turn-failed', { botId, taskId: task.id, ms: Date.now() - agentStartedAt })
+      throw error
+    }
+    const agentMs = Date.now() - agentStartedAt
     const reply = typeof result === 'string' ? result : result?.text
     if (typeof reply !== 'string' || reply.trim() === '') throw new Error('agent returned no reply')
     if (result && typeof result === 'object') writeSessionId(botId, result.sessionId)
     if (visible) appendMessage(botId, 'bot', reply, { replyTo: task.id })
+    log('turn-done', {
+      botId,
+      taskId: task.id,
+      ms: agentMs,
+      visible,
+      ...(isObject(result?.approval) ? { approval: true } : {}),
+    })
     return {
       reply,
       approval: isObject(result?.approval) ? result.approval : null,
@@ -808,6 +823,7 @@ export function createCloudHost(options = {}) {
     lastTask = task.id
     lastBot = botId
     log('task-start', { botId, taskId: task.id })
+    const taskStartedAt = Date.now()
     try {
       if (taskDelayMs > 0) await sleep(taskDelayMs)
       let prompt = task.text
@@ -824,7 +840,7 @@ export function createCloudHost(options = {}) {
       if (task.delegation !== undefined) appendMessage(botId, 'bot', reply, { replyTo: task.id })
       writeResult(botId, task, reply)
       renameSync(file, path.join(paths.done, `${task.id}.json`))
-      log('task-done', { botId, taskId: task.id })
+      log('task-done', { botId, taskId: task.id, ms: Date.now() - taskStartedAt })
       writeState()
       return { botId, taskId: task.id, reply }
     } catch (error) {
@@ -859,7 +875,7 @@ export function createCloudHost(options = {}) {
         }
       }
       renameSync(file, path.join(paths.failed, `${task.id || name}.json`))
-      log('task-failed', { botId, taskId: task.id, message: redact(error.message) })
+      log('task-failed', { botId, taskId: task.id, ms: Date.now() - taskStartedAt, message: redact(error.message) })
       return { botId, taskId: task.id, error: redact(error.message) }
     }
   }
