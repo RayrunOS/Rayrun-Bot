@@ -95,7 +95,7 @@ proposal 的卡片 **2.291s**、执行 **0.779s**、Continue→working **21ms**�
 | 电脑更新 | Settings → Bot 的电脑 显示共用电脑与当前镜像；确认后通过 host `computer.update` 换镜像：旧机改名、新机用原名称/cloudHost 时 `dsh-bot@1`（否则 `deepseek-harness@1`）/自动选中的 DeepSeek credential 创建，复制 workspace 和登录配置路径；迁移成功后销毁旧机（用户确认更新即明确请求），失败回滚；最后销毁失败时保留新机、停止旧机并报告。每次更新创建计费机器，必须显式确认。 |
 | 测试 | Host/client 名册接线、session/transcript、`rayrun_agent`/detached adapter、per-bot workspace 与审批协议由普通 Node 契约测试覆盖；客户端 session 失败路径、单轮真实一轮、页面关闭 + host 重启后的 detached 收取，以及机器 stop/start 后的第二轮续接另有本机页面 smoke。包清单、locale、RPC、客户端、名册、session、runtime、workspace、审批和 tarball 内容都有检查；cloud host 11 项、cloud host delegation 12 项、cloud host routines 8 项、DSH agent 5 项、host projection 6 项、runtime.* client 5 项、detached runtime 17 项、cloud host runtime adapter 25 项、session 23 项、dependency 14 项、computer update 9 项、RPC 契约 38 项、cloud host proposal 9 项、approval executor 7 项、cloud approval bridge 6 项、routines 16 项、cloud routine bridge 7 项、cloud routine E2E 1 项、routine results 6 项纯 Node 检查，runtime.* client 与 cloud host 另有 dev live 联调，cloudHost adapter 另有页面 E2E（手动、自动 projection 与多 bot 单 host），审批卡另有拒绝/失败关闭与 Continue 按钮的页面 E2E。Routine 页面另做本地 DSH + Firefox smoke：真实表单创建、暂停、删除并写入 routines.json（2026-11-23，无 Rayrun token），截图 `/tmp/bot/routines-ui.png`（临时文件，不入库）；本地 mode 尚未等待一次 scheduler 自动触发；cloudHost mode 的 dev live E2E 已通过（2026-11-24，见 §3.1）。2026-11-25 clean alpha.1 安装另做生产两 bot 单 host 与 headless Firefox golden/审批 Deny/Allow E2E（见 §3.1）。 |
 | 审批执行 | 协议后端（request/decision schema、canonical actionHash、TTL、幂等/重放/错 bot 负向测试、审计、`approvals.list/get/decide/propose/sync`）已实现。ADR-019（2026-11-23）把本地 DSH host 定为本地 typed 动作的审批权威与执行方：`approvals.decide` 批准后由本地 executor 执行 `rayrun.machine.start/stop/pause/resume`，先写 `executing` claim，拒绝/过期/重放/崩溃 claim 失败关闭；客户端真实卡片已接。云端 proposal bridge 已接并 live 验证：云 bot 在回复末尾输出结构化 `rayrun-approval` block，cloud host 解析后写 proposal（`propose.mjs` 保留为可选 shell 路径），本地用 `rayrun_files` 导入并去重，结果写回 `approval-results/`；机器停机时结果先落本地 outbox，下次 Running 补传。start/stop/pause/resume、denial、Continue 均真机通过。下一轮 prompt 会带最近审批结果，bot 无工具直接回答 approved/done/Running 或 denied/not_executed。本地 routine 轮次会把 `origin: routine` 传到 cloud task，云端提案标为 background 并沿用 30 分钟 TTL。其他动作和云端凭据动作仍未完成；平台隔离仍用于云端凭据（ADR-001）。云端 agent 在容器内 `danger-full-access` 是设计（ADR-020），审批不是 containment。`rayrun_agent` adapter 不拦截外部动作，prompt 指引不是安全边界。 |
-| 发布 | `dsh-rayrun-bots@0.1.1-alpha.3` 已通过 `publish.yml` 从 `v0.1.1-alpha.3` GitHub Prerelease 发布（OIDC，run `46102199971`，`_npmUser=GitHub Actions`；tag `9c2565d`）；npm `alpha` tag 指向 0.1.1-alpha.3，`latest` 仍是手动发布的 0.1.0-alpha.0（prerelease 不移动 latest，符合 workflow 契约）。`0.1.1-alpha.2` 是 2026-11-28 的上一版，不含 workspace 绑定、superagent 委派和 cloud host 自动刷新。依赖 `dsh-rayrun-computer` 最新为 `1.3.1`（`1.2.2` 起返回 machine.credentials，`1.3.0` 起有 credentials.save；`1.2.1` 不含 RC-017）。一条 `dsh plugin add` 安装两个包的路径已用官方 registry 验证：两个 bundle 都被选中、两个插件都加载、health `ok`。只安装 bots 包即使声明依赖也不会启用依赖 bundle。alpha.3 在干净 `HOME` 安装后完成 primary→worker 委派 live（见 §3.1）。 |
+| 发布 | `dsh-rayrun-bots@0.1.1-alpha.3` 已通过 `publish.yml` 从 `v0.1.1-alpha.3` GitHub Prerelease 发布（OIDC，run `46102199971`，`_npmUser=GitHub Actions`；tag `9c2565d`）；npm `alpha` tag 指向 0.1.1-alpha.3，`latest` 仍是手动发布的 0.1.0-alpha.0（prerelease 不移动 latest，符合 workflow 契约）。`0.1.1-alpha.2` 是 2026-11-28 的上一版，不含 workspace 绑定、superagent 委派和 cloud host 自动刷新。依赖 `dsh-rayrun-computer` 最新为 `1.3.2`（`1.2.2` 起返回 machine.credentials，`1.3.0` 起有 credentials.save，`1.3.2` 起缓存文件/runtime 调用的机器状态；`1.2.1` 不含 RC-017）。一条 `dsh plugin add` 安装两个包的路径已用官方 registry 验证：两个 bundle 都被选中、两个插件都加载、health `ok`。只安装 bots 包即使声明依赖也不会启用依赖 bundle。alpha.3 在干净 `HOME` 安装后完成 primary→worker 委派 live（见 §3.1）。 |
 
 ### 3.1 验证记录
 
@@ -582,7 +582,7 @@ proposal 的卡片 **2.291s**、执行 **0.779s**、Continue→working **21ms**�
     `CLOUDHOST_DEFAULT_OK`。
   机器已按用户明确指令于 2026-11-27T14:54:17Z destroy（`api_delete`），runtime
   删除、dev token 撤销、临时 DSH/proxy/凭证文件删除。限制：dev 环境；dependency
-  修复已在 `1.2.2`（`75e285d`）发布，当前 latest `1.3.1`；dev 镜像是手工修补的，不是生产构建。生产干净账号合盖仍未
+  修复已在 `1.2.2`（`75e285d`）发布，当前 latest `1.3.2`；dev 镜像是手工修补的，不是生产构建。生产干净账号合盖仍未
   签收。
 - 发送接受语义（2026-11-27，dev live）：bot 空闲且 runtime 为 detached/cloudHost 时，
   `session.send` 等到 `runtime.start` 返回、task id 写入 `session.json` 后才返回；
@@ -772,9 +772,31 @@ proposal 的卡片 **2.291s**、执行 **0.779s**、Continue→working **21ms**�
   记录 `turn-done` / `task-done` / `task-failed` 的 ms。host projection 的读取、
   上传和校验并行化，manifest 最后写；单文件上传失败不会写 manifest。
   同机 cached A/B（在线 alpha.3 cloud host）：8 次串行读取 3934ms → 并行 911ms，
-  `start-total` 5981ms → 2784ms；单次 `rayrun_files` 调用仍为 0.2–1.4s，是当前
-  主要开销。首轮上传路径待固定测试机复测。`test/host-projection.mjs` 6/6、
-  `test/cloud-host-runtime.mjs` 25/25、`test/cloud-host.mjs` 11/11；全量测试通过。
+  `start-total` 5981ms → 2784ms。固定测试机首轮上传（本地 alpha.4）：
+  projection 1879ms（7 个写并行 228–317ms，7 个校验读并行 242–412ms）、
+  ensure-host 2021ms、inbox-upload 664ms、`start-total` 5368ms；热轮
+  `start-total` 2717ms（machine-list 511ms、ensure-host 561ms、host-ready
+  271ms、inbox-upload 1371ms）。单次 `rayrun_files` 调用仍为 0.2–1.4s，是当前
+  主要开销；测试机 destroy，证据 `/tmp/rayrun-p1-upload/timing.log`（临时文件，
+  不入库）。`dsh-rayrun-computer@1.3.2`（2026-11-28 发布，gitHead `69c2dec`）的 30s 机器状态缓存分两步复测：
+  `rayrun_files` trust cache 后热轮 `start-total` 2007/2991ms、inbox-upload
+  171/1214ms；再加 `resolveExisting` 缓存 + overview 预热后，热轮
+  `start-total` **891ms**（machine-list 433ms、ensure-host 114ms、host-ready
+  171ms、inbox-upload 173ms），冷轮 ensure-host 558ms、host-ready 192ms、
+  inbox-upload 180ms、projection 4051ms（上传/网络波动）、`start-total`
+  5657ms。同 token 的 overview TTFB：`/sandboxes` 288–400ms、`/usage`
+  371–405ms、`/agents` 73–157ms、`/billing/balance` 160–167ms；machines-only
+  只调 `/sandboxes`，最多省约 0.07s，因此不优先改 Bots 的 machine-list。
+  证据 `/tmp/rayrun-p1-cache2/timing.log`（临时文件，不入库）；测试机 destroy。
+  `test/host-projection.mjs` 6/6、`test/cloud-host-runtime.mjs` 25/25、
+  `test/cloud-host.mjs` 11/11；全量测试通过。
+- 依赖 `dsh-rayrun-computer@1.3.2`（2026-11-28）：`bdee304` 文件 trust cache、
+  `a559a81` runtime 机器缓存、`69c2dec` release；tag `v1.3.2`，GitHub Release
+  published；CI/publish run `46134179591` 成功；npm `latest=1.3.2`，gitHead
+  `69c2dec`。干净 `HOME` 安装 `dsh-rayrun-bots@0.1.1-alpha.3` +
+  `dsh-rayrun-computer@1.3.2`：两个 bundle 合成，health 报 bot `0.1.1-alpha.3` /
+  依赖 `1.3.2` ok，安装包包含 `MACHINE_STATUS_TTL_MS`/`pinOverview`；依赖侧测试
+  `file-resolve-cache` 7/7、`machine-resolve-cache` 7/7。
 - 具体组合、环境和缺口以 [`10-rayrun-verification.md`](10-rayrun-verification.md)
   和 [`version-matrix.md`](version-matrix.md) 为准；未测试的组合不作承诺。
 

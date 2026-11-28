@@ -52,7 +52,7 @@ versions pinned:
 ```bash
 npm_config_registry=https://registry.npmjs.org \
   dsh plugin --profile web add \
-  dsh-rayrun-computer@1.3.1 dsh-rayrun-bots@0.1.1-alpha.3
+  dsh-rayrun-computer@1.3.2 dsh-rayrun-bots@0.1.1-alpha.3
 ```
 
 Restart DSH after that. The Bots page loads when the page starts.
@@ -69,15 +69,17 @@ Then, in Bots:
 `npm install dsh-rayrun-bots`, or `dsh plugin add` without these versions, does
 not select `0.1.1-alpha.3`. Installing the bots package alone does not turn on
 the computer plugin: both packages have to be in the same `dsh plugin add`.
-Pin `dsh-rayrun-computer` at `1.3.1`. Version `1.2.2` first returned machine
+Pin `dsh-rayrun-computer` at `1.3.2`. Version `1.2.2` first returned machine
 credential binding names; `1.2.1` and older do not. `1.3.0` adds
-`credentials.save`, and `1.3.1` is the current `latest`. A mirror can lag
-behind the official registry, which is why the command sets the registry.
+`credentials.save`; `1.3.1` keeps the default credential on an explicit save;
+`1.3.2` caches confirmed machine lookups for file and runtime calls. A mirror
+can lag behind the official registry, which is why the command sets the registry.
 
 On 2026-11-25 the install path was checked with the earlier `1.2.1` pin: both
 plugins loaded, and one turn sent to an existing stopped hosted machine came
-back. That check used the on-machine host and a maintainer machine. The current
-`1.3.1` pin and the `1.2.2+` default path have not yet been re-run end to end.
+back. That check used the on-machine host and a maintainer machine. The later
+`1.3.x` pins and the `1.2.2+` default path were clean-installed and exercised
+on a hosted account; see `docs/12-status.md` for the evidence.
 The machine from that check is not a setup requirement, and the check is not a
 promise for every account or image.
 

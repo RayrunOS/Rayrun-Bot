@@ -19,10 +19,11 @@ DSH `0.2.2-rc.5` 会读取并强制执行 `engines.dsh`：超出范围的插件�
 旧运行时忽略该字段。`dsh-rayrun-computer` 的版本由 host 在启动时读取，缺失或不在
 1.x 时分别返回 `E_DEP_MISSING` / `E_DEP_VERSION`。依赖 `1.0.x` 使用单轮
 `rayrun_agent`；`1.1+` 使用 detached `dsh.start/status/result`；`1.2+` 另有
-host-callable `runtime.*`。npm `latest` 现为 `1.3.1`（`49b69d9`）：`1.2.2`
+host-callable `runtime.*`。npm `latest` 现为 `1.3.2`（`69c2dec`）：`1.2.2`
 首次返回 machine credential 绑定名，`1.3.0` 增加 `credentials.save`，`1.3.1` 修正
-显式保存时保留默认凭据。`1.2.1`（`3604e33`）没有 machine.credentials，默认
-cloudHost 会回退 detached；`1.2.0` 的 npm tarball 来自较旧的 `fe965c1`。
+显式保存时保留默认凭据，`1.3.2` 为文件与 runtime 调用缓存已确认的机器状态。
+`1.2.1`（`3604e33`）没有 machine.credentials，默认 cloudHost 会回退 detached；
+`1.2.0` 的 npm tarball 来自较旧的 `fe965c1`。
 
 ## 2. 已验证组合
 
@@ -73,6 +74,7 @@ cloudHost 会回退 detached；`1.2.0` 的 npm tarball 来自较旧的 `fe965c1`
 | `0.2.2-rc.5`（本机，临时 DSH web） | `1.3.1`（本地 checkout） | `0.1.1-alpha.3`（发布前本地 checkout） | 24.15.0 + Rayrun hosted `sys520084` | Superagent 委派 E2E（插件 RPC，无浏览器）：primary roster/delegate prompt；file-writer 写出 `DELEGATION_LIVE_OK`；send 1116ms attach 后 kill 本地 DSH，云端完成并由重启后的本地收取；worker 执行中 kill bot-host → 平台重启、记录 failed/`E_DELEGATION_INTERRUPTED`、fallback 且不重跑；worker approval 路由到 primary，Deny→not_executed，Continue prompt 带 denied；测试机 `rayrun-bot-delegation-20261128`（`dsh-bot@1`）destroy，live machines=0 | [`12-status.md`](12-status.md) §3.1（2026-11-28） |
 | `0.2.2-rc.5`（本机，临时 DSH web） | `1.3.1`（本地 checkout） | `0.1.1-alpha.3`（发布前本地 checkout） | 24.15.0 + Rayrun hosted `sys520084` | Cloud host 自动刷新：stale runtime spec（无 `DSH_BOT_HOST_DIGEST`，pid 665）在下一回合等待空闲后 `runtime.put`，新 host pid 672 带 digest 并处理任务（`REFRESH_TWO`）；send 3853ms，任务未落在 stale pid；测试机 `rayrun-bot-refresh-20261128` destroy，live machines=0 | [`12-status.md`](12-status.md) §3.1（2026-11-28） |
 | `0.2.2-rc.5`（本机，clean `HOME`） | `1.3.1`（npm） | `0.1.1-alpha.3`（npm `alpha`） | 24.15.0 + Rayrun hosted `sys520084` | npm 产物干净安装：官方 registry 安装两个包，profile 合成两个 bundle，health 报 `0.1.1-alpha.3` / 依赖 `1.3.1` ok；primary→file-writer 委派写入 `/workspace/npm-alpha3.txt`（`NPM_ALPHA3_OK`），send 6192ms，delegation done；测试机 `rayrun-bot-alpha3-20261128` destroy，live machines=0 | [`12-status.md`](12-status.md) §3.1（2026-11-28） |
+| `0.2.2-rc.5`（本机，clean `HOME`） | `1.3.2`（npm） | `0.1.1-alpha.3`（npm `alpha`） | 24.15.0 + Rayrun hosted `sys520084` | 依赖 1.3.2 干净安装：官方 registry 安装两包，profile 合成两个 bundle，health 报 `0.1.1-alpha.3` / 依赖 `1.3.2` ok；安装包包含 `MACHINE_STATUS_TTL_MS` / `pinOverview`。本地 alpha.4 + 1.3.2 live 计时：热轮 `start-total` 891ms（machine-list 433ms、ensure-host 114ms、host-ready 171ms、inbox 173ms）；冷轮 projection 4051ms（上传/网络受限）；测试机 destroy | [`12-status.md`](12-status.md) §3.1（2026-11-28） |
 
 2026-11-27 按用户明确清理授权 destroy 13 台旧测试机（CI deploy、A1/A3、
 computer update、A6、首次运行计时）；仅保留 `rayrun-bot-prod-e2e`（Stopped、
@@ -88,7 +90,7 @@ Setup/电脑更新目标镜像随 runtime 变为 `dsh-bot@1`；上表 cloudHost 
 本地 DSH 被杀期间云端写出 `REAL_CLOUDHOST_OK` / `DEFAULT_CREDENTIAL_OK` 文件，
 重开后 history 收到 `CLOUDHOST_DEFAULT_OK`；机器已按用户明确指令于
 2026-11-27T14:54:17Z destroy（`api_delete`），runtime 删除、dev token 撤销。限制：
-dev only；dependency 修复已在 `1.2.2`（`75e285d`）发布，当前 latest `1.3.1`，dev 镜像是手工修补；生产干净账号仍未
+dev only；dependency 修复已在 `1.2.2`（`75e285d`）发布，当前 latest `1.3.2`，dev 镜像是手工修补；生产干净账号仍未
 复验。2026-11-28 生产签收使用 main `d353eca` 的 tarball，而不是 npm `alpha.1`：
 npm `0.1.1-alpha.1` 发布于 2026-11-25，不含 2026-11-26/27 的 UX trust pass、
 默认 cloudHost、send acceptance 和 Issue #4/#6 修复。随后按用户授权 destroy
@@ -136,8 +138,9 @@ S6（2026-11-24，本地 tarball）：`dsh plugin add` 一条命令安装两个�
 ## 3. 安装与打包检查
 
 `dsh-rayrun-bots@0.1.1-alpha.3` 已通过 `publish.yml` 发布到 npm（2026-11-28，`alpha` tag）；依赖
-`dsh-rayrun-computer@1.3.1` 也已发布（latest，`49b69d9`；`1.2.2` 起有
-machine.credentials，`1.3.0` 起有 credentials.save）。`1.2.1` 及更早没有
+`dsh-rayrun-computer@1.3.2` 也已发布（latest，`69c2dec`；`1.2.2` 起有
+machine.credentials，`1.3.0` 起有 credentials.save，`1.3.2` 起缓存文件/runtime
+调用的机器状态）。`1.2.1` 及更早没有
 machine.credentials，默认 cloudHost 会回退 detached。本机默认 registry 是 npmmirror，
 可能滞后；安装验证用 `--registry=https://registry.npmjs.org` 或等待镜像。
 
@@ -146,7 +149,7 @@ machine.credentials，默认 cloudHost 会回退 detached。本机默认 registr
 ```bash
 npm_config_registry=https://registry.npmjs.org \
   dsh plugin --profile web add \
-  dsh-rayrun-computer@1.3.1 dsh-rayrun-bots@0.1.1-alpha.3
+  dsh-rayrun-computer@1.3.2 dsh-rayrun-bots@0.1.1-alpha.3
 ```
 
 从 checkout/tarball 安装（开发/离线）：

@@ -45,7 +45,7 @@ bot 层。每个 bot 有名字、职责说明、记忆和日程，住在你自�
 ```bash
 npm_config_registry=https://registry.npmjs.org \
   dsh plugin --profile web add \
-  dsh-rayrun-computer@1.3.1 dsh-rayrun-bots@0.1.1-alpha.3
+  dsh-rayrun-computer@1.3.2 dsh-rayrun-bots@0.1.1-alpha.3
 ```
 
 装完后重启 DSH。Bots 页面在页面启动时加载。
@@ -61,13 +61,15 @@ npm_config_registry=https://registry.npmjs.org \
 `0.1.0-alpha.0`。没有稳定版。不带版本的 `npm install dsh-rayrun-bots`，或不带这些
 版本的 `dsh plugin add`，不会装到 `0.1.1-alpha.3`。只安装 bots 包也不会启用云电脑
 插件：两个包必须出现在同一条 `dsh plugin add` 里。云电脑插件钉在
-`dsh-rayrun-computer@1.3.1`。`1.2.2` 起才返回机器凭据绑定名，`1.2.1` 及更早没有；
-`1.3.0` 增加 `credentials.save`，`1.3.1` 是当前 `latest`。镜像站可能落后于官方
-registry，所以这条命令指定了 registry。
+`dsh-rayrun-computer@1.3.2`。`1.2.2` 起才返回机器凭据绑定名，`1.2.1` 及更早没有；
+`1.3.0` 增加 `credentials.save`，`1.3.1` 保留显式保存时的默认凭据，`1.3.2` 为
+文件与 runtime 调用缓存已确认的机器状态。镜像站可能落后于官方 registry，所以这条
+命令指定了 registry。
 
 2026-11-25 用官方 registry 核对过安装路径，但当时钉的是 `1.2.1`：两个插件都加载，
-并向一台已经处于 Stopped 的 hosted 机器发了一轮，收到了回复。当前 `1.3.1` 的钉法和
-`1.2.2+` 默认路径还没有重新做端到端复验。那次核对使用了机内 host，用的是维护者的
+并向一台已经处于 Stopped 的 hosted 机器发了一轮，收到了回复。之后的 `1.3.x` 钉法和
+`1.2.2+` 默认路径已在 hosted 账号干净安装并实际跑过；证据见
+`docs/12-status.md`。那次核对使用了机内 host，用的是维护者的
 机器；那台机器不是安装要求，这次核对也不保证每个账号或每张镜像都能同样跑通。
 
 机内 host 是 `dsh-rayrun-computer` 1.2.2+ 的默认执行路径。它需要一张新到足以跑

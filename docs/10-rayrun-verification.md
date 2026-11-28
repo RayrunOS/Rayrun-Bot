@@ -756,8 +756,9 @@
 - 依赖版本基线（2026-11-27，代码/测试）：默认 cloudHost 只在依赖 1.2.2+ 启用；
   1.2.0/1.2.1 自动回退 detached（显式 `cloudHost` 仍可启用，但需提供 credentials）。
   `1.2.2` 发布 `machine.credentials`，`1.3.0` 增加 `credentials.save`，`1.3.1`
-  为当前 latest。`dependency` 14/14、`rpc-contract` 38/38；未用 npm 1.3.1 做
-  clean install / live 复验。
+  保留显式保存时的默认凭据，`1.3.2` 增加文件/runtime 机器状态缓存，为当前 latest。
+  `dependency` 14/14、`rpc-contract` 38/38；1.3.2 已用 npm clean install 验证
+  （health/组合与 live 计时见 [`12-status.md`](12-status.md) §3.1）。
 - 发送接受语义（2026-11-27，dev live）：bot 空闲且 runtime 为 detached/cloudHost 时，
   `session.send` 在 `runtime.start` 返回、task id 写入 `session.json` 后才返回；start
   失败拒绝发送。`session-runtime` 23/23、`rpc-contract` 38/38（HTTP send 等 attach）。
@@ -791,7 +792,7 @@
     `CLOUDHOST_DEFAULT_OK`。
   机器已按用户明确指令于 2026-11-27T14:54:17Z destroy（`api_delete`），runtime
   删除、dev token 撤销、临时 DSH_HOME/proxy/凭证文件删除。限制：dev 环境；
-  dependency 修复已在 `1.2.2`（`75e285d`）发布，当前 latest `1.3.1`；dev 镜像是手工修补的，生产干净账号的同一场景仍未
+  dependency 修复已在 `1.2.2`（`75e285d`）发布，当前 latest `1.3.2`；dev 镜像是手工修补的，生产干净账号的同一场景仍未
   签收。
 - UI/诊断修正（2026-11-27，契约测试，无真实失效凭据复验）：(1) client 保留 health
   的 `runtime`；cloudHost 模式下详情和 Setup 不再把 `dsh-bot@1` / `dsh-bot-devcheck@1` 标成 shell oneshot，

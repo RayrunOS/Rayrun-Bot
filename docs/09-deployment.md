@@ -24,7 +24,7 @@
 | 需要 | 为什么 | 状态 |
 | --- | --- | --- |
 | [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) | 运行时；桌面 App 或 `dsh web` | `0.2.0-rc.2` / `0.2.2-rc.5` 已验证；组合见[版本矩阵](version-matrix.md) |
-| [`dsh-rayrun-computer`](https://github.com/RayrunOS/dsh-rayrun-computer) | 云电脑层；独立项目，必需依赖 | npm `1.3.1`（`latest`）；与 bots 包一条命令同装。开发或离线仍可从 checkout 安装 |
+| [`dsh-rayrun-computer`](https://github.com/RayrunOS/dsh-rayrun-computer) | 云电脑层；独立项目，必需依赖 | npm `1.3.2`（`latest`）；与 bots 包一条命令同装。开发或离线仍可从 checkout 安装 |
 | [Rayrun](https://rayrunos.com/) 账号 | 提供云电脑；按秒计费 | 必需；用户直接付 Rayrun |
 | DeepSeek API key | 机器内 agent 的模型调用 | 必需；key 与模型账单属于用户 |
 | Node / 构建工具 | 不需要：纯 ESM、无构建 | 无 |
@@ -39,7 +39,7 @@ Rayrun Bot 不 vendor 云电脑层；它是独立项目、必需依赖。今天�
 profile。S6 已验证（2026-11-24，本地 tarball）：**一条命令安装两个包**会同时选中
 两个 bundle；只安装 `dsh-rayrun-bots` 即使它声明依赖，也只会安装依赖包、
 不会自动启用依赖的 bundle。两个包都已发布到 npm：`dsh-rayrun-bots@0.1.1-alpha.3`
-（`alpha` tag；`latest` 仍是旧的 `0.1.0-alpha.0`）和 `dsh-rayrun-computer@1.3.1`
+（`alpha` tag；`latest` 仍是旧的 `0.1.0-alpha.0`）和 `dsh-rayrun-computer@1.3.2`
 （latest；`1.2.2` 起返回 machine.credentials，`1.3.0` 起有 `credentials.save`；
 `1.2.1` 及更早没有 machine.credentials，不要用于默认 cloudHost）。本机 npmmirror
 可能滞后，安装时可用官方 registry：
@@ -47,7 +47,7 @@ profile。S6 已验证（2026-11-24，本地 tarball）：**一条命令安装�
 ```bash
 npm_config_registry=https://registry.npmjs.org \
   dsh plugin --profile web add \
-  dsh-rayrun-computer@1.3.1 dsh-rayrun-bots@0.1.1-alpha.3
+  dsh-rayrun-computer@1.3.2 dsh-rayrun-bots@0.1.1-alpha.3
 # 重启 DSH：client half 只在页面启动时加载
 ```
 
@@ -178,7 +178,7 @@ dsh plugin --profile web add <dsh-rayrun-computer 路径或 tarball> <dsh-rayrun
 写成“单包安装”；真正的单包安装需要 DSH 支持传递 bundle 激活，或新增 meta-package。
 
 `dsh-rayrun-bots@0.1.1-alpha.3` 已通过 `publish.yml`（run `46102199971`）发到 npm 的 `alpha` tag；
-`latest` 仍是 `0.1.0-alpha.0`，没有稳定版。依赖 `dsh-rayrun-computer@1.3.1` 在
+`latest` 仍是 `0.1.0-alpha.0`，没有稳定版。依赖 `dsh-rayrun-computer@1.3.2` 在
 npm `latest`。不带版本的安装不会选中 `0.1.1-alpha.3`。用户安装命令见上文和根
 README；发布事实以 [`12-status.md`](12-status.md) 为准。
 
@@ -227,7 +227,7 @@ credential 创建新机，复制
 ## 4. v0.1 目标三分钟路径（安装、RPC 与浏览器已验证；未计时签收）
 
 1. 用一条命令安装两个包（S6 已验证；`dsh-rayrun-bots@0.1.1-alpha.3` 在 `alpha`
-   tag，依赖 `1.3.1` 在 `latest`）。
+   tag，依赖 `1.3.2` 在 `latest`）。
 2. 登录 Rayrun 一次；向导创建云电脑。
 3. 创建 bot：名字、职责、指令、skills；它在电脑上有自己的 session。
 4. 和它对话，或创建一个 routine 让 bot 按间隔运行（本地 DSH host 需保持运行）。
