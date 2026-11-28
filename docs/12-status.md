@@ -92,7 +92,7 @@ proposal 的卡片 **2.291s**、执行 **0.779s**、Continue→working **21ms**�
 | 用量 | 详情面板的电脑块和用量块，以及 Settings 的用量行，读取真实机器状态、余额与机时。 |
 | 更新提示 | Settings → 更新 通过同源 RPC `update.check` 读取官方 npm dist-tags；显示当前/最新版本与可复制命令，不下载、不安装、不改 profile、不发送 token。只读，用户点击触发，没有自动检查或遥测。 |
 | 电脑更新 | Settings → Bot 的电脑 显示共用电脑与当前镜像；确认后通过 host `computer.update` 换镜像：旧机改名、新机用原名称/cloudHost 时 `dsh-bot@1`（否则 `deepseek-harness@1`）/自动选中的 DeepSeek credential 创建，复制 workspace 和登录配置路径；迁移成功后销毁旧机（用户确认更新即明确请求），失败回滚；最后销毁失败时保留新机、停止旧机并报告。每次更新创建计费机器，必须显式确认。 |
-| 测试 | Host/client 名册接线、session/transcript、`rayrun_agent`/detached adapter、per-bot workspace 与审批协议由普通 Node 契约测试覆盖；客户端 session 失败路径、单轮真实一轮、页面关闭 + host 重启后的 detached 收取，以及机器 stop/start 后的第二轮续接另有本机页面 smoke。包清单、locale、RPC、客户端、名册、session、runtime、workspace、审批和 tarball 内容都有检查；cloud host 10 项、cloud host delegation 12 项、cloud host routines 8 项、DSH agent 5 项、host projection 5 项、runtime.* client 5 项、detached runtime 17 项、cloud host runtime adapter 22 项、session 23 项、dependency 14 项、computer update 9 项、RPC 契约 38 项、cloud host proposal 9 项、approval executor 7 项、cloud approval bridge 6 项、routines 16 项、cloud routine bridge 7 项、cloud routine E2E 1 项、routine results 6 项纯 Node 检查，runtime.* client 与 cloud host 另有 dev live 联调，cloudHost adapter 另有页面 E2E（手动、自动 projection 与多 bot 单 host），审批卡另有拒绝/失败关闭与 Continue 按钮的页面 E2E。Routine 页面另做本地 DSH + Firefox smoke：真实表单创建、暂停、删除并写入 routines.json（2026-11-23，无 Rayrun token），截图 `/tmp/bot/routines-ui.png`（临时文件，不入库）；本地 mode 尚未等待一次 scheduler 自动触发；cloudHost mode 的 dev live E2E 已通过（2026-11-24，见 §3.1）。2026-11-25 clean alpha.1 安装另做生产两 bot 单 host 与 headless Firefox golden/审批 Deny/Allow E2E（见 §3.1）。 |
+| 测试 | Host/client 名册接线、session/transcript、`rayrun_agent`/detached adapter、per-bot workspace 与审批协议由普通 Node 契约测试覆盖；客户端 session 失败路径、单轮真实一轮、页面关闭 + host 重启后的 detached 收取，以及机器 stop/start 后的第二轮续接另有本机页面 smoke。包清单、locale、RPC、客户端、名册、session、runtime、workspace、审批和 tarball 内容都有检查；cloud host 10 项、cloud host delegation 12 项、cloud host routines 8 项、DSH agent 5 项、host projection 5 项、runtime.* client 5 项、detached runtime 17 项、cloud host runtime adapter 24 项、session 23 项、dependency 14 项、computer update 9 项、RPC 契约 38 项、cloud host proposal 9 项、approval executor 7 项、cloud approval bridge 6 项、routines 16 项、cloud routine bridge 7 项、cloud routine E2E 1 项、routine results 6 项纯 Node 检查，runtime.* client 与 cloud host 另有 dev live 联调，cloudHost adapter 另有页面 E2E（手动、自动 projection 与多 bot 单 host），审批卡另有拒绝/失败关闭与 Continue 按钮的页面 E2E。Routine 页面另做本地 DSH + Firefox smoke：真实表单创建、暂停、删除并写入 routines.json（2026-11-23，无 Rayrun token），截图 `/tmp/bot/routines-ui.png`（临时文件，不入库）；本地 mode 尚未等待一次 scheduler 自动触发；cloudHost mode 的 dev live E2E 已通过（2026-11-24，见 §3.1）。2026-11-25 clean alpha.1 安装另做生产两 bot 单 host 与 headless Firefox golden/审批 Deny/Allow E2E（见 §3.1）。 |
 | 审批执行 | 协议后端（request/decision schema、canonical actionHash、TTL、幂等/重放/错 bot 负向测试、审计、`approvals.list/get/decide/propose/sync`）已实现。ADR-019（2026-11-23）把本地 DSH host 定为本地 typed 动作的审批权威与执行方：`approvals.decide` 批准后由本地 executor 执行 `rayrun.machine.start/stop/pause/resume`，先写 `executing` claim，拒绝/过期/重放/崩溃 claim 失败关闭；客户端真实卡片已接。云端 proposal bridge 已接并 live 验证：云 bot 在回复末尾输出结构化 `rayrun-approval` block，cloud host 解析后写 proposal（`propose.mjs` 保留为可选 shell 路径），本地用 `rayrun_files` 导入并去重，结果写回 `approval-results/`；机器停机时结果先落本地 outbox，下次 Running 补传。start/stop/pause/resume、denial、Continue 均真机通过。下一轮 prompt 会带最近审批结果，bot 无工具直接回答 approved/done/Running 或 denied/not_executed。本地 routine 轮次会把 `origin: routine` 传到 cloud task，云端提案标为 background 并沿用 30 分钟 TTL。其他动作和云端凭据动作仍未完成；平台隔离仍用于云端凭据（ADR-001）。云端 agent 在容器内 `danger-full-access` 是设计（ADR-020），审批不是 containment。`rayrun_agent` adapter 不拦截外部动作，prompt 指引不是安全边界。 |
 | 发布 | `dsh-rayrun-bots@0.1.1-alpha.2` 已通过 `publish.yml` 从 `v0.1.1-alpha.2` GitHub Prerelease 发布（OIDC，run `46085724676`，`_npmUser=GitHub Actions`）；npm `alpha` tag 指向 0.1.1-alpha.2，`latest` 仍是手动发布的 0.1.0-alpha.0（prerelease 不移动 latest，符合 workflow 契约）。`0.1.1-alpha.1` 是 2026-11-25 的上一版，不含 2026-11-26/27 的 UX 修复、默认 cloudHost、send acceptance 和 Issue #4/#6 修复。依赖 `dsh-rayrun-computer` 最新为 `1.3.1`（`1.2.2` 起返回 machine.credentials，`1.3.0` 起有 credentials.save；`1.2.1` 不含 RC-017）。一条 `dsh plugin add` 安装两个包的路径已用官方 registry 验证：两个 bundle 都被选中、两个插件都加载、health `ok`。只安装 bots 包即使声明依赖也不会启用依赖 bundle。2026-11-28 用官方 registry 从 alpha.2 干净安装、零机器页面建机和合盖签收通过（见 §3.1）。 |
 
@@ -732,9 +732,26 @@ proposal 的卡片 **2.291s**、执行 **0.779s**、Continue→working **21ms**�
   - 发现并修复：修复前 primary 总结轮会再次输出 approval block，产生第二张
     同动作卡片；新增 `approvalDisabled` 抑制并补齐单测。修复后干净一轮只有
     1 个 proposal；未再强制模型在总结轮复述 block 做 live 抑制验证。
-  - 偏差：临时 HOME/DSH_HOME 与 localhost curl 代理；cloud host 资产更新仍需
-    manual 删除 `bot-host` runtime（docs/09 已知缺口）。证据
+  - 偏差：临时 HOME/DSH_HOME 与 localhost curl 代理；live 测试时自动刷新尚未
+    落地，手动删除 `bot-host` runtime 才加载新 cloud-host 代码。证据
     `/tmp/rayrun-live-delegation/evidence.json`（临时文件，不入库）。
+- cloud host 自动刷新（2026-11-28，代码/测试）：host projection 返回整个
+  manifest 的 SHA-256；runtime spec 增加 `DSH_BOT_HOST_DIGEST`。`ensureHost()`
+  每回合比较运行中 runtime 的脚本路径、env、credentials 和 digest；不一致时，
+  若 host 在运行则先等连续两次 `queueDepth=0`（1s 轮询，最多 10 分钟），再
+  `runtime.put` 并等待新进程写入不同的 `startedAt`；仍忙则失败关闭，不中途
+  重启。host 已停止时直接更新。两次空闲快照降低但不能消除与其他发送方的竞态。
+  `test/host-projection.mjs` 5/5、`test/cloud-host-runtime.mjs` 24/24；全量
+  测试通过。
+- cloud host 自动刷新 live（2026-11-28，Rayrun hosted `sys520084`，本地
+  `0.1.1-alpha.3` checkout + 依赖 1.3.1；测试机 `rayrun-bot-refresh-20261128`
+  （`dsh-bot@1`）记录后 destroy，账号 live machines=0）：临时 DSH web + 插件
+  RPC；首轮创建 runtime pid 638 并带 `DSH_BOT_HOST_DIGEST`；直接 `runtime.put`
+  写成无 digest 的 stale spec，平台 applied/restarted 为 pid 665。第二次
+  `session.send` 3853ms 返回 attach，期间自动等待空闲并更新，host pid 672
+  （03:11:20.765Z，带 digest）；任务 03:11:21.772Z 在新进程开始、03:11:24.470Z
+  完成并回复 `REFRESH_TWO`，没有任务落在 stale pid 665 上。证据
+  `/tmp/rayrun-live-refresh/evidence.json`（临时文件，不入库）。
 - 具体组合、环境和缺口以 [`10-rayrun-verification.md`](10-rayrun-verification.md)
   和 [`version-matrix.md`](version-matrix.md) 为准；未测试的组合不作承诺。
 

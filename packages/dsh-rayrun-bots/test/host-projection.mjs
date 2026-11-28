@@ -5,7 +5,9 @@
  */
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { HOST_ASSET_VERSION, hostAssetFiles, hostAssetManifest, projectHost } from '../lib/host-projection.js'
+import {
+  HOST_ASSET_VERSION, hostAssetDigest, hostAssetFiles, hostAssetManifest, projectHost,
+} from '../lib/host-projection.js'
 import { ERROR_CODES } from '../lib/errors.js'
 
 const PACKAGE_VERSION = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version
@@ -42,6 +44,9 @@ check('the package ships the host files and a deterministic manifest', () => {
   assert.equal(manifest.version, '1.2.3')
   assert.deepEqual(manifest.files.map((file) => file.path), files.map((file) => file.path))
   assert.equal(HOST_ASSET_VERSION, PACKAGE_VERSION)
+  assert.match(hostAssetDigest('1.2.3'), /^[a-f0-9]{64}$/)
+  assert.equal(hostAssetDigest('1.2.3'), hostAssetDigest('1.2.3'))
+  assert.notEqual(hostAssetDigest('1.2.3'), hostAssetDigest('1.2.4'))
 })
 
 check('projects the files once and then serves them from the verified cache', async () => {
@@ -50,6 +55,7 @@ check('projects the files once and then serves them from the verified cache', as
   assert.equal(first.version, '1.2.3')
   assert.equal(first.root, '.rayrun/host/1.2.3')
   assert.equal(first.script, '/workspace/.rayrun/host/1.2.3/host.mjs')
+  assert.equal(first.digest, hostAssetDigest('1.2.3'))
   assert.equal(first.cached, false)
   assert.deepEqual(remote.writes, [
     '.rayrun/host/1.2.3/host.mjs',

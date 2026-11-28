@@ -11,6 +11,7 @@ import { openApprovalStore } from '../lib/approvals.js'
 import { openBotStore } from '../lib/bots.js'
 import { createCloudHostRuntime, hostRuntimeName } from '../lib/cloud-host-runtime.js'
 import { ERROR_CODES } from '../lib/errors.js'
+import { hostAssetDigest } from '../lib/host-projection.js'
 
 const PACKAGE_VERSION = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version
 
@@ -36,6 +37,7 @@ function setup({
     },
     runtimes: new Map(existing === null ? [] : [[existing.name, existing]]),
     puts: [],
+    putWhileBusy: false,
   }
   let hostStateReads = 0
   const tool = {
@@ -76,7 +78,23 @@ function setup({
       value = { ok: true, runtime: state.runtimes.get(body.name) ?? null }
     } else if (body.action === 'runtime.put') {
       state.puts.push(body)
-      const runtime = { name: body.name, state: 'running', spec: body.spec, pid: 1, restarts: 0 }
+      try {
+        const fileState = JSON.parse(files.get('.rayrun/host/state.json') ?? '{}')
+        if (Number(fileState?.queueDepth) > 0) state.putWhileBusy = true
+      } catch {
+        // The state file is optional for old hosts.
+      }
+      try {
+        const fileState = JSON.parse(files.get('.rayrun/host/state.json') ?? 'null')
+        if (fileState && typeof fileState === 'object') {
+          files.set('.rayrun/host/state.json', JSON.stringify({
+            ...fileState, state: 'running', queueDepth: 0, startedAt: `restart-${state.puts.length}`,
+          }))
+        }
+      } catch {
+        // No state file to refresh.
+      }
+      const runtime = { name: body.name, state: 'running', spec: body.spec, pid: 1 + state.puts.length, restarts: 0 }
       state.runtimes.set(body.name, runtime)
       value = { ok: true, runtime, applied: true, restarted: false }
     } else if (body.action === 'runtime.start') {
@@ -369,11 +387,50 @@ check('starts a stopped machine and resumes a paused one', async () => {
   }
 })
 
-check('reuses an existing running runtime without putting it again', async () => {
-  const existing = { name: 'bot-host', state: 'running', pid: 7, restarts: 0 }
-  const { root, runtime, state } = setup({ runtime: existing })
+check('reuses a matching running runtime without putting it again', async () => {
+  const { root, runtime, state } = setup()
   await runtime.start({ bot, text: 'hello', messageSeq: 1, botId: bot.id, stateRoot: root })
-  assert.equal(state.puts.length, 0)
+  assert.equal(state.puts.length, 1)
+  await runtime.start({ bot, text: 'again', messageSeq: 2, botId: bot.id, stateRoot: root })
+  assert.equal(state.puts.length, 1)
+})
+
+check('a changed host digest waits for idle and refreshes the runtime', async () => {
+  const { root, runtime, state, files } = setup({ project: true })
+  await runtime.start({ bot, text: 'hello', messageSeq: 1, botId: bot.id, stateRoot: root })
+  assert.equal(state.puts.length, 1)
+  assert.equal(state.puts[0].spec.env.DSH_BOT_HOST_DIGEST, hostAssetDigest())
+  state.runtimes.get('bot-host').spec.env.DSH_BOT_HOST_DIGEST = 'stale'
+  files.set('.rayrun/host/state.json', JSON.stringify({
+    state: 'running', queueDepth: 1, startedAt: 'old',
+  }))
+  setTimeout(() => {
+    files.set('.rayrun/host/state.json', JSON.stringify({
+      state: 'running', queueDepth: 0, startedAt: 'old',
+    }))
+  }, 300)
+  const startedAt = Date.now()
+  const started = await runtime.start({ bot, text: 'again', messageSeq: 2, botId: bot.id, stateRoot: root })
+  assert.equal(started.taskId.startsWith('task-'), true)
+  assert.equal(state.putWhileBusy, false)
+  assert.equal(state.puts.length, 2)
+  assert.equal(state.puts[1].spec.env.DSH_BOT_HOST_DIGEST, hostAssetDigest())
+  assert.ok(Date.now() - startedAt >= 1000, `refresh waited ${Date.now() - startedAt}ms`)
+})
+
+check('a host that stays busy fails closed without restarting it', async () => {
+  const { root, runtime, state, files } = setup({ project: true, runtimeOptions: { hostUpdateWaitMs: 100 } })
+  await runtime.start({ bot, text: 'hello', messageSeq: 1, botId: bot.id, stateRoot: root })
+  state.runtimes.get('bot-host').spec.env.DSH_BOT_HOST_DIGEST = 'stale'
+  files.set('.rayrun/host/state.json', JSON.stringify({
+    state: 'running', queueDepth: 1, startedAt: 'old',
+  }))
+  await assert.rejects(
+    runtime.start({ bot, text: 'again', messageSeq: 2, botId: bot.id, stateRoot: root }),
+    (error) => error.code === ERROR_CODES.runtimeUnavailable && /stayed busy/.test(error.message),
+  )
+  assert.equal(state.puts.length, 1)
+  assert.equal(state.putWhileBusy, false)
 })
 
 check('refuses without a Rayrun connection before a machine lookup', async () => {

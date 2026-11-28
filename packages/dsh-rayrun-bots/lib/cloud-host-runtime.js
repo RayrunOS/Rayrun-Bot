@@ -31,6 +31,9 @@ const TASK_TIMEOUT_SECONDS = 900
 const HOST_READY_ATTEMPTS = 30
 const HOST_PROFILE = 'bot'
 const HOST_RUNTIME = 'bot-host'
+const HOST_UPDATE_POLL_MS = 1000
+const HOST_UPDATE_IDLE_READS = 2
+const HOST_UPDATE_WAIT_MS = 10 * 60 * 1000
 const DELEGATION_MAX_WORKERS = 8
 const DELEGATION_MAX_BYTES = 64 * 1024
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -169,6 +172,7 @@ function delegationFor({ getRoster, getPrimaryBotId, botId }) {
  *   profile?: string,
  *   credentials?: string[],
  *   machine?: string,
+ *   hostUpdateWaitMs?: number,
  * }} options
  */
 export function createCloudHostRuntime({
@@ -182,6 +186,7 @@ export function createCloudHostRuntime({
   profile = HOST_PROFILE,
   credentials = [],
   machine: pinnedMachine,
+  hostUpdateWaitMs = HOST_UPDATE_WAIT_MS,
 } = {}) {
   const rpc = createRayrunRpc({ getOrigin, fetchImpl })
   const runtimeRpc = createRuntimeRpc({ getOrigin, fetchImpl })
@@ -201,7 +206,7 @@ export function createCloudHostRuntime({
   }
 
   function scriptFor(machine) {
-    if (hostScript !== null) return Promise.resolve(hostScript)
+    if (hostScript !== null) return Promise.resolve({ script: hostScript, digest: null })
     const sandbox = machine.name || machine.id
     let pending = hostScripts.get(sandbox)
     if (pending === undefined) {
@@ -209,7 +214,7 @@ export function createCloudHostRuntime({
         read: (relative) => readFile(sandbox, relative),
         write: (relative, value) => writeFile(sandbox, relative, value),
         version: HOST_ASSET_VERSION,
-      }).then((projected) => projected.script).catch((error) => {
+      }).then((projected) => ({ script: projected.script, digest: projected.digest })).catch((error) => {
         hostScripts.delete(sandbox)
         throw error
       })
@@ -225,12 +230,12 @@ export function createCloudHostRuntime({
    */
   async function prepareHost() {
     const machine = await ensureMachine()
-    const script = await scriptFor(machine)
+    const projected = await scriptFor(machine)
     const ref = machine.name || machine.id
     let pending = hostChecks.get(ref)
     if (pending === undefined) {
       pending = (async () => {
-        const host = await ensureHost(machine, script)
+        const host = await ensureHost(machine, projected.script, projected.digest)
         await waitHostReady(host.ref)
         return { machine, host }
       })().finally(() => {
@@ -281,7 +286,7 @@ export function createCloudHostRuntime({
       .filter((name) => name !== '')
   }
 
-  function spec(script, machine) {
+  function spec(script, machine, digest) {
     return {
       argv: ['node', script],
       workdir: '/workspace',
@@ -295,6 +300,7 @@ export function createCloudHostRuntime({
         DSH_BOT_LOG: '/workspace/.rayrun/logs/bot-host.log',
         DSH_BOT_PROPOSE: `${path.posix.dirname(String(script))}/bin/propose.mjs`,
         DSH_BOT_MACHINE: machineRef(machine),
+        ...(digest ? { DSH_BOT_HOST_DIGEST: digest } : {}),
       },
       credentials: [...(credentials.length > 0 ? credentials : machineCredentialNames(machine).slice(0, 1))],
       restart: 'always',
@@ -305,12 +311,69 @@ export function createCloudHostRuntime({
     }
   }
 
-  async function ensureHost(machine, script) {
+  /** True when the running runtime already has the spec this build needs. */
+  function sameRuntimeSpec(current, desired) {
+    if (current === null || typeof current !== 'object') return false
+    if (!Array.isArray(current.argv) || current.argv.length !== desired.argv.length) return false
+    for (let index = 0; index < desired.argv.length; index += 1) {
+      if (current.argv[index] !== desired.argv[index]) return false
+    }
+    if (current.workdir !== desired.workdir) return false
+    if (!Array.isArray(current.credentials) || current.credentials.length !== desired.credentials.length) return false
+    for (let index = 0; index < desired.credentials.length; index += 1) {
+      if (current.credentials[index] !== desired.credentials[index]) return false
+    }
+    for (const [key, value] of Object.entries(desired.env)) {
+      if (current.env?.[key] !== value) return false
+    }
+    for (const key of ['restart', 'autostart', 'keep_alive', 'stop_signal', 'stop_timeout_seconds']) {
+      if (current[key] !== desired[key]) return false
+    }
+    return true
+  }
+
+  /**
+   * Wait until the shared host has an empty inbox and no in-flight task. Two
+   * consecutive idle snapshots avoid restarting between a task claim and the
+   * next heartbeat. The wait is bounded and fails closed rather than killing
+   * another bot's turn.
+   */
+  async function waitForHostIdle(ref) {
+    const deadline = Date.now() + hostUpdateWaitMs
+    let idle = 0
+    let last = null
+    for (;;) {
+      last = await readHostState(ref)
+      const depth = last === null ? 0 : Number(last.queueDepth)
+      idle = Number.isFinite(depth) && depth === 0 ? idle + 1 : 0
+      if (idle >= HOST_UPDATE_IDLE_READS) return last
+      if (Date.now() + HOST_UPDATE_POLL_MS > deadline) {
+        throw rayrunFailure(
+          ERROR_CODES.runtimeUnavailable,
+          'The cloud bot host stayed busy, so its updated host was not restarted mid-task. Try again when it is idle.',
+        )
+      }
+      await sleep(HOST_UPDATE_POLL_MS)
+    }
+  }
+
+  async function ensureHost(machine, script, digest) {
     const ref = machine.name || machine.id
     const name = HOST_RUNTIME
+    const desired = spec(script, machine, digest)
     let current = (await runtimeRpc.get(ref, name)).runtime
+    if (current && !sameRuntimeSpec(current.spec, desired)) {
+      let afterStartedAt
+      if (current.state === 'running') {
+        const idle = await waitForHostIdle(ref)
+        if (typeof idle?.startedAt === 'string') afterStartedAt = idle.startedAt
+      }
+      await runtimeRpc.put(ref, name, desired)
+      current = (await runtimeRpc.get(ref, name)).runtime
+      if (afterStartedAt !== undefined) await waitHostReady(ref, { afterStartedAt })
+    }
     if (!current) {
-      await runtimeRpc.put(ref, name, spec(script, machine))
+      await runtimeRpc.put(ref, name, desired)
       current = (await runtimeRpc.get(ref, name)).runtime
     }
     if (current?.state !== 'running') {
@@ -372,18 +435,20 @@ export function createCloudHostRuntime({
     }
   }
 
-  async function waitHostReady(sandbox) {
-    const statePath = '.rayrun/host/state.json'
+  async function readHostState(sandbox) {
+    const text = await readFile(sandbox, '.rayrun/host/state.json')
+    if (text === null) return null
+    try { return JSON.parse(text) } catch { return null }
+  }
+
+  async function waitHostReady(sandbox, { afterStartedAt } = {}) {
     // A previous host leaves `stopped` behind. A newly started host may not
-    // have overwritten it yet, so wait for a fresh `running`, not the first
-    // value read. The bound covers a cold worker bootstrap.
+    // have overwritten it yet, so wait for `running`; after an update, also
+    // wait until the state file belongs to the new process.
     for (let attempt = 0; attempt < HOST_READY_ATTEMPTS; attempt += 1) {
-      const text = await readFile(sandbox, statePath)
-      if (text !== null) {
-        let state
-        try { state = JSON.parse(text) } catch { state = null }
-        if (state?.state === 'running') return
-      }
+      const state = await readHostState(sandbox)
+      if (state?.state === 'running'
+        && (afterStartedAt === undefined || state.startedAt !== afterStartedAt)) return
       await sleep(1000)
     }
     throw rayrunFailure(ERROR_CODES.runtimeUnavailable, 'The cloud bot host did not become ready.')

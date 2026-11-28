@@ -196,11 +196,16 @@ npm_config_registry=https://registry.npmjs.org \
 它不下载、不安装、不改 profile，也不发送 token。复制命令后仍需用户在终端执行并
 重启 DSH。
 
-包版本变化会把新的 cloud host 资产投影到 `.rayrun/host/<version>/`，但当前
-`ensureHost()` 会复用已运行的 `bot-host` runtime，不会比较脚本路径自动重启。因此
-只更新 UI 不受影响；如果发布同时改了 `cloud-host/**`（例如审批解析），升级后需要
-重建 `bot-host` runtime，或在发布前补上 runtime 版本刷新。该缺口记录在
-[`12-status.md`](12-status.md)。
+包版本变化会把新的 cloud host 资产投影到 `.rayrun/host/<version>/`。
+`ensureHost()` 在每次回合前比较运行中 runtime 的 spec（脚本路径、env、credentials）
+和 host manifest digest；不一致时先读 `.rayrun/host/state.json`，等连续两次
+`queueDepth=0` 后 `runtime.put`，并等待新进程写入的 `startedAt` 再投递任务。
+host 正忙时本地回合排队等待；超过 10 分钟仍忙则失败关闭，不在任务执行中重启。
+两次空闲快照降低但不能完全消除与其他发送方的竞态（没有跨进程锁）。只更新 UI
+不受影响；更新后仍需重启本地 DSH 以加载新插件代码，之后的首次 bot 回合会自动
+刷新云端 host，不再需要手工删除 `bot-host` runtime。2026-11-28 已在 Rayrun
+hosted 验证：stale spec 的 host 在下一回合等待空闲后更新，任务只在新进程执行
+（[`12-status.md`](12-status.md) §3.1）。
 
 **更新 Bot 的电脑**：Rayrun 没有 in-place rebuild API，Settings → Bot 的电脑 走
 replace 路径：旧机改名为 `<name>-pre-update-<time>`，用原名称、当前 runtime 的镜像

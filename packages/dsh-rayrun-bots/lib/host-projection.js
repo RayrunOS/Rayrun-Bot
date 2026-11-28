@@ -58,6 +58,11 @@ export function hostAssetManifest(version = HOST_ASSET_VERSION) {
   }
 }
 
+/** One digest for the whole projected host, stable across restarts. */
+export function hostAssetDigest(version = HOST_ASSET_VERSION) {
+  return sha256(JSON.stringify(hostAssetManifest(version)))
+}
+
 function sameManifest(left, right) {
   if (left?.schema !== 1 || left?.version !== right.version) return false
   if (!Array.isArray(left.files) || left.files.length !== right.files.length) return false
@@ -127,7 +132,7 @@ export async function projectHost({ read, write, version = HOST_ASSET_VERSION } 
       }
     }
 
-    return { version, root, manifestPath, script, cached: !needsUpload }
+    return { version, root, manifestPath, script, digest: sha256(JSON.stringify(manifest)), cached: !needsUpload }
   } catch (error) {
     if (typeof error?.code === 'string' && error.code.startsWith('E_')) throw error
     throw rayrunFailure(ERROR_CODES.runtimeUnavailable, `The cloud host projection failed: ${String(error?.message ?? error).slice(0, 200)}`)
