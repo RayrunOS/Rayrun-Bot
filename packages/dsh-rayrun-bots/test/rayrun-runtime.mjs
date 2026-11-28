@@ -100,6 +100,36 @@ check('buildPrompt bounds old history from the end', () => {
   assert.ok(prompt.length < 30_000, `prompt is ${prompt.length} bytes`)
 })
 
+const ROSTER = [
+  { id: 'weekly-watch', name: 'Weekly Watch', label: 'Watches the weekly numbers', instructions: 'Only check the numbers.' },
+  { id: 'docs-refresh', name: 'Docs Refresh', label: 'Updates documentation', instructions: 'Only edit docs.' },
+]
+
+check('buildPrompt adds the teammate roster and delegate block for the primary', () => {
+  const prompt = buildPrompt({
+    bot: { id: 'superagent', name: 'Superagent', label: 'Coordinates your bots', instructions: 'Route work.' },
+    text: 'check the numbers and update the docs',
+    roster: ROSTER,
+    primary: true,
+  })
+  assert.match(prompt, /Teammates:/)
+  assert.match(prompt, /- weekly-watch — Weekly Watch — Watches the weekly numbers/)
+  assert.match(prompt, /- docs-refresh — Docs Refresh — Updates documentation/)
+  assert.ok(prompt.includes('{"bot":"<worker id>","task":"..."}'))
+  assert.match(prompt, /Only one delegation per turn\. Never delegate to yourself\./)
+  assert.match(prompt, /Handle simple tasks yourself/)
+  assert.doesNotMatch(prompt, /Only check the numbers|Only edit docs/)
+})
+
+check('buildPrompt leaves the delegate block out for workers and empty rosters', () => {
+  const worker = buildPrompt({ bot: BOT, text: 'plan', roster: ROSTER })
+  assert.doesNotMatch(worker, /Teammates:|rayrun-delegate/)
+  const empty = buildPrompt({ bot: BOT, text: 'plan', roster: [], primary: true })
+  assert.doesNotMatch(empty, /Teammates:|rayrun-delegate/)
+  const selfOnly = buildPrompt({ bot: BOT, text: 'plan', roster: [ROSTER[0]], primary: true })
+  assert.doesNotMatch(selfOnly, /Teammates:|rayrun-delegate/)
+})
+
 check('the adapter calls rayrun_agent with the selected existing machine', async () => {
   const tools = toolsWith(async () => ({ finished: true, text: 'current answer' }))
   const fetchImpl = fetchWith(OVERVIEW)

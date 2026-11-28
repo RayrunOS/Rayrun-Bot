@@ -21,7 +21,7 @@ const roots = []
 function setup({
   machineStatus = 'Running', runtime: existing = null, withTool = true, project = false,
   configured = true, tokenMissing = false, hostReadyAfter = 0, credentials = ['deepseek-flash'],
-  machineCredentials = null,
+  machineCredentials = null, runtimeOptions = {},
 } = {}) {
   const root = mkdtempSync(path.join(tmpdir(), 'rayrun-cloud-host-runtime-'))
   roots.push(root)
@@ -95,6 +95,7 @@ function setup({
     getTools: () => (withTool ? { get: (name) => (name === 'rayrun_files' ? tool : undefined) } : { get: () => undefined }),
     machine: 'box',
     credentials,
+    ...runtimeOptions,
     ...(project ? {} : { hostScript: '/workspace/.rayrun/bin/host.mjs' }),
   })
   return { root, runtime, state, calls, uploads, files, machineStatus }
@@ -163,6 +164,105 @@ check('carries routine origin into the cloud task', async () => {
   const task = JSON.parse(uploads[0].text)
   assert.equal(task.id, started.taskId)
   assert.equal(task.origin, 'routine')
+})
+
+const PRIMARY = { id: 'superagent', name: 'Superagent', label: 'Coordinates your bots', instructions: 'Route work.' }
+const WORKER = {
+  id: 'weekly-watch', name: 'Weekly Watch', label: 'Watches the weekly numbers',
+  instructions: 'Only check the numbers.',
+}
+
+check('the primary task carries the worker roster and the delegate prompt', async () => {
+  const { root, runtime, uploads } = setup({
+    runtimeOptions: {
+      getPrimaryBotId: () => PRIMARY.id,
+      getRoster: () => [WORKER],
+    },
+  })
+  const started = await runtime.start({
+    bot: PRIMARY, text: 'check the numbers', history: [], messageSeq: 1, botId: PRIMARY.id, stateRoot: root,
+  })
+  const task = JSON.parse(uploads[0].text)
+  assert.equal(task.id, started.taskId)
+  assert.deepEqual(task.delegation, {
+    primary: true,
+    roster: [{
+      id: 'weekly-watch', name: 'Weekly Watch', label: 'Watches the weekly numbers',
+      instructions: 'Only check the numbers.',
+    }],
+  })
+  assert.match(task.text, /Teammates:/)
+  assert.match(task.text, /- weekly-watch — Weekly Watch — Watches the weekly numbers/)
+  assert.match(task.text, /rayrun-delegate/)
+  assert.match(task.text, /Handle simple tasks yourself/)
+  assert.doesNotMatch(task.text, /Only check the numbers/)
+})
+
+check('a worker task has no delegation metadata or delegate prompt', async () => {
+  const { root, runtime, uploads } = setup({
+    runtimeOptions: {
+      getPrimaryBotId: () => PRIMARY.id,
+      getRoster: () => [WORKER],
+    },
+  })
+  await runtime.start({
+    bot: WORKER, text: 'check the numbers', history: [], messageSeq: 1, botId: WORKER.id, stateRoot: root,
+  })
+  const task = JSON.parse(uploads[0].text)
+  assert.equal(Object.hasOwn(task, 'delegation'), false)
+  assert.doesNotMatch(task.text, /Teammates:|rayrun-delegate/)
+})
+
+check('a roster read failure leaves the primary as an ordinary bot', async () => {
+  const { root, runtime, uploads } = setup({
+    runtimeOptions: {
+      getPrimaryBotId: () => PRIMARY.id,
+      getRoster: () => { throw new Error('store unavailable') },
+    },
+  })
+  await runtime.start({
+    bot: PRIMARY, text: 'hello', history: [], messageSeq: 1, botId: PRIMARY.id, stateRoot: root,
+  })
+  const task = JSON.parse(uploads[0].text)
+  assert.equal(Object.hasOwn(task, 'delegation'), false)
+  assert.doesNotMatch(task.text, /Teammates:|rayrun-delegate/)
+})
+
+check('too many workers fail closed before the machine or host is touched', async () => {
+  const roster = Array.from({ length: 9 }, (_, index) => ({
+    id: `worker-${index}`, name: `Worker ${index}`, label: 'Does work', instructions: 'Work.',
+  }))
+  const { root, runtime, uploads, state } = setup({
+    runtimeOptions: { getPrimaryBotId: () => PRIMARY.id, getRoster: () => roster },
+  })
+  await assert.rejects(runtime.start({
+    bot: PRIMARY, text: 'hello', history: [], messageSeq: 1, botId: PRIMARY.id, stateRoot: root,
+  }), (error) => {
+    assert.equal(error.code, ERROR_CODES.internal)
+    assert.match(error.message, /at most 8/)
+    return true
+  })
+  assert.equal(uploads.length, 0)
+  assert.equal(state.puts.length, 0)
+})
+
+check('an oversized roster payload fails closed before the machine or host is touched', async () => {
+  const roster = Array.from({ length: 8 }, (_, index) => ({
+    id: `worker-${index}`, name: `Worker ${index}`, label: 'Does work',
+    instructions: 'x'.repeat(9 * 1024),
+  }))
+  const { root, runtime, uploads, state } = setup({
+    runtimeOptions: { getPrimaryBotId: () => PRIMARY.id, getRoster: () => roster },
+  })
+  await assert.rejects(runtime.start({
+    bot: PRIMARY, text: 'hello', history: [], messageSeq: 1, botId: PRIMARY.id, stateRoot: root,
+  }), (error) => {
+    assert.equal(error.code, ERROR_CODES.internal)
+    assert.match(error.message, /too large/)
+    return true
+  })
+  assert.equal(uploads.length, 0)
+  assert.equal(state.puts.length, 0)
 })
 
 check('includes recent local approval outcomes in the next prompt', async () => {

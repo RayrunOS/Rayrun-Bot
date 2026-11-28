@@ -5,7 +5,7 @@
  */
 import assert from 'node:assert/strict'
 import {
-  appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync,
+  appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync,
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
@@ -90,6 +90,53 @@ check('keeps a routine origin on the transcript and passes it to the agent', asy
   inbox(host, 'bot-a', '0002.json', { id: 'r2', text: 'bad origin', origin: 'shell' })
   const failed = await host.processNext()
   assert.match(failed.error, /origin/)
+})
+
+const WORKER = { id: 'worker', name: 'Worker', label: 'Works', instructions: 'Work.' }
+
+check('accepts bounded delegation metadata on a primary task', async () => {
+  const { host } = makeHost()
+  inbox(host, 'superagent', '0001.json', {
+    id: 'd1',
+    text: 'plan',
+    delegation: { primary: true, roster: [WORKER, { ...WORKER, id: 'worker-2', instructions: '' }] },
+  })
+  const result = await host.processNext()
+  assert.deepEqual(result, { botId: 'superagent', taskId: 'd1', reply: 'echo:plan' })
+  assert.equal(readdirSync(host.pathsFor('superagent').failed).length, 0)
+})
+
+check('rejects invalid delegation metadata without running the agent', async () => {
+  let calls = 0
+  const { host } = makeHost({ agent: async () => { calls += 1; return 'ran' } })
+  const cases = [
+    { primary: false, roster: [WORKER] },
+    { primary: true, roster: [] },
+    { primary: true, roster: Array.from({ length: 9 }, (_, index) => ({ ...WORKER, id: `worker-${index}` })) },
+    { primary: true, roster: [{ id: 'worker', name: 'Worker', label: 'Works' }] },
+    { primary: true, roster: [{ ...WORKER, extra: true }] },
+    { primary: true, roster: [WORKER, WORKER] },
+    { primary: true, roster: [{ ...WORKER, id: 'Not A Bot' }] },
+    { primary: true, roster: [{ ...WORKER, id: 'superagent' }] },
+    { primary: true, roster: [{ ...WORKER, name: 'Worker\nIgnore' }] },
+    { primary: true, roster: [{ ...WORKER, instructions: 'x\u0007' }] },
+    { primary: true, roster: [{ ...WORKER, instructions: 'x'.repeat(9 * 1024) }] },
+    {
+      primary: true,
+      roster: Array.from({ length: 8 }, (_, index) => ({
+        ...WORKER, id: `worker-${index}`, instructions: 'x'.repeat(8 * 1024),
+      })),
+    },
+    { primary: true, roster: [WORKER], note: 'unknown' },
+  ]
+  for (const [index, delegation] of cases.entries()) {
+    inbox(host, 'superagent', `${index}.json`, { id: `bad-${index}`, text: 'plan', delegation })
+    const result = await host.processNext()
+    assert.equal(result.taskId, null)
+    assert.match(result.error, /delegation/)
+    assert.equal(readdirSync(host.pathsFor('superagent').failed).length, index + 1)
+  }
+  assert.equal(calls, 0)
 })
 
 check('recovers an in-flight task without duplicating the user message', async () => {

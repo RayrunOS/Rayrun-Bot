@@ -14,6 +14,7 @@
  * adapter resolves and verifies an existing machine first and refuses when
  * there is none; profiles for Bots should set `autoCreate: false`.
  */
+import { Buffer } from 'node:buffer'
 import { randomUUID } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
@@ -30,6 +31,8 @@ const TASK_TIMEOUT_SECONDS = 900
 const HOST_READY_ATTEMPTS = 30
 const HOST_PROFILE = 'bot'
 const HOST_RUNTIME = 'bot-host'
+const DELEGATION_MAX_WORKERS = 8
+const DELEGATION_MAX_BYTES = 64 * 1024
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 /** One host process serves every bot on the machine. */
@@ -103,9 +106,63 @@ function botIdFromDetached(detached) {
 }
 
 /**
+ * Build the primary task's delegation metadata from the host roster. Only the
+ * account primary gets it; every other bot keeps an ordinary task. The roster
+ * is bounded and fails closed rather than truncating a teammate.
+ */
+function delegationFor({ getRoster, getPrimaryBotId, botId }) {
+  let primaryBotId
+  try {
+    primaryBotId = getPrimaryBotId?.() ?? null
+  } catch {
+    return null
+  }
+  if (primaryBotId !== botId) return null
+  let roster
+  try {
+    roster = getRoster?.() ?? []
+  } catch {
+    return null
+  }
+  if (!Array.isArray(roster)) return null
+  const workers = []
+  const seen = new Set()
+  for (const worker of roster) {
+    if (typeof worker?.id !== 'string' || worker.id === '' || worker.id === botId) continue
+    if (typeof worker.name !== 'string' || typeof worker.label !== 'string') continue
+    if (typeof worker.instructions !== 'string') continue
+    if (seen.has(worker.id)) continue
+    seen.add(worker.id)
+    workers.push({
+      id: worker.id,
+      name: worker.name,
+      label: worker.label,
+      instructions: worker.instructions,
+    })
+  }
+  if (workers.length === 0) return null
+  if (workers.length > DELEGATION_MAX_WORKERS) {
+    throw rayrunFailure(
+      ERROR_CODES.internal,
+      `The teammate roster has ${workers.length} bots; the cloud host accepts at most ${DELEGATION_MAX_WORKERS}. Remove bots before sending.`,
+    )
+  }
+  const delegation = { primary: true, roster: workers }
+  if (Buffer.byteLength(JSON.stringify(delegation), 'utf8') > DELEGATION_MAX_BYTES) {
+    throw rayrunFailure(
+      ERROR_CODES.internal,
+      'The teammate roster is too large for one cloud task; shorten teammate instructions.',
+    )
+  }
+  return delegation
+}
+
+/**
  * @param {{
  *   getOrigin?: () => string | undefined,
  *   getTools?: () => object,
+ *   getRoster?: () => object[],
+ *   getPrimaryBotId?: () => string | null,
  *   fetchImpl?: Function,
  *   supported?: boolean,
  *   hostScript?: string,
@@ -117,6 +174,8 @@ function botIdFromDetached(detached) {
 export function createCloudHostRuntime({
   getOrigin,
   getTools,
+  getRoster = () => [],
+  getPrimaryBotId = () => null,
   fetchImpl = globalThis.fetch,
   supported = true,
   hostScript = null,
@@ -342,6 +401,8 @@ export function createCloudHostRuntime({
     },
     async start({ bot, text, history = [], messageSeq, origin, botId, stateRoot } = {}) {
       if (typeof botId !== 'string' || botId === '') throw rayrunFailure(ERROR_CODES.runtimeUnavailable, 'botId is required.')
+      // Bound and fail closed before touching the machine or the host.
+      const delegation = delegationFor({ getRoster, getPrimaryBotId, botId })
       const { machine, host } = await prepareHost()
       const taskId = `task-${randomUUID()}`
       const paths = filePaths(botId, taskId)
@@ -353,6 +414,7 @@ export function createCloudHostRuntime({
         proposalHint: true,
         proposalMachine: machineRef(machine),
         approvalContext: approvalContextFor(stateRoot, botId),
+        ...(delegation === null ? {} : { primary: true, roster: delegation.roster }),
       })
       const startedAt = new Date().toISOString()
       await writeFile(host.ref, paths.inbox, JSON.stringify({
@@ -361,6 +423,7 @@ export function createCloudHostRuntime({
         text: prompt,
         at: startedAt,
         ...(origin === 'routine' ? { origin: 'routine' } : {}),
+        ...(delegation === null ? {} : { delegation }),
       }))
       return {
         taskId,

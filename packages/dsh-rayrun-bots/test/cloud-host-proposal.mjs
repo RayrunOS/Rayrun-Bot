@@ -4,10 +4,12 @@
  *   node test/cloud-host-proposal.mjs
  */
 import assert from 'node:assert/strict'
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { APPROVAL_PARSE_ERROR, extractProposal, writeProposal } from '../cloud-host/lib/proposal.mjs'
+import {
+  APPROVAL_PARSE_ERROR, extractProposal, extractTurnProposal, writeProposal,
+} from '../cloud-host/lib/proposal.mjs'
 
 const checks = []
 const check = (name, fn) => checks.push({ name, fn })
@@ -89,6 +91,50 @@ check('keeps a natural-language reply and marks an invalid approval block', () =
   assert.match(parsed.error, /not valid JSON/)
   assert.match(parsed.text, /^I can stop the computer for you\. Here is the request\.\n\n/)
   assert.equal(parsed.text.includes(APPROVAL_PARSE_ERROR), true)
+})
+
+check('routes a delegated worker proposal to the primary bot', () => {
+  const parsed = extractTurnProposal(BLOCK('{"kind":"rayrun.machine.stop","machine":"box"}'), {
+    botId: 'weekly-watch',
+    approvalBotId: 'superagent',
+  })
+  assert.equal(parsed.error, null)
+  assert.equal(parsed.proposal.botId, 'superagent')
+  assert.deepEqual(parsed.approval, {
+    botId: 'superagent',
+    kind: 'rayrun.machine.stop',
+    machine: 'box',
+    delegated: true,
+  })
+  const root = setup()
+  const target = writeProposal(root, parsed.approval.botId, parsed.proposal)
+  assert.equal(target, path.join(root, 'bots', 'superagent', 'proposals', `${parsed.proposal.id}.json`))
+  assert.equal(existsSync(path.join(root, 'bots', 'weekly-watch', 'proposals')), false)
+})
+
+check('strips a suppressed proposal without returning approval metadata', () => {
+  const parsed = extractTurnProposal(BLOCK('{"kind":"rayrun.machine.stop","machine":"box"}'), {
+    botId: 'superagent',
+    suppress: true,
+  })
+  assert.equal(parsed.error, null)
+  assert.equal(parsed.proposal.botId, 'superagent')
+  assert.equal(parsed.approval, null)
+  assert.doesNotMatch(parsed.text, /rayrun-approval/)
+})
+
+check('keeps an ordinary proposal on its own bot', () => {
+  const parsed = extractTurnProposal(BLOCK('{"kind":"rayrun.machine.stop","machine":"box"}'), {
+    botId: 'weekly-watch',
+  })
+  assert.equal(parsed.proposal.botId, 'weekly-watch')
+  assert.equal(parsed.approval.delegated, false)
+  const plain = extractTurnProposal('No approval needed.', {
+    botId: 'weekly-watch',
+    approvalBotId: 'superagent',
+  })
+  assert.equal(plain.proposal, null)
+  assert.equal(plain.approval, null)
 })
 
 check('leaves a reply without a block unchanged and does not overwrite a proposal id', () => {

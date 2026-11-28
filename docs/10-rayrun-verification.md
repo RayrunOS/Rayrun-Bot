@@ -923,6 +923,12 @@
   无 token 失败恢复、runtime 重建，以及三条消息排队 + 本地 DSH 崩溃恢复已在
   Rayrun dev/test 验证（§3.1）；host 挂载即恢复 detached task 已有 fake 测试，并
   在无页面的 live 验证中自动排空队列（§3.1）；
+- superagent 委派剩余未验证：Rayrun hosted 已完成 primary→worker→primary、
+  worker 写文件、合盖收取、worker 执行中 kill host 的 fallback、delegated
+  approval 的 Deny+Continue（2026-11-28，见 [`12-status.md`](12-status.md) §3.1）；
+  仍缺 delegated approval 的 approve+本地执行、总结轮再次输出 approval block 的
+  live 抑制（单测覆盖）、总结阶段 kill host、worker 完成后 kill host 只补总结，
+  以及多 worker/重复委派；
 - 零余额宽限/force-destroy 行为（R-G009，不做破坏性验证）；
 - 在 Rayrun 上构建自定义 Dockerfile 镜像（R-G013）。
 

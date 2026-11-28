@@ -1,8 +1,11 @@
 # 每个账户一个 Superagent：第一版云端协调层
 
-> 状态：2026-11-28，Proposed；步骤 1（本地 primary 身份与 onboarding）已实现，
-> 其余步骤（roster prompt、云端委派链、审批汇总）未实现。本文是计划，不是实现状态事实源；
-> 实现状态以 [`../12-status.md`](../12-status.md) 为准。
+> 状态：2026-11-28，Proposed；步骤 1–5 已实现（本地 primary 身份、roster prompt、
+> 云端单层委派链、本地收取、审批汇总）。Rayrun hosted 账号已完成 file-writer
+> 委派、合盖收取、worker crash recovery 和 delegated approval Deny+Continue 的
+> live E2E；approve+执行、总结轮复述 block 的 live 抑制和多 worker 未验证。
+> 本文是计划，不是实现状态事实源；实现状态以
+> [`../12-status.md`](../12-status.md) 为准。
 >
 > 背景与逐条来源见 [`../research/superagent-lessons.md`](../research/superagent-lessons.md)。
 > 本文只记录从原型、文章和第三方实测中得到的、会改变本计划的约束。
@@ -273,6 +276,14 @@ work is done; tell the user you asked the teammate.
 - 测试：prompt 包含/不包含 roster；worker 不出现 delegate 块；非 cloudHost 路径
   不出现 delegate 块；超限失败关闭。
 
+已实现（2026-11-28）：`buildPrompt` 的 Teammates/`rayrun-delegate` 块只在 primary
+且 roster 非空时出现，prompt 只含 worker 的 id/name/label；cloudHost `start` 从
+`getRoster`/`getPrimaryBotId` 构造 `delegation`，roster 最多 8 个 worker、总 64 KiB，
+超限在接触机器前失败关闭；worker task 不带该字段。cloud host 的 `validateTask`
+校验有界 `delegation`（未知字段、重复、缺失字段、非法字段、超限都让 task 失败），
+并由步骤 3 的委派链消费。roster 由 `index.js` 从 bot store 读取，读取失败时
+primary 按普通 bot 运行。
+
 ### 3. cloud host 委派链
 
 - `packages/dsh-rayrun-bots/cloud-host/lib/host.mjs`：
@@ -311,6 +322,23 @@ work is done; tell the user you asked the teammate.
   - 崩溃恢复：`done, phase=worker` 不重复 worker；`running, phase=worker` 不重跑、
     写 failed。
 
+已实现（2026-11-28）：`lib/host.mjs` 抽出 `runTurn`/`writeResult`，primary task 的
+`delegation` 元数据驱动单层委派。流程：解析唯一 `rayrun-delegate` 块 → 写
+`bots/<primary>/delegations/<id>.json`（running/worker）→ worker turn（roster
+instructions 构建 prompt，`approvalBotId` 指向 primary）→ 同 session 的 primary
+总结 → 原 task outbox。第一轮 primary 回复不写用户 transcript；非法/多块/自委派/
+未知目标不执行并在可见回复中说明；worker 失败、总结失败和硬 deadline（默认
+600s）都写 fallback（含 worker 结果或错误）；记录保存 `workerState`，崩溃后
+`running/worker` 只标 failed 不重跑，`done/worker` 或 `running/summary` 只补总结。
+worker approval 的 proposal 由 CLI wrapper 写到 primary，最终回复追加确定性
+approval 提示，记录状态 `waiting-approval`。总结轮通过 `approvalDisabled`
+抑制再次落卡（2026-11-28 live 发现重复卡片后补的修复）。`test/cloud-host-delegation.mjs`
+12/12、`test/cloud-host-proposal.mjs` 9/9、`test/cloud-host.mjs` 10/10。
+routine 入队的 primary task 仍不带 delegation 元数据，因此不会委派。
+live（2026-11-28，Rayrun hosted）：file-writer 委派、合盖收取、host 中途
+kill 的 fallback、delegated approval Deny+Continue 已通过；见
+[`../12-status.md`](../12-status.md) §3.1。
+
 ### 4. 本地收取最终结果与状态
 
 - `lib/cloud-host-runtime.js` 的 collect 继续返回 primary 最终 reply；task id 不变。
@@ -321,12 +349,23 @@ work is done; tell the user you asked the teammate.
   重开 poll 收最终结果；多 task/重启后 collect 游标不跳过最终 outbox，重复 poll 不
   重复 bot message。
 
+实现（2026-11-28）：本地 collect 无需改动，最终 outbox 仍使用原 primary task id；
+`cloud-host-delegation` 断言 primary transcript 只有一条最终 bot message、worker
+outbox 独立。重开 poll 与多 task 游标由现有 `session-runtime`/`cloud-host-runtime`
+测试覆盖，尚未在真实部署上跑委派后的本地重开。
+
 ### 5. 审批汇总接线
 
 - 本地 `cloud-approval-bridge` 继续按 bot 导入；primary 的 proposal 走现有路径。
 - 确认 `approvalContextFor` 对 primary 生效；Continue 后 primary 能看到结果。
 - 测试：worker approval 不写 worker proposals；primary proposal 导入；批准后本地执行；
   primary Continue；拒绝不执行。
+
+实现（2026-11-28）：`cloud-host/host.mjs` 用 `extractTurnProposal` 把 worker 的
+approval block 写成 primary 的 proposal（`approvalBotId`），worker 不落卡；本地
+bridge、executor、`approvalContextFor` 路径未改。`cloud-host-proposal` 覆盖路由，
+现有 `cloud-approval-bridge`/`approval-executor` 覆盖导入与执行；真实云端
+delegation approval 的 live E2E 未跑。
 
 ## 关键文件
 
@@ -339,7 +378,9 @@ work is done; tell the user you asked the teammate.
   （worker approval → primary proposal）
 - `packages/dsh-rayrun-bots/client.js`（primary 排序/默认/删除禁用/Setup）
 - `packages/dsh-rayrun-bots/locale/en.json`、`zh.json`（三处同步）
-- 测试：`test/superagent.mjs`、`test/cloud-host.mjs`、`test/cloud-host-runtime.mjs`、
+- 测试：`test/superagent.mjs`、`test/cloud-host.mjs`、
+  `test/cloud-host-delegation.mjs`、`test/cloud-host-proposal.mjs`、
+  `test/cloud-host-runtime.mjs`、`test/rayrun-runtime.mjs`、
   `test/session-runtime.mjs`、`test/rpc-contract.mjs`、`test/client-contract.mjs`、
   `test/locale-audit.mjs`
 
@@ -348,6 +389,8 @@ work is done; tell the user you asked the teammate.
 1. 单元/契约：
    - `node packages/dsh-rayrun-bots/test/superagent.mjs`
    - `node packages/dsh-rayrun-bots/test/cloud-host.mjs`
+   - `node packages/dsh-rayrun-bots/test/cloud-host-delegation.mjs`
+   - `node packages/dsh-rayrun-bots/test/cloud-host-proposal.mjs`
    - `node packages/dsh-rayrun-bots/test/cloud-host-runtime.mjs`
    - `node packages/dsh-rayrun-bots/test/session-runtime.mjs`
    - `node packages/dsh-rayrun-bots/test/rpc-contract.mjs`

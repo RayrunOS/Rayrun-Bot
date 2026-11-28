@@ -76,6 +76,25 @@ export function extractProposal(text, { botId, defaultMachine = '', origin = 'ch
   }
 }
 
+/**
+ * Extract a proposal for one turn. A delegated worker's proposal is routed to
+ * the primary bot and marked `delegated`; the worker never gets its own card.
+ * `suppress` strips a block without writing a proposal (the host already
+ * submitted one for this turn).
+ */
+export function extractTurnProposal(text, {
+  botId, approvalBotId = botId, defaultMachine = '', origin = 'chat', suppress = false,
+} = {}) {
+  const parsed = extractProposal(text, { botId: approvalBotId, defaultMachine, origin })
+  const approval = parsed.proposal === null || suppress ? null : {
+    botId: approvalBotId,
+    kind: parsed.proposal.action.kind,
+    machine: parsed.proposal.action.machine,
+    delegated: approvalBotId !== botId,
+  }
+  return { ...parsed, approval }
+}
+
 /** Write a proposal under `<root>/bots/<botId>/proposals/` without overwriting. */
 export function writeProposal(root, botId, proposal) {
   if (!BOT_ID.test(String(botId ?? ''))) throw new Error('proposal bot id is invalid.')

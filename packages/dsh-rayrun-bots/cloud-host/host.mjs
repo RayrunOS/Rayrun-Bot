@@ -12,7 +12,7 @@ import path from 'node:path'
 import { createCloudHost } from './lib/host.mjs'
 import { createDshAgent } from './lib/dsh-agent.mjs'
 import { buildRoutinePrompt, readBotFile } from './lib/prompt.mjs'
-import { extractProposal, writeProposal } from './lib/proposal.mjs'
+import { extractTurnProposal, writeProposal } from './lib/proposal.mjs'
 
 const root = process.env.DSH_BOT_ROOT || '/workspace/.rayrun'
 const logPath = process.env.DSH_BOT_LOG || '/workspace/.rayrun/logs/bot-host.log'
@@ -27,22 +27,33 @@ const dshAgent = process.env.DSH_BOT_AGENT === 'dsh'
 let host
 const agent = dshAgent === undefined ? undefined : async (input) => {
   const result = await dshAgent.run(input)
-  const parsed = extractProposal(result.text, {
+  const suppressed = input.approvalDisabled === true
+  const parsed = extractTurnProposal(result.text, {
     botId: input.botId,
+    approvalBotId: input.approvalBotId,
     defaultMachine: process.env.DSH_BOT_MACHINE || '',
     origin: input.origin === 'routine' ? 'background' : 'chat',
+    suppress: suppressed,
   })
-  if (parsed.proposal) {
+  let proposalWritten = false
+  if (parsed.proposal && suppressed) {
+    host?.log('proposal-suppressed', { botId: input.botId, proposalId: parsed.proposal.id })
+  } else if (parsed.proposal) {
     try {
-      writeProposal(root, input.botId, parsed.proposal)
-      host?.log('proposal', { botId: input.botId, proposalId: parsed.proposal.id })
+      writeProposal(root, parsed.approval.botId, parsed.proposal)
+      proposalWritten = true
+      host?.log('proposal', { botId: parsed.approval.botId, proposalId: parsed.proposal.id })
     } catch (error) {
-      host?.log('proposal-failed', { botId: input.botId, message: String(error?.message ?? error).slice(0, 200) })
+      host?.log('proposal-failed', { botId: parsed.approval.botId, message: String(error?.message ?? error).slice(0, 200) })
     }
   } else if (parsed.error) {
     host?.log('proposal-invalid', { botId: input.botId, message: String(parsed.error).slice(0, 200) })
   }
-  return { ...result, text: parsed.text }
+  return {
+    ...result,
+    text: parsed.text,
+    ...(proposalWritten && parsed.approval?.delegated ? { approval: parsed.approval } : {}),
+  }
 }
 const promptFor = ({ botId, task }) => {
   const bot = readBotFile(path.join(root, 'bots', botId))
@@ -56,6 +67,7 @@ host = createCloudHost({
   root,
   logPath,
   credentialPresent: Boolean(process.env.DEEPSEEK_API_KEY),
+  machine: process.env.DSH_BOT_MACHINE || '',
   promptFor,
   ...(agent === undefined ? {} : { agent }),
 })

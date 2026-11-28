@@ -410,6 +410,8 @@ export function apply(ctx, options = {}) {
         getOrigin: () => webServer?.getOrigin?.(),
         getTools: () => ctx.get?.('tools'),
         ...hostOptions,
+        getRoster: teammateRoster,
+        getPrimaryBotId: primaryBotId,
         supported: supportsRuntimeRpc(installed.version),
       })
     }
@@ -550,6 +552,34 @@ export function apply(ctx, options = {}) {
       return ctx.get?.('workspaceRegistry')
     } catch {
       return undefined
+    }
+  }
+
+  /**
+   * The account's worker roster for primary delegation. Returns an empty list
+   * on any read failure; the primary then runs as an ordinary bot.
+   */
+  function teammateRoster() {
+    if (!hasStateRoot) return []
+    try {
+      const stateRoot = resolveStateRoot({ profileDir: profileDirectory(ctx) })
+      const botStore = openBotStore(stateRoot)
+      const primaryId = ensurePrimary(botStore)?.record.botId ?? null
+      return botStore.list()
+        .filter((bot) => bot.id !== primaryId)
+        .map(({ id, name, label, instructions }) => ({ id, name, label, instructions }))
+    } catch (error) {
+      ctx.logger?.warn?.(`dsh-rayrun-bots: teammate roster unavailable (${error?.code ?? error?.message ?? error})`)
+      return []
+    }
+  }
+
+  /** The account primary's bot id, or null when it cannot be resolved. */
+  function primaryBotId() {
+    try {
+      return ensurePrimary()?.record.botId ?? null
+    } catch {
+      return null
     }
   }
 

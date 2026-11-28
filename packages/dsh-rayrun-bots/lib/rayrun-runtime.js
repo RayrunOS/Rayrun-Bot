@@ -34,8 +34,13 @@ function resultDetail(result) {
 /**
  * Compose one prompt. History stops before the turn being answered so a later
  * queued message cannot leak into this prompt; the turn text is authoritative.
+ * `roster`/`primary` add the teammate list and delegate block for the account
+ * primary only; worker prompts never contain it.
  */
-export function buildPrompt({ bot, text, history = [], messageSeq, proposalHint = false, proposalMachine = '', approvalContext = '' } = {}) {
+export function buildPrompt({
+  bot, text, history = [], messageSeq, proposalHint = false, proposalMachine = '',
+  approvalContext = '', roster = null, primary = false,
+} = {}) {
   const name = typeof bot?.name === 'string' && bot.name.trim() ? bot.name.trim() : 'the bot'
   const label = typeof bot?.label === 'string' ? bot.label.trim() : ''
   const instructions = typeof bot?.instructions === 'string' ? bot.instructions.trim() : ''
@@ -62,11 +67,27 @@ export function buildPrompt({ bot, text, history = [], messageSeq, proposalHint 
     ? 'No earlier messages.'
     : `${truncated ? '[earlier messages omitted]\n' : ''}${lines.join('\n')}`
 
+  const teammates = primary && Array.isArray(roster)
+    ? roster.filter((worker) => typeof worker?.id === 'string' && worker.id !== ''
+      && worker.id !== bot?.id && typeof worker.name === 'string' && typeof worker.label === 'string')
+    : []
+
   return [
     `You are ${name}${label ? `, ${label}` : ''}.`,
     '',
     'Instructions:',
     instructions || '(No extra instructions.)',
+    ...(teammates.length === 0 ? [] : [
+      '',
+      'Teammates:',
+      ...teammates.map((worker) => `- ${worker.id} — ${worker.name.trim()} — ${worker.label.trim()}`),
+      '',
+      'To delegate, end your reply with exactly:',
+      '```rayrun-delegate',
+      '{"bot":"<worker id>","task":"..."}',
+      '```',
+      'Only one delegation per turn. Never delegate to yourself. Handle simple tasks yourself, or when no teammate clearly matches; delegate only when one teammate clearly matches. Do not claim the delegated work is done; tell the user you asked the teammate. Do not also request approval for the same action in that turn; the teammate requests it.',
+    ]),
     '',
     'Conversation so far:',
     transcript,
