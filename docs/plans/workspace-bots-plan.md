@@ -71,6 +71,40 @@ bot"的显式动作）。
 5. **返回/切回**：保留 ADR-022 的返回 DSH 按钮；绑定不改变 DSH 的 workspace 归属或
    session 列表。
 
+## 可逆性与回退（回得来吗）
+
+第一版的设计目标是**完全可逆**：
+
+- 绑定只写 bot 的 `workspace` 引用；不修改 DSH workspace 的 `path`/`title`/`sessions`，
+  不移动/重命名目录，不删除 DSH session。
+- DSH 侧继续可用：ADR-022 的返回按钮随时回 DSH；原 workspace 的会话、文件和运行中的
+  DSH turn 都不受影响。
+- 解绑 = 删除 bot 的 `workspace` 字段；bot 回到自己的独立 workspace。bot 的
+  session/transcript/审批/云电脑不丢。
+- 受控副本（`bots/<id>/workspace/`）不写用户原目录，所以解绑不会覆盖项目文件；
+  副本默认保留，按明确清理或 TTL 删除，不自动删除用户数据。
+- 运行中任务：解绑时若 bot 有 running turn，**拒绝解绑**（fail closed，提示先等完成）；
+  不静默中断。
+- workspace 被 DSH 删除/移动、或路径不可读：绑定标记 `stale`，bot 不自动改用其他
+  目录；新 turn 失败关闭并提示，已有对话保留。
+- 回退测试：绑定 → 解绑 → DSH 会话继续；绑定 → 删 workspace → bot stale；
+  运行中解绑被拒。
+
+## 会话关系（两套 session 怎么办）
+
+第一版：**DSH session 与 bot session 并列，不合并。**
+
+- DSH workspace 的 sessions 是 DSH 原生 session，留在 DSH；绑定**不读取、不导入、
+  不改写**它们。
+- bot 的 session（`bots/<id>/session.json`、`transcript.jsonl`、云端 DSH session）
+  只在 Bots 里；解绑/回 DSH 都不影响它。
+- 同一项目目录、两套上下文：在 Bots 里聊进 bot session，在 DSH 里聊进 DSH session。
+- bot **不会自动记得项目旧对话**；UI 文案要明确这一点，不承诺“同一个聊天窗口”。
+- 后续可选（不在第一版）：
+  1. **只读导入**：把指定 DSH session 的 transcript 摘要作为 bot 参考资料，不写回 DSH。
+  2. **链接展示**：bot 详情列出 workspace 的 DSH 会话，点击跳回 DSH，不合并。
+  3. **迁移/接管**：把 DSH session 变成 bot session；双向不一致风险最大，需要单独 ADR。
+
 ## 数据模型
 
 `bot.json` 增加可选字段（schema 1，向后兼容）：
@@ -164,7 +198,7 @@ bots/<id>/workspace.json   # { schema: 1, sourceWorkspaceId, syncedAt, strategy 
 
 ## 需要用户决策
 
-1. 第一版是否就按"绑定工作目录"做，还是你要的是**历史会话迁移**？
+1. 会话关系：并列（推荐）还是只读导入/迁移？
 2. bot 与 workspace 是 **1:1**，还是允许多 bot 共享一个项目？
 3. 第一版执行上下文用**受控副本**（推荐，安全可控），还是允许 bot 直接读写用户目录？
 4. cloudHost 第一版是否需要把项目同步到云电脑，还是只做 detached？
