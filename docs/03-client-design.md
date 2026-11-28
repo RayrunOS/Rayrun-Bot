@@ -25,8 +25,9 @@
 
 - 打开 DSH 后客户端自动激活 Bots；Bots 全屏覆盖 DSH 侧栏和底栏，Rayrun Bot 是品牌，
   DSH 是宿主。不 fork、不重写 DSH core。
-- 复用 DSH 的壳、聊天、设置、locale 和插件机制；不重写聊天 UI。Bots 内不提供返回
-  DSH 的入口；Plugins、云电脑、Workspaces 等流程需要由 Bots 接管（尚未实现）。
+- 复用 DSH 的壳、聊天、设置、locale 和插件机制；不重写聊天 UI。Bots 左侧顶栏提供一个
+  返回 DSH Conversation 的小按钮（`ctx.layout.selectPanel(null)`，ADR-022）；Plugins、
+  云电脑、Workspaces 等流程仍需要由 Bots 接管（尚未实现）。
 - 只通过同源 RPC 通信：host health 走我们的 host half；Rayrun 连接和云电脑打开走
   `dsh-rayrun-computer` 的同源 RPC。客户端不直接访问 Rayrun API，也不在自己的状态里
   保存 Rayrun token 或 DeepSeek key。

@@ -43,7 +43,8 @@
     "searchPlaceholder": "搜索 Bot",
     "newBot": "新建 Bot",
     "settings": "设置",
-    "empty": "没有匹配的 Bot"
+    "empty": "没有匹配的 Bot",
+    "backToHarness": "回到 DeepSeek Harness"
   },
   "attention": {
     "needs": "待你处理",

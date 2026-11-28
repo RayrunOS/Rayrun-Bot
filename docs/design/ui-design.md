@@ -157,7 +157,8 @@ Notifications、Appearance/language。Host 行显示同源健康状态，host �
 语言行提供简体中文和 English，中文在前；选择后通过 DSH 写入 `locale.preference`，
 刷新后仍保留。Usage 经同源 RPC 读取云电脑插件的 `overview`：连接时显示余额、机时和
 机器数，未连接时显示 `Connect Rayrun to see usage.`；token 永不进入页面。Back 控件
-返回对话；Escape 同样。产品内没有返回 DSH 壳的控件（ADR-017）。朴素的行加细线分隔；
+返回对话；Escape 同样。产品内左侧顶栏有一个返回 DSH Conversation 的小按钮
+（ADR-022）。朴素的行加细线分隔；
 没有统计卡片。
 
 ### 2.7 审批（仅内联）

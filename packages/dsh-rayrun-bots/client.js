@@ -71,7 +71,8 @@ window.__ModuleLoader__.load({
     "searchPlaceholder": "Search bots",
     "newBot": "New bot",
     "settings": "Settings",
-    "empty": "No matching bots"
+    "empty": "No matching bots",
+    "backToHarness": "Back to DeepSeek Harness"
   },
   "attention": {
     "needs": "needs attention",
@@ -500,7 +501,8 @@ window.__ModuleLoader__.load({
     "searchPlaceholder": "搜索 Bot",
     "newBot": "新建 Bot",
     "settings": "设置",
-    "empty": "没有匹配的 Bot"
+    "empty": "没有匹配的 Bot",
+    "backToHarness": "回到 DeepSeek Harness"
   },
   "attention": {
     "needs": "待你处理",
@@ -1848,6 +1850,14 @@ window.__ModuleLoader__.load({
       )
     }
 
+    function BackIcon() {
+      return h(
+        'svg',
+        { width: 15, height: 15, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': 'true' },
+        h('path', { d: 'M15 5 8 12l7 7' }),
+      )
+    }
+
     function GearIcon() {
       return h(
         'svg',
@@ -2651,6 +2661,14 @@ window.__ModuleLoader__.load({
             onSetup: () => {
               patch({ screen: 'setup', setupStep: 0, flash: null, searchOpen: false })
             },
+            onBackToHarness: () => {
+              try {
+                const layout = ctx.get?.('layout') ?? ctx.layout
+                layout?.selectPanel?.(null)
+              } catch (error) {
+                ctx.logger?.warn?.(`dsh-rayrun-bots: could not return to DeepSeek Harness: ${String(error?.message ?? error)}`)
+              }
+            },
           }) : null,
           center,
           detailOn && selected ? h(Details, {
@@ -2709,7 +2727,7 @@ window.__ModuleLoader__.load({
       )
     }
 
-    function ChatList({ t, state, rows, selected, searchRef, low, connected, balance, onSearchToggle, onSearch, onSelect, onNew, onSettings, onSetup }) {
+    function ChatList({ t, state, rows, selected, searchRef, low, connected, balance, onSearchToggle, onSearch, onSelect, onNew, onSettings, onSetup, onBackToHarness }) {
       const userName = state.demo ? t('sample.user.name') : t('user.you')
       const userInitials = state.demo ? t('sample.user.initials') : t('user.youInitials')
       const setupLabel = !connected || state.bots.length === 0 ? t('setup.open') : t('sample.user.foot', { balance })
@@ -2723,6 +2741,7 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { className: 'rb-tools' },
+            h('button', { type: 'button', className: 'rb-icon', title: t('list.backToHarness'), 'aria-label': t('list.backToHarness'), onClick: onBackToHarness }, h(BackIcon)),
             h('button', { type: 'button', className: 'rb-icon', title: t('list.search'), 'aria-label': t('list.search'), 'aria-pressed': state.searchOpen ? 'true' : 'false', onClick: onSearchToggle }, h(SearchIcon)),
             h('button', { type: 'button', className: 'rb-icon', title: t('list.newBot'), 'aria-label': t('list.newBot'), onClick: onNew }, '+'),
           ),

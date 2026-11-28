@@ -43,7 +43,8 @@
     "searchPlaceholder": "Search bots",
     "newBot": "New bot",
     "settings": "Settings",
-    "empty": "No matching bots"
+    "empty": "No matching bots",
+    "backToHarness": "Back to DeepSeek Harness"
   },
   "attention": {
     "needs": "needs attention",

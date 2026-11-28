@@ -35,6 +35,7 @@
 | [ADR-019](#adr-019) | 审批执行权威 | Accepted（2026-11-23，本地 DSH host） | 云端只提案；本地审批与执行；typed allowlist；平台隔离仍用于云端凭据动作 | E1–E7/A6/A7（本地动作解阻；云提案 bridge、start/stop、denial/Continue 与 context 已 live） |
 | [ADR-020](#adr-020) | 云电脑是 agent 的安全容器 | Accepted（2026-11-26） | 容器内 `danger-full-access` 是设计；审批只覆盖离开容器的 typed 动作 | 安全文案/文档 |
 | [ADR-021](#adr-021) | 默认执行路径 | Accepted（2026-11-27） | 依赖 1.2.2+ 默认常驻 cloudHost；`cloudHost:false` 保留 detached；镜像与电脑更新随 runtime | A5, 发布 |
+| [ADR-022](#adr-022) | Bots 内返回 DSH Conversation 的入口 | Accepted（2026-11-28） | 左侧顶栏图标按钮调用 `layout.selectPanel(null)`；不改 Session、不卸载 Bots；ADR-017 的其余部分不变 | v0.1 客户端 |
 
 ## P0 — bot runtime 与审批动工前必须定
 
@@ -689,7 +690,7 @@ ADR-019 决定；云端凭据动作由 ADR-001 决定（平台隔离）。
 <a id="adr-017"></a>
 ### ADR-017 — Bots 作为默认产品表面
 
-**状态：** Accepted（2026-11-21，产品决策）.
+**状态：** Accepted（2026-11-21，产品决策；2026-11-28 返回入口部分由 ADR-022 修订）.
 
 **问题。** 客户端的运行时是 DSH 插件，但产品品牌和默认入口是什么？Bots 只是 DSH
 里的一个 panel，还是用户打开后直接进入的产品表面？
@@ -896,6 +897,36 @@ cloudHost 在用户的 Rayrun 机器上拥有 turn，任务一旦上传，本地
 §1/§2；[`04-cloud-host.md`](../04-cloud-host.md) §1；[`09-deployment.md`](../09-deployment.md)；
 [`12-status.md`](../12-status.md) §3.1；`test/rpc-contract.mjs`、
 `test/cloud-host-runtime.mjs`、`test/computer-update.mjs`。
+
+<a id="adr-022"></a>
+### ADR-022 — Bots 内返回 DSH Conversation 的入口
+
+**状态：** Accepted（2026-11-28，产品决策；修订 ADR-017 的“Bots 内不返回 DSH”部分）.
+
+**问题。** ADR-017 让 Bots 全屏覆盖 DSH 后，用户没有返回 DSH 原生 Conversation 的
+入口；需要临时使用 DSH 自己的对话时只能重新加载或改布局。是否在 Bots 内提供一个小
+入口？
+
+**选项。**
+
+1. 保持 ADR-017：不提供返回入口，所有流程由 Bots 接管。（拒绝）
+2. 左侧顶栏加一个小图标按钮，调用 `ctx.layout.selectPanel(null)` 返回 DSH
+   Conversation（选中）。
+3. 提供完整导航/切换 UI。超出范围，Plugins 等流程仍由 Bots 接管。
+
+**决策（2026-11-28）。** 采用 2：Bots 左侧顶栏（搜索/新建旁）提供一个返回 DSH
+Conversation 的图标按钮。它只调用 DSH 的 layout 服务 `selectPanel(null)`，不改变当前
+Session、不卸载 Bots、不改变 bot/runtime/审批状态；再次点侧栏 Bots 可返回。没有 layout
+服务时点击不产生副作用，只记录 warning。ADR-017 的其余部分不变：Bots 仍是默认激活的
+产品表面和品牌；Plugins、云电脑、Workspaces 等流程仍由 Bots 接管。
+
+**后果。** 用户可以临时回到 DSH 原生对话，不影响云端 bot 或审批；这不是 in-product
+退出，也不把 DSH 变回默认入口。`03-client-design.md`、`00-product-direction.md` D12、
+`design/ui-design.md` 与 `12-status.md` 已同步。
+
+**证据。** 用户 2026-11-28 请求；[`03-client-design.md`](../03-client-design.md) §1；
+`packages/dsh-rayrun-bots/client.js` 的 `onBackToHarness` 与 `selectPanel(null)`；
+`test/client-contract.mjs`；[`12-status.md`](../12-status.md) §3。
 
 ## 建议顺序
 
