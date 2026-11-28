@@ -38,7 +38,7 @@
 Rayrun Bot 不 vendor 云电脑层；它是独立项目、必需依赖。今天两个插件要装进同一个 DSH
 profile。S6 已验证（2026-11-24，本地 tarball）：**一条命令安装两个包**会同时选中
 两个 bundle；只安装 `dsh-rayrun-bots` 即使它声明依赖，也只会安装依赖包、
-不会自动启用依赖的 bundle。两个包都已发布到 npm：`dsh-rayrun-bots@0.1.1-alpha.1`
+不会自动启用依赖的 bundle。两个包都已发布到 npm：`dsh-rayrun-bots@0.1.1-alpha.2`
 （`alpha` tag；`latest` 仍是旧的 `0.1.0-alpha.0`）和 `dsh-rayrun-computer@1.3.1`
 （latest；`1.2.2` 起返回 machine.credentials，`1.3.0` 起有 `credentials.save`；
 `1.2.1` 及更早没有 machine.credentials，不要用于默认 cloudHost）。本机 npmmirror
@@ -47,7 +47,7 @@ profile。S6 已验证（2026-11-24，本地 tarball）：**一条命令安装�
 ```bash
 npm_config_registry=https://registry.npmjs.org \
   dsh plugin --profile web add \
-  dsh-rayrun-computer@1.3.1 dsh-rayrun-bots@0.1.1-alpha.1
+  dsh-rayrun-computer@1.3.1 dsh-rayrun-bots@0.1.1-alpha.2
 # 重启 DSH：client half 只在页面启动时加载
 ```
 
@@ -152,7 +152,7 @@ prompt 里的“先询问”只是指引。
 
 ```bash
 npm pack ./packages/dsh-rayrun-bots --pack-destination /tmp
-dsh plugin --profile web add /tmp/dsh-rayrun-bots-0.1.1-alpha.1.tgz
+dsh plugin --profile web add /tmp/dsh-rayrun-bots-0.1.1-alpha.2.tgz
 ```
 
 `node packages/dsh-rayrun-bots/test/package-contents.mjs` 用
@@ -177,9 +177,9 @@ dsh plugin --profile web add <dsh-rayrun-computer 路径或 tarball> <dsh-rayrun
 `bundles` 仍只有 `dsh-rayrun-bots`，依赖 bundle **不会自动启用**。因此不要把它
 写成“单包安装”；真正的单包安装需要 DSH 支持传递 bundle 激活，或新增 meta-package。
 
-`dsh-rayrun-bots@0.1.1-alpha.1` 已通过 `publish.yml` 发到 npm 的 `alpha` tag；
+`dsh-rayrun-bots@0.1.1-alpha.2` 已通过 `publish.yml` 发到 npm 的 `alpha` tag；
 `latest` 仍是 `0.1.0-alpha.0`，没有稳定版。依赖 `dsh-rayrun-computer@1.3.1` 在
-npm `latest`。不带版本的安装不会选中 `0.1.1-alpha.1`。用户安装命令见上文和根
+npm `latest`。不带版本的安装不会选中 `0.1.1-alpha.2`。用户安装命令见上文和根
 README；发布事实以 [`12-status.md`](12-status.md) 为准。
 
 **更新已有安装**：UI 和 host 在同一个 npm 包里，更新就是重新安装新版本并重启 DSH：
@@ -221,7 +221,7 @@ credential 创建新机，复制
 
 ## 4. v0.1 目标三分钟路径（安装、RPC 与浏览器已验证；未计时签收）
 
-1. 用一条命令安装两个包（S6 已验证；`dsh-rayrun-bots@0.1.1-alpha.1` 在 `alpha`
+1. 用一条命令安装两个包（S6 已验证；`dsh-rayrun-bots@0.1.1-alpha.2` 在 `alpha`
    tag，依赖 `1.3.1` 在 `latest`）。
 2. 登录 Rayrun 一次；向导创建云电脑。
 3. 创建 bot：名字、职责、指令、skills；它在电脑上有自己的 session。
@@ -324,7 +324,7 @@ adapter 先解析已有机器，机器不存在时拒绝；由于 `rayrun_files`
 - **`dsh-rayrun-computer` 未安装**：今天需要两个插件，并且要用一条 `dsh plugin add`
   同时安装。只装 bots 包不会启用云电脑 bundle。缺少它，bot 层依赖的云工具不存在。
 - **`npm i dsh-rayrun-bots` 不是这条安装路径**：不带版本时 npm 给出 `latest`，目前仍是
-  `0.1.0-alpha.0`，不是 `0.1.1-alpha.1`。`npm install` 也不会把 bundle 选进 DSH
+  `0.1.0-alpha.0`，不是 `0.1.1-alpha.2`。`npm install` 也不会把 bundle 选进 DSH
   profile。用上文的 `dsh plugin add`，并写上两个包的版本。
 
 每个错误应该给一句可执行提示，不给假成功；审批相关失败一律拒绝。
@@ -355,7 +355,7 @@ CI（`.github/workflows/checks.yml`）在 push/PR 上、Node 24 和 26 上跑语
 不兼容的包并恢复 profile，组合预检也会禁用不兼容的 row。该矩阵不覆盖云电脑插件，也不发真实
 Rayrun 调用。实时集成测试仍需要真实 Rayrun 凭据，不在 CI 运行；唯一的例外是下面
 可选、main-only 的部署 job。npm 发布走 `.github/workflows/publish.yml`（GitHub
-Release），不在本 workflow 里；`alpha` 当前是 `0.1.1-alpha.1`，`latest` 仍是
+Release），不在本 workflow 里；`alpha` 当前是 `0.1.1-alpha.2`，`latest` 仍是
 `0.1.0-alpha.0`。release checklist 见
 [`plans/mvp-plan.md`](plans/mvp-plan.md) §12。v1.0 桌面发行版采用 B1 预配置 DSH
 发行包（bootstrap 安装器），B2 整包更新是升级路径；见

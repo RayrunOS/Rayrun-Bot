@@ -865,6 +865,24 @@
     live machines=0。截图 `/tmp/bot/signoff-zero-created.png`、
     `signoff-zero-first-run.png`、`signoff-zero-cloudhost-reopen.png`。
 
+- 生产 npm 产物签收（2026-11-28，同一 `sys520084` 零机器账号，`0.1.1-alpha.2`
+  由 `publish.yml` 发布到 npm `alpha` tag，run `46085724676`；`latest` 仍为
+  `0.1.0-alpha.0`）：全新 `DSH_HOME` + 冷 pnpm store，一条命令从官方 registry
+  安装 `dsh-rayrun-computer@1.3.1` + `dsh-rayrun-bots@0.1.1-alpha.2`。
+  - 安装 **5.10s**；`dsh web` ready **3.59s**；页面导航到首轮回复 **34.8s**
+    （T0 `1795824327927` → T13 `1795824362688`）。
+  - Computer 步骤零机器，`Create cloud computer` 真实 `machine.create` **4.56s** →
+    `Created · rayrun-bot`（`dsh-bot@1`）；first bot `Signoff Npm`，首轮
+    `SIGNOFF_NPM_OK` 约 9.6s。
+  - 合盖：`session.send` **943ms** 返回 attach（`task-ef1eab99-…`）后 SIGKILL
+    本地 DSH；云端在停机期间写出
+    `/workspace/cloudhost-npm-20261128.txt`（`SIGNOFF_NPM_CLOUDHOST_OK`），
+    重启同一 `DSH_HOME` 后 transcript 于 00:06:28.484Z 收取，session idle。
+  - 偏差仅 localhost 反向代理与 WebDriver。测试机 `rayrun-bot`（`01a21f78…`）
+    记录后 destroy（HTTP 204）；账号 live machines=0。截图
+    `/tmp/bot/signoff-npm-created.png`、`signoff-npm-first-run.png`、
+    `signoff-npm-cloudhost-reopen.png`。
+
 > Rayrun 连接、Open、云电脑创建三条依赖层路径是通过本机 Node 直接 import
 > `dsh-rayrun-computer@1.0.0` 的 `lib/rayrun.js` 验证的，调用的是插件页面使用的同一组
 > 函数；Bots 页面层 setup/Open 与 roster 是在本机 DSH web 页面里用
@@ -898,8 +916,8 @@
   和下一轮结果 context 已 live；云端凭据动作仍未验证，仍等待平台隔离（ADR-001，
   [`08-integration.md`](08-integration.md) §3.3）。生产默认 cloudHost 首轮与合盖
   已于 2026-11-28 用 main tarball + 依赖 `1.3.1` 验证（§3.1）；随后在零机器
-  账号用本地 alpha.2 tarball 完成页面真实建机与合盖（§3.1）。仍未覆盖：npm
-  发布产物（alpha.2 未发布）。
+  账号用本地 alpha.2 tarball 完成页面真实建机与合盖（§3.1）；alpha.2 发布后
+  又从 npm 干净安装复验通过（§3.1）。剩余偏差是 localhost 代理与 WebDriver。
   本地 session store、`session.*` RPC、`rayrun_agent`/detached adapter 已有 fake
   测试；页面层真实一轮、detached 的页面关闭 + host 重启收取、同一 host 连续两轮、
   无 token 失败恢复、runtime 重建，以及三条消息排队 + 本地 DSH 崩溃恢复已在

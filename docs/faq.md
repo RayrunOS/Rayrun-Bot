@@ -51,8 +51,8 @@ key 存在 Rayrun credential 里，只注入 agent 进程；机器里的 `exec` 
 [RayrunOS/dsh-rayrun-computer](https://github.com/RayrunOS/dsh-rayrun-computer)
 项目。Rayrun Bot 把它当作外部依赖复用，不修改、不 fork、不 vendor。两个包都在
 npm 上。用**一条** `dsh plugin add` 把
-`dsh-rayrun-computer@1.2.1` 和 `dsh-rayrun-bots@0.1.1-alpha.1` 装进同一个 DSH
-profile，会同时启用两个 bundle。`0.1.1-alpha.1` 在 `alpha` tag 上；`latest` 仍是
+`dsh-rayrun-computer@1.2.1` 和 `dsh-rayrun-bots@0.1.1-alpha.2` 装进同一个 DSH
+profile，会同时启用两个 bundle。`0.1.1-alpha.2` 在 `alpha` tag 上；`latest` 仍是
 `0.1.0-alpha.0`，不带版本的安装不会选中它。只安装 Rayrun Bot 并在 `package.json`
 声明依赖，只会安装依赖包，不会自动启用依赖 bundle。命令见根 README；事实以
 [12-status.md](12-status.md) 为准（2026-11-25）。
@@ -115,7 +115,7 @@ host-only 端点（ADR-001）。云端 bot 仍应只跑在你准备失去的凭�
 
 ## 上 npm 了吗？能作为插件安装吗？
 
-在。`dsh-rayrun-bots@0.1.1-alpha.1` 在 npm 的 `alpha` tag 上，`latest` 仍是
+在。`dsh-rayrun-bots@0.1.1-alpha.2` 在 npm 的 `alpha` tag 上，`latest` 仍是
 `0.1.0-alpha.0`，没有稳定版。`dsh-rayrun-computer@1.2.1` 在 `latest`。安装不是
 不带版本的 `npm install`：用一条 `dsh plugin --profile web add` 同时装这两个
 版本，然后重启 DSH。只装 bots 包不会启用云电脑 bundle。命令和限制见根 README，

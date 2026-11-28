@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for looking. Rayrun Bot is in pre-alpha. `dsh-rayrun-bots@0.1.1-alpha.1`
+Thanks for looking. Rayrun Bot is in pre-alpha. `dsh-rayrun-bots@0.1.1-alpha.2`
 is on the npm `alpha` tag; `latest` is still `0.1.0-alpha.0`, and there is no
 stable release. Please be kind to scope —
 much of the design is still moving, and a small, correct change is easier to

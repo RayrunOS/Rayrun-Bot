@@ -52,7 +52,7 @@ versions pinned:
 ```bash
 npm_config_registry=https://registry.npmjs.org \
   dsh plugin --profile web add \
-  dsh-rayrun-computer@1.3.1 dsh-rayrun-bots@0.1.1-alpha.1
+  dsh-rayrun-computer@1.3.1 dsh-rayrun-bots@0.1.1-alpha.2
 ```
 
 Restart DSH after that. The Bots page loads when the page starts.
@@ -64,10 +64,10 @@ Then, in Bots:
 3. If the computer does not already have a DeepSeek credential, the setup step can store your key as a Rayrun credential. The key is injected into the agent process. It does not go into the workspace or the chat.
 4. Create a bot and send a message. The default roster starts empty; a `?preview=1` page shows sample bots as an in-memory demo. Samples never run on a computer.
 
-`dsh-rayrun-bots@0.1.1-alpha.1` is the npm `alpha` dist-tag. `latest` is still
+`dsh-rayrun-bots@0.1.1-alpha.2` is the npm `alpha` dist-tag. `latest` is still
 `0.1.0-alpha.0`. There is no stable release. An untagged
 `npm install dsh-rayrun-bots`, or `dsh plugin add` without these versions, does
-not select `0.1.1-alpha.1`. Installing the bots package alone does not turn on
+not select `0.1.1-alpha.2`. Installing the bots package alone does not turn on
 the computer plugin: both packages have to be in the same `dsh plugin add`.
 Pin `dsh-rayrun-computer` at `1.3.1`. Version `1.2.2` first returned machine
 credential binding names; `1.2.1` and older do not. `1.3.0` adds
