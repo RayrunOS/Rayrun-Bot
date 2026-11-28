@@ -22,6 +22,7 @@ import { createCloudRoutineBridge } from './lib/cloud-routine-bridge.js'
 import { openApprovalExecutor } from './lib/approval-executor.js'
 import { openApprovalStore } from './lib/approvals.js'
 import { openBotStore } from './lib/bots.js'
+import { openSuperagentStore } from './lib/superagent.js'
 import { createCloudHostRuntime } from './lib/cloud-host-runtime.js'
 import {
   checkDependency, supportsDetached, supportsMachineCredentials, supportsRuntimeRpc,
@@ -74,16 +75,18 @@ function profileDirectory(ctx) {
 }
 
 /** Run one roster action and return the success body. */
-function botAction(action, payload, ctx, computerFor = () => null) {
+function botAction(action, payload, ctx, { computerFor = () => null, ensurePrimary = () => null } = {}) {
   const stateRoot = resolveStateRoot({ profileDir: profileDirectory(ctx) })
   const store = openBotStore(stateRoot)
   const routines = openRoutineStore(stateRoot)
   switch (action) {
     case 'bots.list': {
+      const primary = ensurePrimary(store)
       const bots = store.list()
       return {
         ok: true,
         bots,
+        primaryBotId: primary?.record.botId ?? null,
         routines: Object.fromEntries(bots.map((bot) => [bot.id, routines.list(bot.id)])),
         computers: Object.fromEntries(bots.map((bot) => [bot.id, computerFor(bot.id)])),
       }
@@ -102,8 +105,15 @@ function botAction(action, payload, ctx, computerFor = () => null) {
       const bot = store.update(payload.id, payload.patch)
       return { ok: true, bot, routines: routines.list(bot.id) }
     }
-    case 'bots.delete':
+    case 'bots.delete': {
+      const primary = ensurePrimary(store)
+      if (primary !== null && primary.record.botId === payload.id) {
+        const error = new Error('The primary bot cannot be deleted.')
+        error.code = ERROR_CODES.primaryBotProtected
+        throw error
+      }
       return { ok: true, deleted: store.remove(payload.id) }
+    }
     default: {
       const error = new Error(`Unknown action: ${action}`)
       error.status = 404
@@ -169,6 +179,8 @@ const STATUS_BY_CODE = new Map([
   [ERROR_CODES.botUnknown, 404],
   [ERROR_CODES.botInvalid, 400],
   [ERROR_CODES.botExists, 409],
+  [ERROR_CODES.primaryBotProtected, 409],
+  [ERROR_CODES.superagentInvalid, 500],
   [ERROR_CODES.routineUnknown, 404],
   [ERROR_CODES.routineInvalid, 400],
   [ERROR_CODES.sessionInvalid, 400],
@@ -457,6 +469,17 @@ export function apply(ctx, options = {}) {
   const hasStateRoot = profileDirectory(ctx) !== undefined
     || (typeof process.env.DSH_HOME === 'string' && process.env.DSH_HOME.trim() !== '')
 
+  /**
+   * Idempotently ensure the account's primary bot and return
+   * `{ record, bot, created }`. Null when no state root is available.
+   */
+  function ensurePrimary(existingStore) {
+    if (!hasStateRoot) return null
+    const stateRoot = resolveStateRoot({ profileDir: profileDirectory(ctx) })
+    const botStore = existingStore ?? openBotStore(stateRoot)
+    return openSuperagentStore(stateRoot).ensure(botStore)
+  }
+
   ctx.inject(['webServer'], (child) => {
     webServer = child.webServer
     child.effect(() =>
@@ -526,7 +549,7 @@ export function apply(ctx, options = {}) {
               }
               if (typeof payload?.action === 'string' && payload.action.startsWith('bots.')) {
                 try {
-                  sendJson(res, 200, botAction(payload.action, payload, ctx, computerFor))
+                  sendJson(res, 200, botAction(payload.action, payload, ctx, { computerFor, ensurePrimary }))
                 } catch (error) {
                   sendActionError(res, error)
                 }
@@ -574,6 +597,15 @@ export function apply(ctx, options = {}) {
     )
     if (hasStateRoot) {
       child.effect(() => {
+        try {
+          ensurePrimary()
+        } catch (error) {
+          try {
+            ctx.logger?.warn?.(`dsh-rayrun-bots: primary bot ensure failed: ${String(error?.message ?? error).slice(0, 200)}`)
+          } catch {
+            // Logging must not break plugin startup.
+          }
+        }
         const scheduler = routineScheduler()
         scheduler.start()
         return () => scheduler.stop()

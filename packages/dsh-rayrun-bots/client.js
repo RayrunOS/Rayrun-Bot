@@ -449,7 +449,14 @@ window.__ModuleLoader__.load({
   },
   "error": {
     "hostDown": "The bot host is not responding.",
-    "botCreate": "Could not save the bot: {message}"
+    "botCreate": "Could not save the bot: {message}",
+    "primaryProtected": "The primary bot cannot be deleted."
+  },
+  "primary": {
+    "badge": "Primary",
+    "defaultName": "Superagent",
+    "defaultLabel": "Coordinates your bots",
+    "setupHint": "This is your account's primary bot. It is pinned first and cannot be deleted."
   },
   "user": {
     "you": "You",
@@ -879,7 +886,14 @@ window.__ModuleLoader__.load({
   },
   "error": {
     "hostDown": "Bot host 没有响应。",
-    "botCreate": "无法保存 Bot：{message}"
+    "botCreate": "无法保存 Bot：{message}",
+    "primaryProtected": "主 Bot 不能删除。"
+  },
+  "primary": {
+    "badge": "主 Bot",
+    "defaultName": "Superagent",
+    "defaultLabel": "协调你的 Bot",
+    "setupHint": "这是你账户的主 Bot；它置顶显示且不能删除。"
   },
   "user": {
     "you": "你",
@@ -957,6 +971,7 @@ window.__ModuleLoader__.load({
 .rb-preview-pill { padding: 1px 7px; border: 1px solid #d8e3f5; border-radius: 999px; background: #eef4ff; color: #1d4ed8; font-size: 10.5px; font-weight: 600; line-height: 1.7; letter-spacing: .02em; }
 .rb-demo-banner { margin: 0 10px 8px; padding: 7px 10px; border: 1px solid #f1d9b5; border-radius: 8px; background: #fff8ec; color: #92400e; font-size: 11.5px; line-height: 1.45; }
 .rb-sample-chip { padding: 0 5px; border: 1px solid #d8e3f5; border-radius: 999px; background: #eef4ff; color: #1d4ed8; font-size: 9.5px; font-weight: 600; line-height: 1.6; letter-spacing: .02em; }
+.rb-primary-tag { padding: 0 5px; border: 1px solid #f0d7a8; border-radius: 999px; background: #fff7e8; color: #8a5a00; font-size: 9.5px; font-weight: 600; line-height: 1.6; letter-spacing: .02em; }
 .rb-mark { flex: none; }
 .rb-tools { display: flex; gap: 4px; }
 .rb-icon { width: 28px; height: 28px; border: 0; border-radius: 8px; background: transparent; color: #5b6472; display: grid; place-items: center; padding: 0; }
@@ -1261,11 +1276,15 @@ window.__ModuleLoader__.load({
     }
 
     /** Map one host roster entry to the client's bot shape; its session comes from the host. */
-    function realBot(bot, routines = [], computer = null) {
+    function realBot(bot, routines = [], computer = null, primaryBotId = null) {
+      const primary = primaryBotId !== null && bot.id === primaryBotId
       return {
         id: bot.id,
         name: bot.name,
         job: bot.label,
+        instructions: typeof bot.instructions === 'string' ? bot.instructions : '',
+        primary,
+        primaryDefault: primary && bot.name === 'Superagent' && bot.label === 'Coordinates your bots',
         source: 'real',
         computer,
         attention: null,
@@ -1744,10 +1763,12 @@ window.__ModuleLoader__.load({
     }
 
     function botName(bot, t) {
+      if (bot.primaryDefault) return t('primary.defaultName')
       return bot.name || t(bot.nameKey)
     }
 
     function botJob(bot, t) {
+      if (bot.primaryDefault) return t('primary.defaultLabel')
       return bot.job || (bot.jobKey ? t(bot.jobKey) : '')
     }
 
@@ -2065,14 +2086,17 @@ window.__ModuleLoader__.load({
           try {
             const body = await hostRpc('bots.list')
             const bots = Array.isArray(body.bots) ? body.bots : []
+            const primaryBotId = typeof body.primaryBotId === 'string' ? body.primaryBotId : null
             if (cancelled) return
             setState((current) => {
               if (DEMO_PREVIEW) return current
               if (bots.length === 0) return { ...current, bots: [], selectedId: null, demo: false }
-              const roster = bots.map((bot) => realBot(bot, body.routines?.[bot.id], body.computers?.[bot.id]))
+              const roster = bots
+                .map((bot) => realBot(bot, body.routines?.[bot.id], body.computers?.[bot.id], primaryBotId))
+                .sort((a, b) => Number(b.primary) - Number(a.primary))
               const selectedId = roster.some((bot) => bot.id === current.selectedId)
                 ? current.selectedId
-                : roster[0].id
+                : (roster.find((bot) => bot.primary)?.id ?? roster[0].id)
               return { ...current, bots: roster, selectedId, demo: false }
             })
           } catch {
@@ -2409,7 +2433,41 @@ window.__ModuleLoader__.load({
           tab: 'activity',
           flash: null,
           focusComposer: true,
-          bots: [...current.bots.filter((item) => item.source === 'real'), realBot(bot)],
+          bots: [...current.bots.filter((item) => item.source === 'real'), realBot(bot)]
+            .sort((a, b) => Number(b.primary) - Number(a.primary)),
+        }))
+      }
+
+      const savePrimary = async (draft) => {
+        const primary = state.bots.find((bot) => bot.primary)
+        if (!primary) {
+          await createBot(draft)
+          return
+        }
+        const name = draft.name.trim()
+        if (!name) return
+        const job = draft.job.trim()
+        const instructions = draft.instructions.trim() || t('persona.template', { name, job: job || '…' })
+        const body = await hostRpc('bots.update', { id: primary.id, patch: { name, label: job, instructions } })
+        const bot = body.bot
+        if (!bot || typeof bot.id !== 'string') throw new Error('bots.update returned no bot')
+        setState((current) => ({
+          ...current,
+          screen: 'chat',
+          selectedId: primary.id,
+          flash: null,
+          focusComposer: true,
+          bots: current.bots.map((item) => item.id === primary.id
+            ? {
+              ...item,
+              name: bot.name,
+              job: bot.label,
+              instructions: typeof bot.instructions === 'string' ? bot.instructions : item.instructions,
+              primaryDefault: item.primaryDefault
+                && bot.name === 'Superagent'
+                && bot.label === 'Coordinates your bots',
+            }
+            : item),
         }))
       }
 
@@ -2605,6 +2663,8 @@ window.__ModuleLoader__.load({
         machine: machineFor(selected),
         onStop: stopComputer,
         onCreate: createBot,
+        primary: state.bots.find((bot) => bot.primary) || null,
+        onSavePrimary: savePrimary,
         onScreen: openScreen,
         onSetupStep: (setupStep) => patch({ setupStep }),
         onFlash: flash,
@@ -2762,7 +2822,7 @@ window.__ModuleLoader__.load({
           'div',
           { className: 'rb-current' },
           h(Avatar, { size: 'big', name: botName(selected, t) }),
-          h('div', { className: 'rb-name' }, botName(selected, t), state.demo ? h('span', { className: 'rb-sample-chip' }, t('preview.sample')) : null),
+          h('div', { className: 'rb-name' }, botName(selected, t), selected.primary ? h('span', { className: 'rb-primary-tag' }, t('primary.badge')) : null, state.demo ? h('span', { className: 'rb-sample-chip' }, t('preview.sample')) : null),
           h('div', { className: 'rb-label' }, attentionText(selected, t) ? `${botJob(selected, t)} · ${attentionText(selected, t)}` : botJob(selected, t)),
         ) : h(
           'div',
@@ -2794,6 +2854,7 @@ window.__ModuleLoader__.load({
                   'div',
                   { className: 'rb-nm' },
                   name,
+                  bot.primary ? h('span', { className: 'rb-primary-tag' }, t('primary.badge')) : null,
                   bot.sample ? h('span', { className: 'rb-sample-chip' }, t('preview.sample')) : null,
                   bot.attention ? h('span', { className: `rb-dot rb-${bot.attention}`, title: attention }) : null,
                 ),
@@ -3485,6 +3546,8 @@ window.__ModuleLoader__.load({
           onStep: ctx.onSetupStep,
           onClose: () => ctx.onScreen('chat'),
           onCreate: ctx.onCreate,
+          primary: ctx.primary ?? null,
+          onSavePrimary: ctx.onSavePrimary,
           onFlash: ctx.onFlash,
         })
       }
@@ -3579,10 +3642,14 @@ window.__ModuleLoader__.load({
       )
     }
 
-    function SetupScreen({ t, step, flash, host, onRetryHost, onStep, onClose, onCreate, onFlash }) {
-      const [name, setName] = useState(() => t('newBot.defaultName'))
-      const [job, setJob] = useState(() => t('newBot.defaultJob'))
-      const [instructions, setInstructions] = useState('')
+    function SetupScreen({ t, step, flash, host, onRetryHost, onStep, onClose, onCreate, primary = null, onSavePrimary, onFlash }) {
+      const [name, setName] = useState(() => (
+        primary?.primaryDefault ? t('primary.defaultName') : primary?.name || t('newBot.defaultName')
+      ))
+      const [job, setJob] = useState(() => (
+        primary?.primaryDefault ? t('primary.defaultLabel') : primary?.job || t('newBot.defaultJob')
+      ))
+      const [instructions, setInstructions] = useState(() => primary?.instructions || '')
       const tokenRef = useRef(null)
       const keyRef = useRef(null)
       const [tokenBusy, setTokenBusy] = useState(false)
@@ -3660,7 +3727,11 @@ window.__ModuleLoader__.load({
         }
         setCreating(true)
         try {
-          await onCreate({ name, job, instructions })
+          if (primary && typeof onSavePrimary === 'function') {
+            await onSavePrimary({ name, job, instructions })
+          } else {
+            await onCreate({ name, job, instructions })
+          }
         } catch (error) {
           onFlash(t('error.botCreate', { message: String(error?.message ?? error) }))
         } finally {
@@ -3875,6 +3946,7 @@ window.__ModuleLoader__.load({
               null,
               h('h2', null, t('setup.botTitle')),
               h('p', { className: 'rb-say' }, t('setup.botBody')),
+              primary ? h('p', { className: 'rb-faint' }, t('primary.setupHint')) : null,
               h(BotFields, { t, name, job, instructions, onName: setName, onJob: setJob, onInstructions: setInstructions }),
             ) : null,
             flash ? h('p', { className: 'rb-say', role: 'status', style: { color: '#b45309' } }, flash) : null,

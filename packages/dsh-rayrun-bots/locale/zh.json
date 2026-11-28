@@ -421,7 +421,14 @@
   },
   "error": {
     "hostDown": "Bot host 没有响应。",
-    "botCreate": "无法保存 Bot：{message}"
+    "botCreate": "无法保存 Bot：{message}",
+    "primaryProtected": "主 Bot 不能删除。"
+  },
+  "primary": {
+    "badge": "主 Bot",
+    "defaultName": "Superagent",
+    "defaultLabel": "协调你的 Bot",
+    "setupHint": "这是你账户的主 Bot；它置顶显示且不能删除。"
   },
   "user": {
     "you": "你",

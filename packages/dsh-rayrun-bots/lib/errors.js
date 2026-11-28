@@ -20,6 +20,8 @@ export const ERROR_CODES = Object.freeze({
   botUnknown: 'E_BOT_UNKNOWN',
   botInvalid: 'E_BOT_INVALID',
   botExists: 'E_BOT_EXISTS',
+  primaryBotProtected: 'E_PRIMARY_BOT_PROTECTED',
+  superagentInvalid: 'E_SUPERAGENT_INVALID',
   routineUnknown: 'E_ROUTINE_UNKNOWN',
   routineInvalid: 'E_ROUTINE_INVALID',
   routineFailed: 'E_ROUTINE_FAILED',

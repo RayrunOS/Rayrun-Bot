@@ -421,7 +421,14 @@
   },
   "error": {
     "hostDown": "The bot host is not responding.",
-    "botCreate": "Could not save the bot: {message}"
+    "botCreate": "Could not save the bot: {message}",
+    "primaryProtected": "The primary bot cannot be deleted."
+  },
+  "primary": {
+    "badge": "Primary",
+    "defaultName": "Superagent",
+    "defaultLabel": "Coordinates your bots",
+    "setupHint": "This is your account's primary bot. It is pinned first and cannot be deleted."
   },
   "user": {
     "you": "You",

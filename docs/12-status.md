@@ -82,9 +82,9 @@ proposal 的卡片 **2.291s**、执行 **0.779s**、Continue→working **21ms**�
 | 区域 | 状态 |
 | --- | --- |
 | 插件加载 | `packages/dsh-rayrun-bots` 作为 DSH bundle 加载；host half 提供同源 health 动作、`bots.*` 和 `session.*` RPC；health 报告 runtime 名称与可用性。 |
-| Bots 表面 | Client half 打开即进入 Bots，渲染 v0.1 壳：聊天列表、对话、详情、新建 bot、设置向导、设置页；中英双语，以中文为主并跟随 DSH 语言。左侧顶栏的返回按钮回到 DSH Conversation（`layout.selectPanel(null)`，ADR-022），不改变 Session、不卸载 Bots。 |
+| Bots 表面 | Client half 打开即进入 Bots，渲染 v0.1 壳：聊天列表、对话、详情、新建 bot、设置向导、设置页；中英双语，以中文为主并跟随 DSH 语言。左侧顶栏的返回按钮回到 DSH Conversation（`layout.selectPanel(null)`，ADR-022），不改变 Session、不卸载 Bots。账户 primary bot 置顶、默认选中并显示 `Primary` 徽标；Setup 编辑 primary（`bots.update`），New Bot 创建 worker。 |
 | 对话与审批 | 客户端对话对真实名册 bot 读取并发送 `session.send/history/status`；示例 bot 仍走页内预览。真实 bot 的审批卡已接 host：显示 typed 动作、目标、风险和执行结果；Deny / Allow once 只写本地决定，批准后由本地 executor 执行；决定并执行结束后卡片提供 Continue bot，下一轮 prompt 带最近结果。示例 bot 卡片和设置仍是页内预览。 |
-| 本地名册 | Host half 持久化已校验的 bot 名册到 `$DSH_HOME/state/rayrun-bot/`，原子写入；聊天列表有名册时读取真实名册，新建 bot 会写回 host。 |
+| 本地名册 | Host half 持久化已校验的 bot 名册到 `$DSH_HOME/state/rayrun-bot/`，原子写入；聊天列表有名册时读取真实名册，新建 bot 会写回 host。`superagent.json` 记录每账户一个 primary bot；启动与 `bots.list` 前幂等 ensure，`bots.list` 返回 `primaryBotId`；删除 primary 返回 `E_PRIMARY_BOT_PROTECTED`。 |
 | Session 与 transcript | Host half 持久化每 bot 的 `session.json` + `transcript.jsonl`，提供 `session.send/history/status`；队列单飞、失败脱敏、host 重启后普通 running turn 标为 interrupted。依赖 1.2.2+ 默认使用常驻 `cloudHost`：本地 host 在用户的 Rayrun 机器上注册并复用 `bot-host`，每个 turn 上传一条 task，云 host 执行后从 outbox 收取；`cloudHost:false` 保留 detached 回退。依赖 1.1 使用 detached `dsh.start/status/result`：每 turn 一个 task id、每 bot 一个本地 git checkout、`reply.md` 收取，task id 持久化，host 重启后恢复 poll；页面关闭 + 本地 DSH 重启后继续，以及机器 stop/start 后的第二轮续接（A8），已在本机 DSH + 已有 Rayrun 机器验证（2026-11-22）；1.0.x 回退单轮 `rayrun_agent`。cloudHost 的 dev、hosted 单 bot 聊天和 routine E2E 已通过；旧镜像以 `E_GUESTD_OUTDATED` 失败并提示更新电脑。`session.send` 在 bot 空闲且 detached 时等云端 task attach 后才返回；收到响应后 kill 本地 DSH 的 dev 验收已通过（见 §3.1）。队列中排在运行回合后面的消息仍只在本机排队，不等待云端接受。单轮真实一轮已在本机 DSH + 已有 Rayrun 机器验证（2026-11-22）；示例 bot 仍是预览。 |
 | Routines | 每 bot 的 `routines.json` 由 host half 原子持久化；`routines.list/create/update/remove/sync` 校验标题、prompt、间隔、开关和上限。非 cloudHost 模式使用本地 `routine-scheduler`：每 30 秒检查到期项，入队普通 prompt；每 tick 每 bot 最多一条，busy 时跳过，runtime 不可用时保留 due，错过多个间隔只补一次；运行前先写 lastRunAt/nextAt claim，入队失败不重放。cloudHost 模式停用本地 scheduler，由云 host 读取镜像定义，在 `host/routines-state.json` claim nextAt 后入队 `origin: routine` task；结果写 `routine-results/`，本地 `routines.sync` 导入并被 `session.history` 合并；失败任务显示为 `E_ROUTINE_FAILED` system error。dev/test 环境的 cloudHost live E2E 已通过（2026-11-24，本地 DSH 关闭后云端执行）；生产 R-G008 已部署，hosted routine E2E 已通过（`CLOUD_ROUTINE_PROD_OK`，2026-11-24）。同一 bot 的定义 sync 串行执行，较慢的旧上传不会覆盖新定义；scheduler 在机器停止时不运行，机器停止期间改定义仍可能在上传前让旧定义先跑一次（MVP 不承诺该场景强一致）。结果文件有保留上限。cron 和事件触发未实现。客户端详情面板对真实 bot 可创建、启停、删除和显示 interval，示例 bot 仍用页内数据。 |
 | setup | Rayrun 步骤经云电脑插件的同源 RPC 接收粘贴的 token；云电脑步骤采用已有机器或经同一 RPC 创建第一台机器。cloudHost 默认时新机器使用 `dsh-bot@1`；detached 模式使用 `deepseek-harness@1`，并避开已知 shell oneshot。 |
@@ -667,6 +667,16 @@ proposal 的卡片 **2.291s**、执行 **0.779s**、Continue→working **21ms**�
     记录后 destroy（HTTP 204）；账号 live machines=0。截图
     `/tmp/bot/signoff-npm-created.png`、`signoff-npm-first-run.png`、
     `signoff-npm-cloudhost-reopen.png`。
+- 每账户 primary bot（2026-11-28，代码/测试 + 页面 smoke）：新增
+  `lib/superagent.js` 与 `$DSH_HOME/state/rayrun-bot/superagent.json`；启动和
+  `bots.list` 前幂等 ensure，默认 id `superagent`、冲突加后缀；记录指向已删除
+  bot 时重建，`bot.json` 损坏时失败关闭；`bots.delete` 返回
+  `E_PRIMARY_BOT_PROTECTED`（409）。客户端把 primary 置顶/默认选中并显示
+  `Primary` 徽标；Setup 编辑 primary（`bots.update`），不创建 worker。
+  `test/superagent.mjs` 9/9；`rpc-contract` 42/42；`client-contract`、
+  `locale-audit` 通过；临时 profile 页面 smoke：primary 置顶、删除 409、Setup
+  改名后 bot.json revision 2 且没有新增 worker。截图 `/tmp/bot/primary-bot.png`、
+  `/tmp/bot/primary-setup.png`（临时文件，不入库）。
 - 具体组合、环境和缺口以 [`10-rayrun-verification.md`](10-rayrun-verification.md)
   和 [`version-matrix.md`](version-matrix.md) 为准；未测试的组合不作承诺。
 

@@ -1,6 +1,7 @@
 # 每个账户一个 Superagent：第一版云端协调层
 
-> 状态：2026-11-28，Proposed；**未实现**。本文是计划，不是实现状态事实源；
+> 状态：2026-11-28，Proposed；步骤 1（本地 primary 身份与 onboarding）已实现，
+> 其余步骤（roster prompt、云端委派链、审批汇总）未实现。本文是计划，不是实现状态事实源；
 > 实现状态以 [`../12-status.md`](../12-status.md) 为准。
 >
 > 背景与逐条来源见 [`../research/superagent-lessons.md`](../research/superagent-lessons.md)。

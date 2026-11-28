@@ -18,6 +18,11 @@ import { openApprovalStore } from '../lib/approvals.js'
 import { openBotStore } from '../lib/bots.js'
 import { openSessionStore } from '../lib/sessions.js'
 
+// Startup ensures the primary bot. Keep that write out of the developer's ~/.dsh.
+const TEST_DSH_HOME = mkdtempSync(path.join(tmpdir(), 'rayrun-bots-rpc-home-'))
+process.env.DSH_HOME = TEST_DSH_HOME
+process.on('exit', () => rmSync(TEST_DSH_HOME, { recursive: true, force: true }))
+
 const NAME = 'rayrun-bots'
 const ROUTE = '/plugins/rayrun-bots'
 const MAX_BODY = 64 * 1024
@@ -396,11 +401,14 @@ async function waitForSession(handler, botId, predicate) {
   throw new Error(`session ${botId} did not settle`)
 }
 
-check('the roster starts empty, persists a created bot, and lists it after a reload', () => withState(async (home) => {
+check('the roster starts with the primary and persists a created worker', () => withState(async (home) => {
   const { handler } = hostFor()
   const empty = await request(handler, { action: 'bots.list' })
   assert.equal(empty.status, 200)
-  assert.deepEqual(empty.json, { ok: true, bots: [], routines: {}, computers: {} })
+  assert.equal(empty.json.primaryBotId, 'superagent')
+  assert.deepEqual(empty.json.bots.map((bot) => bot.id), ['superagent'])
+  assert.deepEqual(empty.json.routines, { superagent: [] })
+  assert.deepEqual(empty.json.computers, { superagent: null })
 
   const created = await request(handler, post('bots.create', {
     name: 'Weekly Watch',
@@ -418,7 +426,8 @@ check('the roster starts empty, persists a created bot, and lists it after a rel
 
   const roster = await request(hostFor().handler, { action: 'bots.list' })
   assert.equal(roster.status, 200)
-  assert.deepEqual(roster.json.bots, [created.json.bot])
+  assert.deepEqual(roster.json.bots.map((bot) => bot.id), ['superagent', 'weekly-watch'])
+  assert.deepEqual(roster.json.bots[1], created.json.bot)
 
   const fetched = await request(hostFor().handler, post('bots.get', { id: 'weekly-watch' }))
   assert.equal(fetched.status, 200)
@@ -435,7 +444,57 @@ check('the roster starts empty, persists a created bot, and lists it after a rel
   const deleted = await request(hostFor().handler, post('bots.delete', { id: 'weekly-watch' }))
   assert.equal(deleted.status, 200)
   assert.deepEqual(deleted.json, { ok: true, deleted: 'weekly-watch' })
-  assert.deepEqual((await request(hostFor().handler, { action: 'bots.list' })).json.bots, [])
+  assert.deepEqual(
+    (await request(hostFor().handler, { action: 'bots.list' })).json.bots.map((bot) => bot.id),
+    ['superagent'],
+  )
+}))
+
+check('the primary is pinned, protected and rebuilt after deletion', () => withState(async (home) => {
+  const { handler } = hostFor()
+  const created = await request(handler, post('bots.create', {
+    name: 'Worker', label: 'Works', instructions: 'Work.',
+  }))
+  assert.equal(created.status, 200)
+
+  const denied = await request(handler, post('bots.delete', { id: 'superagent' }))
+  assert.equal(denied.status, 409)
+  assert.equal(denied.json.error.code, 'E_PRIMARY_BOT_PROTECTED')
+  assert.equal(existsSync(path.join(home, 'state', 'rayrun-bot', 'bots', 'superagent', 'bot.json')), true)
+
+  const removed = await request(handler, post('bots.delete', { id: created.json.bot.id }))
+  assert.equal(removed.status, 200)
+
+  // Deleting the bot directory out of band is a deletion; the next list rebuilds it.
+  rmSync(path.join(home, 'state', 'rayrun-bot', 'bots', 'superagent'), { recursive: true, force: true })
+  const roster = await request(handler, { action: 'bots.list' })
+  assert.equal(roster.json.primaryBotId, 'superagent')
+  assert.deepEqual(roster.json.bots.map((bot) => bot.id), ['superagent'])
+}))
+
+check('an existing roster gains a primary without touching workers', () => withState(async (home) => {
+  const stateRoot = path.join(home, 'state', 'rayrun-bot')
+  const worker = openBotStore(stateRoot).create({ name: 'Existing Worker', label: 'Exists', instructions: 'Work.' })
+  const { handler } = hostFor()
+  const roster = await request(handler, { action: 'bots.list' })
+  assert.equal(roster.json.primaryBotId, 'superagent')
+  assert.deepEqual(roster.json.bots.map((bot) => bot.id).sort(), ['existing-worker', 'superagent'])
+  const stored = JSON.parse(readFileSync(path.join(stateRoot, 'bots', worker.id, 'bot.json'), 'utf8'))
+  assert.equal(stored.revision, 1)
+}))
+
+check('a corrupt primary record fails closed', () => withState(async (home) => {
+  const stateRoot = path.join(home, 'state', 'rayrun-bot')
+  mkdirSync(stateRoot, { recursive: true })
+  writeFileSync(path.join(stateRoot, 'superagent.json'), '{not json')
+  const reply = await request(hostFor().handler, { action: 'bots.list' })
+  assert.equal(reply.status, 500)
+  assert.equal(reply.json.error.code, 'E_SUPERAGENT_INVALID')
+}))
+
+check('startup creates the primary before any RPC', () => withState(async (home) => {
+  hostFor()
+  assert.equal(existsSync(path.join(home, 'state', 'rayrun-bot', 'superagent.json')), true)
 }))
 
 check('routines are per-bot, host-owned and validated', () => withState(async () => {
@@ -546,7 +605,9 @@ check('a cross-origin roster write is refused before it touches state', () => wi
   }, { origin: 'http://evil.example', host: '127.0.0.1:53109' }))
   assert.equal(reply.status, 403)
   assert.equal(reply.json.error.code, 'E_INTERNAL')
-  assert.equal(existsSync(path.join(home, 'state', 'rayrun-bot', 'bots')), false)
+  assert.equal(existsSync(path.join(home, 'state', 'rayrun-bot', 'bots', 'weekly-watch')), false)
+  const roster = await request(handler, { action: 'bots.list' })
+  assert.deepEqual(roster.json.bots.map((bot) => bot.id), ['superagent'])
 }))
 
 check('roster replies expose no credential shape', () => withState(async () => {
@@ -681,7 +742,7 @@ check('an unknown session action is refused before any state is touched', () => 
   const reply = await request(hostFor().handler, { action: 'session.foo' })
   assert.equal(reply.status, 404)
   assert.match(reply.json.error.message, /Unknown action/)
-  assert.equal(existsSync(path.join(home, 'state', 'rayrun-bot')), false)
+  assert.equal(existsSync(path.join(home, 'state', 'rayrun-bot', 'bots', 'superagent', 'session.json')), false)
 }))
 
 check('resumes a persisted detached task without a page RPC', () => withState(async (home) => {
