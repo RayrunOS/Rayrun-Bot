@@ -45,7 +45,7 @@ bot 层。每个 bot 有名字、职责说明、记忆和日程，住在你自�
 ```bash
 npm_config_registry=https://registry.npmjs.org \
   dsh plugin --profile web add \
-  dsh-rayrun-computer@1.3.1 dsh-rayrun-bots@0.1.1-alpha.2
+  dsh-rayrun-computer@1.3.1 dsh-rayrun-bots@0.1.1-alpha.3
 ```
 
 装完后重启 DSH。Bots 页面在页面启动时加载。
@@ -57,9 +57,9 @@ npm_config_registry=https://registry.npmjs.org \
 3. 如果这台电脑还没有 DeepSeek credential，设置步骤可以把你的 key 存成 Rayrun credential。key 注入 agent 进程，不进入工作区，也不进入聊天。
 4. 创建一个 bot 并发送一条消息。默认名册是空的；只有显式 `?preview=1` 的页面会显示示例 bot，它们只是页内演示，不会在云电脑上运行。
 
-`dsh-rayrun-bots@0.1.1-alpha.2` 在 npm 的 `alpha` dist-tag 上。`latest` 仍是
+`dsh-rayrun-bots@0.1.1-alpha.3` 在 npm 的 `alpha` dist-tag 上。`latest` 仍是
 `0.1.0-alpha.0`。没有稳定版。不带版本的 `npm install dsh-rayrun-bots`，或不带这些
-版本的 `dsh plugin add`，不会装到 `0.1.1-alpha.2`。只安装 bots 包也不会启用云电脑
+版本的 `dsh plugin add`，不会装到 `0.1.1-alpha.3`。只安装 bots 包也不会启用云电脑
 插件：两个包必须出现在同一条 `dsh plugin add` 里。云电脑插件钉在
 `dsh-rayrun-computer@1.3.1`。`1.2.2` 起才返回机器凭据绑定名，`1.2.1` 及更早没有；
 `1.3.0` 增加 `credentials.save`，`1.3.1` 是当前 `latest`。镜像站可能落后于官方

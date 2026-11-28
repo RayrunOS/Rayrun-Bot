@@ -8,8 +8,9 @@
 
 ## 1. 一句话状态
 
-Pre-alpha。`dsh-rayrun-bots@0.1.1-alpha.2` 已通过 `publish.yml` 发布到 npm，`alpha`
-dist-tag 指向它；`latest` 仍是手动发布的 `0.1.0-alpha.0`，没有稳定版。本项目依赖的
+Pre-alpha。`dsh-rayrun-bots@0.1.1-alpha.3` 已通过 `publish.yml` 发布到 npm，`alpha`
+dist-tag 指向它；`latest` 仍是手动发布的 `0.1.0-alpha.0`，没有稳定版。该版本包含
+workspace 绑定、primary/worker 委派和 cloud host 自动刷新。本项目依赖的
 云电脑插件
 [`RayrunOS/dsh-rayrun-computer`](https://github.com/RayrunOS/dsh-rayrun-computer)
 是独立、可用的项目；本仓库的 bot 层已有可加载的插件壳、持久化本地名册、本地
@@ -94,7 +95,7 @@ proposal 的卡片 **2.291s**、执行 **0.779s**、Continue→working **21ms**�
 | 电脑更新 | Settings → Bot 的电脑 显示共用电脑与当前镜像；确认后通过 host `computer.update` 换镜像：旧机改名、新机用原名称/cloudHost 时 `dsh-bot@1`（否则 `deepseek-harness@1`）/自动选中的 DeepSeek credential 创建，复制 workspace 和登录配置路径；迁移成功后销毁旧机（用户确认更新即明确请求），失败回滚；最后销毁失败时保留新机、停止旧机并报告。每次更新创建计费机器，必须显式确认。 |
 | 测试 | Host/client 名册接线、session/transcript、`rayrun_agent`/detached adapter、per-bot workspace 与审批协议由普通 Node 契约测试覆盖；客户端 session 失败路径、单轮真实一轮、页面关闭 + host 重启后的 detached 收取，以及机器 stop/start 后的第二轮续接另有本机页面 smoke。包清单、locale、RPC、客户端、名册、session、runtime、workspace、审批和 tarball 内容都有检查；cloud host 10 项、cloud host delegation 12 项、cloud host routines 8 项、DSH agent 5 项、host projection 5 项、runtime.* client 5 项、detached runtime 17 项、cloud host runtime adapter 24 项、session 23 项、dependency 14 项、computer update 9 项、RPC 契约 38 项、cloud host proposal 9 项、approval executor 7 项、cloud approval bridge 6 项、routines 16 项、cloud routine bridge 7 项、cloud routine E2E 1 项、routine results 6 项纯 Node 检查，runtime.* client 与 cloud host 另有 dev live 联调，cloudHost adapter 另有页面 E2E（手动、自动 projection 与多 bot 单 host），审批卡另有拒绝/失败关闭与 Continue 按钮的页面 E2E。Routine 页面另做本地 DSH + Firefox smoke：真实表单创建、暂停、删除并写入 routines.json（2026-11-23，无 Rayrun token），截图 `/tmp/bot/routines-ui.png`（临时文件，不入库）；本地 mode 尚未等待一次 scheduler 自动触发；cloudHost mode 的 dev live E2E 已通过（2026-11-24，见 §3.1）。2026-11-25 clean alpha.1 安装另做生产两 bot 单 host 与 headless Firefox golden/审批 Deny/Allow E2E（见 §3.1）。 |
 | 审批执行 | 协议后端（request/decision schema、canonical actionHash、TTL、幂等/重放/错 bot 负向测试、审计、`approvals.list/get/decide/propose/sync`）已实现。ADR-019（2026-11-23）把本地 DSH host 定为本地 typed 动作的审批权威与执行方：`approvals.decide` 批准后由本地 executor 执行 `rayrun.machine.start/stop/pause/resume`，先写 `executing` claim，拒绝/过期/重放/崩溃 claim 失败关闭；客户端真实卡片已接。云端 proposal bridge 已接并 live 验证：云 bot 在回复末尾输出结构化 `rayrun-approval` block，cloud host 解析后写 proposal（`propose.mjs` 保留为可选 shell 路径），本地用 `rayrun_files` 导入并去重，结果写回 `approval-results/`；机器停机时结果先落本地 outbox，下次 Running 补传。start/stop/pause/resume、denial、Continue 均真机通过。下一轮 prompt 会带最近审批结果，bot 无工具直接回答 approved/done/Running 或 denied/not_executed。本地 routine 轮次会把 `origin: routine` 传到 cloud task，云端提案标为 background 并沿用 30 分钟 TTL。其他动作和云端凭据动作仍未完成；平台隔离仍用于云端凭据（ADR-001）。云端 agent 在容器内 `danger-full-access` 是设计（ADR-020），审批不是 containment。`rayrun_agent` adapter 不拦截外部动作，prompt 指引不是安全边界。 |
-| 发布 | `dsh-rayrun-bots@0.1.1-alpha.2` 已通过 `publish.yml` 从 `v0.1.1-alpha.2` GitHub Prerelease 发布（OIDC，run `46085724676`，`_npmUser=GitHub Actions`）；npm `alpha` tag 指向 0.1.1-alpha.2，`latest` 仍是手动发布的 0.1.0-alpha.0（prerelease 不移动 latest，符合 workflow 契约）。`0.1.1-alpha.1` 是 2026-11-25 的上一版，不含 2026-11-26/27 的 UX 修复、默认 cloudHost、send acceptance 和 Issue #4/#6 修复。依赖 `dsh-rayrun-computer` 最新为 `1.3.1`（`1.2.2` 起返回 machine.credentials，`1.3.0` 起有 credentials.save；`1.2.1` 不含 RC-017）。一条 `dsh plugin add` 安装两个包的路径已用官方 registry 验证：两个 bundle 都被选中、两个插件都加载、health `ok`。只安装 bots 包即使声明依赖也不会启用依赖 bundle。2026-11-28 用官方 registry 从 alpha.2 干净安装、零机器页面建机和合盖签收通过（见 §3.1）。 |
+| 发布 | `dsh-rayrun-bots@0.1.1-alpha.3` 已通过 `publish.yml` 从 `v0.1.1-alpha.3` GitHub Prerelease 发布（OIDC，run `46102199971`，`_npmUser=GitHub Actions`；tag `9c2565d`）；npm `alpha` tag 指向 0.1.1-alpha.3，`latest` 仍是手动发布的 0.1.0-alpha.0（prerelease 不移动 latest，符合 workflow 契约）。`0.1.1-alpha.2` 是 2026-11-28 的上一版，不含 workspace 绑定、superagent 委派和 cloud host 自动刷新。依赖 `dsh-rayrun-computer` 最新为 `1.3.1`（`1.2.2` 起返回 machine.credentials，`1.3.0` 起有 credentials.save；`1.2.1` 不含 RC-017）。一条 `dsh plugin add` 安装两个包的路径已用官方 registry 验证：两个 bundle 都被选中、两个插件都加载、health `ok`。只安装 bots 包即使声明依赖也不会启用依赖 bundle。alpha.3 在干净 `HOME` 安装后完成 primary→worker 委派 live（见 §3.1）。 |
 
 ### 3.1 验证记录
 
@@ -752,6 +753,18 @@ proposal 的卡片 **2.291s**、执行 **0.779s**、Continue→working **21ms**�
   （03:11:20.765Z，带 digest）；任务 03:11:21.772Z 在新进程开始、03:11:24.470Z
   完成并回复 `REFRESH_TWO`，没有任务落在 stale pid 665 上。证据
   `/tmp/rayrun-live-refresh/evidence.json`（临时文件，不入库）。
+- 发布 `0.1.1-alpha.3`（2026-11-28）：GitHub prerelease `v0.1.1-alpha.3`
+  （tag `9c2565d`）触发 `publish.yml` run `46102199971`，2m12s 成功；npm
+  `alpha` 指向 `0.1.1-alpha.3`，`latest` 仍为 `0.1.0-alpha.0`。干净 `HOME` 从
+  官方 registry 安装 `dsh-rayrun-computer@1.3.1` +
+  `dsh-rayrun-bots@0.1.1-alpha.3`；profile 合成两个 bundle，health 报
+  `version=0.1.1-alpha.3`、依赖 `1.3.1` ok、`rayrun-cloud-host` available。
+  用该 npm 产物在 Rayrun hosted `sys520084` 跑 primary→file-writer 委派：
+  `session.send` 6192ms，delegation-start `03:22:34.354Z` → delegation-done
+  `03:22:47.540Z`（task-done `03:22:51.690Z`），`/workspace/npm-alpha3.txt`
+  内容 `NPM_ALPHA3_OK`，delegation record done/phase summary。测试机
+  `rayrun-bot-alpha3-20261128` destroy，live machines=0。证据
+  `/tmp/rayrun-alpha3-smoke/evidence.json`（临时文件，不入库）。
 - 具体组合、环境和缺口以 [`10-rayrun-verification.md`](10-rayrun-verification.md)
   和 [`version-matrix.md`](version-matrix.md) 为准；未测试的组合不作承诺。
 
@@ -793,7 +806,7 @@ proposal 的卡片 **2.291s**、执行 **0.779s**、Continue→working **21ms**�
   `.gitignore` 忽略，且从未进入 git 历史或 npm 包，但仍留在工作区；需轮换并
   移出/删除后才能声称 A11 通过。扫描未打印任何值。
 - IM 通道。
-- 稳定版发布：`0.1.1-alpha.2` 在 npm `alpha` tag（`latest` 仍是
+- 稳定版发布：`0.1.1-alpha.3` 在 npm `alpha` tag（`latest` 仍是
   `0.1.0-alpha.0`）；稳定版需要单独决策和一次完整验收。
 - CI deploy job **暂时停用**（`if: false`）：2026-11-25 两次真实运行
   （`45626382460`、`45628656084`）已证明 token、创建/复用 sandbox、启动、上传和

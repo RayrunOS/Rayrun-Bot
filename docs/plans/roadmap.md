@@ -1,6 +1,6 @@
 # 路线图
 
-*状态：2026-11-25。Pre-alpha。两个独立项目：云电脑插件
+*状态：2026-11-28。Pre-alpha。两个独立项目：云电脑插件
 `RayrunOS/dsh-rayrun-computer` 保持独立，并作为依赖被消费。下面的里程碑来自塑造本
 仓库的产品调研；它们是方向，不是承诺。v0.1 客户端壳、health 路由、持久化本地名册
 和按轮次的 runtime（依赖 1.1+ 用 detached，1.0.x 用单轮 `rayrun_agent`）已经存在；
@@ -10,14 +10,13 @@ start/stop/pause/resume）与云提案 bridge 已有预览；真实 cloud propos
 start/stop/pause/resume、denial/Continue 与下一轮 context 已 live。本地最小
 routines 与 cloudHost 云端调度已实现，生产单 bot routine E2E 已通过。干净 npm
 安装（`0.1.1-alpha.1`）已跑通 cloudHost、真实浏览器 golden 与审批 Deny/Allow。
-v0.1 的主要验收路径已打通；剩余是三分钟计时签收、A11 key 轮换、稳定版决策和更广
-动作集。实现状态以
+v0.1 的主要验收路径已打通；剩余是 A11 key 轮换、稳定版决策和更广动作集。实现状态以
 [12-status.md](../12-status.md) 为准。日期刻意省略。*
 
 ## 我们在哪（M0 — bootstrap）
 
 仓库已经存在，规则和文档已经写下，产品页描述目标与当前状态。已有 npm 预发布版
-`0.1.1-alpha.1`，没有稳定版；v0.1 尚未退出。
+`0.1.1-alpha.3`，没有稳定版；v0.1 尚未退出。
 
 退出标准：
 
