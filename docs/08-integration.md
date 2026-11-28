@@ -191,6 +191,9 @@ Continue、pause/resume → 下一轮结果 context）；云端凭据动作仍�
 并记录；用户决定经平台端点到达 host；超时/未知状态拒绝。证据记录在
 [`10-rayrun-verification.md`](10-rayrun-verification.md) 或平台答复记录中。
 
+**Handoff（2026-11-28）。** 以上需求已作为 issue 提交：
+[`RayrunOS/RayrunOS#2`](https://github.com/RayrunOS/RayrunOS/issues/2)。
+
 本地 typed 动作不走这个平台端点，其验收见 [`12-status.md`](12-status.md) 和
 [`05-approvals.md`](05-approvals.md) §9；平台隔离仍只用于云端凭据动作。
 
