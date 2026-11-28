@@ -105,6 +105,38 @@ bot"的显式动作）。
   2. **链接展示**：bot 详情列出 workspace 的 DSH 会话，点击跳回 DSH，不合并。
   3. **迁移/接管**：把 DSH session 变成 bot session；双向不一致风险最大，需要单独 ADR。
 
+## 与 Superagent 的关系
+
+两者共享同一套 bot/session/cloudHost/审批模型，是同一演进线的两个层次，不是两个
+平行产品：
+
+- **superagent 解决“谁安排工作”**：账户级 primary + worker roster + 云端单层委派。
+- **workspace 化解决“worker 在哪个项目里工作”**：bot 的项目目录上下文。
+
+衔接约定（第一版）：
+
+1. workspace 是 **bot 的属性**（`bot.json.workspace`）；primary 和 worker 使用同一个
+   bot 模型，不新增与 bot 并列的第二套“工作区对象”。
+2. **primary 默认不绑定 workspace**：primary 是协调者，简单任务在自己的云端 workspace
+   直接做；具体项目交给 worker。后续需要再单独决策 primary 是否绑定默认项目。
+3. **同一 workspace 第一版只绑定一个 bot**（1:1），避免两个 worker 同时写同一个受控
+   副本；与本文的 1:1 约束一致。
+4. superagent 的 roster 可带 workspace 元数据（id/title），只用于 primary 的委派判断；
+   委派块仍只传 bot id + task，workspace 路径由 cloud host 从 bot 定义解析，不能由
+   primary 自由指定。
+5. delegation record 记录 `targetBotId`（可选 `workspaceId`），不记录 workspace 内容；
+   DSH session、bot session、delegation record 是三层并列的审计，不合并。
+6. 审批语义不变：workspace 化不引入新的授权边界；worker 的审批仍由 host 生成并汇总
+   到 primary（ADR-019/ADR-022）。
+
+演进顺序（无硬依赖，可串行）：
+
+- 推荐先做 superagent 步骤 1（本地 primary 身份/roster），再做 workspace 绑定，最后
+  接 superagent 的委派链；workspace 不阻塞 superagent。
+- 或者先把 workspace 绑定落地（bot 模型变更小、可逆），superagent 的 roster 直接
+  继承 workspace 元数据。
+- 两者都完成后再进入任务系统（Ticket/Report）和多 worker；Rayrun 串行队列不变。
+
 ## 数据模型
 
 `bot.json` 增加可选字段（schema 1，向后兼容）：

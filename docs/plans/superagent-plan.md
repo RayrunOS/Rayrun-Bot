@@ -192,6 +192,9 @@ work is done; tell the user you asked the teammate.
 - primary task 的元数据包含 `delegation` 配置：`primary` 标记和 worker roster
   （id/name/label/instructions）。roster 只用于 cloud host 构建 worker prompt，不全部
   注入 primary prompt（primary 只看 id/name/label）。
+- worker 可绑定 DSH workspace（见 [`workspace-bots-plan.md`](workspace-bots-plan.md)）；
+  roster 可带 workspace id/title 供 primary 判断，但路径由 cloud host 从 bot 定义
+  解析。第一版 primary 不绑定 workspace，同一 workspace 只绑定一个 worker。
 - roster/task 大小设上限（例如 8 个 worker、总 64 KiB）；超限失败关闭，并提示减少
   worker/指令长度。不能把任意大的 bot 定义塞进任务。
 - cloud host 解析 primary 最终回复中的唯一块：
