@@ -4,8 +4,11 @@
  *   node test/host-projection.mjs
  */
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import { HOST_ASSET_VERSION, hostAssetFiles, hostAssetManifest, projectHost } from '../lib/host-projection.js'
 import { ERROR_CODES } from '../lib/errors.js'
+
+const PACKAGE_VERSION = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version
 
 const checks = []
 const check = (name, fn) => checks.push({ name, fn })
@@ -38,7 +41,7 @@ check('the package ships the host files and a deterministic manifest', () => {
   assert.equal(manifest.schema, 1)
   assert.equal(manifest.version, '1.2.3')
   assert.deepEqual(manifest.files.map((file) => file.path), files.map((file) => file.path))
-  assert.equal(HOST_ASSET_VERSION, '0.1.1-alpha.1')
+  assert.equal(HOST_ASSET_VERSION, PACKAGE_VERSION)
 })
 
 check('projects the files once and then serves them from the verified cache', async () => {

@@ -4,13 +4,15 @@
  *   node test/cloud-host-runtime.mjs
  */
 import assert from 'node:assert/strict'
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { openApprovalStore } from '../lib/approvals.js'
 import { openBotStore } from '../lib/bots.js'
 import { createCloudHostRuntime, hostRuntimeName } from '../lib/cloud-host-runtime.js'
 import { ERROR_CODES } from '../lib/errors.js'
+
+const PACKAGE_VERSION = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version
 
 const checks = []
 const check = (name, fn) => checks.push({ name, fn })
@@ -195,8 +197,8 @@ check('projects the host assets before starting when no override is set', async 
   await runtime.start({ bot, text: 'hello', messageSeq: 1, botId: bot.id, stateRoot: root })
   const hostUploads = uploads.filter((item) => String(item.path).startsWith('.rayrun/host/'))
   assert.ok(hostUploads.length >= 4)
-  assert.equal(state.puts[0].spec.argv[1], '/workspace/.rayrun/host/0.1.1-alpha.1/host.mjs')
-  assert.equal(state.puts[0].spec.env.DSH_BOT_PROPOSE, '/workspace/.rayrun/host/0.1.1-alpha.1/bin/propose.mjs')
+  assert.equal(state.puts[0].spec.argv[1], `/workspace/.rayrun/host/${PACKAGE_VERSION}/host.mjs`)
+  assert.equal(state.puts[0].spec.env.DSH_BOT_PROPOSE, `/workspace/.rayrun/host/${PACKAGE_VERSION}/bin/propose.mjs`)
 })
 
 check('concurrent bots share one host setup', async () => {
