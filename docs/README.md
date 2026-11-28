@@ -33,7 +33,7 @@
 | 技术基线 | [系统架构](01-system-architecture.md)、[安全](07-security.md)、[本地状态](06-local-state.md) | 分层、边界、状态布局、威胁模型 |
 | Bot 与云端 | [Bot 模型](02-bot-model.md)、[云端 bot runtime](04-cloud-host.md)、[审批](05-approvals.md) | bot 定义、队列/session、审批语义 |
 | 客户端与设计 | [客户端设计](03-client-design.md)、[UI 设计](design/ui-design.md)、[Bot 人格](design/bot-persona.md)、[桌面发行版](design/desktop-distribution.md)、[mockups](mockups) | 表面、RPC、视觉规范、bot 身份、v1.0 桌面 B1/B2 方案 |
-| 计划与验收 | [MVP 计划](plans/mvp-plan.md)、[Vault 方案](plans/vault-plan.md)、[Superagent 计划](plans/superagent-plan.md)、[v0.1 验收记录](plans/v0.1-acceptance.md)、[客户端计划](plans/client-plan.md) | v0.1 工作分解、Vault 联合设计、每账户 primary/委派的第一版计划、A1–A12 当前证据与缺口、客户端交付 |
+| 计划与验收 | [MVP 计划](plans/mvp-plan.md)、[Vault 方案](plans/vault-plan.md)、[Superagent 计划](plans/superagent-plan.md)、[工作区 Bot 化计划](plans/workspace-bots-plan.md)、[v0.1 验收记录](plans/v0.1-acceptance.md)、[客户端计划](plans/client-plan.md) | v0.1 工作分解、Vault 联合设计、每账户 primary/委派的第一版计划、DSH workspace 绑定 bot、A1–A12 当前证据与缺口、客户端交付 |
 | 平台集成 | [集成与平台需求](08-integration.md)、[dsh-rayrun-computer 问题登记](11-dsh-rayrun-computer-issues.md) | 依赖契约、平台能力与优先级；依赖自身问题的证据、workaround 与上游修复方向 |
 | 状态与验证 | [实现状态](12-status.md)、[Rayrun 验证与缺口](10-rayrun-verification.md) | 实现状态事实源；测试资源政策、Rayrun 验证路径、缺口登记 |
 | 部署与操作 | [部署与运行](09-deployment.md)、[版本矩阵](version-matrix.md) | 安装、配置、检查、故障处理；DSH × 依赖 × 包的已验证组合 |
@@ -87,6 +87,7 @@ ADR-014 已定为 B1，属于 v1.0，不阻塞 v0.1。
 | --- | --- | --- |
 | [MVP 计划](plans/mvp-plan.md) | A1–A12 验收、B/C/D/E 工作流 | §2、§5、§6 |
 | [Superagent 计划](plans/superagent-plan.md) | 每账户 primary、云端委派、审批汇总均未实现 | 全文 |
+| [工作区 Bot 化计划](plans/workspace-bots-plan.md) | DSH Workspace 与 bot 的绑定、执行上下文与安全边界均未实现 | 全文 |
 | [客户端计划](plans/client-plan.md) | C-S1–C-S6 spike 与客户端接线 | Week 0、交付波次 |
 | [集成与平台需求](08-integration.md) | 会话/常驻 runtime、余额护栏 | §3 |
 | [架构决策](adr/architecture-decisions.md) | ADR-001–ADR-019 | 本文 §3 |
