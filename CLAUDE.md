@@ -138,6 +138,7 @@ node packages/dsh-rayrun-bots/test/session-runtime.mjs
 node packages/dsh-rayrun-bots/test/routines.mjs
 node packages/dsh-rayrun-bots/test/routine-results.mjs
 node packages/dsh-rayrun-bots/test/superagent.mjs
+node packages/dsh-rayrun-bots/test/workspace-bind.mjs
 node packages/dsh-rayrun-bots/test/cloud-host-routines.mjs
 node packages/dsh-rayrun-bots/test/cloud-routine-bridge.mjs
 node packages/dsh-rayrun-bots/test/cloud-routine-e2e.mjs
@@ -194,6 +195,7 @@ node tools/rayrun-deploy/test/contract.mjs
 | `node packages/dsh-rayrun-bots/test/routines.mjs` | 本地 routines：schema/上限、到期选择、busy/失败关闭、scheduler 入队与 timer |
 | `node packages/dsh-rayrun-bots/test/routine-results.mjs` | 云端 routine 结果：校验、去重、history 合并、无 session 与损坏文件 |
 | `node packages/dsh-rayrun-bots/test/superagent.mjs` | 每账户 primary bot：幂等 ensure、已有 roster、id 冲突、缺失重建、损坏失败关闭、删除保护 |
+| `node packages/dsh-rayrun-bots/test/workspace-bind.mjs` | DSH workspace 绑定：schema、host 解析、stale、busy、无 registry 失败关闭、stale send |
 | `node packages/dsh-rayrun-bots/test/cloud-host-routines.mjs` | 云 host routine scheduler：镜像定义、claim、busy、损坏文件、结果文件 |
 | `node packages/dsh-rayrun-bots/test/cloud-routine-bridge.mjs` | 本地↔云 routine bridge：定义上传、停机不读、结果导入/去重/拒绝 |
 | `node packages/dsh-rayrun-bots/test/cloud-routine-e2e.mjs` | fake 端到端：本地 routine → 云调度/队列 → 结果导入本地 history |

@@ -150,6 +150,7 @@ export function createRayrunDetachedRuntime({ getOrigin, getTools, fetchImpl = g
     contract: RUNTIME_CONTRACT_VERSION,
     name: 'rayrun-detached',
     detached: true,
+    usesLocalWorkspace: true,
     get available() {
       return Boolean(getOrigin?.())
     },
@@ -162,7 +163,7 @@ export function createRayrunDetachedRuntime({ getOrigin, getTools, fetchImpl = g
         image: rememberedImage,
         computer: rememberedComputer,
       })
-      const localDir = ensureBotWorkspace(stateRoot, botId, { name: bot?.name })
+      const localDir = ensureBotWorkspace(stateRoot, botId, { name: bot?.name, workspace: bot?.workspace })
       const objective = [
         buildPrompt({ bot, text, history, messageSeq }),
         '',

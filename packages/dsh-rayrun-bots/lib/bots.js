@@ -139,10 +139,11 @@ export function openBotStore(stateRoot) {
    * Update the editable fields of one bot and bump its revision.
    * @param {string} id
    * @param {object} patch Editable fields: name, label, avatar, instructions, skills.
-   * @param {{ now?: string | number | Date }} [options]
+   * @param {{ now?: string | number | Date, workspace?: object | null }} [options]
+   *   `workspace` is host-only: undefined keeps it, null unbinds, an object binds.
    * @returns {object}
    */
-  function update(id, patch, { now = Date.now() } = {}) {
+  function update(id, patch, { now = Date.now(), workspace } = {}) {
     if (!isObject(patch)) throw new BotValidationError('bot', 'A bot update must be a JSON object.')
     for (const key of Object.keys(patch)) {
       if (!UPDATE_FIELDS.has(key)) throw new BotValidationError(key, `${key} cannot be changed.`)
@@ -150,12 +151,15 @@ export function openBotStore(stateRoot) {
     const current = read(id)
     const at = new Date(now)
     if (Number.isNaN(at.getTime())) throw new BotValidationError('updatedAt', 'now must be a valid date.')
-    const next = validateBot({
+    const merged = {
       ...current,
       ...patch,
       updatedAt: at.toISOString(),
       revision: current.revision + 1,
-    })
+    }
+    if (workspace === null) delete merged.workspace
+    else if (workspace !== undefined) merged.workspace = workspace
+    const next = validateBot(merged)
     writeJsonAtomic(path.join(botDir(id), 'bot.json'), next)
     return next
   }

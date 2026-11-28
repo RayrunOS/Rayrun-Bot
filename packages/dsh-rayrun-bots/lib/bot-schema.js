@@ -7,6 +7,7 @@
  * silently dropped.
  */
 import { Buffer } from 'node:buffer'
+import path from 'node:path'
 import { ERROR_CODES } from './errors.js'
 
 export const BOT_SCHEMA_VERSION = 1
@@ -16,7 +17,7 @@ const ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 const CONTROL = /[\u0000-\u001f\u007f]/
 const FIELDS = new Set([
   'schema', 'id', 'name', 'label', 'avatar', 'instructions', 'skills',
-  'model', 'createdAt', 'updatedAt', 'revision', 'deletedAt',
+  'model', 'workspace', 'createdAt', 'updatedAt', 'revision', 'deletedAt',
 ])
 const CREATE_FIELDS = new Set(['id', 'name', 'label', 'avatar', 'instructions', 'skills', 'model'])
 
@@ -78,6 +79,22 @@ function skillsOf(value) {
     seen.add(skill)
     return skill
   })
+}
+
+function workspaceOf(value) {
+  if (!isObject(value)) fail('workspace', 'workspace must be an object.')
+  for (const key of Object.keys(value)) {
+    if (!['id', 'path', 'title'].includes(key)) fail('workspace', `Unknown workspace field: ${key}.`)
+  }
+  const id = text(value.id, 'workspace.id', { max: 128, oneLine: true })
+  if (typeof value.path !== 'string' || value.path === '' || !path.isAbsolute(value.path)) {
+    fail('workspace.path', 'workspace.path must be an absolute path.')
+  }
+  if (Buffer.byteLength(value.path, 'utf8') > 4096 || CONTROL.test(value.path)) {
+    fail('workspace.path', 'workspace.path is invalid.')
+  }
+  const title = text(value.title, 'workspace.title', { max: 200, oneLine: true })
+  return { id, path: value.path, title }
 }
 
 function timestampOf(value, field) {
@@ -171,6 +188,7 @@ export function validateBot(value) {
     schema: BOT_SCHEMA_VERSION, id, name, label, avatar, instructions, skills,
     model, createdAt, updatedAt, revision,
   }
+  if (value.workspace !== undefined) bot.workspace = workspaceOf(value.workspace)
   if (value.deletedAt !== undefined) bot.deletedAt = timestampOf(value.deletedAt, 'deletedAt')
   return bot
 }
@@ -179,11 +197,11 @@ export function validateBot(value) {
  * Build a new bot. The host supplies timestamps and the initial revision; a
  * localized `template` fills instructions when the user leaves them empty.
  * @param {object} input User-supplied fields: id, name, label, avatar, instructions, skills, model.
- * @param {{ now?: string | number | Date, template?: string }} [options]
+ * @param {{ now?: string | number | Date, template?: string, workspace?: object }} [options]
  * @returns {object} A validated bot definition.
  * @throws {BotValidationError} For invalid input or host-only fields.
  */
-export function createBot(input, { now = Date.now(), template } = {}) {
+export function createBot(input, { now = Date.now(), template, workspace } = {}) {
   if (!isObject(input)) fail('bot', 'A bot definition must be a JSON object.')
   for (const key of Object.keys(input)) {
     if (!CREATE_FIELDS.has(key)) fail(key, `${key} is set by the host, not by the client.`)
@@ -200,8 +218,10 @@ export function createBot(input, { now = Date.now(), template } = {}) {
   const at = new Date(now)
   if (Number.isNaN(at.getTime())) fail('createdAt', 'now must be a valid date.')
   const createdAt = at.toISOString()
-  return validateBot({
+  const bot = {
     schema: BOT_SCHEMA_VERSION, id, name, label, avatar, instructions, skills,
     model, createdAt, updatedAt: createdAt, revision: 1,
-  })
+  }
+  if (workspace !== undefined && workspace !== null) bot.workspace = workspace
+  return validateBot(bot)
 }

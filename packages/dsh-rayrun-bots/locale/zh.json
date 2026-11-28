@@ -36,7 +36,12 @@
     "machineStopped": "云电脑已停止或不可用。请在详情面板或云电脑插件里打开它，再重新发送。",
     "imageUnsupported": "这台云电脑的镜像读不到，或者不会启动 DSH worker，因此没有创建任务。请使用 deepseek-harness@1 之类的镜像。",
     "imageOutdated": "这台云电脑的镜像太旧，无法运行云端 bot host。请在设置 → Bot 更新电脑后重试。",
-    "workerNoReply": "云端 worker 结束了，但没有写 reply.md。请检查 worker session 的 provider 错误；缺少 DeepSeek 凭据（MISSING_CREDENTIAL）会导致无法回复。请添加模型凭据，或用带凭据的电脑重建。"
+    "workerNoReply": "云端 worker 结束了，但没有写 reply.md。请检查 worker session 的 provider 错误；缺少 DeepSeek 凭据（MISSING_CREDENTIAL）会导致无法回复。请添加模型凭据，或用带凭据的电脑重建。",
+    "workspaceStale": "绑定的工作区不存在或已变化。请在详情中重新绑定或解绑。",
+    "workspaceTooLarge": "绑定的工作区太大，无法复制。",
+    "workspaceInvalid": "工作区绑定无效。",
+    "workspaceUnavailable": "当前 host 不支持工作区绑定。",
+    "workspaceSync": "工作区副本同步失败。"
   },
   "list": {
     "search": "搜索",
@@ -112,7 +117,8 @@
     "upcoming": "即将进行",
     "computer": "电脑",
     "usage": "用量",
-    "jobComputer": "{job} · {computer}"
+    "jobComputer": "{job} · {computer}",
+    "workspace": "工作区"
   },
   "receipt": {
     "ready": "已就绪",
@@ -422,13 +428,25 @@
   "error": {
     "hostDown": "Bot host 没有响应。",
     "botCreate": "无法保存 Bot：{message}",
-    "primaryProtected": "主 Bot 不能删除。"
+    "primaryProtected": "主 Bot 不能删除。",
+    "workspace": "无法修改工作区：{message}"
   },
   "primary": {
     "badge": "主 Bot",
     "defaultName": "Superagent",
     "defaultLabel": "协调你的 Bot",
     "setupHint": "这是你账户的主 Bot；它置顶显示且不能删除。"
+  },
+  "workspace": {
+    "none": "不绑定工作区",
+    "bind": "绑定",
+    "unbind": "解绑",
+    "choose": "工作区",
+    "stale": "绑定的工作区不存在或已变化。重新绑定或解绑前，新的本地任务会失败。",
+    "unavailable": "当前 host 不支持工作区绑定。",
+    "noOptions": "还没有注册的 DSH 工作区。",
+    "cloudHint": "云端任务使用云电脑自己的工作区；此版本不上传本地项目。",
+    "busy": "Bot 正在运行，请等当前回合结束后再修改工作区。"
   },
   "user": {
     "you": "你",

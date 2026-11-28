@@ -4,7 +4,7 @@
  *   node test/rayrun-detached-runtime.mjs
  */
 import assert from 'node:assert/strict'
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { ERROR_CODES } from '../lib/errors.js'
@@ -119,6 +119,33 @@ check('start posts a bounded dsh.start and returns its task id', async () => {
     'No external side effect was performed.',
   ])
   assert.doesNotMatch(JSON.stringify(fetchImpl.calls), /Bearer\s|RAYRUN_TOKEN|sk-[A-Za-z0-9]{16,}/)
+})
+
+check('a bound workspace is mirrored into the local checkout before start', async () => {
+  const stateRoot = setup()
+  const source = mkdtempSync(path.join(tmpdir(), 'rayrun-bots-bound-source-'))
+  roots.push(source)
+  mkdirSync(path.join(source, 'src'), { recursive: true })
+  writeFileSync(path.join(source, 'src', 'a.txt'), 'hello')
+  writeFileSync(path.join(source, '.env'), 'SECRET=1')
+  const fetchImpl = fakeFetch()
+  const runtime = createRayrunDetachedRuntime({
+    getOrigin: () => 'http://127.0.0.1:1234',
+    fetchImpl,
+  })
+  assert.equal(runtime.usesLocalWorkspace, true)
+  const started = await runtime.start({
+    bot: {
+      id: 'bound', name: 'Bound', label: 'Bound', instructions: 'Work.',
+      workspace: { id: 'ws-1', path: source, title: 'Source' },
+    },
+    text: 'hello', history: [], messageSeq: 1, botId: 'bound', stateRoot,
+  })
+  assert.equal(readFileSync(path.join(started.localDir, 'src', 'a.txt'), 'utf8'), 'hello')
+  assert.equal(existsSync(path.join(started.localDir, '.env')), false)
+  assert.equal(readFileSync(path.join(source, 'src', 'a.txt'), 'utf8'), 'hello')
+  const startCall = fetchImpl.calls.find((call) => call.body.action === 'dsh.start')
+  assert.equal(startCall.body.local_dir, started.localDir)
 })
 
 check('status and result collect reply.md from the task directory', async () => {

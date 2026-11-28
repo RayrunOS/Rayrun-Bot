@@ -36,7 +36,12 @@
     "machineStopped": "Your cloud computer is stopped or unavailable. Open it from Details or the cloud-computer plugin, then send again.",
     "imageUnsupported": "This cloud computer image is missing or does not start a DSH worker, so no task was started. Use an image such as deepseek-harness@1.",
     "imageOutdated": "This cloud computer's image is too old for the cloud bot host. Update the computer in Settings → Bot, then send again.",
-    "workerNoReply": "The cloud worker ended without writing reply.md. Check its session for the provider error; a missing DeepSeek credential (MISSING_CREDENTIAL) prevents a reply. Add a model credential or recreate the computer with one."
+    "workerNoReply": "The cloud worker ended without writing reply.md. Check its session for the provider error; a missing DeepSeek credential (MISSING_CREDENTIAL) prevents a reply. Add a model credential or recreate the computer with one.",
+    "workspaceStale": "The bound workspace is missing or has changed. Rebind or unbind it in details.",
+    "workspaceTooLarge": "The bound workspace is too large to copy.",
+    "workspaceInvalid": "The workspace binding is invalid.",
+    "workspaceUnavailable": "Workspace binding is unavailable on this host.",
+    "workspaceSync": "The workspace copy failed."
   },
   "list": {
     "search": "Search",
@@ -112,7 +117,8 @@
     "upcoming": "Upcoming",
     "computer": "Computer",
     "usage": "Usage",
-    "jobComputer": "{job} · {computer}"
+    "jobComputer": "{job} · {computer}",
+    "workspace": "Workspace"
   },
   "receipt": {
     "ready": "Ready",
@@ -422,13 +428,25 @@
   "error": {
     "hostDown": "The bot host is not responding.",
     "botCreate": "Could not save the bot: {message}",
-    "primaryProtected": "The primary bot cannot be deleted."
+    "primaryProtected": "The primary bot cannot be deleted.",
+    "workspace": "Could not change the workspace: {message}"
   },
   "primary": {
     "badge": "Primary",
     "defaultName": "Superagent",
     "defaultLabel": "Coordinates your bots",
     "setupHint": "This is your account's primary bot. It is pinned first and cannot be deleted."
+  },
+  "workspace": {
+    "none": "No workspace",
+    "bind": "Bind",
+    "unbind": "Unbind",
+    "choose": "Workspace",
+    "stale": "The bound workspace is missing or no longer matches. New local turns will fail until you rebind or unbind.",
+    "unavailable": "Workspace binding is unavailable on this host.",
+    "noOptions": "No DSH workspaces are registered yet.",
+    "cloudHint": "Cloud turns use the computer's workspace; the local project is not uploaded in this version.",
+    "busy": "The bot is busy. Wait for the current turn before changing its workspace."
   },
   "user": {
     "you": "You",

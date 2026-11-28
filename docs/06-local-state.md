@@ -120,7 +120,8 @@ $DSH_HOME/state/rayrun-bot/
 │   │   ├── res-<id>.json    # 本地用户决定
 │   │   └── exec-<id>.json   # 本地执行 claim/结果（at-most-once）
 │   ├── approval-results/    # 待上传云端的决定/执行结果 outbox
-│   └── workspace/           # detached task 的本地 git checkout；.dsh/ 被忽略
+│   ├── workspace.json       # 绑定 workspace 的镜像元数据（源 id/path、状态、计数）
+│   └── workspace/           # detached task 的本地 git checkout；绑定 bot 每次任务前镜像；.dsh/ 被忽略
 ├── mirror/
 │   └── bots/<botId>/
 │       ├── bot.json         # 机器定义的副本（只读）
@@ -150,7 +151,8 @@ $DSH_HOME/state/rayrun-bot/
 | `bots/<id>/approvals/res-<id>.json` | 本地 host（用户决定） | 本地 executor、client | 否 | 永久 | 否（审计） |
 | `bots/<id>/approvals/exec-<id>.json` | 本地 executor（claim/结果） | host、client | 否 | 永久 | 否（审计） |
 | `bots/<id>/approval-results/<id>.json` | 本地 host（待上传云端的结果） | 本地 bridge | 否 | 上传后删除 | 否（审计） |
-| `bots/<id>/workspace/` | host（初始化）/依赖的 `dsh.start`（任务 push） | 依赖 worker | 否 | 任务生命周期 | 是（任务结果进入 transcript） |
+| `bots/<id>/workspace.json` | host（绑定/镜像） | host | 否 | 绑定生命周期 | 是（可从源重建） |
+| `bots/<id>/workspace/` | host（初始化/镜像）/依赖的 `dsh.start`（任务 push） | 依赖 worker | 否 | 任务生命周期 | 是（任务结果进入 transcript） |
 | `mirror/bots/<id>/` | host | client、host | 否 | 最近状态 | 是，从机器 |
 | `cache/*.json` | host | client、host | 否 | 上述 TTL | 是 |
 | `outbox/cursor.json` | host | client | 否 | 永久 | 是 |

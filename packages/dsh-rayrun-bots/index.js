@@ -22,6 +22,7 @@ import { createCloudRoutineBridge } from './lib/cloud-routine-bridge.js'
 import { openApprovalExecutor } from './lib/approval-executor.js'
 import { openApprovalStore } from './lib/approvals.js'
 import { openBotStore } from './lib/bots.js'
+import { resolveWorkspaceBinding, workspaceIsStale } from './lib/bot-workspace.js'
 import { openSuperagentStore } from './lib/superagent.js'
 import { createCloudHostRuntime } from './lib/cloud-host-runtime.js'
 import {
@@ -75,35 +76,74 @@ function profileDirectory(ctx) {
 }
 
 /** Run one roster action and return the success body. */
-function botAction(action, payload, ctx, { computerFor = () => null, ensurePrimary = () => null } = {}) {
+async function botAction(action, payload, ctx, {
+  computerFor = () => null,
+  ensurePrimary = () => null,
+  workspaceRegistry = () => undefined,
+  botBusy = () => false,
+} = {}) {
   const stateRoot = resolveStateRoot({ profileDir: profileDirectory(ctx) })
   const store = openBotStore(stateRoot)
   const routines = openRoutineStore(stateRoot)
+  const registry = ['bots.list', 'bots.get', 'bots.create', 'bots.update'].includes(action)
+    ? workspaceRegistry()
+    : undefined
+  const view = async (bot) => (
+    bot.workspace ? { ...bot, stale: await workspaceIsStale(bot.workspace, registry) } : bot
+  )
   switch (action) {
     case 'bots.list': {
       const primary = ensurePrimary(store)
-      const bots = store.list()
+      const bots = await Promise.all(store.list().map(view))
       return {
         ok: true,
         bots,
         primaryBotId: primary?.record.botId ?? null,
+        workspaceBinding: registry !== undefined,
         routines: Object.fromEntries(bots.map((bot) => [bot.id, routines.list(bot.id)])),
         computers: Object.fromEntries(bots.map((bot) => [bot.id, computerFor(bot.id)])),
       }
     }
     case 'bots.get': {
-      const bot = store.get(payload.id)
-      return { ok: true, bot, routines: routines.list(bot.id), computer: computerFor(bot.id) }
+      const bot = await view(store.get(payload.id))
+      return {
+        ok: true,
+        bot,
+        routines: routines.list(bot.id),
+        computer: computerFor(bot.id),
+        workspaceBinding: registry !== undefined,
+      }
     }
     case 'bots.create': {
       const input = { ...payload }
       delete input.action
-      const bot = store.create(input)
-      return { ok: true, bot, routines: [] }
+      const workspaceId = Object.hasOwn(input, 'workspaceId') ? input.workspaceId : undefined
+      delete input.workspaceId
+      const workspace = workspaceId === undefined || workspaceId === null
+        ? undefined
+        : resolveWorkspaceBinding(registry, workspaceId)
+      const bot = await view(store.create(input, { workspace }))
+      return { ok: true, bot, routines: [], workspaceBinding: registry !== undefined }
     }
     case 'bots.update': {
-      const bot = store.update(payload.id, payload.patch)
-      return { ok: true, bot, routines: routines.list(bot.id) }
+      const workspaceId = Object.hasOwn(payload, 'workspaceId') ? payload.workspaceId : undefined
+      if (workspaceId !== undefined && botBusy(payload.id)) {
+        const error = new Error('The bot is busy; wait for the current turn before changing its workspace.')
+        error.code = ERROR_CODES.workspaceBusy
+        throw error
+      }
+      const workspace = workspaceId === undefined
+        ? undefined
+        : workspaceId === null
+          ? null
+          : resolveWorkspaceBinding(registry, workspaceId)
+      const bot = await view(store.update(payload.id, payload.patch ?? {}, { workspace }))
+      return {
+        ok: true,
+        bot,
+        routines: routines.list(bot.id),
+        workspaceBinding: registry !== undefined,
+      }
     }
     case 'bots.delete': {
       const primary = ensurePrimary(store)
@@ -122,7 +162,6 @@ function botAction(action, payload, ctx, { computerFor = () => null, ensurePrima
   }
 }
 
-/** Mirror a routine mutation to the cloud host without delaying the local write. */
 function syncRoutineDefinitions(service, botId) {
   if (!service.bridge) return
   void service.bridge.sync(botId).catch((error) => {
@@ -181,6 +220,13 @@ const STATUS_BY_CODE = new Map([
   [ERROR_CODES.botExists, 409],
   [ERROR_CODES.primaryBotProtected, 409],
   [ERROR_CODES.superagentInvalid, 500],
+  [ERROR_CODES.workspaceInvalid, 400],
+  [ERROR_CODES.workspaceUnknown, 404],
+  [ERROR_CODES.workspaceUnavailable, 503],
+  [ERROR_CODES.workspaceStale, 409],
+  [ERROR_CODES.workspaceBusy, 409],
+  [ERROR_CODES.workspaceTooLarge, 409],
+  [ERROR_CODES.workspaceSync, 500],
   [ERROR_CODES.routineUnknown, 404],
   [ERROR_CODES.routineInvalid, 400],
   [ERROR_CODES.sessionInvalid, 400],
@@ -205,7 +251,7 @@ function sendActionError(res, error) {
 }
 
 /** Run one session action against the bot's durable local session. */
-async function sessionAction(action, payload, getService) {
+async function sessionAction(action, payload, getService, { runtime, workspaceRegistry } = {}) {
   if (action !== 'session.send' && action !== 'session.history' && action !== 'session.status') {
     const error = new Error(`Unknown action: ${action}`)
     error.status = 404
@@ -213,6 +259,14 @@ async function sessionAction(action, payload, getService) {
   }
   const service = getService()
   const bot = service.bots.get(payload.botId)
+  if (action === 'session.send' && runtime?.usesLocalWorkspace === true && bot.workspace) {
+    const registry = workspaceRegistry?.()
+    if (registry !== undefined && await workspaceIsStale(bot.workspace, registry)) {
+      const error = new Error(`The bound workspace is missing or no longer matches: ${bot.workspace.title}.`)
+      error.code = ERROR_CODES.workspaceStale
+      throw error
+    }
+  }
   switch (action) {
     case 'session.send':
       return { ok: true, ...(await service.runner.sendAccepted(bot.id, payload.text)) }
@@ -441,7 +495,17 @@ export function apply(ctx, options = {}) {
           const state = sessions().runner.status(botId)
           return state?.state === 'running' || state?.state === 'queued'
         },
-        send: (botId, text, options) => sessions().runner.send(botId, text, options),
+        send: async (botId, text, options) => {
+          const bot = sessions().bots.get(botId)
+          const registry = workspaceRegistry()
+          if (runtime.usesLocalWorkspace === true && bot.workspace && registry !== undefined
+            && await workspaceIsStale(bot.workspace, registry)) {
+            const error = new Error(`The bound workspace is missing or no longer matches: ${bot.workspace.title}.`)
+            error.code = ERROR_CODES.workspaceStale
+            throw error
+          }
+          return sessions().runner.send(botId, text, options)
+        },
         logger: ctx.logger,
       })
     }
@@ -478,6 +542,25 @@ export function apply(ctx, options = {}) {
     const stateRoot = resolveStateRoot({ profileDir: profileDirectory(ctx) })
     const botStore = existingStore ?? openBotStore(stateRoot)
     return openSuperagentStore(stateRoot).ensure(botStore)
+  }
+
+  /** The DSH workspace registry, when the host exposes it. */
+  function workspaceRegistry() {
+    try {
+      return ctx.get?.('workspaceRegistry')
+    } catch {
+      return undefined
+    }
+  }
+
+  /** True when a session is queued or running; workspace changes wait. */
+  function botBusy(botId) {
+    try {
+      const state = sessions().runner.status(botId)
+      return state?.state === 'running' || state?.state === 'queued'
+    } catch {
+      return false
+    }
   }
 
   ctx.inject(['webServer'], (child) => {
@@ -549,7 +632,9 @@ export function apply(ctx, options = {}) {
               }
               if (typeof payload?.action === 'string' && payload.action.startsWith('bots.')) {
                 try {
-                  sendJson(res, 200, botAction(payload.action, payload, ctx, { computerFor, ensurePrimary }))
+                  sendJson(res, 200, await botAction(payload.action, payload, ctx, {
+                    computerFor, ensurePrimary, workspaceRegistry, botBusy,
+                  }))
                 } catch (error) {
                   sendActionError(res, error)
                 }
@@ -557,7 +642,7 @@ export function apply(ctx, options = {}) {
               }
               if (typeof payload?.action === 'string' && payload.action.startsWith('session.')) {
                 try {
-                  sendJson(res, 200, await sessionAction(payload.action, payload, sessions))
+                  sendJson(res, 200, await sessionAction(payload.action, payload, sessions, { runtime, workspaceRegistry }))
                 } catch (error) {
                   sendActionError(res, error)
                 }

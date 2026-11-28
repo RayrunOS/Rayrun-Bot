@@ -64,7 +64,12 @@ window.__ModuleLoader__.load({
     "machineStopped": "Your cloud computer is stopped or unavailable. Open it from Details or the cloud-computer plugin, then send again.",
     "imageUnsupported": "This cloud computer image is missing or does not start a DSH worker, so no task was started. Use an image such as deepseek-harness@1.",
     "imageOutdated": "This cloud computer's image is too old for the cloud bot host. Update the computer in Settings → Bot, then send again.",
-    "workerNoReply": "The cloud worker ended without writing reply.md. Check its session for the provider error; a missing DeepSeek credential (MISSING_CREDENTIAL) prevents a reply. Add a model credential or recreate the computer with one."
+    "workerNoReply": "The cloud worker ended without writing reply.md. Check its session for the provider error; a missing DeepSeek credential (MISSING_CREDENTIAL) prevents a reply. Add a model credential or recreate the computer with one.",
+    "workspaceStale": "The bound workspace is missing or has changed. Rebind or unbind it in details.",
+    "workspaceTooLarge": "The bound workspace is too large to copy.",
+    "workspaceInvalid": "The workspace binding is invalid.",
+    "workspaceUnavailable": "Workspace binding is unavailable on this host.",
+    "workspaceSync": "The workspace copy failed."
   },
   "list": {
     "search": "Search",
@@ -140,7 +145,8 @@ window.__ModuleLoader__.load({
     "upcoming": "Upcoming",
     "computer": "Computer",
     "usage": "Usage",
-    "jobComputer": "{job} · {computer}"
+    "jobComputer": "{job} · {computer}",
+    "workspace": "Workspace"
   },
   "receipt": {
     "ready": "Ready",
@@ -450,13 +456,25 @@ window.__ModuleLoader__.load({
   "error": {
     "hostDown": "The bot host is not responding.",
     "botCreate": "Could not save the bot: {message}",
-    "primaryProtected": "The primary bot cannot be deleted."
+    "primaryProtected": "The primary bot cannot be deleted.",
+    "workspace": "Could not change the workspace: {message}"
   },
   "primary": {
     "badge": "Primary",
     "defaultName": "Superagent",
     "defaultLabel": "Coordinates your bots",
     "setupHint": "This is your account's primary bot. It is pinned first and cannot be deleted."
+  },
+  "workspace": {
+    "none": "No workspace",
+    "bind": "Bind",
+    "unbind": "Unbind",
+    "choose": "Workspace",
+    "stale": "The bound workspace is missing or no longer matches. New local turns will fail until you rebind or unbind.",
+    "unavailable": "Workspace binding is unavailable on this host.",
+    "noOptions": "No DSH workspaces are registered yet.",
+    "cloudHint": "Cloud turns use the computer's workspace; the local project is not uploaded in this version.",
+    "busy": "The bot is busy. Wait for the current turn before changing its workspace."
   },
   "user": {
     "you": "You",
@@ -501,7 +519,12 @@ window.__ModuleLoader__.load({
     "machineStopped": "云电脑已停止或不可用。请在详情面板或云电脑插件里打开它，再重新发送。",
     "imageUnsupported": "这台云电脑的镜像读不到，或者不会启动 DSH worker，因此没有创建任务。请使用 deepseek-harness@1 之类的镜像。",
     "imageOutdated": "这台云电脑的镜像太旧，无法运行云端 bot host。请在设置 → Bot 更新电脑后重试。",
-    "workerNoReply": "云端 worker 结束了，但没有写 reply.md。请检查 worker session 的 provider 错误；缺少 DeepSeek 凭据（MISSING_CREDENTIAL）会导致无法回复。请添加模型凭据，或用带凭据的电脑重建。"
+    "workerNoReply": "云端 worker 结束了，但没有写 reply.md。请检查 worker session 的 provider 错误；缺少 DeepSeek 凭据（MISSING_CREDENTIAL）会导致无法回复。请添加模型凭据，或用带凭据的电脑重建。",
+    "workspaceStale": "绑定的工作区不存在或已变化。请在详情中重新绑定或解绑。",
+    "workspaceTooLarge": "绑定的工作区太大，无法复制。",
+    "workspaceInvalid": "工作区绑定无效。",
+    "workspaceUnavailable": "当前 host 不支持工作区绑定。",
+    "workspaceSync": "工作区副本同步失败。"
   },
   "list": {
     "search": "搜索",
@@ -577,7 +600,8 @@ window.__ModuleLoader__.load({
     "upcoming": "即将进行",
     "computer": "电脑",
     "usage": "用量",
-    "jobComputer": "{job} · {computer}"
+    "jobComputer": "{job} · {computer}",
+    "workspace": "工作区"
   },
   "receipt": {
     "ready": "已就绪",
@@ -887,13 +911,25 @@ window.__ModuleLoader__.load({
   "error": {
     "hostDown": "Bot host 没有响应。",
     "botCreate": "无法保存 Bot：{message}",
-    "primaryProtected": "主 Bot 不能删除。"
+    "primaryProtected": "主 Bot 不能删除。",
+    "workspace": "无法修改工作区：{message}"
   },
   "primary": {
     "badge": "主 Bot",
     "defaultName": "Superagent",
     "defaultLabel": "协调你的 Bot",
     "setupHint": "这是你账户的主 Bot；它置顶显示且不能删除。"
+  },
+  "workspace": {
+    "none": "不绑定工作区",
+    "bind": "绑定",
+    "unbind": "解绑",
+    "choose": "工作区",
+    "stale": "绑定的工作区不存在或已变化。重新绑定或解绑前，新的本地任务会失败。",
+    "unavailable": "当前 host 不支持工作区绑定。",
+    "noOptions": "还没有注册的 DSH 工作区。",
+    "cloudHint": "云端任务使用云电脑自己的工作区；此版本不上传本地项目。",
+    "busy": "Bot 正在运行，请等当前回合结束后再修改工作区。"
   },
   "user": {
     "you": "你",
@@ -1275,6 +1311,17 @@ window.__ModuleLoader__.load({
       return t('routine.every', { minutes })
     }
 
+    /**
+     * Bridge the DSH workspace standard prop into the Bots surface.
+     * `useWorkspaces` is provided by the slot renderer, not the plugin ctx.
+     */
+    function BotsWithWorkspaces({ ctx, useWorkspaces }) {
+      const workspaces = useWorkspaces((snapshot) => (
+        Array.isArray(snapshot?.items) ? snapshot.items : null
+      ))
+      return h(BotsApp, { ctx, workspaces })
+    }
+
     /** Map one host roster entry to the client's bot shape; its session comes from the host. */
     function realBot(bot, routines = [], computer = null, primaryBotId = null) {
       const primary = primaryBotId !== null && bot.id === primaryBotId
@@ -1285,6 +1332,8 @@ window.__ModuleLoader__.load({
         instructions: typeof bot.instructions === 'string' ? bot.instructions : '',
         primary,
         primaryDefault: primary && bot.name === 'Superagent' && bot.label === 'Coordinates your bots',
+        workspace: bot.workspace ?? null,
+        workspaceStale: bot.stale === true,
         source: 'real',
         computer,
         attention: null,
@@ -1405,6 +1454,12 @@ window.__ModuleLoader__.load({
       E_QUEUE_FULL: 'chat.queueFull',
       E_SESSION_INVALID: 'chat.messageInvalid',
       E_HOST_DOWN: 'chat.turnInterrupted',
+      E_WORKSPACE_STALE: 'chat.workspaceStale',
+      E_WORKSPACE_TOO_LARGE: 'chat.workspaceTooLarge',
+      E_WORKSPACE_INVALID: 'chat.workspaceInvalid',
+      E_WORKSPACE_UNAVAILABLE: 'chat.workspaceUnavailable',
+      E_WORKSPACE_SYNC: 'chat.workspaceSync',
+      E_WORKSPACE_BUSY: 'workspace.busy',
     }
 
     function timeOf(at) {
@@ -1710,6 +1765,7 @@ window.__ModuleLoader__.load({
         realOverview: null,
         realMachine: null,
         realError: '',
+        workspaceBinding: false,
         searchOpen: false,
         search: '',
         composer: '',
@@ -1983,7 +2039,7 @@ window.__ModuleLoader__.load({
       )
     }
 
-    function BotsApp({ ctx }) {
+    function BotsApp({ ctx, workspaces = null }) {
       const [state, setState] = useState(createState)
       const [host, setHost] = useState({ status: 'checking' })
       const [hostAttempt, setHostAttempt] = useState(0)
@@ -2097,7 +2153,13 @@ window.__ModuleLoader__.load({
               const selectedId = roster.some((bot) => bot.id === current.selectedId)
                 ? current.selectedId
                 : (roster.find((bot) => bot.primary)?.id ?? roster[0].id)
-              return { ...current, bots: roster, selectedId, demo: false }
+              return {
+                ...current,
+                bots: roster,
+                selectedId,
+                workspaceBinding: body.workspaceBinding === true,
+                demo: false,
+              }
             })
           } catch {
             // Keep the preview; the Settings host row reports the failure.
@@ -2423,7 +2485,12 @@ window.__ModuleLoader__.load({
         if (!name) return
         const job = draft.job.trim()
         const instructions = draft.instructions.trim() || t('persona.template', { name, job: job || '…' })
-        const body = await hostRpc('bots.create', { name, label: job, instructions })
+        const body = await hostRpc('bots.create', {
+          name,
+          label: job,
+          instructions,
+          ...(draft.workspaceId ? { workspaceId: draft.workspaceId } : {}),
+        })
         const bot = body.bot
         if (!bot || typeof bot.id !== 'string') throw new Error('bots.create returned no bot')
         setState((current) => ({
@@ -2466,6 +2533,22 @@ window.__ModuleLoader__.load({
               primaryDefault: item.primaryDefault
                 && bot.name === 'Superagent'
                 && bot.label === 'Coordinates your bots',
+            }
+            : item),
+        }))
+      }
+
+      const bindWorkspace = async (bot, workspaceId) => {
+        const body = await hostRpc('bots.update', { id: bot.id, workspaceId })
+        const updated = body.bot
+        if (!updated || typeof updated.id !== 'string') throw new Error('bots.update returned no bot')
+        setState((current) => ({
+          ...current,
+          bots: current.bots.map((item) => item.id === bot.id
+            ? {
+              ...item,
+              workspace: updated.workspace ?? null,
+              workspaceStale: updated.stale === true,
             }
             : item),
         }))
@@ -2661,6 +2744,8 @@ window.__ModuleLoader__.load({
         onView: () => flash(t('computer.desktopLater')),
         onAttach: () => flash(t('notice.attach')),
         machine: machineFor(selected),
+        workspaces,
+        onBindWorkspace: bindWorkspace,
         onStop: stopComputer,
         onCreate: createBot,
         primary: state.bots.find((bot) => bot.primary) || null,
@@ -2750,6 +2835,10 @@ window.__ModuleLoader__.load({
             onRemoveRoutine: (index) => removeRoutine(selected, index),
             onComputer: openComputer,
             onStop: stopComputer,
+            workspaces: workspaces ?? null,
+            workspaceBinding: state.workspaceBinding === true,
+            onBindWorkspace: bindWorkspace,
+            onFlash: flash,
           }) : null,
         ),
         desktop ? h(
@@ -3143,7 +3232,87 @@ window.__ModuleLoader__.load({
       )
     }
 
-    function Details({ t, catalog, bot, tab, onTab, computer, cloudHost, machine, configured, overview, usageError, usagePreview, low, onToggleRoutine, onCreateRoutine, onRemoveRoutine, onComputer, onStop }) {
+    function WorkspaceBlock({ t, bot, workspaces, workspaceBinding, cloudHost, onBindWorkspace, onFlash }) {
+      const [choice, setChoice] = useState('')
+      const [pending, setPending] = useState(false)
+      const current = bot.workspace
+      const stale = bot.workspaceStale === true
+      const options = Array.isArray(workspaces) ? workspaces : null
+      const busy = bot.working === true
+      const apply = async (workspaceId) => {
+        if (pending || typeof onBindWorkspace !== 'function') return
+        setPending(true)
+        try {
+          await onBindWorkspace(bot, workspaceId)
+          setChoice('')
+        } catch (error) {
+          onFlash?.(t('error.workspace', { message: String(error?.message ?? error) }))
+        } finally {
+          setPending(false)
+        }
+      }
+      return h(
+        'section',
+        { className: 'rb-sec rb-workspace-sec' },
+        h('h3', null, t('details.workspace')),
+        h(
+          'div',
+          { className: 'rb-workspace' },
+          current ? h(
+            'div',
+            null,
+            h('div', { className: 'rb-t' }, current.title || current.path),
+            h('div', { className: 'rb-s rb-workspace-path' }, current.path),
+            stale ? h('div', { className: 'rb-s', role: 'status', style: { color: '#b45309' } }, t('workspace.stale')) : null,
+            h(
+              'div',
+              { className: 'rb-workspace-actions' },
+              h('button', {
+                type: 'button',
+                className: 'rb-btn rb-ghost',
+                disabled: busy || pending,
+                onClick: () => apply(null),
+              }, t('workspace.unbind')),
+            ),
+          ) : h(
+            'div',
+            null,
+            options === null
+              ? h('div', { className: 'rb-s' }, t('workspace.unavailable'))
+              : h(
+                'div',
+                { className: 'rb-workspace-actions' },
+                h(
+                  'select',
+                  {
+                    className: 'rb-field',
+                    value: choice,
+                    disabled: busy || pending || !workspaceBinding,
+                    onChange: (event) => setChoice(event.target.value),
+                  },
+                  h('option', { value: '' }, t('workspace.none')),
+                  options.map((item) => h(
+                    'option',
+                    { key: item.workspaceId, value: item.workspaceId },
+                    `${item.title} — ${item.path}`,
+                  )),
+                ),
+                h('button', {
+                  type: 'button',
+                  className: 'rb-btn',
+                  disabled: busy || pending || !choice || !workspaceBinding,
+                  onClick: () => apply(choice),
+                }, t('workspace.bind')),
+              ),
+            options !== null && options.length === 0 ? h('div', { className: 'rb-s' }, t('workspace.noOptions')) : null,
+            workspaceBinding ? null : h('div', { className: 'rb-s' }, t('workspace.unavailable')),
+          ),
+          cloudHost ? h('div', { className: 'rb-s rb-faint' }, t('workspace.cloudHint')) : null,
+        ),
+      )
+    }
+
+    function Details({ t, catalog, bot, tab, onTab, computer, cloudHost, machine, configured, overview, usageError, usagePreview, low, onToggleRoutine, onCreateRoutine, onRemoveRoutine, onComputer, onStop, workspaces = null, workspaceBinding = false, onBindWorkspace, onFlash }) {
       const name = botName(bot, t)
       const job = botJob(bot, t)
       const [routineOpen, setRoutineOpen] = useState(false)
@@ -3194,6 +3363,15 @@ window.__ModuleLoader__.load({
           h('div', { className: 'rb-name' }, name),
           h('div', { className: 'rb-sub' }, t('details.jobComputer', { job, computer: computerName })),
         ),
+        bot.source === 'real' ? h(WorkspaceBlock, {
+          t,
+          bot,
+          workspaces,
+          workspaceBinding,
+          cloudHost,
+          onBindWorkspace,
+          onFlash,
+        }) : null,
         showLibrary ? h(
           'div',
           { className: 'rb-tabs', role: 'tablist' },
@@ -3535,7 +3713,13 @@ window.__ModuleLoader__.load({
 
     function renderCenter(ctx) {
       const { state, t, selected, width } = ctx
-      if (state.screen === 'newbot') return h(NewBotScreen, { t, onCancel: () => ctx.onScreen('chat'), onCreate: ctx.onCreate })
+      if (state.screen === 'newbot') return h(NewBotScreen, {
+        t,
+        onCancel: () => ctx.onScreen('chat'),
+        onCreate: ctx.onCreate,
+        workspaces: ctx.workspaces ?? null,
+        workspaceBinding: state.workspaceBinding === true,
+      })
       if (state.screen === 'setup') {
         return h(SetupScreen, {
           t,
@@ -3595,10 +3779,11 @@ window.__ModuleLoader__.load({
       })
     }
 
-    function NewBotScreen({ t, onCancel, onCreate }) {
+    function NewBotScreen({ t, onCancel, onCreate, workspaces = null, workspaceBinding = false }) {
       const [name, setName] = useState(() => t('newBot.defaultName'))
       const [job, setJob] = useState(() => t('newBot.defaultJob'))
       const [instructions, setInstructions] = useState('')
+      const [workspaceId, setWorkspaceId] = useState('')
       const [busy, setBusy] = useState(false)
       const [error, setError] = useState('')
       const submit = async () => {
@@ -3606,7 +3791,7 @@ window.__ModuleLoader__.load({
         setBusy(true)
         setError('')
         try {
-          await onCreate({ name, job, instructions })
+          await onCreate({ name, job, instructions, workspaceId: workspaceId || undefined })
         } catch (failure) {
           setError(t('error.botCreate', { message: String(failure?.message ?? failure) }))
         } finally {
@@ -3625,6 +3810,25 @@ window.__ModuleLoader__.load({
             h('h1', null, t('newBot.title')),
             h('p', { className: 'rb-sub' }, t('newBot.sub')),
             h(BotFields, { t, name, job, instructions, onName: setName, onJob: setJob, onInstructions: setInstructions }),
+            workspaceBinding ? h(
+              'label',
+              { className: 'rb-field-label' },
+              h('span', null, t('workspace.choose')),
+              h(
+                'select',
+                {
+                  className: 'rb-field',
+                  value: workspaceId,
+                  onChange: (event) => setWorkspaceId(event.target.value),
+                },
+                h('option', { value: '' }, t('workspace.none')),
+                (workspaces ?? []).map((item) => h(
+                  'option',
+                  { key: item.workspaceId, value: item.workspaceId },
+                  `${item.title} — ${item.path}`,
+                )),
+              ),
+            ) : null,
             error ? h('p', { className: 'rb-say', role: 'alert', style: { color: '#b45309' } }, error) : null,
             h(
               'div',
@@ -4307,7 +4511,7 @@ window.__ModuleLoader__.load({
     }
 
     return {
-      inject: ['slots', 'locale'],
+      inject: ['slots', 'locale', 'workspaces'],
       apply(ctx) {
         ctx.slots.inject('sidebar.panellist', () =>
           ctx.slots.register(
@@ -4333,7 +4537,9 @@ window.__ModuleLoader__.load({
               name: 'main',
               key: PANEL_ID,
             },
-            () => h(BotsApp, { ctx }),
+            (props) => (typeof props?.useWorkspaces === 'function'
+              ? h(BotsWithWorkspaces, { ctx, useWorkspaces: props.useWorkspaces })
+              : h(BotsApp, { ctx })),
           )
           // Bots is the product surface: activate it on entry when DSH exposes
           // the layout service. Without that service, stay on the DSH page.

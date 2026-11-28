@@ -19,6 +19,9 @@ export const RUNTIME_CONTRACT_VERSION = 1
  *   `start(input) -> { taskId, sandbox, localDir, timeoutSeconds, startedAt? }`
  *   `status({ detached }) -> { running: boolean }`
  *   `collect({ detached }) -> { running: boolean, text?: string }`
+ * A detached runtime that reads the local checkout may also set
+ * `usesLocalWorkspace: true`; the host then rejects a stale bound workspace
+ * before queueing a turn.
  * `text` is the turn to answer; `history` is the chronological transcript.
  * @param {unknown} runtime
  * @returns {object} The validated runtime.

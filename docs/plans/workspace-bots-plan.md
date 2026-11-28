@@ -1,6 +1,7 @@
 # 工作区 Bot 化：把 DSH Workspace 接入 bot
 
-> 状态：2026-11-28，Proposed；**未实现**。本文是计划，不是实现状态事实源；
+> 状态：2026-11-28，第一阶段已实现（本地绑定 + 受控副本 + Bots UI）；cloudHost
+> 同步、历史会话导入、workspace 行入口未实现。本文是计划，不是实现状态事实源；
 > 实现状态以 [`../12-status.md`](../12-status.md) 为准。
 >
 > 相关：[`../02-bot-model.md`](../02-bot-model.md)（bot 定义）、
